@@ -21,7 +21,7 @@ The Lighthouse 2 project has the following target audience:
 
 Researchers
 
-Lighthouse 2 can serve as a high-performance starting point for novel algorithms involving real-time ray tracing. This may include
+Lighthouse 2 is designed to be a high-performance starting point for novel algorithms involving real-time ray tracing. This may include
 new work on filtering, sampling, materials and lights. The provided ray tracers easily reach hundreds of millions of rays per second 
 on NVidia and AMD GPUs. Combined with a generic GPGPU implementation, this enables a high level of freedom in the implementation of 
 new code.
@@ -37,6 +37,12 @@ Industry
 Lighthouse 2 is an R&D platform. It is however distributed with the Apache 2.0 license, which allows you to use the code in your
 own products. Experimental cores can be shared with the community in binary / closed form, and application development is separated
 from core development.
+
+What it is not
+
+The ray tracing infrastructure (with related scene management acceleration structure maintenance) should be close to optimal. The implemented estimators however (unidirectional path tracers without filtering and blue noise) are not, and neither is the shading
+model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
+achieved with the platform: https://youtu.be/uEDTtu2ky3o .
 
 For more information on Lighthouse 2 please visit
 http://jacco.ompf2.com

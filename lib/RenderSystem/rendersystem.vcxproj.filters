@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="rendersystem.cpp" />
+    <ClCompile Include="host_material.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="host_scene.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="host_skydome.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="host_texture.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\tinyxml2\tinyxml2.cpp">
+      <Filter>tinyxml2</Filter>
+    </ClCompile>
+    <ClCompile Include="camera.cpp" />
+    <ClCompile Include="host_mesh.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="render_api.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="host_light.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="host_mesh_tinyobj.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="host_mesh_fbx.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
+    <ClCompile Include="core_api_base.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="rendersystem.h" />
+    <ClInclude Include="host_material.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="host_scene.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="host_skydome.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="host_texture.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tinyxml2\tinyxml2.h">
+      <Filter>tinyxml2</Filter>
+    </ClInclude>
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="host_mesh.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="render_api.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="host_light.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="host_mesh_fbx.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="common_classes.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common_settings.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="common_types.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="core_api_base.h">
+      <Filter>API</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="scene">
+      <UniqueIdentifier>{8df2dde7-353e-4a9c-bbc0-789e43f11991}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tinyxml2">
+      <UniqueIdentifier>{ea41ef2a-8904-4ef7-ace5-fdbd9e0cb885}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API">
+      <UniqueIdentifier>{40d9211d-aba4-474e-9a88-2977b680cc9c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{dda54bf1-5a52-45e2-9ba4-c7b2bb86bce3}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

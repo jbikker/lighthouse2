@@ -1,0 +1,24 @@
+0. Application:
+   Implements run-time functionality
+   Interface to user
+   Spawns the RenderSystem
+   Selects a core for the RenderSystem
+------------------------------------
+1. Platform:
+   Owns window
+   Only platform-dependent layer
+   Currently uses GLFW for OpenGL access
+   Assumes OpenGL as the underlying API
+
+2. RenderSystem:
+   Owns primary copy of scene data
+   Handles scene data import
+   Handles scene data maintenance
+   Owns one core, as selected by application
+   Provides core with scene data
+   Tunnels core statistics to application
+   Tunnels render requests to core
+   
+3. RenderCore:
+   Owns a render device
+   Implements the rendering algorithm

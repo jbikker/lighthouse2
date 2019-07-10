@@ -44,6 +44,10 @@ The ray tracing infrastructure (with related scene management acceleration struc
 model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
 achieved with the platform: https://youtu.be/uEDTtu2ky3o .
 
-Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2017 / 2019. For the CUDA/Optix based cores CUDA 10.1 and ptix 6.0 are required.
+Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2017 / 2019. For the CUDA/Optix based cores CUDA 10.1 is required:
+
+https://developer.nvidia.com/cuda-downloads
+
+Optix 6.0 libraries are included in the Lighthouse 2 download.
 
 For more information on Lighthouse 2 please visit: http://jacco.ompf2.com

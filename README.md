@@ -3,7 +3,7 @@ Lighthouse 2 framework for real-time ray tracing
 
 This is the public repo for Lighthouse 2, a rendering framework for real-time ray tracing / path tracing experiments. 
 Lighthouse 2 uses a state-of-the-art wavefront / streaming ray tracing implementation to reach high ray througput on RTX hardware 
-(using Optix) and pre-RTX hardware (using Optix Prime) and soon on AMD hardware (using Radeon Rays) and CPUs (using Embree).
+(using Optix) and pre-RTX hardware (using Optix Prime) and soon on AMD hardware (using RadeonRays / OpenCL) and CPUs (using Embree).
 A software rasterizer is also included, mostly as an example of a minimal API implementation.
 
 Lighthouse 2 uses a highly modular approach to ease the development of renderers.
@@ -29,8 +29,8 @@ new code.
 Educators
 
 The Lighthouse 2 system implements all the boring things such as scene I/O, window management, user interfaces and access to ray tracing
-APIs such as Optix, RadeonRays and Embree. Students can get straight to the interesting bits. The architecture of Lighthouse 2 is
-carefully designed to be easily accessible.
+APIs such as Optix, RadeonRays and Embree; your students can get straight to the interesting bits. The architecture of Lighthouse 2 is
+carefully designed to be easily accessible. Very fast scene loading and carefully tuned project files ensure quick development cycles.
 
 Industry
 
@@ -44,5 +44,6 @@ The ray tracing infrastructure (with related scene management acceleration struc
 model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
 achieved with the platform: https://youtu.be/uEDTtu2ky3o .
 
-For more information on Lighthouse 2 please visit
-http://jacco.ompf2.com
+Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2017 / 2019. For the CUDA/Optix based cores CUDA 10.1 and ptix 6.0 are required.
+
+For more information on Lighthouse 2 please visit: http://jacco.ompf2.com

@@ -50,4 +50,25 @@ https://developer.nvidia.com/cuda-downloads
 
 Optix 6.0 libraries are included in the Lighthouse 2 download.
 
-For more information on Lighthouse 2 please visit: http://jacco.ompf2.com
+For more information on Lighthouse 2 please visit: http://jacco.ompf2.com.
+
+Credits
+
+Lighthouse 2 uses the following libraries:
+
+AntTweakBar http://anttweakbar.sourceforge.net/doc
+Autodesk FBX SDK https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2019-0
+FreeImage http://freeimage.sourceforge.net
+Glad https://glad.dav1d.de
+GLFW https://www.glfw.org
+half 1.12 http://half.sourceforge.net
+tinygltf https://github.com/syoyo/tinygltf
+tinyobj https://github.com/syoyo/tinyobjloader
+tinyxml2 https://github.com/leethomason/tinyxml2
+zlib https://www.zlib.net
+
+Lighthouse 2 implements research by (very incomplete):
+
+Marsaglia: random numbers
+Van Antwerpen, Laine, Karras, Aila: streaming path tracing
+Aila, Laine: persistent kernels

@@ -19,26 +19,26 @@ Render cores have a common interface and are supplied to the RenderSystem as dll
 
 The Lighthouse 2 project has the following target audience:
 
-Researchers
+*Researchers*
 
 Lighthouse 2 is designed to be a high-performance starting point for novel algorithms involving real-time ray tracing. This may include
 new work on filtering, sampling, materials and lights. The provided ray tracers easily reach hundreds of millions of rays per second 
 on NVidia and AMD GPUs. Combined with a generic GPGPU implementation, this enables a high level of freedom in the implementation of 
 new code.
 
-Educators
+*Educators*
 
 The Lighthouse 2 system implements all the boring things such as scene I/O, window management, user interfaces and access to ray tracing
 APIs such as Optix, RadeonRays and Embree; your students can get straight to the interesting bits. The architecture of Lighthouse 2 is
 carefully designed to be easily accessible. Very fast scene loading and carefully tuned project files ensure quick development cycles.
 
-Industry
+*Industry*
 
 Lighthouse 2 is an R&D platform. It is however distributed with the Apache 2.0 license, which allows you to use the code in your
 own products. Experimental cores can be shared with the community in binary / closed form, and application development is separated
 from core development.
 
-What it is not
+<b>What it is not</b>
 
 The ray tracing infrastructure (with related scene management acceleration structure maintenance) should be close to optimal. The implemented estimators however (unidirectional path tracers without filtering and blue noise) are not, and neither is the shading
 model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
@@ -52,7 +52,7 @@ Optix 6.0 libraries are included in the Lighthouse 2 download.
 
 For more information on Lighthouse 2 please visit: http://jacco.ompf2.com.
 
-Credits
+<b>Credits</b>
 
 Lighthouse 2 uses the following libraries: AntTweakBar http://anttweakbar.sourceforge.net/doc
 Autodesk FBX SDK https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2019-0

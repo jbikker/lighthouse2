@@ -54,9 +54,7 @@ For more information on Lighthouse 2 please visit: http://jacco.ompf2.com.
 
 Credits
 
-Lighthouse 2 uses the following libraries:
-
-AntTweakBar http://anttweakbar.sourceforge.net/doc
+Lighthouse 2 uses the following libraries: AntTweakBar http://anttweakbar.sourceforge.net/doc
 Autodesk FBX SDK https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2019-0
 FreeImage http://freeimage.sourceforge.net
 Glad https://glad.dav1d.de
@@ -69,6 +67,6 @@ zlib https://www.zlib.net
 
 Lighthouse 2 implements research by (very incomplete):
 
-Marsaglia: random numbers
-Van Antwerpen, Laine, Karras, Aila: streaming path tracing
-Aila, Laine: persistent kernels
+* Marsaglia: random numbers
+* Van Antwerpen, Laine, Karras, Aila: streaming path tracing
+* Aila, Laine: persistent kernels

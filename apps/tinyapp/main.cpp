@@ -23,7 +23,7 @@ static Shader* shader = 0;
 static uint scrwidth = 0, scrheight = 0;
 static bool running = true, hasFocus = true;
 static float r = 0;
-static bool sceneChanges = false;
+static bool camMoved = false;
 static string materialFile;
 
 #define SCENE	1 // 1: Sponza, 2: Chamfer, 3: Waterbox
@@ -44,7 +44,6 @@ void PrepareScene()
 	renderer->AddInstance( worldID );
 	renderer->AddInstance( lightQuad );
 	materialFile = string( "data\\pica\\pica_materials.xml" );
-	renderer->DeserializeMaterials( materialFile.c_str() );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -83,10 +82,12 @@ int main()
 	Timer timer;
 	timer.reset();
 	InitGLFW();
+
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );
-	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );
+	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );				// pure OPTIX, the only way to use RTX cores
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
+
 	renderer->LoadCamera( "camera.xml" );
 	// initialize ui
 	PrepareScene();
@@ -97,16 +98,16 @@ int main()
 	{
 		renderer->SynchronizeSceneData();
 		Convergence c = Converge;
-		if (sceneChanges) c = Restart, sceneChanges = false;
+		if (camMoved) c = Restart, camMoved = false;
 		// detect camera changes
-		if (renderer->GetCamera()->Changed()) sceneChanges = true;
+		if (renderer->GetCamera()->Changed()) camMoved = true;
 		// poll events, may affect probepos so needs to happen between HandleInput and Render
 		glfwPollEvents();
 		// render
 		deltaTime = timer.elapsed();
 		timer.reset();
 		renderer->Render( c );
-		if (HandleInput( deltaTime )) sceneChanges = true;
+		if (HandleInput( deltaTime )) camMoved = true;
 		// finalize and present
 		shader->Bind();
 		shader->SetInputTexture( 0, "color", renderTarget );
@@ -117,8 +118,6 @@ int main()
 		glfwSwapBuffers( window );
 		if (!running) break;
 	}
-	// save materials
-	renderer->SerializeMaterials( materialFile.c_str() );
 	// clean up
 	renderer->Shutdown();
 	glfwDestroyWindow( window );

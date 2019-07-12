@@ -31,7 +31,7 @@ typedef unsigned __int64 uint64;
 #include "../core_settings.h"
 #include "common_classes.h"
 #include "common_settings.h"
-#if __CUDA_ARCH__ > 700
+#if __CUDA_ARCH__ >= 700
 #define THREADMASK	__activemask() // volta, turing
 #else
 #define THREADMASK	0xffffffff // pascal, kepler, fermi

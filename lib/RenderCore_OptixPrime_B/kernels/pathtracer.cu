@@ -52,7 +52,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	// gather data by reading sets of four floats for optimal throughput
 	const float4 O4 = extensionRays[jobIndex].O4;		// ray origin xyz, w can be ignored
 	const float4 D4 = extensionRays[jobIndex].D4;		// ray direction xyz
-	const float4 T4 = pathLength == 1 ? make_float4( 1 ) : pathStateData[jobIndex * 2 + 0];	// path thoughput rgb 
+	const float4 T4 = pathStateData[jobIndex * 2 + 0];	// path thoughput rgb 
 	const float4 Q4 = pathStateData[jobIndex * 2 + 1];	// x, y: pd of the previous bounce, normal at the previous vertex
 	const Intersection hd = hits[jobIndex];				// TODO: when using instances, Optix Prime needs 5x4 bytes here...
 	const float4 hitData = make_float4( hd.u, hd.v, __int_as_float( hd.triid + (hd.triid == -1 ? 0 : (hd.instid << 24)) ), hd.t );

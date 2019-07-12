@@ -54,6 +54,8 @@ For more information on Lighthouse 2 please visit: http://jacco.ompf2.com.
 
 <b>Credits</b>
 
+Lighthouse 2 was developed at the Utrecht University, The Netherlands.
+
 Lighthouse 2 uses the following libraries: AntTweakBar http://anttweakbar.sourceforge.net/doc
 Autodesk FBX SDK https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2019-0
 FreeImage http://freeimage.sourceforge.net

@@ -7,7 +7,9 @@
 
 #include "bsdfs/lambert.h"
 
-// #else
+#else
+
+// IN PROGRESS, IGNORE
 
 // Code adapted from https://www.shadertoy.com/view/XdyyDd
 // Disney brdf's taken from here:: https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf

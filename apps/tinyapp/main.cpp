@@ -21,13 +21,7 @@ static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0;
 static Shader* shader = 0;
 static uint scrwidth = 0, scrheight = 0;
-static bool running = true, hasFocus = true;
-static float r = 0;
-static bool camMoved = false;
-static string materialFile;
-
-#define SCENE	1 // 1: Sponza, 2: Chamfer, 3: Waterbox
-#define SPP		1
+static bool camMoved = false, hasFocus = true, running = true;
 
 #include "main_tools.h"
 
@@ -43,7 +37,6 @@ void PrepareScene()
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 	renderer->AddInstance( worldID );
 	renderer->AddInstance( lightQuad );
-	materialFile = string( "data\\pica\\pica_materials.xml" );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -52,7 +45,6 @@ void PrepareScene()
 //  +-----------------------------------------------------------------------------+
 bool HandleInput( float frameTime )
 {
-	if (!hasFocus) return false;
 	// handle keyboard input
 	float translateSpeed = (GetAsyncKeyState( VK_SHIFT ) ? 15.0f : 5.0f) * frameTime, rotateSpeed = 2.5f * frameTime;
 	bool changed = false;
@@ -117,7 +109,6 @@ int main()
 		shader->Unbind();
 		// finalize
 		glfwSwapBuffers( window );
-		if (!running) break;
 	}
 	// clean up
 	renderer->Shutdown();

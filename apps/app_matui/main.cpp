@@ -23,12 +23,8 @@ static Shader* shader = 0;
 static uint scrwidth = 0, scrheight = 0;
 static bool running = true, hasFocus = true;
 static bool leftButtonDown = false, leftClicked = false;
-static float r = 0;
 static bool sceneChanges = false;
 static string materialFile;
-
-#define SCENE	1 // 1: Sponza, 2: Chamfer, 3: Waterbox
-#define SPP		1
 
 #include "main_ui.h"
 #include "main_tools.h"

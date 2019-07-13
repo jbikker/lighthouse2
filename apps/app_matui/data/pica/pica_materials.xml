@@ -10,7 +10,7 @@
         <specularity>-1</specularity>
         <diffuse_color b="0.65924126" g="0.60714811" r="0.45760569"/>
         <specular_color b="1" g="1" r="1"/>
-        <roughness y1="0.11413872" x1="0.11413872" y0="0.11413872" x0="0.11413872"/>
+        <roughness y1="0.11413872" x1="1" y0="0.11413872" x0="1"/>
         <absorption b="0" g="0" r="0"/>
     </material_0>
     <material_1>

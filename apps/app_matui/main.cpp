@@ -46,6 +46,8 @@ void PrepareScene()
 	renderer->AddInstance( worldID );
 	renderer->AddInstance( lightQuad );
 	materialFile = string( "data\\pica\\pica_materials.xml" );
+	// read persistent material changes
+	renderer->DeserializeMaterials( materialFile.c_str() );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -70,6 +72,20 @@ bool HandleInput( float frameTime )
 	if (GetAsyncKeyState( VK_DOWN )) { changed = true; camera->TranslateTarget( make_float3( 0, rotateSpeed, 0 ) ); }
 	if (GetAsyncKeyState( VK_LEFT )) { changed = true; camera->TranslateTarget( make_float3( -rotateSpeed, 0, 0 ) ); }
 	if (GetAsyncKeyState( VK_RIGHT )) { changed = true; camera->TranslateTarget( make_float3( rotateSpeed, 0, 0 ) ); }
+	// process left button click
+	if (leftClicked && GetAsyncKeyState( VK_LSHIFT ))
+	{
+		int selectedMaterialID = renderer->GetTriangleMaterialID( coreStats.probedInstid, coreStats.probedTriid );
+		if (selectedMaterialID != -1)
+		{
+			currentMaterial = *renderer->GetMaterial( selectedMaterialID );
+			currentMaterialID = selectedMaterialID;
+			currentMaterial.Changed(); // update checksum so we can track changes
+		}
+		camera->focalDistance = coreStats.probedDist;
+		changed = true;
+		leftClicked = false;
+	}
 	// let the main loop know if the camera should update
 	return changed;
 }
@@ -134,6 +150,9 @@ int main()
 		deltaTime = timer.elapsed();
 		timer.reset();
 		renderer->Render( c );
+		coreStats = renderer->GetCoreStats();
+		mraysincl = coreStats.totalRays / (coreStats.renderTime * 1000);
+		mraysexcl = coreStats.totalRays / (coreStats.traceTime * 1000);
 		if (HandleInput( deltaTime )) sceneChanges = true;
 		// finalize and present
 		shader->Bind();
@@ -148,6 +167,8 @@ int main()
 		glfwSwapBuffers( window );
 		if (!running) break;
 	}
+	// save material changes
+	renderer->SerializeMaterials( materialFile.c_str() );
 	// clean up
 	renderer->Shutdown();
 	glfwDestroyWindow( window );

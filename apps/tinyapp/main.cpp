@@ -78,9 +78,7 @@ bool HandleInput( float frameTime )
 //  +-----------------------------------------------------------------------------+
 int main()
 {
-	// initialization
-	Timer timer;
-	timer.reset();
+	// initialize OpenGL
 	InitGLFW();
 
 	// initialize renderer: pick one
@@ -89,10 +87,13 @@ int main()
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
 
 	renderer->LoadCamera( "camera.xml" );
-	// initialize ui
+	// initialize scene
 	PrepareScene();
+	// set initial window size
 	ReshapeWindowCallback( 0, SCRWIDTH, SCRHEIGHT );
 	// enter main loop
+	Timer timer;
+	timer.reset();
 	float deltaTime = 0;
 	while (!glfwWindowShouldClose( window ))
 	{

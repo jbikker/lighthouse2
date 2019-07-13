@@ -75,7 +75,7 @@
         <specularity>-1</specularity>
         <diffuse_color b="0.39198321" g="0.39198321" r="0.64356357"/>
         <specular_color b="1" g="1" r="1"/>
-        <roughness y1="0.2421875" x1="0.2421875" y0="0.2421875" x0="0.2421875"/>
+        <roughness y1="0.2421875" x1="1" y0="0.2421875" x0="1"/>
         <absorption b="0" g="0" r="0"/>
     </material_5>
     <material_6>
@@ -283,7 +283,7 @@
         <specularity>-1</specularity>
         <diffuse_color b="1" g="1" r="1"/>
         <specular_color b="1" g="1" r="1"/>
-        <roughness y1="0.25" x1="0.25" y0="0.25" x0="0.25"/>
+        <roughness y1="0.25" x1="1" y0="0.25" x0="1"/>
         <absorption b="0" g="0" r="0"/>
     </material_21>
     <material_22>

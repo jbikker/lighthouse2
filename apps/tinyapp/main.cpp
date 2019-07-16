@@ -78,7 +78,7 @@ int main()
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );				// pure OPTIX, the only way to use RTX cores
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
 
-	renderer->LoadCamera( "camera.xml" );
+	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
 	PrepareScene();
 	// set initial window size
@@ -109,8 +109,11 @@ int main()
 		shader->Unbind();
 		// finalize
 		glfwSwapBuffers( window );
+		// terminate
+		if (!running) break;
 	}
 	// clean up
+	renderer->SerializeCamera( "camera.xml" );
 	renderer->Shutdown();
 	glfwDestroyWindow( window );
 	glfwTerminate();

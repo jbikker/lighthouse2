@@ -39,18 +39,18 @@ LH2_DEVFUNC void GetShadingData(
 	// fetch initial set of data from material
 	const CoreMaterial4& mat = (const CoreMaterial4&)materials[TRI_MATERIAL];
 	const uint4 baseData = mat.baseData4;
-	const uint flags = baseData.w;
 	// process common data (unconditional)
 	const uint part0 = baseData.x; // diffuse_r, diffuse_g
-	const uint part1 = baseData.y; // diffuse_b, eta, roughness0
-	const uint part3 = baseData.z; // roughness1, nscale0, nscale1, nscale2
-	const float2 redgreen = __half22float2( __halves2half2( __ushort_as_half( part0 & 0xffff ), __ushort_as_half( part0 >> 16 ) ) );
-	const float blue = __ushort_as_half( part1 & 0xffff );
-	const uint etarough0 = part1 >> 16;
+	const uint part1 = baseData.y; // diffuse_b, flags
+	const uint part2 = baseData.z; // medium_r, medium_g
+	const float2 base_rg = __half22float2( __halves2half2( __ushort_as_half( part0 & 0xffff ), __ushort_as_half( part0 >> 16 ) ) );
+	const float2 base_b_medium_r = __half22float2( __halves2half2( __ushort_as_half( part1 & 0xffff ), __ushort_as_half( part1 >> 16 ) ) ); // __ushort_as_half( part1 & 0xffff );
+	const float2 medium_gb = __half22float2( __halves2half2( __ushort_as_half( part2 & 0xffff ), __ushort_as_half( part2 >> 16 ) ) );
+	const uint flags = baseData.w;
 	ShadingData4& retVal4 = (ShadingData4&)retVal;
-	retVal4.data0 = make_float4( redgreen.x, redgreen.y, blue, (float)(etarough0 >> 8) * (1.0f / 255.0f) );
-	retVal4.data1 = make_float4( 0, 0, 0, (float)(part3 & 255) * (1.0f / 255.0f) );
-	retVal4.data2 = make_float4( 0, __int_as_float( 0 ), (float)(etarough0 & 255) * (1.0f / 255.0f) + 1.0f, __int_as_float( TRI_MATERIAL ) );
+	retVal4.data0 = make_float4( base_rg.x, base_rg.y, base_b_medium_r.x, __uint_as_float( 0 ) );
+	retVal4.data1 = make_float4( base_b_medium_r.y, medium_gb.x, medium_gb.y, __uint_as_float( 0 /* matid? */ ) );
+	retVal4.data2 = mat.parameters;
 	// initialize normals
 	N = iN = fN = TRI_N;
 	T = TRI_T;
@@ -106,20 +106,20 @@ LH2_DEVFUNC void GetShadingData(
 			retVal.flags |= 1;
 			return;
 		}
-		retVal.diffuse = retVal.diffuse * make_float3( texel );
+		retVal.baseColor = retVal.baseColor * make_float3( texel );
 		if (MAT_HAS2NDDIFFUSEMAP) // must have base texture; second and third layers are additive
 		{
 			const uint4 data = mat.t1data4;
 			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
 			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			retVal.diffuse += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
+			retVal.baseColor += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
 		}
 		if (MAT_HAS3RDDIFFUSEMAP)
 		{
 			const uint4 data = mat.t2data4;
 			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
 			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			retVal.diffuse += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
+			retVal.baseColor += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
 		}
 	}
 	// normal mapping
@@ -164,33 +164,10 @@ LH2_DEVFUNC void GetShadingData(
 		const uint4 data = mat.rdata4;
 		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
 		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-		retVal.roughness1 = FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ).x;
+		const uint blend = (retVal.parameters.x & 0xffffff) +
+			(((uint)(FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ).x * 255.0f)) << 24);
+		retVal.parameters.x = blend;
 	}
-	// anisotropy
-	if (MAT_ISANISOTROPIC)
-	{
-		retVal.roughness1 *= -1.0f, retVal.roughness2 *= -1.0f; // negative denotes this material is anisotropic
-	}
-	// dielectrics
-	if (MAT_ISDIELECTRIC)
-	{
-		const float4 data = mat.dielec4;
-		const float2 nino = make_float2( 1.0f, waveLength > 0 ? (1.2f + waveLength * 0.0001f) : data.x );
-		retVal.nino = __float22half2_rn( nino );
-		retVal.absorption = dot( D, iN ) > 0 ? make_float3( data.y, data.z, data.w ) : make_float3( 1 );
-		retVal.eta = nino.y / nino.x;
-	}
-	else
-	{
-		// specular color from metalness uses same space as absorption
-		const float metalness = (float)(flags >> 24) * (1.0f / 255.0f);
-		retVal.specular = metalness * retVal.diffuse + (1 - metalness) * make_float3( 1 );
-	}
-#ifdef OPTIXPRIMEBUILD
-	// pass conductor / rough dielectric flags
-	if (MAT_ISCONDUCTOR) retVal.flags |= 2;
-	if (MAT_ISROUGHDIELECTRIC) retVal.flags |= 4;
-#endif
 }
 
 // EOF

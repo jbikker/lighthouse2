@@ -54,7 +54,6 @@ void RenderSystem::SynchronizeSky()
 		// send sky data to core
 		HostSkyDome* sky = scene->sky;
 		core->SetSkyData( sky->pixels, sky->width, sky->height );
-		printf( "sky data sent to core.\n" );
 	}
 }
 
@@ -73,7 +72,6 @@ void RenderSystem::SynchronizeTextures()
 		vector<CoreTexDesc> gpuTex;
 		for (auto texture : scene->textures) gpuTex.push_back( texture->ConvertToCoreTexDesc() );
 		core->SetTextures( gpuTex.data(), (int)gpuTex.size() );
-		printf( "textures sent to core.\n" );
 	}
 }
 
@@ -113,7 +111,6 @@ void RenderSystem::SynchronizeMaterials()
 			gpuMaterialEx.push_back( e );
 		}
 		core->SetMaterials( gpuMaterial.data(), gpuMaterialEx.data(), (int)gpuMaterial.size() );
-		printf( "materials sent to core.\n" );
 	}
 }
 
@@ -137,7 +134,6 @@ void RenderSystem::SynchronizeMeshes()
 			mesh->UpdateAlphaFlags();
 			core->SetGeometry( modelIdx, mesh->vertices.data(), (int)mesh->vertices.size(), (int)mesh->indices.size(), (CoreTri*)mesh->triangles.data(), mesh->alphaFlags.data() );
 		}
-		printf( "geometry sent to core.\n" );
 	}
 }
 
@@ -162,7 +158,6 @@ void RenderSystem::SynchronizeInstances()
 		}
 		// finalize
 		core->UpdateToplevel();
-		/* supress this message. */ // printf( "instances sent to core.\n" );
 	}
 }
 
@@ -193,7 +188,6 @@ void RenderSystem::SynchronizeLights()
 			gpuPointLights.data(), (int)gpuPointLights.size(),
 			gpuSpotLights.data(), (int)gpuSpotLights.size(),
 			gpuDirectionalLights.data(), (int)gpuDirectionalLights.size() );
-		/* suppress this message */ // printf( "lights sent to core.\n" );
 	}
 }
 

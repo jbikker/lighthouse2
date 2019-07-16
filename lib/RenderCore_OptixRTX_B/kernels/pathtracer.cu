@@ -107,7 +107,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	}
 
 	// path regularization
-	if (FLAGS & S_BOUNCED) shadingData.roughness2 = max( 0.7f, shadingData.roughness2 );
+	// if (FLAGS & S_BOUNCED) shadingData.roughness2 = max( 0.7f, shadingData.roughness2 );
 
 	// stop on light
 	if (shadingData.IsEmissive() /* r, g or b exceeds 1 */)
@@ -119,7 +119,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
 			{
 				// only camera rays will be treated special
-				contribution = shadingData.diffuse;
+				contribution = shadingData.baseColor;
 			}
 			else
 			{
@@ -128,8 +128,8 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 				const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
 				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
-				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.diffuse * (1.0f / (bsdfPdf + lightPdf * pickProb));
-				contribution = throughput * shadingData.diffuse * (1.0f / (bsdfPdf + lightPdf));
+				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.baseColor * (1.0f / (bsdfPdf + lightPdf * pickProb));
+				contribution = throughput * shadingData.baseColor * (1.0f / (bsdfPdf + lightPdf));
 			}
 			CLAMPINTENSITY;
 			FIXNAN_FLOAT3( contribution );
@@ -139,7 +139,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	}
 
 	// detect specular surfaces
-	if (shadingData.roughness2 < 0.01f) FLAGS |= S_SPECULAR; else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS < 0.01f) FLAGS |= S_SPECULAR; else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
 	uint seed = WangHash( pathIdx + R0  /* well-seeded xor32 is all you need */ );
@@ -165,7 +165,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
 		{
 			float bsdfPdf;
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, D * -1.0f, L, 0, bsdfPdf );
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
 			if (bsdfPdf > 0)
 			{
 				// calculate potential contribution
@@ -189,8 +189,8 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
-	float newBsdfPdf, r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, D * -1.0f, r0, r1, R, newBsdfPdf );
+	float newBsdfPdf;
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, seed, R, newBsdfPdf );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
 
 	// write extension ray

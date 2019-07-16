@@ -46,9 +46,14 @@ void RenderAPI::Shutdown()
 	renderer->Shutdown();
 }
 
-void RenderAPI::LoadCamera( const char* xmlFile )
+void RenderAPI::DeserializeCamera( const char* xmlFile )
 {
 	renderer->scene->camera->Deserialize( xmlFile );
+}
+
+void RenderAPI::SerializeCamera( const char* xmlFile )
+{
+	renderer->scene->camera->Serialize( xmlFile );
 }
 
 int RenderAPI::AddMesh( const char* file, const char* dir, const float scale )

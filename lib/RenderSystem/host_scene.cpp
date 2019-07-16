@@ -89,30 +89,28 @@ void HostScene::SerializeMaterials( const char* xmlFile )
 		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "origin" ) ))->SetText( materials[i]->origin.c_str() );
 		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "id" ) ))->SetText( materials[i]->ID );
 		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "flags" ) ))->SetText( materials[i]->flags );
-		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "eta" ) ))->SetText( materials[i]->eta );
-		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "metalness" ) ))->SetText( materials[i]->metalness );
-		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "specularity" ) ))->SetText( materials[i]->specularity );
-		XMLElement* diffuse = doc.NewElement( "diffuse_color" );
-		diffuse->SetAttribute( "b", materials[i]->color.z );
-		diffuse->SetAttribute( "g", materials[i]->color.y );
-		diffuse->SetAttribute( "r", materials[i]->color.x );
-		materialEntry->InsertEndChild( diffuse );
-		XMLElement* specular = doc.NewElement( "specular_color" );
-		specular->SetAttribute( "b", materials[i]->specularColor.z );
-		specular->SetAttribute( "g", materials[i]->specularColor.y );
-		specular->SetAttribute( "r", materials[i]->specularColor.x );
-		materialEntry->InsertEndChild( specular );
-		XMLElement* roughness = doc.NewElement( "roughness" );
-		roughness->SetAttribute( "y1", materials[i]->roughness[1].y );
-		roughness->SetAttribute( "x1", materials[i]->roughness[1].x );
-		roughness->SetAttribute( "y0", materials[i]->roughness[0].y );
-		roughness->SetAttribute( "x0", materials[i]->roughness[0].x );
-		materialEntry->InsertEndChild( roughness );
-		XMLElement* absorption = doc.NewElement( "absorption" );
-		absorption->SetAttribute( "b", materials[i]->absorption.z );
-		absorption->SetAttribute( "g", materials[i]->absorption.y );
-		absorption->SetAttribute( "r", materials[i]->absorption.x );
-		materialEntry->InsertEndChild( absorption );
+		XMLElement* diffuse = doc.NewElement( "baseColor" );
+		diffuse->SetAttribute( "b", materials[i]->baseColor.z );
+		diffuse->SetAttribute( "g", materials[i]->baseColor.y );
+		diffuse->SetAttribute( "r", materials[i]->baseColor.x );
+		XMLElement* mediumColor = doc.NewElement( "mediumColor" );
+		mediumColor->SetAttribute( "b", materials[i]->mediumColor.z );
+		mediumColor->SetAttribute( "g", materials[i]->mediumColor.y );
+		mediumColor->SetAttribute( "r", materials[i]->mediumColor.x );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "metallic" ) ))->SetText( materials[i]->metallic );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "specTrans" ) ))->SetText( materials[i]->specTrans );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "specTint" ) ))->SetText( materials[i]->specularTint );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "roughness" ) ))->SetText( materials[i]->roughness );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "diffTrans" ) ))->SetText( materials[i]->diffTrans );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "anisotropic" ) ))->SetText( materials[i]->anisotropic );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "sheen" ) ))->SetText( materials[i]->sheen );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "sheenTint" ) ))->SetText( materials[i]->sheenTint );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "clearcoat" ) ))->SetText( materials[i]->clearcoat );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "clearcoatGloss" ) ))->SetText( materials[i]->clearcoatGloss );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "ior" ) ))->SetText( materials[i]->ior );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "scatterDistance" ) ))->SetText( materials[i]->scatterDistance );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "relativeIOR" ) ))->SetText( materials[i]->relativeIOR );
+		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "flatness" ) ))->SetText( materials[i]->flatness );
 	}
 	doc.SaveFile( xmlFile );
 }
@@ -148,30 +146,30 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 		m->origin = string( materialOrigin ? materialOrigin : "" );
 		if (entry->FirstChildElement( "id" )) entry->FirstChildElement( "id" )->QueryIntText( &m->ID );
 		if (entry->FirstChildElement( "flags" )) entry->FirstChildElement( "flags" )->QueryUnsignedText( &m->flags );
-		if (entry->FirstChildElement( "eta" )) entry->FirstChildElement( "eta" )->QueryFloatText( &m->eta );
-		if (entry->FirstChildElement( "metalness" )) entry->FirstChildElement( "metalness" )->QueryFloatText( &m->metalness );
-		if (entry->FirstChildElement( "specularity" )) entry->FirstChildElement( "specularity" )->QueryFloatText( &m->specularity );
-		XMLElement* diffuse = entry->FirstChildElement( "diffuse_color" );
-		if (diffuse)
-			diffuse->QueryFloatAttribute( "r", &m->color.x ),
-			diffuse->QueryFloatAttribute( "g", &m->color.y ),
-			diffuse->QueryFloatAttribute( "b", &m->color.z );
-		XMLElement* specular = entry->FirstChildElement( "specular_color" );
-		if (specular)
-			specular->QueryFloatAttribute( "r", &m->specularColor.x ),
-			specular->QueryFloatAttribute( "g", &m->specularColor.y ),
-			specular->QueryFloatAttribute( "b", &m->specularColor.z );
-		XMLElement* roughness = entry->FirstChildElement( "roughness" );
-		if (roughness)
-			roughness->QueryFloatAttribute( "x0", &m->roughness[0].x ),
-			roughness->QueryFloatAttribute( "y0", &m->roughness[0].y ),
-			roughness->QueryFloatAttribute( "x1", &m->roughness[1].x ),
-			roughness->QueryFloatAttribute( "y1", &m->roughness[1].y );
-		XMLElement* absorption = entry->FirstChildElement( "absorption" );
-		if (absorption)
-			absorption->QueryFloatAttribute( "r", &m->absorption.x ),
-			absorption->QueryFloatAttribute( "g", &m->absorption.y ),
-			absorption->QueryFloatAttribute( "b", &m->absorption.z );
+		XMLElement* baseColor = entry->FirstChildElement( "baseColor" );
+		if (baseColor)
+			baseColor->QueryFloatAttribute( "r", &m->baseColor.x ),
+			baseColor->QueryFloatAttribute( "g", &m->baseColor.y ),
+			baseColor->QueryFloatAttribute( "b", &m->baseColor.z );
+		XMLElement* mediumColor = entry->FirstChildElement( "mediumColor" );
+		if (mediumColor)
+			mediumColor->QueryFloatAttribute( "r", &m->mediumColor.x ),
+			mediumColor->QueryFloatAttribute( "g", &m->mediumColor.y ),
+			mediumColor->QueryFloatAttribute( "b", &m->mediumColor.z );
+		if (entry->FirstChildElement( "metallic" )) entry->FirstChildElement( "metallic" )->QueryFloatText( &m->metallic );
+		if (entry->FirstChildElement( "specTrans" )) entry->FirstChildElement( "specTrans" )->QueryFloatText( &m->specTrans );
+		if (entry->FirstChildElement( "specTint" )) entry->FirstChildElement( "specTint" )->QueryFloatText( &m->specularTint );
+		if (entry->FirstChildElement( "roughness" )) entry->FirstChildElement( "roughness" )->QueryFloatText( &m->roughness );
+		if (entry->FirstChildElement( "diffTrans" )) entry->FirstChildElement( "diffTrans" )->QueryFloatText( &m->diffTrans );
+		if (entry->FirstChildElement( "anisotropic" )) entry->FirstChildElement( "anisotropic" )->QueryFloatText( &m->anisotropic );
+		if (entry->FirstChildElement( "sheen" )) entry->FirstChildElement( "sheen" )->QueryFloatText( &m->sheen );
+		if (entry->FirstChildElement( "sheenTint" )) entry->FirstChildElement( "sheenTint" )->QueryFloatText( &m->sheenTint );
+		if (entry->FirstChildElement( "clearcoat" )) entry->FirstChildElement( "clearcoat" )->QueryFloatText( &m->clearcoat );
+		if (entry->FirstChildElement( "clearcoatGloss" )) entry->FirstChildElement( "clearcoatGloss" )->QueryFloatText( &m->clearcoatGloss );
+		if (entry->FirstChildElement( "ior" )) entry->FirstChildElement( "ior" )->QueryFloatText( &m->ior );
+		if (entry->FirstChildElement( "scatterDistance" )) entry->FirstChildElement( "scatterDistance" )->QueryFloatText( &m->scatterDistance );
+		if (entry->FirstChildElement( "relativeIOR" )) entry->FirstChildElement( "relativeIOR" )->QueryFloatText( &m->relativeIOR );
+		if (entry->FirstChildElement( "flatness" )) entry->FirstChildElement( "flatness" )->QueryFloatText( &m->flatness );
 	}
 }
 
@@ -267,7 +265,7 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 	{
 		HostTri* tri = &mesh->triangles[i];
 		HostMaterial* mat = materials[tri->material];
-		if (mat->color.x > 1 || mat->color.y > 1 || mat->color.z > 1)
+		if (mat->baseColor.x > 1 || mat->baseColor.y > 1 || mat->baseColor.z > 1)
 		{
 			tri->UpdateArea();
 			HostTri transformedTri = TransformedHostTri( tri, transform );
@@ -390,7 +388,7 @@ int HostScene::CreateTexture( const string& origin, const uint modFlags )
 int HostScene::AddMaterial( const float3 color )
 {
 	HostMaterial* material = new HostMaterial();
-	material->color = color;
+	material->baseColor = color;
 	material->ID = (int)materials.size();
 	materials.push_back( material );
 	return material->ID;

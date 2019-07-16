@@ -30,8 +30,8 @@ using namespace half_float;
 
 #include "emmintrin.h"
 #include "common_types.h"
-#include "common_classes.h"
 #include "common_settings.h"
+#include "common_classes.h"
 #include <GLFW/glfw3.h>		// needed for Timer class
 
 #define FATALERROR(m) FatalError( "Error on line %i of %s: %s", __LINE__, __FILE__, m )

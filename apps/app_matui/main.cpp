@@ -37,7 +37,7 @@ void PrepareScene()
 {
 	// initialize scene
 	int worldID = renderer->AddMesh( "scene.gltf", "data\\pica\\", 10.0f );
-	int lightMat = renderer->AddMaterial( make_float3( 250, 250, 200 ) );
+	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 100 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 	renderer->AddInstance( worldID );
 	renderer->AddInstance( lightQuad );
@@ -115,11 +115,11 @@ int main()
 	InitGLFW();
 
 	// initialize renderer: pick one
-	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );		// OPTIX PRIME, best for pre-RTX CUDA devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );				// pure OPTIX, the only way to use RTX cores
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );				// pure OPTIX, the only way to use RTX cores
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
 
-	renderer->LoadCamera( "camera.xml" );
+	renderer->DeserializeCamera( "camera.xml" );
 	// initialize ui
 	InitAntTweakBar();
 	InitFPSPrinter();
@@ -163,6 +163,8 @@ int main()
 		glfwSwapBuffers( window );
 		if (!running) break;
 	}
+	// save camera
+	renderer->SerializeCamera( "camera.xml" );
 	// save material changes
 	renderer->SerializeMaterials( materialFile.c_str() );
 	// clean up

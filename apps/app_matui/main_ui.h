@@ -65,14 +65,22 @@ void RefreshUI()
 	TwAddVarRO( bar, "origin", TW_TYPE_STDSTRING, &currentMaterial.origin, "group='material'" );
 	TwAddVarRO( bar, "ID", TW_TYPE_INT32, &currentMaterial.ID, "group='material'" );
 	TwAddVarRO( bar, "flags", TW_TYPE_UINT32, &currentMaterial.flags, "group='material'" );
-	TwAddVarRW( bar, "conductor", TW_TYPE_BOOLCPP, &currentMaterialConductor, "group='material'" );
-	TwAddVarRW( bar, "dielectric", TW_TYPE_BOOLCPP, &currentMaterialDielectric, "group='material'" );
-	TwAddVarRO( bar, "refCount", TW_TYPE_UINT32, &currentMaterial.refCount, "group='material'" );
-	TwAddSeparator( bar, "separator1", "group='material'" );
-	TwAddVarRW( bar, "diffuse", TW_TYPE_COLOR3F, &currentMaterial.color, "group='material'" );
-	TwAddVarRW( bar, "specular", TW_TYPE_COLOR3F, &currentMaterial.specularColor, "group='material'" );
-	TwAddVarRW( bar, "roughness 0", TW_TYPE_FLOAT, &currentMaterial.roughness[0].x, "group='material' min=0 max=1 step=0.01" );
-	TwAddVarRW( bar, "roughness 1", TW_TYPE_FLOAT, &currentMaterial.roughness[1].x, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "baseColor", TW_TYPE_COLOR3F, &currentMaterial.baseColor, "group='material'" );
+	TwAddVarRW( bar, "transmiss", TW_TYPE_COLOR3F, &currentMaterial.mediumColor, "group='material'" );
+	TwAddVarRW( bar, "metallic", TW_TYPE_FLOAT, &currentMaterial.metallic, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "specTrans", TW_TYPE_FLOAT, &currentMaterial.specTrans, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "specTint", TW_TYPE_FLOAT, &currentMaterial.specularTint, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "roughness", TW_TYPE_FLOAT, &currentMaterial.roughness, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "diffTrans", TW_TYPE_FLOAT, &currentMaterial.diffTrans, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "anisotropic", TW_TYPE_FLOAT, &currentMaterial.anisotropic, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "sheen", TW_TYPE_FLOAT, &currentMaterial.sheen, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "sheenTint", TW_TYPE_FLOAT, &currentMaterial.sheenTint, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "clearcoat", TW_TYPE_FLOAT, &currentMaterial.clearcoat, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "ccoatGloss", TW_TYPE_FLOAT, &currentMaterial.clearcoatGloss, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "ior", TW_TYPE_FLOAT, &currentMaterial.ior, "group='material' min=1 max=3 step=0.01" );
+	TwAddVarRW( bar, "scatterDist", TW_TYPE_FLOAT, &currentMaterial.scatterDistance, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "relativeIOR", TW_TYPE_FLOAT, &currentMaterial.relativeIOR, "group='material' min=0 max=1 step=0.01" );
+	TwAddVarRW( bar, "flatness", TW_TYPE_FLOAT, &currentMaterial.flatness, "group='material' min=0 max=1 step=0.01" );
 	TwAddSeparator( bar, "separator2", "group='material'" );
 	TwStructMember float2Members[] = { { "x", TW_TYPE_FLOAT, offsetof( float2, x ), "" },
 		{ "y", TW_TYPE_FLOAT, offsetof( float2, y ), "" } };
@@ -93,8 +101,6 @@ void RefreshUI()
 	TwAddVarRW( bar, "nrmlmap1", mapType, &currentMaterial.map[NORMALMAP1], " group='material' " );
 	TwAddVarRW( bar, "nrmlmap2", mapType, &currentMaterial.map[NORMALMAP2], " group='material' " );
 	TwAddSeparator( bar, "separator3", "group='material'" );
-	TwAddVarRW( bar, "eta", TW_TYPE_FLOAT, &currentMaterial.eta, " group='material' min=1.0 max=2.0 step=0.01" );
-	TwAddVarRW( bar, "absorption", TW_TYPE_DIR3F, &currentMaterial.absorption, " group='material' " );
 	TwSetParam( bar, "material", "opened", TW_PARAM_INT32, 1, &closed );
 	// create collapsed camera block
 	TwAddVarRO( bar, "position", float3Type, &renderer->GetCamera()->position, "group='camera'" );

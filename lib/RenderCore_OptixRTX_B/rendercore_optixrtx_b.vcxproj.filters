@@ -22,6 +22,9 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="core_mesh.h" />
+    <ClInclude Include="kernels\bsdfs\disney.h">
+      <Filter>CUDA\bsdfs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="CUDA">

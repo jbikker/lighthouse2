@@ -46,10 +46,6 @@ public:
 		SMOOTH = 1,								// material uses normal interpolation
 		HASALPHA = 2,							// material textures use alpha channel
 		ANISOTROPIC = 4,						// material has anisotropic roughness
-		PLANE = 8,								// special purpose flag; shadow-receiving plane
-		SKYSPHERE = 16,							// special purpose flag; sky sphere material
-		UNLIT = 32,								// special purpose flag; material is unlit
-		INDIRECTONLY = 64,						// special purpose flag; material is only visible indirectly
 		FROM_MTL = 128,							// changes are persistent for these, not for others
 		ISCONDUCTOR = 256,						// rough conductor
 		ISDIELECTRIC = 512						// rough dielectric. If 256 and 512 not specified: diffuse.
@@ -61,17 +57,24 @@ public:
 	uint flags = SMOOTH;						// material properties
 	uint refCount = 1;							// the number of models that use this material
 	// maps and colors
-	float3 color = make_float3( 1 );			// diffuse color / reflectivity (conductors); texture overrides this
-	float3 specularColor = make_float3( 1 );	// specular color / extinction coefficient (conductors)
-	float2 roughness[2] =						// anisotropic roughness for each of the two layers
-	{ make_float2( 1 ), make_float2( 1 ) };
+	float3 baseColor = make_float3( 1 );
+	float3 mediumColor = make_float3( 1 );
+	float metallic = 0.05f;
+	float specTrans = 0.0f;
+	float specularTint = 0.0f;
+	float roughness = 0.85f;
+	float diffTrans = 0.0f;
+	float anisotropic = 0.0f;
+	float sheen = 0.0f;
+	float sheenTint = 0.0f;
+	float clearcoat = 0.0f;
+	float clearcoatGloss = 0.0f;
+	// transmittance
+	float ior = 1.8f;
+	float scatterDistance = 1.0f;
+	float relativeIOR = 0.0f;
+	float flatness = 1.0f;
 	MapProps map[11];							// bitmap data
-	// pbr data
-	float eta = 1.0f;							// index of refraction for rough dielectrics
-	float3 absorption = make_float3( 0 );		// dielectric absorption according to Beer's law
-	// custom data
-	float metalness = 1;						// metalness; metals use the diffuse colors for specular reflections, non-metals use white
-	float specularity = -1;						// unity specularity slider (if not -1: affects diffuse color, eta, and roughness2)
 	// field for the BuildMaterialList method of HostMesh
 	bool visited = false;						// last mesh that checked this material
 	bool AlphaChanged()

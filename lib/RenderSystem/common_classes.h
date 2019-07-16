@@ -202,8 +202,9 @@ struct CoreInstanceDesc
 //  +-----------------------------------------------------------------------------+
 struct CoreMaterial
 {
-	// data to be read unconditionally	
-	half diffuse_r, diffuse_g, diffuse_b; unsigned char eta, roughness0, roughness1, nscale0, nscale1, nscale2; uint flags; // 128bits
+	// data to be read unconditionally
+	half diffuse_r, diffuse_g, diffuse_b, transmittance_r, transmittance_g, transmittance_b; uint flags;
+	uint4 parameters; // 16 Disney principled BRDF parameters, 0.8 fixed point
 	// texture / normal map descriptors; exactly 128-bit each
 	/* read if bit  2 set */ short texwidth0, texheight0; half uscale0, vscale0, uoffs0, voffs0; uint texaddr0;
 	/* read if bit 11 set */ short texwidth1, texheight1; half uscale1, vscale1, uoffs1, voffs1; uint texaddr1;
@@ -215,14 +216,6 @@ struct CoreMaterial
 	/* read if bit  5 set */ short rmapwidth, rmapheight; half ruscale, rvscale, ruoffs, rvoffs; uint rmapaddr;
 	/* read if bit 17 set */ short cmapwidth, cmapheight; half cuscale, cvscale, cuoffs, cvoffs; uint cmapaddr;
 	/* read if bit 18 set */ short amapwidth, amapheight; half auscale, avscale, auoffs, avoffs; uint amapaddr;
-#ifndef __OPENCLCC__
-	/* read if bit  0 set */ float dummy; float3 absorption;
-	/* read if bit 15 set */ float specularity; float3 specularColor;
-#else
-	// in OpenCL, a 3 - component vector data type will be aligned to a 4 * sizeof(component) boundary.
-	/* read if bit  0 set */ float dummy, absorption[3];
-	/* read if bit 15 set */ float specularity, specularColor[3];
-#endif
 };
 // texture layers in HostMaterial and CoreMaterialEx
 #define TEXTURE0		0
@@ -278,6 +271,7 @@ struct CoreTexDesc
 struct CoreMaterial4
 {
 	uint4 baseData4;
+	uint4 parameters;
 	uint4 t0data4;
 	uint4 t1data4;
 	uint4 t2data4;
@@ -298,21 +292,12 @@ struct CoreMaterial4
 #define MAT_HASSPECULARITYMAP		(flags & (1 << 4))
 #define MAT_HASROUGHNESSMAP			(flags & (1 << 5))
 #define MAT_ISANISOTROPIC			(flags & (1 << 6))
-#define MAT_ISPLANE					(flags & (1 << 7))
-#define MAT_ISSKYSPHERE				(flags & (1 << 8))
-#define MAT_HAS2NDNORMALMAP			(flags & (1 << 9))
-#define MAT_HAS3RDNORMALMAP			(flags & (1 << 10))
-#define MAT_HAS2NDDIFFUSEMAP		(flags & (1 << 11))
-#define MAT_HAS3RDDIFFUSEMAP		(flags & (1 << 12))
-#define MAT_HASSMOOTHNORMALS		(flags & (1 << 13))
-#define MAT_HASALPHA				(flags & (1 << 14))
-#define MAT_HASUNITYSPECULARITY		(flags & (1 << 15))
-#define MAT_ISUNLIT					(flags & (1 << 16))
-#define MAT_HASCOLORMASK			(flags & (1 << 17))
-#define MAT_HASALPHAMASK			(flags & (1 << 18))
-#define MAT_ISVISIBLE				(flags & (1 << 19))
-#define MAT_ISCONDUCTOR				(flags & (1 << 20))
-#define MAT_ISROUGHDIELECTRIC		(flags & (1 << 21))
+#define MAT_HAS2NDNORMALMAP			(flags & (1 << 7))
+#define MAT_HAS3RDNORMALMAP			(flags & (1 << 8))
+#define MAT_HAS2NDDIFFUSEMAP		(flags & (1 << 9))
+#define MAT_HAS3RDDIFFUSEMAP		(flags & (1 << 10))
+#define MAT_HASSMOOTHNORMALS		(flags & (1 << 11))
+#define MAT_HASALPHA				(flags & (1 << 12))
 };
 
 //  +-----------------------------------------------------------------------------+

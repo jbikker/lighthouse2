@@ -18,28 +18,41 @@
 
 #include "noerrors.h"
 
+#define CHAR2FLT(a,s) (((float)(((a)>>s)&255))*(1.0f/255.0f))
+
 struct ShadingData
 {
-	// This structure is filled for an intersection point. It will
-	// contain the spatially varying material properties.
-	float3 diffuse;									// diffuse color
-	float roughness1;								// ggx roughness (layer 1)
-	union { float3 absorption; float3 specular; };	// absorption (dielectrics), or specular color
-	float roughness2;								// ggx roughness (layer 2)
-	half2 nino;										
-	int flags;										
-	float eta;										
-	int matID;										
-	__device__ int IsSpecular( const int layer ) const { const float r = layer == 1 ? roughness1 : roughness2; return (r < MINROUGHNESS); }
-	__device__ bool IsEmissive() const { return diffuse.x > 1.0f || diffuse.y > 1.0f || diffuse.z > 1.0f; }
+	// This structure is filled for an intersection point. It will contain the spatially varying material properties.
+	float3 baseColor; int flags;
+	float3 mediumColor; int matID;
+	uint4 parameters;
+	/* 16 uchars:   x: roughness, metallic, specTrans, specularTint;
+					y: diffTrans, anisotropic, sheen, sheenTint;
+					z: clearcoat, clearcoatGloss, scatterDistance, relativeIOR;
+					w: flatness, ior, dummy1, dummy2. */
+	__device__ int IsSpecular( const int layer ) const { return 0; /* for now. */ }
+	__device__ bool IsEmissive() const { return baseColor.x > 1.0f || baseColor.y > 1.0f || baseColor.z > 1.0f; }
+#define METALLIC CHAR2FLT( shadingData.parameters.x, 0 )
+#define SPECTRANS CHAR2FLT( shadingData.parameters.x, 8 )
+#define SPECTINT CHAR2FLT( shadingData.parameters.x, 16 )
+#define ROUGHNESS CHAR2FLT( shadingData.parameters.x, 24 )
+#define DIFFTRANS CHAR2FLT( shadingData.parameters.y, 0 )
+#define ANISOTROPIC CHAR2FLT( shadingData.parameters.y, 8 )
+#define SHEEN CHAR2FLT( shadingData.parameters.y, 16 )
+#define SHEENTINT CHAR2FLT( shadingData.parameters.y, 24 )
+#define CLEARCOAT CHAR2FLT( shadingData.parameters.z, 0 )
+#define CLEARCOATGLOSS CHAR2FLT( shadingData.parameters.z, 8 )
+#define IOR CHAR2FLT( shadingData.parameters.z, 16 )
+#define SCATTERDIST CHAR2FLT( shadingData.parameters.z, 24 )
+#define RELIOR CHAR2FLT( shadingData.parameters.w, 0 )
+#define FLATNESS CHAR2FLT( shadingData.parameters.w, 8 )
 };
-struct ShadingData4 { float4 data0, data1, data2; /* for fast 128-bit access */ };
+struct ShadingData4 { float4 data0, data1; uint4 data2; /* for fast 128-bit access */ };
 
 // random numbers
 
 LH2_DEVFUNC __inline__ uint WangHash( uint s ) { s = (s ^ 61) ^ (s >> 16), s *= 9, s = s ^ (s >> 4), s *= 0x27d4eb2d, s = s ^ (s >> 15); return s; }
 LH2_DEVFUNC __inline__ uint RandomInt( uint& s ) { s ^= s << 13, s ^= s >> 17, s ^= s << 5; return s; }
-LH2_DEVFUNC __inline__ uint Xor32Hash( uint s ) { s ^= s << 13, s ^= s >> 17, s ^= s << 5; return s; }
 LH2_DEVFUNC __inline__ float RandomFloat( uint& s ) { return RandomInt( s ) * 2.3283064365387e-10f; }
 
 // math helpers

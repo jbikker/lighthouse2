@@ -387,6 +387,10 @@ void HostMesh::LoadGeometryFromGLTF( const string& fileName, const char* directo
 					else FatalError( __FILE__, __LINE__, "expected vec2 uvs in file", fileName.c_str() );
 				}
 			}
+			// sanity checks
+			assert( uvs.size() == 0 || uvs.size() == tmpVertices.size() );
+			assert( tmpIndices.size() % 3 == 0 );
+			assert( normals.size() == 0 || normals.size() == tmpVertices.size() );
 			// calculate values for consistent normal interpolation
 			vector<float> alphas;
 			alphas.resize( normals.size(), 1.0f ); // we will have one alpha value per unique vertex normal
@@ -416,9 +420,6 @@ void HostMesh::LoadGeometryFromGLTF( const string& fileName, const char* directo
 				alphas[i] = acosf( nnv ) * (1 + w * (1 - nnv) * (1 - nnv));
 			}
 			// all data has been read; add triangles to the HostMesh
-			assert( tmpIndices.size() % 3 == 0 );
-			assert( normals.size() == 0 || normals.size() == tmpVertices.size() );
-			assert( uvs.size() == 0 || uvs.size() == tmpVertices.size() );
 			const size_t newTriangleCount = tmpIndices.size() / 3;
 			size_t triIdx = triangles.size();
 			triangles.resize( triIdx + newTriangleCount );
@@ -447,9 +448,31 @@ void HostMesh::LoadGeometryFromGLTF( const string& fileName, const char* directo
 					tri.vN1 = normals[v1idx],
 					tri.vN2 = normals[v2idx];
 				if (uvs.size() > 0)
-					tri.u0 = uvs[v0idx].x, tri.v0 = uvs[v0idx].y,
-					tri.u1 = uvs[v1idx].x, tri.v1 = uvs[v1idx].y,
+				{
+					tri.u0 = uvs[v0idx].x, tri.v0 = uvs[v0idx].y;
+					tri.u1 = uvs[v1idx].x, tri.v1 = uvs[v1idx].y;
 					tri.u2 = uvs[v2idx].x, tri.v2 = uvs[v2idx].y;
+					// calculate tangent vector based on uvs
+					float2 uv01 = make_float2( tri.u1 - tri.u0, tri.v1 - tri.v0 );
+					float2 uv02 = make_float2( tri.u2 - tri.u0, tri.v2 - tri.v0 );
+					if (dot( uv01, uv01 ) == 0 || dot( uv02, uv02 ) == 0)
+					{
+						tri.T = normalize( tri.vertex1 - tri.vertex0 );
+						tri.B = normalize( cross( N, tri.T ) );
+					}
+					else
+					{
+						// uvs cannot be used; use edges instead
+						tri.T = normalize( (tri.vertex1 - tri.vertex0) * uv02.y - (tri.vertex2 - tri.vertex0) * uv01.y );
+						tri.B = normalize( (tri.vertex2 - tri.vertex0) * uv01.x - (tri.vertex1 - tri.vertex0) * uv02.x );
+					}
+				}
+				else
+				{
+					// no uv information; use edges to calculate tangent vectors
+					tri.T = normalize( tri.vertex1 - tri.vertex0 );
+					tri.B = normalize( cross( N, tri.T ) );
+				}
 				tri.material = prim.material + matIdxOffset;
 			}
 		}
@@ -551,7 +574,7 @@ HostInstance::~HostInstance()
 	for (auto materialIdx : mesh->materialList)
 	{
 		HostMaterial* material = HostScene::materials[materialIdx];
-		if (material->color.x > 1 || material->color.y > 1 || material->color.z > 1)
+		if (material->baseColor.x > 1 || material->baseColor.y > 1 || material->baseColor.z > 1)
 		{
 			// mesh contains an emissive material; remove related area lights
 			vector<HostAreaLight*>& lightList = HostScene::areaLights;

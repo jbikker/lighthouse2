@@ -138,6 +138,7 @@
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="core_mesh.h" />
     <ClInclude Include="kernels\.cuda.h" />
+    <ClInclude Include="kernels\bsdfs\disney.h" />
     <ClInclude Include="kernels\bsdfs\lambert.h" />
     <ClInclude Include="rendercore.h" />
   </ItemGroup>

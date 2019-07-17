@@ -574,7 +574,7 @@ HostInstance::~HostInstance()
 	for (auto materialIdx : mesh->materialList)
 	{
 		HostMaterial* material = HostScene::materials[materialIdx];
-		if (material->baseColor.x > 1 || material->baseColor.y > 1 || material->baseColor.z > 1)
+		if (material->color.x > 1 || material->color.y > 1 || material->color.z > 1)
 		{
 			// mesh contains an emissive material; remove related area lights
 			vector<HostAreaLight*>& lightList = HostScene::areaLights;

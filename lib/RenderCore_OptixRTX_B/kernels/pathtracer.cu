@@ -119,7 +119,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
 			{
 				// only camera rays will be treated special
-				contribution = shadingData.baseColor;
+				contribution = shadingData.color;
 			}
 			else
 			{
@@ -128,8 +128,8 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 				const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
 				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
-				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.baseColor * (1.0f / (bsdfPdf + lightPdf * pickProb));
-				contribution = throughput * shadingData.baseColor * (1.0f / (bsdfPdf + lightPdf));
+				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
+				contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
 			}
 			CLAMPINTENSITY;
 			FIXNAN_FLOAT3( contribution );

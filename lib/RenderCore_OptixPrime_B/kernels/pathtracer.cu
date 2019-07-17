@@ -120,21 +120,13 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 		float3 contribution = make_float3( 0 ); // initialization required.
 		if (DdotNL > 0 /* lights are not double sided */)
 		{
-			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
-			{
-				// only camera rays will be treated special
-				contribution = shadingData.baseColor;
-			}
-			else
-			{
-				// last vertex was not specular: apply MIS
-				const float3 lastN = UnpackNormal( __float_as_uint( Q4.y ) );
-				const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
-				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
-				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
-				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.baseColor * (1.0f / (bsdfPdf + lightPdf * pickProb));
-				contribution = throughput * shadingData.baseColor * (1.0f / (bsdfPdf + lightPdf));
-			}
+			// apply MIS
+			const float3 lastN = UnpackNormal( __float_as_uint( Q4.y ) );
+			const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
+			const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
+			const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
+			if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
+			contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
 			CLAMPINTENSITY;
 			FIXNAN_FLOAT3( contribution );
 			accumulator[pixelIdx] += make_float4( contribution, 0 );
@@ -158,7 +150,6 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	throughput *= 1.0f / bsdfPdf;
 
 	// next event estimation: connect eye path to light
-	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
 	{
 		float3 lightColor;
 		float r0 = RandomFloat( seed ), r1 = RandomFloat( seed ), pickProb, lightPdf = 0;
@@ -204,7 +195,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), 0 );
 	extensionRaysOut[extensionRayIdx].D4 = make_float4( R, 1e34f );
 	FIXNAN_FLOAT3( throughput );
-	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), __uint_as_float( data ) );
+	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput * bsdf /* * abs( dot( fN, R ) ) */, __uint_as_float( data ) );
 	pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( newBsdfPdf, packedNormal, 0, 0 );
 }
 

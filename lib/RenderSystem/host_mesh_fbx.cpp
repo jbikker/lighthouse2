@@ -474,9 +474,9 @@ HostMaterial* FBXImporter::CreateMaterial( FbxNode* node )
 		property = ((FbxSurfaceLambert*)fbxMaterial)->Ambient;
 		material->roughness = (property[0] + property[1] + property[2]) / 3;
 		property = ((FbxSurfaceLambert*)fbxMaterial)->Diffuse;
-		material->baseColor = make_float3( property[0], property[1], property[2] );
+		material->color = make_float3( property[0], property[1], property[2] );
 		property = ((FbxSurfaceLambert*)fbxMaterial)->Emissive;
-		material->baseColor += make_float3( property[0], property[1], property[2] );
+		material->color += make_float3( property[0], property[1], property[2] );
 		if (HasDeformation( node )) material->flags = 0; else material->flags = HostMaterial::SMOOTH;
 		// load texture from fbx diffuse property
 		FbxProperty materialDiffuseProperty = fbxMaterial->FindProperty( fbxsdk::FbxSurfaceMaterial::sDiffuse );

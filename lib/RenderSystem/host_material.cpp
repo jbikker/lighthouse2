@@ -36,15 +36,14 @@ void HostMaterial::ConvertFrom( tinyobj::material_t& original )
 {
 	// properties
 	name = original.name;
-	baseColor = make_float3( original.diffuse[0], original.diffuse[1], original.diffuse[2] ); // Kd
-	mediumColor = make_float3( original.transmittance[0], original.transmittance[1], original.transmittance[2] ); // Kt
+	color = make_float3( original.diffuse[0], original.diffuse[1], original.diffuse[2] ); // Kd
+	absorption = make_float3( original.transmittance[0], original.transmittance[1], original.transmittance[2] ); // Kt
 	roughness = min( 1 - original.shininess, 1.0f );
-	ior = original.ior > 1.0f ? original.ior : 0.0f;
 	// maps
 	if (original.diffuse_texname != "")
 	{
 		int diffuseTextureID = map[TEXTURE0].textureID = HostScene::FindOrCreateTexture( original.diffuse_texname, HostTexture::LINEARIZED | HostTexture::FLIPPED );
-		baseColor = make_float3( 1 ); // we have a texture now; default modulation to white
+		color = make_float3( 1 ); // we have a texture now; default modulation to white
 		if (HostScene::textures[diffuseTextureID]->flags & HASALPHA) flags |= HASALPHA;
 	}
 	if (original.normal_texname != "")
@@ -83,7 +82,7 @@ void HostMaterial::ConvertFrom( tinygltf::Material& original, tinygltf::Model& m
 		if (value.first == "baseColorFactor")
 		{
 			tinygltf::Parameter p = value.second;
-			baseColor = make_float3( p.number_array[0], p.number_array[1], p.number_array[2] );
+			color = make_float3( p.number_array[0], p.number_array[1], p.number_array[2] );
 		}
 		if (value.first == "metallicFactor") if (value.second.has_number_value)
 		{
@@ -113,16 +112,16 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 {
 	// base properties
 	memset( &gpuMat, 0, sizeof( CoreMaterial ) );
-	gpuMat.diffuse_r = baseColor.x;
-	gpuMat.diffuse_g = baseColor.y;
-	gpuMat.diffuse_b = baseColor.z;
-	gpuMat.transmittance_r = mediumColor.x;
-	gpuMat.transmittance_g = mediumColor.y;
-	gpuMat.transmittance_b = mediumColor.z;
-	gpuMat.parameters.x = TOUINT4( metallic, specTrans, specularTint, roughness );
-	gpuMat.parameters.y = TOUINT4( diffTrans, anisotropic, sheen, sheenTint );
-	gpuMat.parameters.z = TOUINT4( clearcoat, clearcoatGloss, (ior - 1.0f) * 0.5f, scatterDistance );
-	gpuMat.parameters.w = TOUINT4( relativeIOR, flatness, 0.0f, 0.0f );
+	gpuMat.diffuse_r = color.x;
+	gpuMat.diffuse_g = color.y;
+	gpuMat.diffuse_b = color.z;
+	gpuMat.transmittance_r = absorption.x;
+	gpuMat.transmittance_g = absorption.y;
+	gpuMat.transmittance_b = absorption.z;
+	gpuMat.parameters.x = TOUINT4( metallic, subsurface, specular, roughness );
+	gpuMat.parameters.y = TOUINT4( specularTint, anisotropic, sheen, sheenTint );
+	gpuMat.parameters.z = TOUINT4( clearcoat, clearcoatGloss, transmission, eta * 0.5f );
+	gpuMat.parameters.w = TOUINT4( custom0, custom1, custom2, custom3 );
 	const HostTexture* t0 = map[TEXTURE0].textureID == -1 ? 0 : HostScene::textures[map[TEXTURE0].textureID];
 	const HostTexture* t1 = map[TEXTURE1].textureID == -1 ? 0 : HostScene::textures[map[TEXTURE1].textureID];
 	const HostTexture* t2 = map[TEXTURE2].textureID == -1 ? 0 : HostScene::textures[map[TEXTURE2].textureID];
@@ -136,7 +135,7 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 	bool hdr = false;
 	if (t0) if (t0->flags & HostTexture::HDR) hdr = true;
 	gpuMat.flags =
-		(ior > 0 ? (1 << 0) : 0) +							// is dielectric
+		(eta > 0 ? (1 << 0) : 0) +							// is dielectric
 		(hdr ? (1 << 1) : 0) +								// diffuse map is hdr
 		(t0 ? (1 << 2) : 0) +								// has diffuse map
 		(nm0 ? (1 << 3) : 0) +								// has normal map

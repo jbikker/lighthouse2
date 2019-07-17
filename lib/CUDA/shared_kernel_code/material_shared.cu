@@ -106,20 +106,20 @@ LH2_DEVFUNC void GetShadingData(
 			retVal.flags |= 1;
 			return;
 		}
-		retVal.baseColor = retVal.baseColor * make_float3( texel );
+		retVal.color = retVal.color * make_float3( texel );
 		if (MAT_HAS2NDDIFFUSEMAP) // must have base texture; second and third layers are additive
 		{
 			const uint4 data = mat.t1data4;
 			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
 			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			retVal.baseColor += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
+			retVal.color += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
 		}
 		if (MAT_HAS3RDDIFFUSEMAP)
 		{
 			const uint4 data = mat.t2data4;
 			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
 			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			retVal.baseColor += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
+			retVal.color += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
 		}
 	}
 	// normal mapping

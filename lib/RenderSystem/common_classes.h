@@ -177,28 +177,7 @@ struct CoreInstanceDesc
 //  |  CoreMaterial - see HostMaterial for host-side version.CoreTri4             |
 //  |  Material layout optimized for rendering, created from a HostMaterial.      |
 //  |  The structure is heavily optimized to require exactly a quadfloat worth    |
-//  |  of data for each feature / data layer.                                     |
-//  |  The first quadfloat stores in a uint the material property flags:          |
-//  |  0:  is dielectric                                                          |
-//  |  1:  diffuse map is hdr                                                     |
-//  |  2:  has diffuse map                                                        |
-//  |  3:  has normal map                                                         |
-//  |  4:  has specularity map                                                    |
-//  |  5:  has roughness map                                                      |
-//  |  6:  is anisotropic                                                         |
-//  |  7:  is ground shadow plane                                                 |
-//  |  8:  is skysphere                                                           |
-//  |  9:  has 2nd normal map                                                     |
-//  |  10: has 3rd normal map                                                     |
-//  |  11: has 2nd diffuse map                                                    |
-//  |  12: has 3rd diffuse map                                                    |
-//  |  13: has smooth normals                                                     |
-//  |  14: has alpha                                                              |
-//  |  15: has unity specularity                                                  |
-//  |  16: is unlit                                                               |
-//  |  17: has color mask map                                                     |
-//  |  18: has alpha mask map                                                     |
-//  |  19: is directly visible (or only indirectly)                         LH2'19|
+//  |  of data for each feature / data layer.                               LH2'19|
 //  +-----------------------------------------------------------------------------+
 struct CoreMaterial
 {

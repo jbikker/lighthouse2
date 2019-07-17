@@ -23,29 +23,31 @@
 struct ShadingData
 {
 	// This structure is filled for an intersection point. It will contain the spatially varying material properties.
-	float3 baseColor; int flags;
-	float3 mediumColor; int matID;
+	float3 color; int flags;
+	float3 absorption; int matID;
 	uint4 parameters;
 	/* 16 uchars:   x: roughness, metallic, specTrans, specularTint;
 					y: diffTrans, anisotropic, sheen, sheenTint;
 					z: clearcoat, clearcoatGloss, scatterDistance, relativeIOR;
 					w: flatness, ior, dummy1, dummy2. */
 	__device__ int IsSpecular( const int layer ) const { return 0; /* for now. */ }
-	__device__ bool IsEmissive() const { return baseColor.x > 1.0f || baseColor.y > 1.0f || baseColor.z > 1.0f; }
+	__device__ bool IsEmissive() const { return color.x > 1.0f || color.y > 1.0f || color.z > 1.0f; }
 #define METALLIC CHAR2FLT( shadingData.parameters.x, 0 )
-#define SPECTRANS CHAR2FLT( shadingData.parameters.x, 8 )
-#define SPECTINT CHAR2FLT( shadingData.parameters.x, 16 )
+#define SUBSURFACE CHAR2FLT( shadingData.parameters.x, 8 )
+#define SPECUKLAR CHAR2FLT( shadingData.parameters.x, 16 )
 #define ROUGHNESS CHAR2FLT( shadingData.parameters.x, 24 )
-#define DIFFTRANS CHAR2FLT( shadingData.parameters.y, 0 )
+#define SPECTINT CHAR2FLT( shadingData.parameters.y, 0 )
 #define ANISOTROPIC CHAR2FLT( shadingData.parameters.y, 8 )
 #define SHEEN CHAR2FLT( shadingData.parameters.y, 16 )
 #define SHEENTINT CHAR2FLT( shadingData.parameters.y, 24 )
 #define CLEARCOAT CHAR2FLT( shadingData.parameters.z, 0 )
 #define CLEARCOATGLOSS CHAR2FLT( shadingData.parameters.z, 8 )
-#define IOR CHAR2FLT( shadingData.parameters.z, 16 )
-#define SCATTERDIST CHAR2FLT( shadingData.parameters.z, 24 )
-#define RELIOR CHAR2FLT( shadingData.parameters.w, 0 )
-#define FLATNESS CHAR2FLT( shadingData.parameters.w, 8 )
+#define TRANSMISSION CHAR2FLT( shadingData.parameters.z, 16 )
+#define CUSTOM0 CHAR2FLT( shadingData.parameters.z, 24 )
+#define CUSTOM1 CHAR2FLT( shadingData.parameters.w, 0 )
+#define CUSTOM2 CHAR2FLT( shadingData.parameters.w, 8 )
+#define CUSTOM3 CHAR2FLT( shadingData.parameters.w, 16 )
+#define CUSTOM4 CHAR2FLT( shadingData.parameters.w, 24 )
 };
 struct ShadingData4 { float4 data0, data1; uint4 data2; /* for fast 128-bit access */ };
 
@@ -207,10 +209,17 @@ LH2_DEVFUNC float3 World2Tangent( const float3& __restrict__ V, const float3& __
 	return make_float3( dot( V, T ), dot( V, B ), dot( V, N ) );
 }
 
+LH2_DEVFUNC float3 DiffuseReflectionUniform( const float r0, const float r1 )
+{
+	const float term1 = TWOPI * r0, term2 = sqrtf( 1 - r1 * r1 );
+	float s, c;
+	__sincosf( term1, &s, &c );
+	return make_float3( c * term2, s * term2, r1 );
+}
+
 LH2_DEVFUNC float3 DiffuseReflectionCosWeighted( const float r0, const float r1 )
 {
-	// based on SmallVCM
-	const float term1 = 2 * PI * r0, term2 = sqrtf( 1 - r1 );
+	const float term1 = TWOPI * r0, term2 = sqrtf( 1 - r1 );
 	float s, c;
 	__sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, sqrtf( r1 ) );

@@ -57,23 +57,29 @@ public:
 	uint flags = SMOOTH;						// material properties
 	uint refCount = 1;							// the number of models that use this material
 	// maps and colors
-	float3 baseColor = make_float3( 1 );
-	float3 mediumColor = make_float3( 1 );
-	float metallic = 0.05f;
-	float specTrans = 0.0f;
+	float3 color = make_float3( 1 );
+	float3 absorption = make_float3( 0 );
+
+	float metallic = 0.0f;
+	float subsurface = 0.0f;
+	float specular = 0.5f;
+	float roughness = 0.5f;
+	
 	float specularTint = 0.0f;
-	float roughness = 0.85f;
-	float diffTrans = 0.0f;
 	float anisotropic = 0.0f;
 	float sheen = 0.0f;
 	float sheenTint = 0.0f;
+	
 	float clearcoat = 0.0f;
-	float clearcoatGloss = 0.0f;
-	// transmittance
-	float ior = 1.8f;
-	float scatterDistance = 1.0f;
-	float relativeIOR = 0.0f;
-	float flatness = 1.0f;
+	float clearcoatGloss = 1.0f;
+	float transmission = 0.0f;
+	float eta = 0.0f; // when eta is zero ior will be inferred from specular component
+
+	float custom0 = 0.0f;
+	float custom1 = 0.0f;
+	float custom2 = 0.0f;
+	float custom3 = 0.0f;
+
 	MapProps map[11];							// bitmap data
 	// field for the BuildMaterialList method of HostMesh
 	bool visited = false;						// last mesh that checked this material

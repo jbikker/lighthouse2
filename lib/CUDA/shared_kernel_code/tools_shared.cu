@@ -34,8 +34,8 @@ struct ShadingData
 	__device__ bool IsEmissive() const { return color.x > 1.0f || color.y > 1.0f || color.z > 1.0f; }
 #define METALLIC CHAR2FLT( shadingData.parameters.x, 0 )
 #define SUBSURFACE CHAR2FLT( shadingData.parameters.x, 8 )
-#define SPECUKLAR CHAR2FLT( shadingData.parameters.x, 16 )
-#define ROUGHNESS CHAR2FLT( shadingData.parameters.x, 24 )
+#define SPECULAR CHAR2FLT( shadingData.parameters.x, 16 )
+#define ROUGHNESS (max( 0.001f, CHAR2FLT( shadingData.parameters.x, 24 ) ))
 #define SPECTINT CHAR2FLT( shadingData.parameters.y, 0 )
 #define ANISOTROPIC CHAR2FLT( shadingData.parameters.y, 8 )
 #define SHEEN CHAR2FLT( shadingData.parameters.y, 16 )
@@ -43,6 +43,7 @@ struct ShadingData
 #define CLEARCOAT CHAR2FLT( shadingData.parameters.z, 0 )
 #define CLEARCOATGLOSS CHAR2FLT( shadingData.parameters.z, 8 )
 #define TRANSMISSION CHAR2FLT( shadingData.parameters.z, 16 )
+#define ETA CHAR2FLT( shadingData.parameters.z, 24 )
 #define CUSTOM0 CHAR2FLT( shadingData.parameters.z, 24 )
 #define CUSTOM1 CHAR2FLT( shadingData.parameters.w, 0 )
 #define CUSTOM2 CHAR2FLT( shadingData.parameters.w, 8 )

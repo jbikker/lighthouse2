@@ -96,6 +96,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	Timer timer;
 	timer.reset();
 	tinyobj::LoadObj( &attrib, &shapes, &materials, &err, fileName.c_str(), directory );
+	if (err.size() > 0) FatalError( "problem loading %s:\n%s", fileName.c_str(), err.c_str() );
 	printf( "loaded mesh in %5.3fs\n", timer.elapsed() );
 	// material offset: if we loaded an object before this one, material indices should not start at 0.
 	int matIdxOffset = (int)HostScene::materials.size();

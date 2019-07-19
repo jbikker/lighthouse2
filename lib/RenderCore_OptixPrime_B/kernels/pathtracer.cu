@@ -197,7 +197,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	float3 R;
 	float newBsdfPdf;
 	float r3, r4;
-	if (0)// (sampleIdx < 256)
+	if (sampleIdx < 256)
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
 		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 );

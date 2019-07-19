@@ -36,7 +36,7 @@ static string materialFile;
 void PrepareScene()
 {
 	// initialize scene
-#if 0
+#if 1
 	int worldID = renderer->AddMesh( "scene.gltf", "data\\pica\\", 10.0f );
 	materialFile = string( "data\\pica\\pica_materials.xml" );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 100 ) );

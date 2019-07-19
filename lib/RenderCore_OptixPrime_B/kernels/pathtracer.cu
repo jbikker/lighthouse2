@@ -46,7 +46,8 @@
 LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
-	const uint R0, const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
+	const uint R0, const uint* blueNoise, const int pass,
+	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
 	// gather data by reading sets of four floats for optimal throughput
@@ -67,7 +68,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	const CoreTri4* instanceTriangles = (const CoreTri4*)instanceDescriptors[INSTANCEIDX].triangles;
 	const uint pathIdx = PATHIDX;
 	const uint pixelIdx = pathIdx % (w * h);
-	const uint sampleIdx = pathIdx / (w * h);
+	const uint sampleIdx = pathIdx / (w * h) + pass;
 
 	// initialize depth in accumulator for DOF shader
 	if (pathLength == 1) accumulator[pixelIdx].w += primIdx == NOHIT ? 10000 : HIT_T;
@@ -151,9 +152,19 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 
 	// next event estimation: connect eye path to light
 	{
-		float3 lightColor;
-		float r0 = RandomFloat( seed ), r1 = RandomFloat( seed ), pickProb, lightPdf = 0;
-		float3 L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
+		float r0, r1, pickProb, lightPdf = 0;
+		if (sampleIdx < 256)
+		{
+			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
+			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 );
+			r1 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 );
+		}
+		else
+		{
+			r0 = RandomFloat( seed );
+			r1 = RandomFloat( seed );
+		}
+		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
 		const float NdotL = dot( L, fN );
@@ -184,8 +195,20 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
-	float newBsdfPdf, r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, seed, R, newBsdfPdf );
+	float newBsdfPdf;
+	float r3, r4;
+	if (0)// (sampleIdx < 256)
+	{
+		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
+		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 );
+		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 );
+	}
+	else
+	{
+		r3 = RandomFloat( seed );
+		r4 = RandomFloat( seed );
+	}
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
 
 	// write extension ray
@@ -207,7 +230,8 @@ __global__  void __launch_bounds__( 128 /* max block size */, 4 /* min blocks pe
 shadePersistent( float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
-	const uint R0, const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
+	const uint R0, const uint* blueNoise, const int pass,
+	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
 	__shared__ volatile int baseIdx[32];
@@ -221,7 +245,8 @@ shadePersistent( float4* accumulator, const uint stride,
 		if (__all_sync( THREADMASK, jobIndex >= pathCount )) break; // need to do the path with all threads in the warp active
 		if (jobIndex < pathCount) shadeKernel( jobIndex, accumulator, stride,
 			extensionRays, pathStateData, hits, extensionRaysOut, pathStateDataOut, connections, potentials,
-			R0, probePixelIdx, pathLength, w, h, spreadAngle, p1, p2, p3, pos );
+			R0, blueNoise, pass,
+			probePixelIdx, pathLength, w, h, spreadAngle, p1, p2, p3, pos );
 	}
 }
 
@@ -233,13 +258,15 @@ __host__ void shade( const int smcount, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut,
 	Ray4* connections, float4* potentials,
-	const uint R0, const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
+	const uint R0, const uint* blueNoise, const int pass,
+	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
 	shadePersistent << < smcount * 4, 128 >> > (accumulator, stride,
 		extensionRays, pathStateData, hits,
 		extensionRaysOut, pathStateDataOut, connections, potentials,
-		R0, probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos);
+		R0, blueNoise, pass,
+		probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos);
 }
 
 // EOF

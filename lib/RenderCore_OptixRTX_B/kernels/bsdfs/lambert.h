@@ -10,7 +10,7 @@ __device__ static float3 EvaluateBSDF( const ShadingData& shadingData, const flo
 }
 
 __device__ static float3 SampleBSDF( const ShadingData& shadingData, float3 iN, const float3 N, const float3 T, const float3 wo, 
-	uint& seed, float3& wi, float& pdf )
+	const float r0, const float r1, float3& wi, float& pdf )
 {
 	// specular and diffuse
 	if (fabs( ROUGHNESS ) < 0.1f)
@@ -23,7 +23,7 @@ __device__ static float3 SampleBSDF( const ShadingData& shadingData, float3 iN, 
 	}
 	else
 	{
-		wi = normalize( Tangent2World( DiffuseReflectionCosWeighted( RandomFloat( seed ), RandomFloat( seed ) ), iN ) );
+		wi = normalize( Tangent2World( DiffuseReflectionCosWeighted( r0, r1 ), iN ) );
 		pdf = max( 0.0f, dot( wi, iN ) ) * INVPI;
 		APPLYSAFENORMALS;
 		return shadingData.color * INVPI;

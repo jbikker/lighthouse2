@@ -183,9 +183,8 @@ __device__ static float3 BSDFEval( const ShadingData& shadingData,
 
 // generate an importance sampled BSDF direction
 __device__ static void BSDFSample( const ShadingData& shadingData,
-	const float3& T, const float3& B, const float3& N, const float3& wo, float3& wi, float& pdf, BSDFType& type, uint& seed )
+	const float3& T, const float3& B, const float3& N, const float3& wo, float3& wi, float& pdf, BSDFType& type, const float r3, const float r4 )
 {
-	const float r3 = RandomFloat( seed ), r4 = RandomFloat( seed );
 	if (r3 < TRANSMISSION)
 	{
 		// sample BSDF
@@ -219,10 +218,16 @@ __device__ static void BSDFSample( const ShadingData& shadingData,
 			// sample diffuse	
 			const float r2 = r4 * 2;
 			float3 d;
-			if (RandomFloat( seed ) < SUBSURFACE)
-				d = DiffuseReflectionUniform( r1, r2 ), type = eTransmitted, d.z *= -1.0f;
+			if (r2 < SUBSURFACE)
+			{
+				const float r5 = r2 / SUBSURFACE;
+				d = DiffuseReflectionUniform( r1, r5 ), type = eTransmitted, d.z *= -1.0f;
+			}
 			else
-				d = DiffuseReflectionCosWeighted( r1, r2 ), type = eReflected;
+			{
+				const float r5 = (r2 - SUBSURFACE) / (1 - SUBSURFACE);
+				d = DiffuseReflectionCosWeighted( r1, r5 ), type = eReflected;
+			}
 			wi = T * d.x + B * d.y + N * d.z;
 		}
 		else
@@ -254,12 +259,12 @@ __device__ static float3 EvaluateBSDF( const ShadingData& shadingData, const flo
 
 __device__ static float3 SampleBSDF( const ShadingData& shadingData, 
 	const float3& iN, const float3& N, const float3& T, const float3& wo,
-	uint& seed, float3& wi, float& pdf )
+	const float r3, const float r4, float3& wi, float& pdf )
 {
 	BSDFType type;
 	const float3 B = normalize( cross( T, iN ) );
 	const float3 Tfinal = cross( B, iN );
-	BSDFSample( shadingData, Tfinal, B, iN, wo, wi, pdf, type, seed );
+	BSDFSample( shadingData, Tfinal, B, iN, wo, wi, pdf, type, r3, r4 );
 	return BSDFEval( shadingData, iN, wo, wi );
 }
 

@@ -35,7 +35,7 @@ rtDeclareVariable( uint, launch_dim, rtLaunchDim, );
 
 // set from host code
 rtDeclareVariable( rtObject, bvhRoot, , );
-rtDeclareVariable( uint, sampleBase, , );
+rtDeclareVariable( uint, pass, , );
 rtDeclareVariable( uint, phase, , );
 
 // runtime variables
@@ -72,10 +72,31 @@ rtDeclareVariable( float3, p1, , );
 rtDeclareVariable( float, geometryEpsilon, , );
 rtDeclareVariable( int3, scrsize, , );
 
+// blue noise data
+rtBuffer<uint> blueNoise;
+
 // tools
 __device__ __inline__ uint WangHash( uint s ) { s = (s ^ 61) ^ (s >> 16), s *= 9, s = s ^ (s >> 4), s *= 0x27d4eb2d, s = s ^ (s >> 15); return s; }
 __device__ __inline__ uint RandomInt( uint& s ) { s ^= s << 13, s ^= s >> 17, s ^= s << 5; return s; }
 __device__ __inline__ float RandomFloat( uint& s ) { return RandomInt( s ) * 2.3283064365387e-10f; }
+
+static __inline __device__ float blueNoiseSampler( int x, int y, int sampleIdx, int sampleDimension )
+{
+	// wrap arguments
+	x &= 127, y &= 127, sampleIdx &= 255, sampleDimension &= 255;
+
+	// xor index based on optimized ranking
+	int rankedSampleIndex = sampleIdx ^ blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3];
+
+	// fetch value in sequence
+	int value = blueNoise[sampleDimension + rankedSampleIndex * 256];
+
+	// if the dimension is optimized, xor sequence value based on optimized scrambling
+	value ^= blueNoise[(sampleDimension & 7) + (x + y * 128) * 8 + 65536];
+
+	// convert to float and return
+	return (0.5f + value) * (1.0f / 256.0f);
+}
 
 static __inline __device__ float3 RandomPointOnLens( const float r0, float r1 )
 {
@@ -91,17 +112,24 @@ static __inline __device__ float3 RandomPointOnLens( const float r0, float r1 )
 	return make_float3( posLens ) + posLens.w * (right * xr + up * yr);
 }
 
-static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint pixelIdx, const uint sampleIndex, uint& seed )
+static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint pixelIdx, const uint sampleIdx, uint& seed )
 {
 	// random point on pixel and lens
 	int sx = pixelIdx % scrsize.x;
 	int sy = pixelIdx / scrsize.x;
-	float r0, r1;
-	float r2, r3;
-	r0 = RandomFloat( seed );
-	r1 = RandomFloat( seed );
-	r2 = RandomFloat( seed );
-	r3 = RandomFloat( seed );
+	float r0, r1, r2, r3;
+	if (sampleIdx < 256)
+	{
+		r0 = blueNoiseSampler( sx, sy, sampleIdx, 0 );
+		r1 = blueNoiseSampler( sx, sy, sampleIdx, 1 );
+		r2 = blueNoiseSampler( sx, sy, sampleIdx, 2 );
+		r3 = blueNoiseSampler( sx, sy, sampleIdx, 3 );
+	}
+	else
+	{
+		r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
+		r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
+	}
 	O = RandomPointOnLens( r2, r3 );
 	const float u = ((float)sx + r0) * (1.0f / scrsize.x);
 	const float v = ((float)sy + r1) * (1.0f / scrsize.y);
@@ -140,11 +168,11 @@ __device__ void setupPrimaryRay( const uint jobIdx, const uint stride )
 	const uint y_in_tile = (jobIdx & 255) >> 4;
 	const uint pathIdx = tilex * 16 + x_in_tile + (tiley * 16 + y_in_tile) * scrsize.x;
 	const uint pixelIdx = pathIdx % (scrsize.x * scrsize.y);
-	const uint sampleIdx = pathIdx / (scrsize.x * scrsize.y);
-	uint seed = WangHash( pathIdx * 16789 + sampleBase * 1791 );
+	const uint sampleIdx = pathIdx / (scrsize.x * scrsize.y) + pass;
+	uint seed = WangHash( pathIdx * 16789 + pass * 1791 );
 	// generate eye ray
 	float3 O, D;
-	generateEyeRay( O, D, pixelIdx, sampleBase + sampleIdx /* 0..SPP-1 */, seed );
+	generateEyeRay( O, D, pixelIdx, sampleIdx, seed );
 	// populate path state array
 	pathStates[jobIdx] = make_float4( O, __uint_as_float( (pathIdx << 8) + 1 /* S_SPECULAR in CUDA code */ ) );
 	pathStates[jobIdx + stride] = make_float4( D, 0 );

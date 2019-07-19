@@ -22,7 +22,7 @@ const surfaceReference* renderTargetRef();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
 void shade( const int smcount, float4* accumulator, const uint stride,
 	float4* pathStates, const float4* hits, float4* connections,
-	const uint R0, const uint sampleBase,
+	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
 void InitCountersForExtend( int pathCount );
@@ -143,7 +143,17 @@ void RenderCore::Init()
 #endif
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
-	SetClampValue( 10.0f /* same default value as LH1 */ );
+	SetClampValue( 10.0f );
+	// prepare the bluenoise data
+	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
+	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
+	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
+	data8 = (uchar*)scr256_64;
+	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
+	data8 = (uchar*)rnk256_64;
+	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
+	blueNoise = new InteropBuffer<uint>( 65536 * 5, ON_DEVICE, RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_INT, "blueNoise", data32 );
+	delete data32;
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	CoreMesh::attribProgram = context->createProgramFromPTXString( ptx, "triangle_attributes" );
@@ -489,7 +499,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	context["right"]->setFloat( right.x, right.y, right.z );
 	context["up"]->setFloat( up.x, up.y, up.z );
 	context["p1"]->setFloat( view.p1.x, view.p1.y, view.p1.z );
-	context["sampleBase"]->setUint( samplesTaken );
+	context["pass"]->setUint( samplesTaken );
 	// loop
 #ifndef USE_OPTIX_PERSISTENT_THREADS
 	Counters counters;
@@ -524,7 +534,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		// shade
 		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ), samplesTaken, probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
+			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken, 
+			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
 #ifndef USE_OPTIX_PERSISTENT_THREADS
 		counterBuffer->CopyToHost();

@@ -53,6 +53,7 @@ del apps\tinyapp\*.pdb /Q
 del apps\tinyapp\*.ilk /Q
 rd apps\app_matui\x64 /S /Q
 del apps\app_matui\data\textures\*.bin
+del apps\app_matui\data\mattest\textures\*.bin
 del apps\app_matui\data\sky_15.bin
 del apps\app_matui\*.exe /Q
 del apps\app_matui\*.iobj /Q

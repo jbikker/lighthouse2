@@ -32,7 +32,8 @@ void finalizeRender( const float4* accumulator, const int w, const int h, const 
 void shade( const int smcount, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* extensionData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays, float4* connectionT4,
-	const uint R0, const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
+	const uint R0, const uint* blueNoise, const int pass,
+	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
 void finalizeConnections( int smcount, int connections, float4* accumulator,
 	uint* hitBuffer, float4* contributions );
@@ -57,7 +58,7 @@ void SetGeometryEpsilon( float e );
 void SetClampValue( float c );
 void SetCounters( Counters* p );
 void generateEyeRays( int smcount, Ray4* rayBuffer, float4* extensionRayExBuffer,
-	const uint R0, const int pass,
+	const uint R0, const uint* blueNoise, const int pass /* multiple of SPP */,
 	const float lensSize, const float3 camPos, const float3 right, const float3 up, const float3 p1,
 	const int4 screenParams );
 
@@ -121,7 +122,17 @@ void RenderCore::Init()
 	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE );
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
-	SetClampValue( 10.0f /* same default value as LH1 */ );
+	SetClampValue( 10.0f );
+	// prepare the bluenoise data
+	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
+	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
+	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
+	data8 = (uchar*)scr256_64;
+	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
+	data8 = (uchar*)rnk256_64;
+	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
+	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
+	delete data32;
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// timing events
@@ -480,7 +491,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
 	generateEyeRays( SMcount, extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
-		RandomUInt( camRNGseed ), samplesTaken,
+		RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
 		view.aperture, view.pos, right, up, view.p1, GetScreenParams() );
 	// start wavefront loop
 	RTPquery query;
@@ -500,7 +511,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(), extensionHitBuffer->DevPtr(),
 			extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
 			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(),
-			samplesTaken * 7907, probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle,
+			samplesTaken * 7907, blueNoise->DevPtr(), samplesTaken,
+			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle,
 			view.p1, view.p2, view.p3, view.pos );
 		if (pathLength == MAXPATHLENGTH) 
 		{

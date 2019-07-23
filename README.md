@@ -9,7 +9,8 @@ A software rasterizer is also included, mostly as an example of a minimal API im
 Quick pointers / Important advice:
 
 * Building Lighthouse 2: CUDA 10.1 currently does *not* properly support vs2019; use vs2017 for now.
-* Lighthouse 2 WIKI: https://github.com/jbikker/lighthouse2/wiki (early stages)
+* Lighthouse 2 wiki: https://github.com/jbikker/lighthouse2/wiki (early stages)
+* Trouble shooting page on the wiki: https://github.com/jbikker/lighthouse2/wiki/TroubleShooting
 * Lighthouse 2 forum: https://ompf2.com/viewforum.php?f=18
 * Follow the project on Twitter: @j_bikker
 

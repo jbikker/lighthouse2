@@ -4,39 +4,28 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-
-   Implementation of the Optix Prime rendercore. This is a wavefront
-   / streaming path tracer: CUDA code in camera.cu is used to
-   generate a primary ray buffer, which is then traced by Optix. The
-   resulting hitpoints are procressed using another CUDA kernel (in
-   pathtracer.cu), which in turn generates extension rays and shadow
-   rays. Path contributions are accumulated in an accumulator and
-   finalized using code in finalize.cu.
 */
 
 #include "core_settings.h"
+#include <optix_function_table_definition.h>
 
-namespace lh2core
-{
+namespace lh2core {
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
 void shade( const int smcount, float4* accumulator, const uint stride,
-	const Ray4* extensionRays, const float4* extensionData, const Intersection* hits,
-	Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays, float4* connectionT4,
+	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
-void finalizeConnections( int smcount, int connections, float4* accumulator,
-	uint* hitBuffer, float4* contributions );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
 
@@ -53,32 +42,61 @@ void SetARGB128Pixels( float4* p );
 void SetNRM32Pixels( uint* p );
 void SetSkyPixels( float3* p );
 void SetSkySize( int w, int h );
+void SetPathStates( PathState* p );
 void SetDebugData( float4* p );
 void SetGeometryEpsilon( float e );
 void SetClampValue( float c );
 void SetCounters( Counters* p );
-void generateEyeRays( int smcount, Ray4* rayBuffer, float4* extensionRayExBuffer,
-	const uint R0, const uint* blueNoise, const int pass /* multiple of SPP */,
-	const float lensSize, const float3 camPos, const float3 right, const float3 up, const float3 p1,
-	const int4 screenParams );
 
 } // namespace lh2core
 
 using namespace lh2core;
 
-RTPcontext RenderCore::context = 0;
+OptixDeviceContext RenderCore::optixContext = 0;
+struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
-//  +-----------------------------------------------------------------------------+
-//  |  RenderCore::GetScreenParams                                                |
-//  |  Helper function - fills an int4 with values related to screen size.  LH2'19|
-//  +-----------------------------------------------------------------------------+
-int4 RenderCore::GetScreenParams()
+char* ParseOptixError( OptixResult r )
 {
-	float e = 0.0001f; // RenderSettings::geoEpsilon;
-	return make_int4( scrwidth + (scrheight << 16),					// .x : SCRHSIZE, SCRVSIZE
-		scrspp + (1 /* RenderSettings::pathDepth */ << 8),			// .y : SPP, MAXDEPTH
-		scrwidth * scrheight * scrspp,								// .z : PIXELCOUNT
-		*((int*)&e) );												// .w : RenderSettings::geoEpsilon
+	char* t = new char[256];
+	switch (r)
+	{
+	case 0: strcpy_s( t, 256, "NO ERROR" ); break;
+	case 7001: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_VALUE" ); break;
+	case 7002: strcpy_s( t, 256, "OPTIX_ERROR_HOST_OUT_OF_MEMORY" ); break;
+	case 7003: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_OPERATION" ); break;
+	case 7004: strcpy_s( t, 256, "OPTIX_ERROR_FILE_IO_ERROR" ); break;
+	case 7005: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FILE_FORMAT" ); break;
+	case 7010: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_INVALID_PATH" ); break;
+	case 7011: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_PERMISSION_ERROR" ); break;
+	case 7012: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR" ); break;
+	case 7013: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_INVALID_DATA" ); break;
+	case 7050: strcpy_s( t, 256, "OPTIX_ERROR_LAUNCH_FAILURE" ); break;
+	case 7051: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_DEVICE_CONTEXT" ); break;
+	case 7052: strcpy_s( t, 256, "OPTIX_ERROR_CUDA_NOT_INITIALIZED" ); break;
+	case 7200: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_PTX" ); break;
+	case 7201: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_LAUNCH_PARAMETER" ); break;
+	case 7202: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_PAYLOAD_ACCESS" ); break;
+	case 7203: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_ATTRIBUTE_ACCESS" ); break;
+	case 7204: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FUNCTION_USE" ); break;
+	case 7205: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FUNCTION_ARGUMENTS" ); break;
+	case 7250: strcpy_s( t, 256, "OPTIX_ERROR_PIPELINE_OUT_OF_CONSTANT_MEMORY" ); break;
+	case 7251: strcpy_s( t, 256, "OPTIX_ERROR_PIPELINE_LINK_ERROR" ); break;
+	case 7299: strcpy_s( t, 256, "OPTIX_ERROR_INTERNAL_COMPILER_ERROR" ); break;
+	case 7300: strcpy_s( t, 256, "OPTIX_ERROR_DENOISER_MODEL_NOT_SET" ); break;
+	case 7301: strcpy_s( t, 256, "OPTIX_ERROR_DENOISER_NOT_INITIALIZED" ); break;
+	case 7400: strcpy_s( t, 256, "OPTIX_ERROR_ACCEL_NOT_COMPATIBLE" ); break;
+	case 7800: strcpy_s( t, 256, "OPTIX_ERROR_NOT_SUPPORTED" ); break;
+	case 7801: strcpy_s( t, 256, "OPTIX_ERROR_UNSUPPORTED_ABI_VERSION" ); break;
+	case 7802: strcpy_s( t, 256, "OPTIX_ERROR_FUNCTION_TABLE_SIZE_MISMATCH" ); break;
+	case 7803: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_ENTRY_FUNCTION_OPTIONS" ); break;
+	case 7804: strcpy_s( t, 256, "OPTIX_ERROR_LIBRARY_NOT_FOUND" ); break;
+	case 7805: strcpy_s( t, 256, "OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND" ); break;
+	case 7900: strcpy_s( t, 256, "OPTIX_ERROR_CUDA_ERROR" ); break;
+	case 7990: strcpy_s( t, 256, "OPTIX_ERROR_INTERNAL_ERROR" ); break;
+	case 7999: strcpy_s( t, 256, "OPTIX_ERROR_UNKNOWN" ); break;
+	default: strcpy_s( t, 256, "UNKNOWN ERROR" ); break;
+	};
+	return t;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -91,8 +109,122 @@ void RenderCore::SetProbePos( int2 pos )
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  RenderCore::CreateOptixContext                                             |
+//  |  Optix 7 initialization.                                              LH2'19|
+//  +-----------------------------------------------------------------------------+
+static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
+{
+	std::cerr << "[" << level << "][" << tag << "]: " << message << "\n";
+}
+void RenderCore::CreateOptixContext( int cc )
+{
+	// prepare the optix context
+	cudaFree( 0 );
+	CUcontext cu_ctx = 0; // zero means take the current context
+	CHK_OPTIX( optixInit() );
+	OptixDeviceContextOptions contextOptions = {};
+	contextOptions.logCallbackFunction = &context_log_cb;
+	contextOptions.logCallbackLevel = 4;
+	CHK_OPTIX( optixDeviceContextCreate( cu_ctx, &contextOptions, &optixContext ) );
+	cudaMalloc( (void**)(&d_params), sizeof( Params ) );
+
+	// load and compile PTX
+	string ptx;
+	if (NeedsRecompile( "../../lib/RenderCore_Optix7/optix/", ".optix.turing.cu.ptx", ".optix.cu", "../../rendersystem/common_settings.h", "../core_settings.h" ))
+	{
+		CUDATools::compileToPTX( ptx, TextFileRead( "../../lib/RenderCore_Optix7/optix/.optix.cu" ).c_str(), "../../lib/RenderCore_Optix7/optix", cc, 7 );
+		if (cc / 10 == 7) TextFileWrite( ptx, "../../lib/RenderCore_Optix7/optix/.optix.turing.cu.ptx" );
+		else if (cc / 10 == 6) TextFileWrite( ptx, "../../lib/RenderCore_Optix7/optix/.optix.pascal.cu.ptx" );
+		else if (cc / 10 == 5) TextFileWrite( ptx, "../../lib/RenderCore_Optix7/optix/.optix.maxwell.cu.ptx" );
+		printf( "recompiled .optix.cu.\n" );
+	}
+	else
+	{
+		FILE* f;
+		if (cc / 10 == 7) fopen_s( &f, "../../lib/RenderCore_Optix7/optix/.optix.turing.cu.ptx", "rb" );
+		else if (cc / 10 == 6) fopen_s( &f, "../../lib/RenderCore_Optix7/optix/.optix.pascal.cu.ptx", "rb" );
+		else if (cc / 10 == 5) fopen_s( &f, "../../lib/RenderCore_Optix7/optix/.optix.maxwell.cu.ptx", "rb" );
+		int len;
+		fread( &len, 1, 4, f );
+		char* t = new char[len];
+		fread( t, 1, len, f );
+		fclose( f );
+		ptx = string( t );
+		delete t;
+	}
+
+	// create the optix module
+	OptixModuleCompileOptions module_compile_options = {};
+	module_compile_options.maxRegisterCount = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
+	module_compile_options.optLevel = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+	module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_LINEINFO;
+	OptixPipelineCompileOptions pipeCompileOptions = {};
+	pipeCompileOptions.usesMotionBlur = false;
+	pipeCompileOptions.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+	pipeCompileOptions.numPayloadValues = 4;
+	pipeCompileOptions.numAttributeValues = 2;
+	pipeCompileOptions.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+	pipeCompileOptions.pipelineLaunchParamsVariableName = "params";
+	char log[2048];
+	size_t logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixModuleCreateFromPTX( optixContext, &module_compile_options, &pipeCompileOptions,
+		ptx.c_str(), ptx.size(), log, &logSize, &ptxModule ) );
+
+	// create program groups
+	OptixProgramGroupOptions groupOptions = {};
+	OptixProgramGroupDesc group = {};
+	group.kind = OPTIX_PROGRAM_GROUP_KIND_RAYGEN;
+	group.raygen.module = ptxModule;
+	group.raygen.entryFunctionName = "__raygen__rg";
+	logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAYGEN] ) );
+	group = {};
+	group.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
+	group.miss.module = ptxModule;
+	group.miss.entryFunctionName = "__miss__radiance";
+	logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAD_MISS] ) );
+	group.miss.module = nullptr; // NULL miss program for occlusion rays
+	group.miss.entryFunctionName = nullptr;
+	logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[OCC_MISS] ) );
+	group = {};
+	group.kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+	group.hitgroup.moduleCH = ptxModule;
+	group.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
+	logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAD_HIT] ) );
+	group.hitgroup.entryFunctionNameCH = "__closesthit__occlusion";
+	logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[OCC_HIT] ) );
+
+	// create the pipeline
+	OptixPipelineLinkOptions linkOptions = {};
+	linkOptions.maxTraceDepth = 1;
+	linkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
+	linkOptions.overrideUsesMotionBlur = false;
+	logSize = sizeof( log );
+	CHK_OPTIX_LOG( optixPipelineCreate( optixContext, &pipeCompileOptions, &linkOptions, progGroup, 5, log, &logSize, &pipeline ) );
+	// calculate the stack sizes, so we can specify all parameters to optixPipelineSetStackSize
+	OptixStackSizes stack_sizes = {};
+	for (int i = 0; i < 5; i++) optixUtilAccumulateStackSizes( progGroup[i], &stack_sizes );
+	uint32_t ss0, ss1, ss2;
+	CHK_OPTIX( optixUtilComputeStackSizes( &stack_sizes, 1, 0, 0, &ss0, &ss1, &ss2 ) );
+	CHK_OPTIX( optixPipelineSetStackSize( pipeline, ss0, ss1, ss2, 2 ) );
+
+	// create the shader binding table
+	SBTRecord rsbt[5] = {}; // , ms_sbt[2], hg_sbt[2];
+	for( int i = 0; i < 5; i++ ) optixSbtRecordPackHeader( progGroup[i], &rsbt[i] );
+	sbt.raygenRecord = (CUdeviceptr)(new CoreBuffer<SBTRecord>( 1, ON_DEVICE, &rsbt[0] ))->DevPtr();
+	sbt.missRecordBase = (CUdeviceptr)(new CoreBuffer<SBTRecord>( 2, ON_DEVICE, &rsbt[1] ))->DevPtr();
+	sbt.hitgroupRecordBase = (CUdeviceptr)(new CoreBuffer<SBTRecord>( 2, ON_DEVICE, &rsbt[3] ))->DevPtr();
+	sbt.missRecordStrideInBytes = sbt.hitgroupRecordStrideInBytes = sizeof( SBTRecord );
+	sbt.missRecordCount = sbt.hitgroupRecordCount = 2;
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Init                                                           |
-//  |  CUDA / Optix / RenderCore initialization.                            LH2'19|
+//  |  Initialization.                                                      LH2'19|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
@@ -109,38 +241,28 @@ void RenderCore::Init()
 	coreStats.deviceName = new char[strlen( properties.name ) + 1];
 	memcpy( coreStats.deviceName, properties.name, strlen( properties.name ) + 1 );
 	printf( "running on GPU: %s (%i SMs, %iGB VRAM)\n", coreStats.deviceName, coreStats.SMcount, (int)(coreStats.VRAM >> 10) );
-	// setup OptiX Prime
-	CHK_PRIME( rtpContextCreate( RTP_CONTEXT_TYPE_CUDA, &context ) );
-	const char* versionString;
-	CHK_PRIME( rtpGetVersionString( &versionString ) );
-	printf( "%s\n", versionString );
-	CHK_PRIME( rtpContextSetCudaDeviceNumbers( context, 1, &device ) );
-	// prepare the top-level 'model' node; instances will be added to this.
-	topLevel = new RTPmodel();
-	CHK_PRIME( rtpModelCreate( context, topLevel ) );
-	// prepare counters for persistent threads
-	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE );
-	SetCounters( counterBuffer->DevPtr() );
+	// initialize Optix7
+	CreateOptixContext( computeCapability );
 	// render settings
 	SetClampValue( 10.0f );
+	// prepare counters for persistent threads
+	counterBuffer = new CoreBuffer<Counters>( 1, ON_HOST | ON_DEVICE );
+	SetCounters( counterBuffer->DevPtr() );
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
 	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
-	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
+	for (int i = 0; i < 65536; i++) data32[i] = data8[i]; // convert
 	data8 = (uchar*)scr256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 65536] = data8[i];
 	data8 = (uchar*)rnk256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 3 * 65536] = data8[i];
 	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
+	params.blueNoise = blueNoise->DevPtr();
 	delete data32;
+	// preallocate optix instance descriptor array
+	instanceArray = new CoreBuffer<OptixInstance>( 16 /* will grow if needed */, ON_HOST | ON_DEVICE );
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
-	// timing events
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
-	{
-		cudaEventCreate( &shadeStart[i] );
-		cudaEventCreate( &shadeEnd[i] );
-	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -166,43 +288,24 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		currentSPP = spp;
 		reallocate = true;
 	}
+	// notify OptiX about the new screen size
+	params.scrsize = make_int3( scrwidth, scrheight, scrspp );
 	if (reallocate)
 	{
-		// destroy previously created OptiX buffers
-		if (!firstFrame)
-		{
-			rtpBufferDescDestroy( extensionRaysDesc[0] );
-			rtpBufferDescDestroy( extensionRaysDesc[1] );
-			rtpBufferDescDestroy( extensionHitsDesc );
-			rtpBufferDescDestroy( shadowRaysDesc );
-			rtpBufferDescDestroy( shadowHitsDesc );
-		}
-		// delete CoreBuffers
-		delete extensionRayBuffer[0];
-		delete extensionRayBuffer[1];
-		delete extensionRayExBuffer[0];
-		delete extensionRayExBuffer[1];
-		delete extensionHitBuffer;
-		delete shadowRayBuffer;
-		delete shadowRayPotential;
-		delete shadowHitBuffer;
+		// reallocate buffers
+		delete connectionBuffer;
 		delete accumulator;
-		const uint maxShadowRays = maxPixels * spp * MAXPATHLENGTH; // upper limit; safe but wasteful
-		extensionHitBuffer = new CoreBuffer<Intersection>( maxPixels * spp, ON_DEVICE );
-		shadowRayBuffer = new CoreBuffer<Ray4>( maxShadowRays, ON_DEVICE );
-		shadowRayPotential = new CoreBuffer<float4>( maxShadowRays, ON_DEVICE ); // .w holds pixel index
-		shadowHitBuffer = new CoreBuffer<uint>( (maxShadowRays + 31) >> 5 /* one bit per ray */, ON_DEVICE );
-		accumulator = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
-		for (int i = 0; i < 2; i++)
-		{
-			extensionRayBuffer[i] = new CoreBuffer<Ray4>( maxPixels * spp, ON_DEVICE ),
-				extensionRayExBuffer[i] = new CoreBuffer<float4>( maxPixels * 2 * spp, ON_DEVICE );
-			CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, extensionRayBuffer[i]->DevPtr(), &extensionRaysDesc[i] ) );
-		}
-		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_HIT_T_TRIID_INSTID_U_V, RTP_BUFFER_TYPE_CUDA_LINEAR, extensionHitBuffer->DevPtr(), &extensionHitsDesc ) );
-		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, shadowRayBuffer->DevPtr(), &shadowRaysDesc ) );
-		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_HIT_BITMASK, RTP_BUFFER_TYPE_CUDA_LINEAR, shadowHitBuffer->DevPtr(), &shadowHitsDesc ) );
-		printf( "buffers resized for %i pixels @ %i samples.\n", maxPixels, spp );
+		delete hitBuffer;
+		delete pathStateBuffer;
+		connectionBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3 * MAXPATHLENGTH, ON_DEVICE );
+		accumulator = new CoreBuffer<float4>( maxPixels * 2 /* to split direct / indirect */, ON_DEVICE );
+		hitBuffer = new CoreBuffer<float4>( maxPixels * scrspp, ON_DEVICE );
+		pathStateBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3, ON_DEVICE );
+		params.connectData = connectionBuffer->DevPtr();
+		params.accumulator = accumulator->DevPtr();
+		params.hitData = hitBuffer->DevPtr();
+		params.pathStates = pathStateBuffer->DevPtr();
+		printf( "buffers resized for %i pixels @ %i samples.\n", maxPixels, scrspp );
 	}
 	// clear the accumulator
 	accumulator->Clear( ON_DEVICE );
@@ -232,9 +335,25 @@ void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const ma
 	// Note: for first-time setup, meshes are expected to be passed in sequential order.
 	// This will result in new CoreInstance pointers being pushed into the instances vector.
 	// Subsequent instance changes (typically: transforms) will be applied to existing CoreInstances.
-	if (instanceIdx >= instances.size()) instances.push_back( new CoreInstance() );
+	if (instanceIdx >= instances.size())
+	{
+		// create a geometry instance
+		CoreInstance* newInstance = new CoreInstance();
+		memset( &newInstance->instance, 0, sizeof( OptixInstance ) );
+		newInstance->instance.flags = OPTIX_INSTANCE_FLAG_NONE;
+		newInstance->instance.instanceId = instanceIdx;
+		newInstance->instance.sbtOffset = 0;
+		newInstance->instance.visibilityMask = 255;
+		newInstance->instance.traversableHandle = meshes[meshIdx]->gasHandle;
+		memcpy( newInstance->transform, &matrix, 12 * sizeof( float ) );
+		memcpy( newInstance->instance.transform, &matrix, 12 * sizeof( float ) );
+		instances.push_back( newInstance );
+	}
+	// update the matrices for the transform
+	memcpy( instances[instanceIdx]->transform, &matrix, 12 * sizeof( float ) );
+	memcpy( instances[instanceIdx]->instance.transform, &matrix, 12 * sizeof( float ) );
+	// set/update the mesh for this instance
 	instances[instanceIdx]->mesh = meshIdx;
-	instances[instanceIdx]->transform = matrix;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -244,24 +363,41 @@ void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const ma
 //  +-----------------------------------------------------------------------------+
 void RenderCore::UpdateToplevel()
 {
-	// this creates the top-level BVH over the supplied models.
-	RTPbufferdesc instancesBuffer, transformBuffer;
-	vector<RTPmodel> modelList;
-	vector<mat4> transformList;
-	for (auto instance : instances)
+	// resize instance array if more space is needed
+	if (instances.size() > (size_t)instanceArray->GetSize())
 	{
-		modelList.push_back( meshes[instance->mesh]->model );
-		transformList.push_back( instance->transform );
+		delete instanceArray;
+		instanceArray = new CoreBuffer<OptixInstance>( instanceArray->GetSize() + 4, ON_HOST | ON_DEVICE );
 	}
-	CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_INSTANCE_MODEL, RTP_BUFFER_TYPE_HOST, modelList.data(), &instancesBuffer ) );
-	CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_TRANSFORM_FLOAT4x4, RTP_BUFFER_TYPE_HOST, transformList.data(), &transformBuffer ) );
-	CHK_PRIME( rtpBufferDescSetRange( instancesBuffer, 0, instances.size() ) );
-	CHK_PRIME( rtpBufferDescSetRange( transformBuffer, 0, instances.size() ) );
-	CHK_PRIME( rtpModelSetInstances( *topLevel, instancesBuffer, transformBuffer ) );
-	CHK_PRIME( rtpModelUpdate( *topLevel, RTP_MODEL_HINT_ASYNC /* blocking; try RTP_MODEL_HINT_ASYNC + rtpModelFinish for async version. */ ) );
-	CHK_PRIME( rtpBufferDescDestroy( instancesBuffer ) /* no idea if this does anything relevant */ );
-	CHK_PRIME( rtpBufferDescDestroy( transformBuffer ) /* no idea if this does anything relevant */ );
-	instancesDirty = true; // sync instance list to device prior to next ray query
+	// copy instance descriptors to the array, sync with device
+	for (int i = 0; i < instances.size(); i++) instanceArray->HostPtr()[i] = instances[i]->instance;
+	instanceArray->CopyToDevice();
+	// build the top-level tree
+	OptixBuildInput buildInput = {};
+	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+	buildInput.instanceArray.instances = (CUdeviceptr)instanceArray->DevPtr();
+	buildInput.instanceArray.numInstances = (uint)instances.size();
+	OptixAccelBuildOptions options = {};
+	options.buildFlags = OPTIX_BUILD_FLAG_NONE;
+	options.operation = OPTIX_BUILD_OPERATION_BUILD;
+	static size_t reservedTemp = 0, reservedTop = 0;
+	static CoreBuffer<uchar> *temp, *topBuffer = 0;
+	OptixAccelBufferSizes sizes;
+	CHK_OPTIX( optixAccelComputeMemoryUsage( optixContext, &options, &buildInput, 1, &sizes ) );
+	if (sizes.tempSizeInBytes > reservedTemp)
+	{
+		reservedTemp = sizes.tempSizeInBytes + 1024;
+		delete temp;
+		temp = new CoreBuffer<uchar>( reservedTemp, ON_DEVICE );
+	}
+	if (sizes.outputSizeInBytes > reservedTop)
+	{
+		reservedTop = sizes.outputSizeInBytes + 1024;
+		delete topBuffer;
+		topBuffer = new CoreBuffer<uchar>( reservedTop, ON_DEVICE );
+	}
+	CHK_OPTIX( optixAccelBuild( optixContext, 0, &options, &buildInput, 1, (CUdeviceptr)temp->DevPtr(),
+		reservedTemp, (CUdeviceptr)topBuffer->DevPtr(), reservedTop, &bvhRoot, 0, 0 ) );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -420,6 +556,7 @@ void RenderCore::Setting( const char* name, const float value )
 		{
 			vars.geometryEpsilon = value;
 			SetGeometryEpsilon( value );
+			// context["geometryEpsilon"]->setFloat( value );
 		}
 	}
 	else if (!strcmp( name, "clampValue" ))
@@ -463,9 +600,20 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		{
 			CoreInstanceDesc id;
 			id.triangles = meshes[instance->mesh]->triangles->DevPtr();
-			mat4 T = instance->transform;
-			T.Invert();
-			id.invTransform = *(float4x4*)&T;
+			mat4 T, invT;
+			if (instance->transform)
+			{
+				T = mat4::Identity();
+				memcpy( &T, instance->transform, 12 * sizeof( float ) );
+				invT = T;
+				invT.Invert();
+			}
+			else
+			{
+				T = mat4::Identity();
+				invT = mat4::Identity();
+			}
+			id.invTransform = *(float4x4*)&invT;
 			instDescArray.push_back( id );
 		}
 		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)meshes.size())
@@ -486,68 +634,61 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// prepare timer
 	Timer t;
 	t.reset();
-	// setup primary rays
+	// jitter the view for TAA
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
-	InitCountersForExtend( scrwidth * scrheight * scrspp );
-	generateEyeRays( SMcount, extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
-		RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
-		view.aperture, view.pos, right, up, view.p1, GetScreenParams() );
-	// start wavefront loop
-	RTPquery query;
-	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &query ) );
-	uint pathCount = scrwidth * scrheight * scrspp;
-	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
+	// render an image using OptiX
+	params.posLensSize = make_float4( view.pos.x, view.pos.y, view.pos.z, view.aperture );
+	params.right = make_float3( right.x, right.y, right.z );
+	params.up = make_float3( up.x, up.y, up.z );
+	params.p1 = make_float3( view.p1.x, view.p1.y, view.p1.z );
+	params.pass = samplesTaken;
+	// loop
+	params.bvhRoot = bvhRoot; // meshes[1]->gasHandle;
+	Counters counters;
+	for (int pathLength = 1; pathLength <= 3; pathLength++)
 	{
-		// extend
-		CHK_PRIME( rtpBufferDescSetRange( extensionRaysDesc[inBuffer], 0, pathCount ) );
-		CHK_PRIME( rtpBufferDescSetRange( extensionHitsDesc, 0, pathCount ) );
-		CHK_PRIME( rtpQuerySetRays( query, extensionRaysDesc[inBuffer] ) );
-		CHK_PRIME( rtpQuerySetHits( query, extensionHitsDesc ) );
-		CHK_PRIME( rtpQueryExecute( query, RTP_QUERY_HINT_NONE ) );
-		// shade
-		cudaEventRecord( shadeStart[pathLength - 1] );
-		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight,
-			extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(), extensionHitBuffer->DevPtr(),
-			extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
-			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(),
-			samplesTaken * 7907, blueNoise->DevPtr(), samplesTaken,
-			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle,
-			view.p1, view.p2, view.p3, view.pos );
-		if (pathLength == MAXPATHLENGTH) 
+		// generate / extend
+		if (pathLength == 1)
 		{
-			// prevent the CopyToHost in the last iteration; it's expensive
-			cudaEventRecord( shadeEnd[pathLength - 1] );
-			break;
+			// spawn and extend camera rays
+			params.phase = 0;
+			InitCountersForExtend( scrwidth * scrheight * scrspp );
+			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, params.scrsize.x, params.scrsize.y, 1 ) );
 		}
-		counterBuffer->CopyToHost(); // sadly this is needed; Optix Prime doesn't expose persistent threads
-		Counters& counters = counterBuffer->HostPtr()[0];
-		cudaEventRecord( shadeEnd[pathLength - 1] );
-		pathCount = counters.extensionRays;
-		swap( inBuffer, outBuffer );
-		InitCountersSubsequent();
+		else
+		{
+			// extend bounced paths
+			params.phase = 1;
+			counterBuffer->CopyToHost();
+			Counters& counters = counterBuffer->HostPtr()[0];
+			InitCountersSubsequent();
+			if (counters.extensionRays > 0)
+			{
+				cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+				CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.extensionRays, 1, 1 ) );
+			}
+		}
+		// shade
+		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
+			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
+			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
+			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
+			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
+		counterBuffer->CopyToHost();
+		counters = counterBuffer->HostPtr()[0];
 	}
-	CHK_PRIME( rtpQueryDestroy( query ) );
-	// loop completed; handle gathered shadow rays
-	counterBuffer->CopyToHost();
-	Counters& counters = counterBuffer->HostPtr()[0];
+	// connect to light sources
+	params.phase = 2;
 	if (counters.shadowRays > 0)
 	{
-		// trace the shadow rays using OptiX Prime
-		RTPquery query;
-		CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &query ) );
-		CHK_PRIME( rtpBufferDescSetRange( shadowRaysDesc, 0, counters.shadowRays ) );
-		CHK_PRIME( rtpBufferDescSetRange( shadowHitsDesc, 0, counters.shadowRays ) );
-		CHK_PRIME( rtpQuerySetRays( query, shadowRaysDesc ) );
-		CHK_PRIME( rtpQuerySetHits( query, shadowHitsDesc ) );
-		CHK_PRIME( rtpQueryExecute( query, RTP_QUERY_HINT_NONE ) );
-		CHK_PRIME( rtpQueryDestroy( query ) );
-		coreStats.totalShadowRays += counters.shadowRays;
-		// process intersection results
-		finalizeConnections( SMcount, counters.shadowRays, accumulator->DevPtr(), shadowHitBuffer->DevPtr(), shadowRayPotential->DevPtr() );
+		cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+		CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 	}
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
+	coreStats.traceTime = t.elapsed() * 1000;
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
@@ -556,15 +697,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	renderTarget.UnbindSurface();
 	// finalize statistics
 	coreStats.renderTime = timer.elapsed() * 1000;
-	coreStats.filterTime = coreStats.filterPrepTime = coreStats.filterCoreTime = coreStats.filterTAATime = 0;
-	coreStats.shadeTime = 0;
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
-	{
-		float t = 0;
-		cudaEventElapsedTime( &t, shadeStart[i], shadeEnd[i] );
-		coreStats.shadeTime += t;
-	}
-	coreStats.traceTime = coreStats.renderTime - (coreStats.shadeTime + coreStats.filterTime);
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;
@@ -577,39 +709,13 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Shutdown()
 {
-	// delete ray buffers
-	delete extensionRayBuffer[0];
-	delete extensionRayBuffer[1];
-	delete extensionRayExBuffer[0];
-	delete extensionRayExBuffer[1];
-	delete extensionHitBuffer;
-	delete shadowRayBuffer;
-	delete shadowRayPotential;
-	delete shadowHitBuffer;
-	// delete internal data
-	delete accumulator;
-	delete counterBuffer;
-	delete texDescs;
-	delete texel32Buffer;
-	delete texel128Buffer;
-	delete normal32Buffer;
-	delete materialBuffer;
-	delete hostMaterialBuffer;
-	delete skyPixelBuffer;
-	delete instDescBuffer;
-	// delete light data
-	delete areaLightBuffer;
-	delete pointLightBuffer;
-	delete spotLightBuffer;
-	delete directionalLightBuffer;
-	// delete core scene representation
-	for (auto mesh : meshes) delete mesh;
-	for (auto instance : instances) delete instance;
-	delete topLevel;
-	rtpBufferDescDestroy( extensionRaysDesc[0] );
-	rtpBufferDescDestroy( extensionRaysDesc[1] );
-	rtpBufferDescDestroy( extensionHitsDesc );
-	rtpContextDestroy( context );
+	optixPipelineDestroy( pipeline );
+	for (int i = 0; i < 5; i++) optixProgramGroupDestroy( progGroup[i] );
+	optixModuleDestroy( ptxModule );
+	optixDeviceContextDestroy( optixContext );
+	cudaFree( (void*)sbt.raygenRecord );
+	cudaFree( (void*)sbt.missRecordBase );
+	cudaFree( (void*)sbt.hitgroupRecordBase );
 }
 
 // EOF

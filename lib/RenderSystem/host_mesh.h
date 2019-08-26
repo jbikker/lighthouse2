@@ -31,7 +31,7 @@ public:
 	// methods
 	void LoadGeometry( const char* file, const char* dir, const float scale = 1.0f );
 	void LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform );
-	void LoadGeometryFromGLTF( const string& fileName, const char* directory, const mat4& transform );
+	void LoadGeometryFromGLTF( const string& fileName, const mat4& transform );
 	void LoadGeometryFromFBX( const string& fileName, const char* directory, const mat4& transform );
 	vector<HostMesh*> FBXImport( const string& fileName );
 	void BuildMaterialList();

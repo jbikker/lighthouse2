@@ -21,6 +21,9 @@ del lib\RenderCore_OptixRTX\optix\*.ptx /S /Q
 rd lib\RenderCore_OptixRTX_B\lib /S /Q
 rd lib\RenderCore_OptixRTX_B\x64 /S /Q
 del lib\RenderCore_OptixRTX_B\optix\*.ptx /S /Q
+rd lib\RenderCore_Optix7\lib /S /Q
+rd lib\RenderCore_Optix7\x64 /S /Q
+del lib\RenderCore_Optix7\optix\*.ptx /S /Q
 rd lib\RenderCore_SoftRasterizer\lib /S /Q
 rd lib\RenderCore_SoftRasterizer\x64 /S /Q
 rd lib\RenderCore_RTX_AO\lib /S /Q

@@ -39,7 +39,7 @@ void MouseButtonCallback( GLFWwindow* window, int button, int action, int mods )
 void MousePosCallback( GLFWwindow* window, double x, double y )
 {
 	// set pixel probe pos for triangle picking
-	renderer->SetProbePos( make_int2( (int)x, (int)y ) );
+	if (renderer) renderer->SetProbePos( make_int2( (int)x, (int)y ) );
 }
 
 //  +-----------------------------------------------------------------------------+

@@ -69,7 +69,7 @@ void HostMesh::LoadGeometry( const char* file, const char* dir, const float scal
 	}
 	else if (extension.compare( "gltf" ) == 0)
 	{
-		LoadGeometryFromGLTF( cleanFileName.c_str(), dir, transform );
+		LoadGeometryFromGLTF( cleanFileName.c_str(), transform );
 	}
 	else if (extension.compare( "fbx" ) == 0)
 	{
@@ -264,7 +264,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 //  |  HostMesh::LoadGeometryFromGLTF                                             |
 //  |  Load a gltf file using tiny_gltf.                                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMesh::LoadGeometryFromGLTF( const string& fileName, const char* directory, const mat4& transform )
+void HostMesh::LoadGeometryFromGLTF( const string& fileName, const mat4& transform )
 {
 	// dummy
 	float scale = 1.0f;

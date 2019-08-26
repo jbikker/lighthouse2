@@ -16,11 +16,11 @@
    It takes a buffer of hit results and populates a new buffer with
    extension rays. Shadow rays are added with 'potential contributions'
    as fire-and-forget rays, to be traced later. Streams are compacted
-   using simple atomics. The kernel is a 'persistent kernel': a fixed 
+   using simple atomics. The kernel is a 'persistent kernel': a fixed
    number of threads fights for food by atomically decreasing a counter.
 
    The implemented path tracer is deliberately simple.
-   This file is as similar as possible to the one in OptixRTX_B.
+   This file is as similar as possible to the one in OptixPrime_B.
 */
 
 #include "noerrors.h"
@@ -44,23 +44,20 @@
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
 LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uint stride,
-	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
-	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
+	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
 	// gather data by reading sets of four floats for optimal throughput
-	const float4 O4 = extensionRays[jobIndex].O4;		// ray origin xyz, w can be ignored
-	const float4 D4 = extensionRays[jobIndex].D4;		// ray direction xyz
-	const float4 T4 = pathStateData[jobIndex * 2 + 0];	// path thoughput rgb 
-	const float4 Q4 = pathStateData[jobIndex * 2 + 1];	// x, y: pd of the previous bounce, normal at the previous vertex
-	const Intersection hd = hits[jobIndex];				// TODO: when using instances, Optix Prime needs 5x4 bytes here...
-	const float4 hitData = make_float4( hd.u, hd.v, __int_as_float( hd.triid + (hd.triid == -1 ? 0 : (hd.instid << 24)) ), hd.t );
-	uint data = __float_as_uint( T4.w );
+	const float4 O4 = pathStates[jobIndex];				// ray origin xyz, w can be ignored
+	const float4 D4 = pathStates[jobIndex + stride];	// ray direction xyz
+	float4 T4 = pathLength == 1 ? make_float4( 1 ) /* faster */ : pathStates[jobIndex + stride * 2]; // path thoughput rgb 
+	const float4 hitData = hits[jobIndex];
+	const float bsdfPdf = T4.w;
 
 	// derived data
-	const float bsdfPdf = Q4.x;							// prob.density of the last sampled dir, postponed because of MIS
+	uint data = __float_as_uint( O4.w );
 	const float3 D = make_float3( D4 );
 	const int prim = __float_as_int( hitData.z );
 	const int primIdx = prim == -1 ? prim : (prim & 0xffffff);
@@ -102,11 +99,10 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 		if (pathLength < MAXPATHLENGTH)
 		{
 			const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 );
-			extensionRaysOut[extensionRayIdx].O4 = make_float4( I, EPSILON );
-			extensionRaysOut[extensionRayIdx].D4 = make_float4( D, 1e34f );
-			FIXNAN_FLOAT3( throughput );
-			pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput, __uint_as_float( data ) );
-			pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( bsdfPdf, 0, 0, 0 );
+			pathStates[extensionRayIdx] = make_float4( I + D * geometryEpsilon, O4.w );
+			pathStates[extensionRayIdx + stride] = D4;
+			if (!(isfinite( T4.x + T4.y + T4.z ))) T4 = make_float4( 0, 0, 0, T4.w );
+			pathStates[extensionRayIdx + stride * 2] = T4;
 		}
 		return;
 	}
@@ -121,13 +117,21 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 		float3 contribution = make_float3( 0 ); // initialization required.
 		if (DdotNL > 0 /* lights are not double sided */)
 		{
-			// apply MIS
-			const float3 lastN = UnpackNormal( __float_as_uint( Q4.y ) );
-			const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
-			const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
-			const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
-			if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
-			contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
+			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
+			{
+				// only camera rays will be treated special
+				contribution = shadingData.color;
+			}
+			else
+			{
+				// last vertex was not specular: apply MIS
+				const float3 lastN = UnpackNormal( __float_as_uint( D4.w ) );
+				const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
+				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
+				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
+				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
+				contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
+			}
 			CLAMPINTENSITY;
 			FIXNAN_FLOAT3( contribution );
 			accumulator[pixelIdx] += make_float4( contribution, 0 );
@@ -139,13 +143,21 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	if (ROUGHNESS < 0.01f) FLAGS |= S_SPECULAR; else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
-	uint seed = WangHash( pathIdx + R0 /* well-seeded xor32 is all you need */ );
+	uint seed = WangHash( pathIdx + R0  /* well-seeded xor32 is all you need */ );
+
+	// normal alignment for backfacing polygons
+	const float flip = (dot( D, N ) > 0) ? -1 : 1;
+	N *= flip;		// fix geometric normal
+	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
+	fN *= flip;		// fix final normal (includes normal map)
 
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
 
 	// next event estimation: connect eye path to light
+	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
 	{
+		float3 lightColor;
 		float r0, r1, pickProb, lightPdf = 0;
 		if (sampleIdx < 256)
 		{
@@ -158,7 +170,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 			r0 = RandomFloat( seed );
 			r1 = RandomFloat( seed );
 		}
-		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
+		float3 L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
 		const float NdotL = dot( L, fN );
@@ -174,9 +186,9 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 				CLAMPINTENSITY;
 				// add fire-and-forget shadow ray to the connections buffer
 				const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
-				connections[shadowRayIdx].O4 = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 );
-				connections[shadowRayIdx].D4 = make_float4( L, dist - 2 * geometryEpsilon );
-				potentials[shadowRayIdx] = make_float4( contribution, __int_as_float( pixelIdx ) );
+				connections[shadowRayIdx] = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 ); // O4
+				connections[shadowRayIdx + stride * MAXPATHLENGTH] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
+				connections[shadowRayIdx + stride * 2 * MAXPATHLENGTH] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
 			}
 		}
 	}
@@ -189,8 +201,7 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
-	float newBsdfPdf;
-	float r3, r4;
+	float newBsdfPdf, r3, r4;
 	if (sampleIdx < 256)
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
@@ -209,11 +220,10 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN );
 	if (!(FLAGS & S_SPECULAR)) FLAGS |= S_BOUNCED; else FLAGS |= S_VIASPECULAR;
-	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), 0 );
-	extensionRaysOut[extensionRayIdx].D4 = make_float4( R, 1e34f );
+	((float4*)pathStates)[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
+	((float4*)pathStates)[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
 	FIXNAN_FLOAT3( throughput );
-	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput * bsdf /* * abs( dot( fN, R ) ) */, __uint_as_float( data ) );
-	pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( newBsdfPdf, packedNormal, 0, 0 );
+	((float4*)pathStates)[extensionRayIdx + stride * 2] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), newBsdfPdf );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -222,17 +232,11 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 //  +-----------------------------------------------------------------------------+
 __global__  void __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm */ )
 shadePersistent( float4* accumulator, const uint stride,
-	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
-	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
+	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
-	// persistent threads: spawn an optimal number of threads for the hardware.
-	// In this case: #SM * 128 * 4, to have 4 blocks of 128 threads on each SM.
-	// Note that this is not a performance win since Kepler; it does however let
-	// us run a work size that is determined by a device-side counter. Without
-	// persistent threads, the CPU needs to know the work size.
 	__shared__ volatile int baseIdx[32];
 	const int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
 	const int pathCount = counters->activePaths;
@@ -242,10 +246,10 @@ shadePersistent( float4* accumulator, const uint stride,
 		if (lane == 0) baseIdx[warp] = atomicAdd( &counters->shaded, 32 );
 		int jobIndex = baseIdx[warp] + lane;
 		if (__all_sync( THREADMASK, jobIndex >= pathCount )) break; // need to do the path with all threads in the warp active
-		if (jobIndex < pathCount) shadeKernel( jobIndex, accumulator, stride,
-			extensionRays, pathStateData, hits, extensionRaysOut, pathStateDataOut, connections, potentials,
-			R0, blueNoise, pass,
-			probePixelIdx, pathLength, w, h, spreadAngle, p1, p2, p3, pos );
+		if (jobIndex < pathCount)
+		{
+			shadeKernel( jobIndex, accumulator, stride, pathStates, hits, connections, R0, blueNoise, pass, probePixelIdx, pathLength, w, h, spreadAngle, p1, p2, p3, pos );
+		}
 	}
 }
 
@@ -254,17 +258,12 @@ shadePersistent( float4* accumulator, const uint stride,
 //  |  Host-side access point for the shadeKernel code.                     LH2'19|
 //  +-----------------------------------------------------------------------------+
 __host__ void shade( const int smcount, float4* accumulator, const uint stride,
-	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
-	Ray4* extensionRaysOut, float4* pathStateDataOut,
-	Ray4* connections, float4* potentials,
+	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
-	shadePersistent << < smcount * 4, 128 >> > (accumulator, stride,
-		extensionRays, pathStateData, hits,
-		extensionRaysOut, pathStateDataOut, connections, potentials,
-		R0, blueNoise, pass,
+	shadePersistent << < smcount * 4, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, blueNoise, pass,
 		probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos);
 }
 

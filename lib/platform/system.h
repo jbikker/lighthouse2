@@ -61,10 +61,6 @@ struct Timer
 	double start;
 };
 
-#ifndef min
-#define min(a,b) ((a)<(b)?(a):(b))
-#define max(a,b) ((a)>(b)?(a):(b))
-#endif
 #define wrap(x,a,b) (((x)>=(a))?((x)<=(b)?(x):((x)-((b)-(a)))):((x)+((b)-(a))))
 __inline float sqr( const float x ) { return x * x; }
 template <class T> void Swap( T& x, T& y ) { T t; t = x; x = y; y = t; }

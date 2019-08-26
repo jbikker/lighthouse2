@@ -124,22 +124,23 @@ public:
 	{
 		if (res != CUDA_SUCCESS) FatalError( "%s() failed: %s!\n%s, line %i", funcName, decodeError( res ), file, line );
 	}
-	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc )
+	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )
 	{
 		// create program
 		nvrtcProgram prog = 0;
 		CHK_NVRTC( nvrtcCreateProgram( &prog, cuSource, 0, 0, NULL, NULL ) );
 		// gather NVRTC options
 		vector<const char*> options;
-		options.push_back( "-I../../lib/Optix/include/" );
+		if (optixVer > 6) options.push_back( "-I../../lib/Optix7/include/" ); else options.push_back( "-I../../lib/Optix/include/" );
 		string optionString = "-I";
 		optionString += string( sourceDir );
 		options.push_back( optionString.c_str() );
 		options.push_back( "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/include/" );
+		options.push_back( "-I../../lib/CUDA/" );
 		// collect NVRTC options
 		char versionString[64];
-		sprintf_s( versionString, "compute_%i", cc >= 70 ? 70 : 61 );
-		const char* compiler_options[] = { "-arch", versionString, "-restrict", "-use_fast_math", "-default-device", "-rdc", "true", "-D__x86_64", 0 };
+		sprintf_s( versionString, "compute_%i", cc >= 70 ? 70 : 50 );
+		const char* compiler_options[] = { "-arch", versionString, "-restrict", "-std=c++11", "-use_fast_math", "-default-device", "-rdc", "true", "-D__x86_64", 0 };
 		const size_t n_compiler_options = sizeof( compiler_options ) / sizeof( compiler_options[0] );
 		for (size_t i = 0; i < n_compiler_options - 1; i++) options.push_back( compiler_options[i] );
 		// JIT compile CU to PTX
@@ -233,6 +234,20 @@ public:
 		}
 		return devPtr;
 	}
+	void* CopyToDeviceAsync( cudaStream_t stream )
+	{
+		if (sizeInBytes > 0)
+		{
+			if (!(location & ON_DEVICE))
+			{
+				CUDACHECK( "cudaMalloc", cudaMalloc( &devPtr, sizeInBytes ) );
+				location |= ON_DEVICE;
+				owner |= ON_DEVICE;
+			}
+			CUDACHECK( "cudaMemcpyAsync", cudaMemcpyAsync( devPtr, hostPtr, sizeInBytes, cudaMemcpyHostToDevice, stream ) );	
+		}
+		return devPtr;
+	}
 	void* MoveToDevice()
 	{
 		CopyToDevice();
@@ -256,6 +271,20 @@ public:
 		}
 		return hostPtr;
 	}
+	T* CopyToHostAsync( cudaStream_t stream )
+	{
+		if (sizeInBytes > 0)
+		{
+			if (!(location & ON_HOST))
+			{
+				hostPtr = (T*)_aligned_malloc( sizeInBytes, 64 );
+				location |= ON_HOST;
+				owner |= ON_HOST;
+			}
+			CUDACHECK( "cudaMemcpyAsync", cudaMemcpyAsync( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost, stream ) );
+		}
+		return hostPtr;
+	}
 	void Clear( int location, int overrideSize = -1 )
 	{
 		if (sizeInBytes > 0)
@@ -268,6 +297,7 @@ public:
 	__int64 GetSizeInBytes() const { return sizeInBytes; }
 	__int64 GetSize() const { return numElements; }
 	T* DevPtr() { return devPtr; }
+	T** DevPtrPtr() { return &devPtr; /* Optix7 wants an array of pointers; this returns an array of 1 pointers. */ } 
 	T* HostPtr() { return hostPtr; }
 	// member data
 private:

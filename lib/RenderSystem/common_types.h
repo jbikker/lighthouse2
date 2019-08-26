@@ -21,6 +21,9 @@
 typedef unsigned char uchar;
 typedef unsigned int uint;
 typedef unsigned short ushort;
+
+#ifndef __CUDACC__
+
 typedef unsigned __int64 uint64;
 typedef unsigned char BYTE; // for freeimage.h
 typedef unsigned short WORD; // for freeimage.h
@@ -28,6 +31,7 @@ typedef unsigned long DWORD; // for freeimage.h
 typedef int BOOL; // for freeimage.h
 
 #pragma warning (disable : 4244 )
+
 #include <math.h>
 
 #ifndef CUDABUILD
@@ -517,5 +521,7 @@ bool operator == ( const mat4& a, const mat4& b );
 bool operator != ( const mat4& a, const mat4& b );
 float4 operator * ( const mat4& a, const float4& b );
 float4 operator * ( const float4& a, const mat4& b );
+
+#endif
 
 // EOF

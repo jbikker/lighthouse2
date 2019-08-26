@@ -36,7 +36,7 @@ static string materialFile;
 void PrepareScene()
 {
 	// initialize scene
-#if 1
+#if 0
 	int worldID = renderer->AddMesh( "scene.gltf", "data\\pica\\", 10.0f );
 	materialFile = string( "data\\pica\\pica_materials.xml" );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 100 ) );
@@ -121,8 +121,9 @@ int main()
 	InitGLFW();
 
 	// initialize renderer: pick one
-	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );		// OPTIX PRIME, best for pre-RTX CUDA devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );				// pure OPTIX, the only way to use RTX cores
+	renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7.dll" );				// OPTIX7 core, under construction
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );		// pure OPTIX, the only way to use RTX cores
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
 
 	renderer->DeserializeCamera( "camera.xml" );

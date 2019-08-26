@@ -99,7 +99,7 @@ void RenderCore::Init()
 	string ptx;
 	if (NeedsRecompile( "../../lib/RenderCore_OptixRTX_B/optix/", ".optix.turing.cu.ptx", ".optix.cu", "../../rendersystem/common_settings.h", "../core_settings.h" ))
 	{
-		CUDATools::compileToPTX( ptx, TextFileRead( "../../lib/RenderCore_OptixRTX_B/optix/.optix.cu" ).c_str(), "../../lib/RenderCore_OptixRTX_B/optix", computeCapability );
+		CUDATools::compileToPTX( ptx, TextFileRead( "../../lib/RenderCore_OptixRTX_B/optix/.optix.cu" ).c_str(), "../../lib/RenderCore_OptixRTX_B/optix", computeCapability, 6 );
 		if (computeCapability / 10 == 7) TextFileWrite( ptx, "../../lib/RenderCore_OptixRTX_B/optix/.optix.turing.cu.ptx" );
 		else if (computeCapability / 10 == 6) TextFileWrite( ptx, "../../lib/RenderCore_OptixRTX_B/optix/.optix.pascal.cu.ptx" );
 		else if (computeCapability / 10 == 5) TextFileWrite( ptx, "../../lib/RenderCore_OptixRTX_B/optix/.optix.maxwell.cu.ptx" );
@@ -110,7 +110,7 @@ void RenderCore::Init()
 		FILE* f;
 		if (coreStats.ccMajor == 7) fopen_s( &f, "../../lib/RenderCore_OptixRTX_B/optix/.optix.turing.cu.ptx", "rb" );
 		else if (coreStats.ccMajor == 6) fopen_s( &f, "../../lib/RenderCore_OptixRTX_B/optix/.optix.pascal.cu.ptx", "rb" );
-		else if (coreStats.ccMajor == 6) fopen_s( &f, "../../lib/RenderCore_OptixRTX_B/optix/.optix.maxwell.cu.ptx", "rb" );
+		else if (coreStats.ccMajor == 5) fopen_s( &f, "../../lib/RenderCore_OptixRTX_B/optix/.optix.maxwell.cu.ptx", "rb" );
 		int len;
 		fread( &len, 1, 4, f );
 		char* t = new char[len];

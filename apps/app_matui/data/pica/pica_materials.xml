@@ -514,14 +514,14 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.16901676</roughness>
+        <roughness>0.17</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
+        <transmission>1</transmission>
         <eta>1</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>

@@ -16,8 +16,7 @@
 #include "core_settings.h"
 
 //  +-----------------------------------------------------------------------------+
-//  |  InteropTexture implementation.                                             |
-//  |  TODO: move to its own file.                                          LH2'19|
+//  |  InteropTexture implementation.                                       LH2'19|
 //  +-----------------------------------------------------------------------------+
 InteropTexture::~InteropTexture()
 {

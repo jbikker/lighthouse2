@@ -1,8 +1,22 @@
-// This file contains a minimal set of Optix functions. From here we will
-// dispatch program flow to our own functions that implement the path tracer.
+/* .optix.cu - Copyright 2019 Utrecht University
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+   This file contains a minimal set of Optix functions. From here we will
+   dispatch program flow to our own functions that implement the path tracer.
+*/
 
 #include "../kernels/noerrors.h"
-#include "cuda_fp16.h"
 #include "helper_math.h"
 
 // global include files
@@ -57,27 +71,18 @@ static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint
 	int sy = pixelIdx / params.scrsize.x;
 	float r0, r1, r2, r3;
 	if (sampleIdx < 256)
-	{
-		r0 = blueNoiseSampler( sx, sy, sampleIdx, 0 );
-		r1 = blueNoiseSampler( sx, sy, sampleIdx, 1 );
-		r2 = blueNoiseSampler( sx, sy, sampleIdx, 2 );
+		r0 = blueNoiseSampler( sx, sy, sampleIdx, 0 ),
+		r1 = blueNoiseSampler( sx, sy, sampleIdx, 1 ),
+		r2 = blueNoiseSampler( sx, sy, sampleIdx, 2 ),
 		r3 = blueNoiseSampler( sx, sy, sampleIdx, 3 );
-	}
 	else
-	{
-		r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
+		r0 = RandomFloat( seed ), r1 = RandomFloat( seed ),
 		r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
-	}
 	O = RandomPointOnLens( r2, r3 );
 	const float u = ((float)sx + r0) * (1.0f / params.scrsize.x);
 	const float v = ((float)sy + r1) * (1.0f / params.scrsize.y);
 	const float3 pointOnPixel = params.p1 + u * params.right + v * params.up;
 	D = normalize( pointOnPixel - O );
-}
-
-static __forceinline__ __device__ int atomicAggInc( uint* ptr )
-{
-	return atomicAdd( ptr, 1 );
 }
 
 #if __CUDA_ARCH__ >= 700
@@ -104,7 +109,7 @@ __device__ void setupPrimaryRay( const uint jobIdx, const uint stride )
 	params.pathStates[jobIdx] = make_float4( O, __uint_as_float( (pathIdx << 8) + 1 /* S_SPECULAR in CUDA code */ ) );
 	params.pathStates[jobIdx + stride] = make_float4( D, 0 );
 	// trace eye ray
-	uint u0, u1, u2, u3;
+	uint u0, u1, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, O, D, params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
 	params.hitData[jobIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
@@ -116,7 +121,7 @@ __device__ void setupSecondaryRay( const uint rayIdx, const uint stride )
 	const float4 D4 = params.pathStates[rayIdx + stride];
 	float4 result = make_float4( 0, 0, __int_as_float( -1 ), 0 );
 	uint pixelIdx = __float_as_uint( O4.w ) >> 8;
-	uint u0, u1, u2, u3;
+	uint u0, u1, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
 	params.hitData[rayIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
@@ -130,12 +135,10 @@ __device__ void generateShadowRay( const uint rayIdx, const uint stride )
 	uint u0 = 0;
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, D4.w, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT, 1, 2, 1, u0 );
-	if (u0 == 0)
-	{
-		const float4 E4 = params.connectData[rayIdx + stride * 2 * MAXPATHLENGTH]; // E4
-		const int pixelIdx = __float_as_int( E4.w );
-		params.accumulator[pixelIdx] += make_float4( E4.x, E4.y, E4.z, 1 );
-	}
+	if (u0) return;
+	const float4 E4 = params.connectData[rayIdx + stride * 2 * MAXPATHLENGTH]; // E4
+	const int pixelIdx = __float_as_int( E4.w );
+	params.accumulator[pixelIdx] += make_float4( E4.x, E4.y, E4.z, 1 );
 }
 
 extern "C" __global__ void __raygen__rg()
@@ -157,12 +160,6 @@ extern "C" __global__ void __raygen__rg()
 		// shadow rays
 		generateShadowRay( idx.x + idx.y * params.scrsize.x, stride );
 	}
-}
-
-extern "C" __global__ void __miss__radiance()
-{
-	optixSetPayload_2( 0xffffffff );
-	optixSetPayload_3( __float_as_uint( 1e34f ) );
 }
 
 extern "C" __global__ void __closesthit__occlusion()

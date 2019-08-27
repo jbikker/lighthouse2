@@ -114,7 +114,7 @@ void RenderCore::SetProbePos( int2 pos )
 //  +-----------------------------------------------------------------------------+
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
 {
-	std::cerr << "[" << level << "][" << tag << "]: " << message << "\n";
+	printf( "[%i][%s]: %s\n", level, tag, message );
 }
 void RenderCore::CreateOptixContext( int cc )
 {
@@ -180,12 +180,10 @@ void RenderCore::CreateOptixContext( int cc )
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAYGEN] ) );
 	group = {};
 	group.kind = OPTIX_PROGRAM_GROUP_KIND_MISS;
-	group.miss.module = ptxModule;
-	group.miss.entryFunctionName = "__miss__radiance";
+	group.miss.module = nullptr; // NULL miss program for extension rays
+	group.miss.entryFunctionName = nullptr;
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAD_MISS] ) );
-	group.miss.module = nullptr; // NULL miss program for occlusion rays
-	group.miss.entryFunctionName = nullptr;
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[OCC_MISS] ) );
 	group = {};

@@ -49,12 +49,7 @@ void RefreshUI()
 	TwAddVarRO( bar, "rays", TW_TYPE_UINT32, &coreStats.totalRays, " group='statistics'" );
 	TwAddVarRO( bar, "build time", TW_TYPE_FLOAT, &coreStats.bvhBuildTime, " group='statistics'" );
 	TwAddVarRO( bar, "render time", TW_TYPE_FLOAT, &coreStats.renderTime, " group='statistics'" );
-	TwAddVarRO( bar, "trace time", TW_TYPE_FLOAT, &coreStats.traceTime, " group='statistics'" );
 	TwAddVarRO( bar, "shade time", TW_TYPE_FLOAT, &coreStats.shadeTime, " group='statistics'" );
-	TwAddVarRO( bar, "filter time", TW_TYPE_FLOAT, &coreStats.filterTime, " group='statistics'" );
-	TwAddVarRO( bar, "f.prep time", TW_TYPE_FLOAT, &coreStats.filterPrepTime, " group='statistics'" );
-	TwAddVarRO( bar, "f.core time", TW_TYPE_FLOAT, &coreStats.filterCoreTime, " group='statistics'" );
-	TwAddVarRO( bar, "f.taa time", TW_TYPE_FLOAT, &coreStats.filterTAATime, " group='statistics'" );
 	TwAddVarRO( bar, "mrays inc", TW_TYPE_FLOAT, &mraysincl, " group='statistics'" );
 	TwAddVarRO( bar, "mrays ex", TW_TYPE_FLOAT, &mraysexcl, " group='statistics'" );
 	TwAddSeparator( bar, "separator0", "group='statistics'" );

@@ -155,7 +155,7 @@ int main()
 		renderer->Render( c );
 		coreStats = renderer->GetCoreStats();
 		mraysincl = coreStats.totalRays / (coreStats.renderTime * 1000);
-		mraysexcl = coreStats.totalRays / (coreStats.traceTime * 1000);
+		mraysexcl = coreStats.totalRays / (coreStats.traceTime0 * 1000);
 		if (HandleInput( deltaTime )) sceneChanges = true;
 		// finalize and present
 		shader->Bind();

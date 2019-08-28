@@ -30,7 +30,6 @@
 #define CONSISTENTNORMALS	// consistent normal interpolation; don't use with filtering?
 
 // low-level settings
-#define USE_OPTIX_PERSISTENT_THREADS
 #define SCATTERSTEPS 1		// max bounces in microfacet evaluation (multiscatter bsdf)
 #define BLUENOISE			// use blue noise instead of uniform random numbers
 #define TAA					// really basic temporal antialiasing

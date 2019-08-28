@@ -91,14 +91,8 @@ static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint
 #define THREADMASK	0xffffffff // pascal, kepler, fermi
 #endif
 
-__device__ void setupPrimaryRay( const uint jobIdx, const uint stride )
+__device__ void setupPrimaryRay( const uint pathIdx, const uint stride )
 {
-	const uint tileIdx = jobIdx >> 8;
-	const uint xtiles = params.scrsize.x / 16;
-	const uint tilex = tileIdx % xtiles, tiley = tileIdx / xtiles;
-	const uint x_in_tile = (jobIdx & 15);
-	const uint y_in_tile = (jobIdx & 255) >> 4;
-	const uint pathIdx = tilex * 16 + x_in_tile + (tiley * 16 + y_in_tile) * params.scrsize.x;
 	const uint pixelIdx = pathIdx % (params.scrsize.x * params.scrsize.y);
 	const uint sampleIdx = pathIdx / (params.scrsize.x * params.scrsize.y) + params.pass;
 	uint seed = WangHash( pathIdx * 16789 + params.pass * 1791 );
@@ -106,13 +100,13 @@ __device__ void setupPrimaryRay( const uint jobIdx, const uint stride )
 	float3 O, D;
 	generateEyeRay( O, D, pixelIdx, sampleIdx, seed );
 	// populate path state array
-	params.pathStates[jobIdx] = make_float4( O, __uint_as_float( (pathIdx << 8) + 1 /* S_SPECULAR in CUDA code */ ) );
-	params.pathStates[jobIdx + stride] = make_float4( D, 0 );
+	params.pathStates[pathIdx] = make_float4( O, __uint_as_float( (pathIdx << 8) + 1 /* S_SPECULAR in CUDA code */ ) );
+	params.pathStates[pathIdx + stride] = make_float4( D, 0 );
 	// trace eye ray
 	uint u0, u1, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, O, D, params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
-	params.hitData[jobIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
+	params.hitData[pathIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
 }
 
 __device__ void setupSecondaryRay( const uint rayIdx, const uint stride )

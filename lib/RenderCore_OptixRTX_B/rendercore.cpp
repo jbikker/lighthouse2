@@ -136,27 +136,29 @@ void RenderCore::Init()
 	performanceCounters = context->createBuffer( RT_BUFFER_INPUT_OUTPUT, RT_FORMAT_UNSIGNED_INT, 64 );
 	RenderCore::context["performanceCounters"]->setBuffer( performanceCounters );
 	// prepare counters for persistent threads
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-	counterBuffer = new InteropBuffer<Counters>( 1, ON_HOST | ON_DEVICE, RT_BUFFER_INPUT, RT_FORMAT_USER, "counters" );
-#else
 	counterBuffer = new CoreBuffer<Counters>( 1, ON_HOST | ON_DEVICE );
-#endif
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
 	SetClampValue( 10.0f );
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
 	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
-	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
+	for (int i = 0; i < 65536; i++) data32[i] = data8[i]; // convert
 	data8 = (uchar*)scr256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 65536] = data8[i];
 	data8 = (uchar*)rnk256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 3 * 65536] = data8[i];
 	blueNoise = new InteropBuffer<uint>( 65536 * 5, ON_DEVICE, RT_BUFFER_INPUT, RT_FORMAT_UNSIGNED_INT, "blueNoise", data32 );
 	delete data32;
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	CoreMesh::attribProgram = context->createProgramFromPTXString( ptx, "triangle_attributes" );
+	// prepare timing events
+	for( int i = 0; i < MAXPATHLENGTH; i++ )
+	{
+		cudaEventCreate( &shadeStart[i] );
+		cudaEventCreate( &shadeEnd[i] );
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -439,9 +441,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 {
 	// wait for OpenGL
 	glFinish();
-	// start render timer
 	Timer timer;
-	timer.reset();
 	// clean accumulator, if requested
 	if (converge == Restart)
 	{
@@ -487,12 +487,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		// instancesDirty = false;
 	}
 	// render image
-	coreStats.traceTime = 0;
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
-	// prepare timer
-	Timer t;
-	t.reset();
-	// jitter the view for TAA
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	// render an image using OptiX
 	context["posLensSize"]->setFloat( view.pos.x, view.pos.y, view.pos.z, view.aperture );
@@ -501,68 +496,64 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	context["p1"]->setFloat( view.p1.x, view.p1.y, view.p1.z );
 	context["pass"]->setUint( samplesTaken );
 	// loop
-#ifndef USE_OPTIX_PERSISTENT_THREADS
 	Counters counters;
-#endif
+	coreStats.deepRayCount = 0;
+	coreStats.traceTimeX = coreStats.shadeTime = 0;
 	for (int pathLength = 1; pathLength <= 3; pathLength++)
 	{
 		// generate / extend
+		Timer t;
 		if (pathLength == 1)
 		{
 			// spawn and extend camera rays
 			context["phase"]->setUint( 0 );
+			coreStats.primaryRayCount = scrwidth * scrheight * scrspp;
 			InitCountersForExtend( scrwidth * scrheight * scrspp );
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-			context->launch( 0, SMcount * 1024 );
-#else
 			context->launch( 0, scrwidth * scrheight * scrspp );
-#endif
 		}
 		else
 		{
 			// extend bounced paths
 			context["phase"]->setUint( 1 );
+			if (pathLength == 2) coreStats.bounce1RayCount = counters.extensionRays;
+			else coreStats.deepRayCount += counters.extensionRays;
 			counterBuffer->CopyToHost();
 			Counters& counters = counterBuffer->HostPtr()[0];
 			InitCountersSubsequent();
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-			context->launch( 0, SMcount * 1024 );
-#else
 			context->launch( 0, counters.extensionRays );
-#endif
 		}
+		if (pathLength == 1) coreStats.traceTime0 = t.elapsed();
+		else if (pathLength == 2) coreStats.traceTime1 = t.elapsed();
+		else coreStats.traceTimeX += t.elapsed();
 		// shade
+		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken, 
+			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
-#ifndef USE_OPTIX_PERSISTENT_THREADS
+		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
-#endif
 	}
-	// fetch updated counters
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-	counterBuffer->CopyToHost();
-	Counters& counters = counterBuffer->HostPtr()[0];
-#endif
 	// connect to light sources
+	Timer t;
 	context["phase"]->setUint( 2 );
 	context->launch( 0, counters.shadowRays );
+	coreStats.shadowTraceTime = t.elapsed();
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
-	coreStats.traceTime = t.elapsed() * 1000;
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
-	t.reset();
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
 	renderTarget.UnbindSurface();
 	// finalize statistics
-	coreStats.renderTime = timer.elapsed() * 1000;
+	cudaStreamSynchronize( 0 );
+	coreStats.renderTime = timer.elapsed();
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;
 	coreStats.probedDist = counters.probedDist;

@@ -120,7 +120,7 @@ private:
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
 	CoreBuffer<uint>* blueNoise = 0;
 	// timing
-	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing shading code
+	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
 public:
 	static RTPcontext context;						// the OptiX prime context
 	CoreStats coreStats;							// rendering statistics

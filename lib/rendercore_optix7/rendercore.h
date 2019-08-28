@@ -110,6 +110,10 @@ private:
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
 	CoreBuffer<uint>* blueNoise = 0;
+	// timing
+	cudaEvent_t traceStart[MAXPATHLENGTH], traceEnd[MAXPATHLENGTH];
+	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];
+	cudaEvent_t shadowStart, shadowEnd;
 public:
 	CoreStats coreStats;							// rendering statistics
 	static OptixDeviceContext optixContext;			// static, for access from CoreMesh

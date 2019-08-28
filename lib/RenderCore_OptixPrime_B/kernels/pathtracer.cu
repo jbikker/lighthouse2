@@ -43,13 +43,18 @@
 //  |  shadeKernel                                                                |
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
-LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uint stride,
+__global__  __launch_bounds__( 128 /* max block size */, 1 /* min blocks per sm */ )
+void shadeKernel( float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
+	const float3 p1, const float3 p2, const float3 p3, const float3 pos, const int pathCount )
 {
+	// respect boundaries
+	int jobIndex = threadIdx.x + blockIdx.x * blockDim.x;
+	if (jobIndex >= pathCount) return;
+
 	// gather data by reading sets of four floats for optimal throughput
 	const float4 O4 = extensionRays[jobIndex].O4;		// ray origin xyz, w can be ignored
 	const float4 D4 = extensionRays[jobIndex].D4;		// ray direction xyz
@@ -217,43 +222,10 @@ LH2_DEVFUNC void shadeKernel( const int jobIndex, float4* accumulator, const uin
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  shadePersistent                                                            |
-//  |  Persistent kernel, calling shadeKernel.                              LH2'19|
-//  +-----------------------------------------------------------------------------+
-__global__  void __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm */ )
-shadePersistent( float4* accumulator, const uint stride,
-	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
-	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
-	const uint R0, const uint* blueNoise, const int pass,
-	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
-{
-	// persistent threads: spawn an optimal number of threads for the hardware.
-	// In this case: #SM * 128 * 4, to have 4 blocks of 128 threads on each SM.
-	// Note that this is not a performance win since Kepler; it does however let
-	// us run a work size that is determined by a device-side counter. Without
-	// persistent threads, the CPU needs to know the work size.
-	__shared__ volatile int baseIdx[32];
-	const int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
-	const int pathCount = counters->activePaths;
-	__syncthreads();
-	while (1)
-	{
-		if (lane == 0) baseIdx[warp] = atomicAdd( &counters->shaded, 32 );
-		int jobIndex = baseIdx[warp] + lane;
-		if (__all_sync( THREADMASK, jobIndex >= pathCount )) break; // need to do the path with all threads in the warp active
-		if (jobIndex < pathCount) shadeKernel( jobIndex, accumulator, stride,
-			extensionRays, pathStateData, hits, extensionRaysOut, pathStateDataOut, connections, potentials,
-			R0, blueNoise, pass,
-			probePixelIdx, pathLength, w, h, spreadAngle, p1, p2, p3, pos );
-	}
-}
-
-//  +-----------------------------------------------------------------------------+
 //  |  shadeKernel                                                                |
 //  |  Host-side access point for the shadeKernel code.                     LH2'19|
 //  +-----------------------------------------------------------------------------+
-__host__ void shade( const int smcount, float4* accumulator, const uint stride,
+__host__ void shade( const int pathCount, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut,
 	Ray4* connections, float4* potentials,
@@ -261,11 +233,12 @@ __host__ void shade( const int smcount, float4* accumulator, const uint stride,
 	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
-	shadePersistent << < smcount * 4, 128 >> > (accumulator, stride,
+	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 ), blockDim( 128, 1 );
+	shadeKernel << < gridDim.x, 128 >> > (accumulator, stride,
 		extensionRays, pathStateData, hits,
 		extensionRaysOut, pathStateDataOut, connections, potentials,
 		R0, blueNoise, pass,
-		probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos);
+		probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos, pathCount);
 }
 
 // EOF

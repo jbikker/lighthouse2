@@ -91,11 +91,7 @@ private:
 	optix::Group topLevelGroup = 0;					// the top-level node; combines all instances and is the entry point for ray queries
 	optix::Material dummyMaterial = 0;				// we will just use it to obtain an instance index for a hit
 	InteropBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-	InteropBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
-#else
 	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
-#endif
 	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
 	CoreBuffer<uint>* texel32Buffer = 0;			// texel buffer 0: regular ARGB32 texture data
 	InteropBuffer<float4>* hitBuffer = 0;			// intersection results
@@ -114,6 +110,8 @@ private:
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
 	InteropBuffer<uint>* blueNoise = 0;
+	// timing
+	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];
 public:
 	static optix::Context context;					// the OptiX context
 	static optix::Program optixRaygen;				// eye ray generation code

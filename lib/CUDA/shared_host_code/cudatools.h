@@ -26,6 +26,12 @@ enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2 };
 class CUDATools
 {
 public:
+	static float Elapsed( cudaEvent_t start, cudaEvent_t end )
+	{
+		float elapsed;
+		cudaEventElapsedTime( &elapsed, start, end );
+		return elapsed * 0.001f; // report in seconds
+	}
 	static int _ConvertSMVer2Cores( int major, int minor )
 	{
 		typedef struct { int SM, Cores; } sSMtoCores;

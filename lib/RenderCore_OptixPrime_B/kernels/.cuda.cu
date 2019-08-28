@@ -66,11 +66,8 @@ __global__ void InitCountersForExtend_Kernel( int pathCount )
 {
 	if (threadIdx.x != 0) return;
 	counters->activePaths = pathCount;	// remaining active paths
-	counters->shaded = 0;				// persistent thread atomic for shade kernel
-	counters->generated = 0;			// persistent thread atomic for generate in .optix.cu
 	counters->extensionRays = 0;		// compaction counter for extension rays
 	counters->shadowRays = 0;			// compaction counter for connections
-	counters->connected = 0;
 	counters->totalExtensionRays = pathCount;
 	counters->totalShadowRays = 0;
 }
@@ -80,8 +77,6 @@ __global__ void InitCountersSubsequent_Kernel()
 	if (threadIdx.x != 0) return;
 	counters->totalExtensionRays += counters->extensionRays;
 	counters->activePaths = counters->extensionRays;	// remaining active paths
-	counters->extended = 0;				// persistent thread atomic for genSecond in .optix.cu
-	counters->shaded = 0;				// persistent thread atomic for shade kernel
 	counters->extensionRays = 0;		// compaction counter for extension rays
 }
 __host__ void InitCountersSubsequent() { InitCountersSubsequent_Kernel << <1, 32 >> > (); }

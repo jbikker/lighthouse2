@@ -4,14 +4,14 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-  
+
    This file contains the declaration of the base class for core APIs,
    which defines the interface between the RenderSystem and each of the
    cores.
@@ -45,11 +45,13 @@ struct CoreStats
 	uint totalExtensionRays = 0;		// total extension rays cast
 	uint totalShadowRays = 0;			// total shadow rays cast
 	float renderTime;					// overall render time
-	float traceTime;					// time spent in OptiX
-	float filterTime;					// time spent in filter code
-	float filterPrepTime;				// time spent in filter prep code
-	float filterCoreTime;				// time spent in filter core code
-	float filterTAATime;				// time spent in filter TAA code
+	uint primaryRayCount;				// # primary rays
+	float traceTime0;					// time spent tracing primary rays
+	uint bounce1RayCount;				// # rays after first bounce
+	float traceTime1;					// time spent tracing first bounce
+	uint deepRayCount;					// # rays after multiple bounces
+	float traceTimeX;					// time spent tracing subsequent bounces
+	float shadowTraceTime;				// time spent tracing shadow rays
 	float shadeTime;					// time spent in shading code
 	// probe
 	int probedInstid;					// id of the instance at probe position

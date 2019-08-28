@@ -29,14 +29,13 @@ namespace lh2core
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
-void shade( const int smcount, float4* accumulator, const uint stride,
+void shade( const int pathCount, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* extensionData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays, float4* connectionT4,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
-void finalizeConnections( int smcount, int connections, float4* accumulator,
-	uint* hitBuffer, float4* contributions );
+void finalizeConnections( int rayCount, float4* accumulator, uint* hitBuffer, float4* contributions );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
 
@@ -57,7 +56,7 @@ void SetDebugData( float4* p );
 void SetGeometryEpsilon( float e );
 void SetClampValue( float c );
 void SetCounters( Counters* p );
-void generateEyeRays( int smcount, Ray4* rayBuffer, float4* extensionRayExBuffer,
+void generateEyeRays( int pathCount, Ray4* rayBuffer, float4* extensionRayExBuffer,
 	const uint R0, const uint* blueNoise, const int pass /* multiple of SPP */,
 	const float lensSize, const float3 camPos, const float3 right, const float3 up, const float3 p1,
 	const int4 screenParams );
@@ -440,9 +439,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 {
 	// wait for OpenGL
 	glFinish();
-	// start render timer
 	Timer timer;
-	timer.reset();
 	// clean accumulator, if requested
 	if (converge == Restart)
 	{
@@ -481,11 +478,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		// instancesDirty = false;
 	}
 	// render image
-	coreStats.traceTime = 0;
-	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
-	// prepare timer
-	Timer t;
-	t.reset();
+	coreStats.totalExtensionRays = 0;
 	// setup primary rays
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
@@ -499,14 +492,18 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// extend
+		Timer t;
 		CHK_PRIME( rtpBufferDescSetRange( extensionRaysDesc[inBuffer], 0, pathCount ) );
 		CHK_PRIME( rtpBufferDescSetRange( extensionHitsDesc, 0, pathCount ) );
 		CHK_PRIME( rtpQuerySetRays( query, extensionRaysDesc[inBuffer] ) );
 		CHK_PRIME( rtpQuerySetHits( query, extensionHitsDesc ) );
 		CHK_PRIME( rtpQueryExecute( query, RTP_QUERY_HINT_NONE ) );
+		if (pathLength == 1) coreStats.traceTime0 = t.elapsed(), coreStats.primaryRayCount = pathCount;
+		else if (pathLength == 2)  coreStats.traceTime1 = t.elapsed(), coreStats.bounce1RayCount = pathCount;
+		else coreStats.traceTimeX = t.elapsed(), coreStats.deepRayCount = pathCount;
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
-		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight,
+		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight,
 			extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(), extensionHitBuffer->DevPtr(),
 			extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
 			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(),
@@ -533,6 +530,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	if (counters.shadowRays > 0)
 	{
 		// trace the shadow rays using OptiX Prime
+		Timer t;
 		RTPquery query;
 		CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &query ) );
 		CHK_PRIME( rtpBufferDescSetRange( shadowRaysDesc, 0, counters.shadowRays ) );
@@ -541,9 +539,9 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		CHK_PRIME( rtpQuerySetHits( query, shadowHitsDesc ) );
 		CHK_PRIME( rtpQueryExecute( query, RTP_QUERY_HINT_NONE ) );
 		CHK_PRIME( rtpQueryDestroy( query ) );
-		coreStats.totalShadowRays += counters.shadowRays;
+		coreStats.shadowTraceTime = t.elapsed();
 		// process intersection results
-		finalizeConnections( SMcount, counters.shadowRays, accumulator->DevPtr(), shadowHitBuffer->DevPtr(), shadowRayPotential->DevPtr() );
+		finalizeConnections( counters.shadowRays, accumulator->DevPtr(), shadowHitBuffer->DevPtr(), shadowRayPotential->DevPtr() );
 	}
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
@@ -551,20 +549,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
-	t.reset();
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
 	renderTarget.UnbindSurface();
 	// finalize statistics
-	coreStats.renderTime = timer.elapsed() * 1000;
-	coreStats.filterTime = coreStats.filterPrepTime = coreStats.filterCoreTime = coreStats.filterTAATime = 0;
+	coreStats.renderTime = timer.elapsed();
 	coreStats.shadeTime = 0;
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
-	{
-		float t = 0;
-		cudaEventElapsedTime( &t, shadeStart[i], shadeEnd[i] );
-		coreStats.shadeTime += t;
-	}
-	coreStats.traceTime = coreStats.renderTime - (coreStats.shadeTime + coreStats.filterTime);
+	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;

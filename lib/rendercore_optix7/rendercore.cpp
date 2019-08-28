@@ -21,7 +21,7 @@ namespace lh2core {
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
-void shade( const int smcount, float4* accumulator, const uint stride,
+void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
@@ -261,6 +261,16 @@ void RenderCore::Init()
 	instanceArray = new CoreBuffer<OptixInstance>( 16 /* will grow if needed */, ON_HOST | ON_DEVICE );
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
+	// prepare timing events
+	for( int i = 0; i < MAXPATHLENGTH; i++ )
+	{
+		cudaEventCreate( &shadeStart[i] );
+		cudaEventCreate( &shadeEnd[i] );
+		cudaEventCreate( &traceStart[i] );
+		cudaEventCreate( &traceEnd[i] );
+	}
+	cudaEventCreate( &shadowStart );
+	cudaEventCreate( &shadowEnd );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -575,9 +585,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 {
 	// wait for OpenGL
 	glFinish();
-	// start render timer
 	Timer timer;
-	timer.reset();
 	// clean accumulator, if requested
 	if (converge == Restart)
 	{
@@ -627,11 +635,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		// instancesDirty = false;
 	}
 	// render image
-	coreStats.traceTime = 0;
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
-	// prepare timer
-	Timer t;
-	t.reset();
 	// jitter the view for TAA
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	// render an image using OptiX
@@ -643,59 +647,73 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// loop
 	params.bvhRoot = bvhRoot; // meshes[1]->gasHandle;
 	Counters counters;
-	for (int pathLength = 1; pathLength <= 3; pathLength++)
+	coreStats.deepRayCount = 0;
+	uint pathCount = scrwidth * scrheight * scrspp;
+	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// generate / extend
+		cudaEventRecord( traceStart[pathLength - 1] );
 		if (pathLength == 1)
 		{
 			// spawn and extend camera rays
 			params.phase = 0;
-			InitCountersForExtend( scrwidth * scrheight * scrspp );
+			coreStats.primaryRayCount = pathCount;
+			InitCountersForExtend( pathCount );
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, params.scrsize.x, params.scrsize.y, 1 ) );
 		}
 		else
 		{
 			// extend bounced paths
-			params.phase = 1;
-			counterBuffer->CopyToHost();
-			Counters& counters = counterBuffer->HostPtr()[0];
-			InitCountersSubsequent();
-			if (counters.extensionRays > 0)
+			if (pathLength == 2) coreStats.bounce1RayCount = pathCount; else coreStats.deepRayCount += pathCount;
+			if (pathCount > 0)
 			{
+				params.phase = 1;
+				InitCountersSubsequent();
 				cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-				CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.extensionRays, 1, 1 ) );
+				CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, pathCount, 1, 1 ) );
 			}
 		}
+		cudaEventRecord( traceEnd[pathLength - 1] );
 		// shade
-		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
+		cudaEventRecord( shadeStart[pathLength - 1] );
+		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
 			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
+		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
+		pathCount = counters.extensionRays;
 	}
 	// connect to light sources
+	cudaEventRecord( shadowStart );
 	params.phase = 2;
 	if (counters.shadowRays > 0)
 	{
 		cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 		CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 	}
+	cudaEventRecord( shadowEnd );
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
-	coreStats.traceTime = t.elapsed() * 1000;
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
-	t.reset();
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
 	renderTarget.UnbindSurface();
 	// finalize statistics
-	coreStats.renderTime = timer.elapsed() * 1000;
+	cudaStreamSynchronize( 0 );
+	coreStats.renderTime = timer.elapsed();
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
+	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
+	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	coreStats.traceTimeX = coreStats.shadeTime = 0;
+	for( int i = 2; i < MAXPATHLENGTH; i++ ) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] ); 
+	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;
 	coreStats.probedDist = counters.probedDist;

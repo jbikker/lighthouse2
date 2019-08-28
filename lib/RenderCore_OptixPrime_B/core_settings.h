@@ -87,10 +87,6 @@ struct PathState4 { float4 O4, D4, T4; };
 struct Counters
 {
 	uint activePaths;
-	uint shaded;
-	uint generated;
-	uint connected;
-	uint extended;
 	uint extensionRays;
 	uint shadowRays;
 	uint totalExtensionRays;

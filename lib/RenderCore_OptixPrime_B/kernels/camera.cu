@@ -36,20 +36,20 @@ __inline __device__ float3 RandomPointOnLens( const float r0, float r1, const fl
 //  |  generateEyeRaysKernel                                                      |
 //  |  Generate primary rays, to be traced by Optix Prime.                  LH2'19|
 //  +-----------------------------------------------------------------------------+
-__device__ void generateEyeRaysKernel( const uint rayIdx, Ray4* rayBuffer, float4* pathStateData,
+__global__  __launch_bounds__( 256 /* max block size */, 1 /* min blocks per sm */ )
+void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 	const uint R0, const uint* blueNoise, const int pass,
 	const float3 pos, const float3 right, const float3 up, const float aperture,
-	const float3 p1, const int4 screenParams )
+	const float3 p1, const int4 screenParams, const int jobCount )
 {
+	int jobIndex = threadIdx.x + blockIdx.x * blockDim.x;
+	if (jobIndex >= jobCount) return;
 	// get pixel coordinate
 	const int scrhsize = screenParams.x & 0xffff;
 	const int scrvsize = screenParams.x >> 16;
-	const uint tileIdx = rayIdx >> 8;
-	const uint xtiles = scrhsize / 16;
-	const uint tilex = tileIdx % xtiles, tiley = tileIdx / xtiles;
-	const uint x_in_tile = (rayIdx & 15);
-	const uint y_in_tile = (rayIdx & 255) >> 4;
-	uint x = tilex * 16 + x_in_tile, y = tiley * 16 + y_in_tile, sampleIndex = pass + y / scrvsize;
+	const uint x = jobIndex % scrhsize;
+	uint y = jobIndex / scrhsize;
+	const uint sampleIndex = pass + y / scrvsize;
 	y %= scrvsize;
 	// get random numbers
 	float3 posOnPixel, posOnLens;
@@ -64,7 +64,7 @@ __device__ void generateEyeRaysKernel( const uint rayIdx, Ray4* rayBuffer, float
 	}
 	else
 	{
-		uint seed = WangHash( rayIdx + R0 );
+		uint seed = WangHash( jobIndex + R0 );
 		r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
 		r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
 	}
@@ -72,36 +72,10 @@ __device__ void generateEyeRaysKernel( const uint rayIdx, Ray4* rayBuffer, float
 	posOnLens = RandomPointOnLens( r2, r3, pos, aperture, right, up );
 	const float3 rayDir = normalize( posOnPixel - posOnLens );
 	// initialize path state
-	rayBuffer[rayIdx].O4 = make_float4( posOnLens, geometryEpsilon );
-	rayBuffer[rayIdx].D4 = make_float4( rayDir, 1e34f );
-	pathStateData[rayIdx * 2 + 0] = make_float4( 1, 1, 1, __uint_as_float( ((x + (y + (sampleIndex - pass) * scrvsize) * scrhsize) << 8) + 1 /* S_SPECULAR */ ) );
-	pathStateData[rayIdx * 2 + 1] = make_float4( 1, 0, 0, 0 );
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  generateEyeRaysPersistent                                                  |
-//  |  Persistent kernel for generating primary rays.                       LH2'19|
-//  +-----------------------------------------------------------------------------+
-__global__  void __launch_bounds__( 256 /* max block size */, 1 /* min blocks per sm */ )
-generateEyeRaysPersistent( int pathCount, Ray4* rayBuffer, float4* pathStateData,
-	const uint R0, const uint* blueNoise, const int pass,
-	const float3 pos, const float3 right, const float3 up, const float aperture, const float3 p1,
-	const int4 screenParams )
-{
-	__shared__ volatile int baseIdx[32];
-	int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
-	__syncthreads();
-	while (1)
-	{
-		if (lane == 0) baseIdx[warp] = atomicAdd( &counters->generated, 32 );
-		int jobIndex = baseIdx[warp] + lane;
-		if (__all_sync( THREADMASK, jobIndex >= pathCount )) break; // need to do the path with all threads in the warp active
-		if (jobIndex < pathCount) generateEyeRaysKernel( jobIndex,
-			rayBuffer, pathStateData,
-			R0, blueNoise, pass,
-			pos, right, up, aperture, p1,
-			screenParams );
-	}
+	rayBuffer[jobIndex].O4 = make_float4( posOnLens, geometryEpsilon );
+	rayBuffer[jobIndex].D4 = make_float4( rayDir, 1e34f );
+	pathStateData[jobIndex * 2 + 0] = make_float4( 1, 1, 1, __uint_as_float( ((x + (y + (sampleIndex - pass) * scrvsize) * scrhsize) << 8) + 1 /* S_SPECULAR */ ) );
+	pathStateData[jobIndex * 2 + 1] = make_float4( 1, 0, 0, 0 );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -117,8 +91,8 @@ __host__ void generateEyeRays( int smcount, Ray4* rayBuffer, float4* pathStateDa
 	const int scrheight = screenParams.x >> 16;
 	const int scrspp = screenParams.y & 255;
 	const int pathCount = scrwidth * scrheight * scrspp;
-	InitCountersForExtend_Kernel << <1, 32 >> > (pathCount);
-	generateEyeRaysPersistent << < smcount, 256 >> > (pathCount, rayBuffer, pathStateData, R0, blueNoise, pass, camPos, right, up, aperture, p1, screenParams);
+	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 256 ) / 256, 1 ), blockDim( 256, 1 );
+	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, pass, camPos, right, up, aperture, p1, screenParams, pathCount);
 }
 
 // EOF

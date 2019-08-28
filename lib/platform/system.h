@@ -23,6 +23,9 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
+#include <ctime>
+#include <ratio>
+#include <chrono>
 #include "half.hpp"
 
 using namespace std;
@@ -54,11 +57,18 @@ extern "C" { uint sthread_proc( void* param ); }
 // timer
 struct Timer
 {
-	Timer() : start( get() ) {}
-	float elapsed() const { return (float)(get() - start); }
-	static double get() { return glfwGetTime(); }
-	void reset() { start = get(); }
-	double start;
+	Timer() { reset(); }
+	float elapsed() const 
+	{ 
+		std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - start);
+		return (float)time_span.count();
+	}
+	void reset() 
+	{ 
+		start = std::chrono::high_resolution_clock::now(); 
+	}
+	std::chrono::high_resolution_clock::time_point start;
 };
 
 #define wrap(x,a,b) (((x)>=(a))?((x)<=(b)?(x):((x)-((b)-(a)))):((x)+((b)-(a))))

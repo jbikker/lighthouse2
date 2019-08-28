@@ -68,9 +68,6 @@ rtDeclareVariable( unsigned int, instanceid, attribute instanceid, );
 rtDeclareVariable( int, instanceIndex, , );
 rtBuffer<float4> connectData;
 rtBuffer<float4> accumulator;
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-rtBuffer<Counters> counters;
-#endif
 
 // statistics
 rtBuffer<uint> performanceCounters;
@@ -230,46 +227,17 @@ RT_PROGRAM void generate()
 	if (phase == 0)
 	{
 		// primary rays
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-		while (1)
-		{
-			const uint jobIdx = atomicAggInc( &counters[0].generated );
-			if (jobIdx >= stride) break;
-			setupPrimaryRay( jobIdx, stride );
-		}
-#else
 		setupPrimaryRay( launch_index, stride );
-#endif
 	}
 	else if (phase == 1)
 	{
 		// secondary rays
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-		const uint pathCount = counters[0].activePaths;
-		while (1)
-		{
-			const uint rayIdx = atomicAggInc( &counters[0].extended );
-			if (rayIdx >= pathCount) break;
-			setupSecondaryRay( rayIdx, stride );
-		}
-#else
 		setupSecondaryRay( launch_index, stride );
-#endif
 	}
 	else
 	{
 		// shadow rays
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-		const uint connectionCount = counters[0].shadowRays;
-		while (1)
-		{
-			const uint rayIdx = atomicAggInc( &counters[0].connected );
-			if (rayIdx >= connectionCount) break;
-			generateShadowRay( rayIdx, stride );
-		}
-#else
 		generateShadowRay( launch_index, stride );
-#endif
 	}
 }
 

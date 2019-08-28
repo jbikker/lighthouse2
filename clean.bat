@@ -63,6 +63,15 @@ del apps\app_matui\*.iobj /Q
 del apps\app_matui\*.ipdb /Q
 del apps\app_matui\*.pdb /Q
 del apps\app_matui\*.ilk /Q
+rd apps\imguiapp\x64 /S /Q
+del apps\imguiapp\data\textures\*.bin
+del apps\imguiapp\data\mattest\textures\*.bin
+del apps\imguiapp\data\sky_15.bin
+del apps\imguiapp\*.exe /Q
+del apps\imguiapp\*.iobj /Q
+del apps\imguiapp\*.ipdb /Q
+del apps\imguiapp\*.pdb /Q
+del apps\imguiapp\*.ilk /Q
 
 rem | Clean up other components
 

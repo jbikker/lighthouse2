@@ -61,6 +61,11 @@ int RenderAPI::AddMesh( const char* file, const char* dir, const float scale )
 	return renderer->scene->AddMesh( file, dir, scale );
 }
 
+void RenderAPI::AddScene( const char* file, const char* dir )
+{
+	return renderer->scene->AddScene( file, dir );
+}
+
 int RenderAPI::AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material )
 {
 	return renderer->scene->AddQuad( N, pos, width, height, material );
@@ -71,9 +76,9 @@ int RenderAPI::AddInstance( const int meshId, const mat4& transform )
 	return renderer->scene->AddInstance( meshId, transform );
 }
 
-void RenderAPI::SetInstanceTransform( const int instId, const mat4& transform )
+void RenderAPI::SetNodeTransform( const int nodeId, const mat4& transform )
 {
-	renderer->scene->SetInstanceTransform( instId, transform );
+	renderer->scene->SetNodeTransform( nodeId, transform );
 }
 
 void RenderAPI::SynchronizeSceneData()
@@ -115,6 +120,11 @@ HostMaterial* RenderAPI::GetMaterial( const int matId )
 int RenderAPI::FindMaterialID( const char* name )
 {
 	return renderer->scene->FindMaterialID( name );
+}
+
+int RenderAPI::FindNode( const char* name )
+{
+	return renderer->scene->FindNode( name );
 }
 
 int RenderAPI::AddMaterial( const float3 color )

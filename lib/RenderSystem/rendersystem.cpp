@@ -138,23 +138,37 @@ void RenderSystem::SynchronizeMeshes()
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  RenderSystem::SynchronizeInstances                                         |
-//  |  Detect changes to scene instances. Note: this is just a small amount of    |
-//  |  data per instance. We will assume that we can just as well send all        |
-//  |  instance data if any of them changed, even if the number of instances is   |
-//  |  significant.                                                         LH2'19|
+//  |  RenderSystem::UpdateSceneGraph                                             |
+//  |  Walk the scene graph:                                                      |
+//  |  - update all node matrices                                                 |
+//  |  - update the instance array (where an 'instance' is a node with            |
+//  |    a mesh)                                                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderSystem::SynchronizeInstances()
+void RenderSystem::UpdateSceneGraph()
 {
-	bool instancesDirty = false;
-	for (auto instance : scene->instances) if (instance->Changed()) instancesDirty = true;
-	if (instancesDirty)
+	// walk the scene graph to update matrices
+	int instanceCount = 0;
+	bool instancesChanged = false;
+	for( int i = 0; i < HostScene::scene.size(); i++ ) 
 	{
+		int nodeIdx = HostScene::scene[i];
+		HostNode* node = HostScene::nodes[nodeIdx];
+		mat4 T;
+		instancesChanged |= node->Update( T /* start with an identity matrix */, instanceCount );
+	}
+	// synchronize instances to device if anything changed
+	if (instancesChanged)
+	{
+		// resize vector (this is free if the size didn't change)
+		HostScene::instances.resize( instanceCount );
 		// send instances to core
-		for (int instanceIdx = 0; instanceIdx < scene->instances.size(); instanceIdx++)
+		for (int instanceIdx = 0; instanceIdx < instanceCount; instanceIdx++)
 		{
-			HostInstance* instance = scene->instances[instanceIdx];
-			core->SetInstance( instanceIdx, instance->meshIdx, instance->transform );
+			// HostInstance* instance = scene->instances[instanceIdx];
+			HostNode* node = HostScene::nodes[HostScene::instances[instanceIdx]];
+			node->instanceID = instanceIdx;
+			int dummy = node->Changed(); // prevent superfluous update in the next frame
+			core->SetInstance( instanceIdx, node->meshID, node->combinedTransform );
 		}
 		// finalize
 		core->UpdateToplevel();
@@ -205,7 +219,7 @@ void RenderSystem::SynchronizeSceneData()
 	SynchronizeTextures();
 	SynchronizeMaterials();
 	SynchronizeMeshes();
-	SynchronizeInstances();
+	UpdateSceneGraph();
 	SynchronizeLights();
 }
 

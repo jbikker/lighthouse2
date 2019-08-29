@@ -17,8 +17,10 @@
 
 // static scene data
 HostSkyDome* HostScene::sky = 0;
+vector<int> HostScene::scene;
+vector<HostNode*> HostScene::nodes;
 vector<HostMesh*> HostScene::meshes;
-vector<HostInstance*> HostScene::instances;
+vector<int> HostScene::instances;
 vector<HostMaterial*> HostScene::materials;
 vector<HostTexture*> HostScene::textures;
 vector<HostAreaLight*> HostScene::areaLights;
@@ -26,20 +28,6 @@ vector<HostPointLight*> HostScene::pointLights;
 vector<HostSpotLight*> HostScene::spotLights;
 vector<HostDirectionalLight*> HostScene::directionalLights;
 Camera* HostScene::camera = 0;
-
-// helper functions
-static HostTri TransformedHostTri( HostTri* tri, mat4 T )
-{
-	HostTri transformedTri = *tri;
-	transformedTri.vertex0 = make_float3( make_float4( transformedTri.vertex0, 1 ) * T );
-	transformedTri.vertex1 = make_float3( make_float4( transformedTri.vertex1, 1 ) * T );
-	transformedTri.vertex2 = make_float3( make_float4( transformedTri.vertex2, 1 ) * T );
-	float4 N = make_float4( transformedTri.Nx, transformedTri.Ny, transformedTri.Nz, 0 ) * T;
-	transformedTri.Nx = N.x;
-	transformedTri.Ny = N.y;
-	transformedTri.Nz = N.z;
-	return transformedTri;
-}
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostScene::HostScene                                                       |
@@ -56,7 +44,6 @@ HostScene::HostScene()
 HostScene::~HostScene()
 {
 	// clean up allocated objects
-	for (auto instance : instances) delete instance;
 	for (auto mesh : meshes) delete mesh;
 	for (auto material : materials) delete material;
 	for (auto texture : textures) delete texture;
@@ -195,12 +182,81 @@ void HostScene::Init()
 //  |  Create a mesh specified by a file name and data dir, apply a scale, add    |
 //  |  the mesh to the list of meshes and return the mesh ID.               LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddMesh( const char* objFile, const char* dataDir, const float scale )
+int HostScene::AddMesh( const char* objFile, const char* dir, const float scale )
 {
-	HostMesh* newMesh = new HostMesh( objFile, dataDir, scale );
+	HostMesh* newMesh = new HostMesh( objFile, dir, scale );
 	newMesh->ID = (int)meshes.size();
 	meshes.push_back( newMesh );
 	return newMesh->ID;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::AddScene                                                        |
+//  |  Loads a collection of meshes from a gltf file. An instance and a scene     |
+//  |  graph node is created for each mesh.                                 LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostScene::AddScene( const char* sceneFile, const char* dir )
+{
+	// material offset: if we loaded an object before this one, material indices should not start at 0.
+	int matIdxOffset = (int)HostScene::materials.size();
+	// load gltf file
+	string cleanFileName = LowerCase( dir + string( sceneFile ) );
+	tinygltf::Model gltfModel;
+	tinygltf::TinyGLTF loader;
+	string err, warn;
+	bool ret = loader.LoadASCIIFromFile( &gltfModel, &err, &warn, cleanFileName );
+	// bool ret = loader.LoadBinaryFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() ); // for binary glTF (.glb)
+	if (!warn.empty()) printf( "Warn: %s\n", warn.c_str() );
+	if (!err.empty()) printf( "Err: %s\n", err.c_str() );
+	if (!ret) FatalError( "could not load glTF file:\n%s", cleanFileName.c_str() );
+	// convert textures
+	for (size_t i = 0; i < gltfModel.textures.size(); i++)
+	{
+		tinygltf::Texture& gltfTexture = gltfModel.textures[i];
+		HostTexture* texture = new HostTexture();
+		const tinygltf::Image& image = gltfModel.images[gltfTexture.source];
+		const size_t size = image.component * image.width * image.height;
+		texture->width = image.width;
+		texture->height = image.height;
+		texture->idata = (uchar4*)MALLOC64( texture->PixelsNeeded( image.width, image.height, MIPLEVELCOUNT ) * sizeof( uint ) );
+		texture->ID = (int)HostScene::textures.size();
+		texture->flags |= HostTexture::LDR;
+		memcpy( texture->idata, image.image.data(), size );
+		texture->ConstructMIPmaps();
+		HostScene::textures.push_back( texture );
+	}
+	// convert materials
+	for (size_t i = 0; i < gltfModel.materials.size(); i++)
+	{
+		tinygltf::Material& gltfMaterial = gltfModel.materials[i];
+		HostMaterial* material = new HostMaterial();
+		material->ID = (int)HostScene::materials.size();
+		material->origin = cleanFileName;
+		material->ConvertFrom( gltfMaterial, gltfModel );
+		material->flags |= HostMaterial::FROM_MTL;
+		HostScene::materials.push_back( material );
+		// materialList.push_back( material->ID ); // can't do that, need something smarter.
+	}
+	// convert meshes
+	for (size_t i = 0; i < gltfModel.meshes.size(); i++)
+	{
+		tinygltf::Mesh& gltfMesh = gltfModel.meshes[i];
+		HostMesh* newMesh = new HostMesh( gltfMesh, gltfModel, matIdxOffset );
+		newMesh->ID = (int)i;
+		meshes.push_back( newMesh );
+	}
+	// convert nodes
+	for (size_t i = 0; i < gltfModel.nodes.size(); i++)
+	{
+		tinygltf::Node& gltfNode = gltfModel.nodes[i];
+		HostNode* newNode = new HostNode( gltfNode );
+		newNode->ID = (int)i;
+		nodes.push_back( newNode );
+	}
+	// construct a scene graph for scene 0, assuming the GLTF file has one scene
+	tinygltf::Scene& glftScene = gltfModel.scenes[0];
+	for( size_t i = 0; i < glftScene.nodes.size(); i++ ) scene.push_back( glftScene.nodes[i] );
+
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -252,66 +308,18 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostScene::AddInstance                                                     |
-//  |  Create an instance based on a mesh ID, set the transform,                  |
-//  |  add the instance to the list of instances,                                 |
-//  |  scan the geometry for light emitting triangles, and                        |
-//  |  return the instance id.                                              LH2'19|
+//  |  HostScene::AddInstance                                             |
+//  |  Return a texture: if it already exists, return the existing texture (after |
+//  |  increasing its refCount), otherwise, create a new texture and return its   |
+//  |  ID.                                                                  LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddInstance( const int meshId, const mat4& transform )
+int HostScene::AddInstance( const int meshIdx, const mat4& transform )
 {
-	HostInstance* newInstance = new HostInstance( meshId, transform );
-	newInstance->ID = (int)instances.size();
-	instances.push_back( newInstance );
-	// scan the mesh for light emitting triangles
-	HostMesh* mesh = meshes[meshId];
-	for (int i = 0; i < mesh->triangles.size(); i++)
-	{
-		HostTri* tri = &mesh->triangles[i];
-		HostMaterial* mat = materials[tri->material];
-		if (mat->color.x > 1 || mat->color.y > 1 || mat->color.z > 1)
-		{
-			tri->UpdateArea();
-			HostTri transformedTri = TransformedHostTri( tri, transform );
-			HostAreaLight* light = new HostAreaLight( &transformedTri, i, newInstance->ID );
-			tri->ltriIdx = (int)areaLights.size(); // TODO: can't duplicate a light due to this.
-			areaLights.push_back( light );
-			newInstance->hasLTris = true;
-			// Note: TODO: 
-			// 1. if a mesh is deleted it should scan the list of area lights
-			//    to delete those that no longer exist.
-			// 2. if a material is changed from emissive to non-emissive,
-			//    meshes using the material should remove their light emitting
-			//    triangles from the list of area lights.
-			// 3. if a material is changed from non-emissive to emissive,
-			//    meshes using the material should update the area lights list.
-			// Item 1 can be done efficiently. Items 2 and 3 require a list
-			// of materials per mesh to be efficient.
-		}
-	}
-	return newInstance->ID;
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  HostScene::SetInstanceTransform                                            |
-//  |  Set the transform for an instance. If the instance uses an emissive        |
-//  |  material, also update the affected area lights.                      LH2'19|
-//  +-----------------------------------------------------------------------------+
-void HostScene::SetInstanceTransform( const int instId, const mat4& T )
-{
-	instances[instId]->transform = T;
-	if (instances[instId]->hasLTris)
-	{
-		HostMesh* mesh = meshes[instances[instId]->meshIdx];
-		for (int i = 0; i < mesh->triangles.size(); i++)
-		{
-			HostTri* tri = &mesh->triangles[i];
-			if (tri->ltriIdx == -1) continue;
-			tri->UpdateArea();
-			HostTri transformedTri = TransformedHostTri( tri, T );
-			*areaLights[tri->ltriIdx] = HostAreaLight( &transformedTri, i, instId );
-		}
-	}
+	HostNode* newNode = new HostNode( meshIdx, transform );
+	newNode->ID = (int)nodes.size();
+	nodes.push_back( newNode );
+	scene.push_back( newNode->ID );
+	return newNode->ID;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -356,10 +364,10 @@ int HostScene::FindOrCreateMaterial( const string& name )
 //  |  HostScene::GetTriangleMaterial                                             |
 //  |  Retrieve the material ID for the specified triangle.                 LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::GetTriangleMaterial( const int instid, const int triid )
+int HostScene::GetTriangleMaterial( const int nodeid, const int triid )
 {
 	if (triid == -1) return -1;
-	return meshes[instances[instid]->meshIdx]->triangles[triid].material;
+	return meshes[nodes[nodeid]->meshID]->triangles[triid].material;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -370,6 +378,26 @@ int HostScene::FindMaterialID( const char* name )
 {
 	for (auto material : materials) if (material->name.compare( name ) == 0) return material->ID;
 	return -1;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::FindNode                                                        |
+//  |  Find the ID of a node with the specified name.                       LH2'19|
+//  +-----------------------------------------------------------------------------+
+int HostScene::FindNode( const char* name )
+{
+	for (auto node : nodes) if (node->name.compare( name ) == 0) return node->ID;
+	return -1;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::SetNodeTransform                                                |
+//  |  Set the local transform for the specified node.                      LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostScene::SetNodeTransform( const int nodeId, const mat4& transform )
+{
+	if (nodeId < 0 || nodeId >= nodes.size()) return;
+	nodes[nodeId]->localTransform = transform;
 }
 
 //  +-----------------------------------------------------------------------------+

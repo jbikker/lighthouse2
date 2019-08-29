@@ -143,7 +143,10 @@ public:
 	}
 	static void CheckError( const char* file, int line, const char* funcName, cudaError_t res )
 	{
-		if (res != CUDA_SUCCESS) FatalError( "%s() failed: %s!\n%s, line %i", funcName, decodeError( res ), file, line );
+		if (res != CUDA_SUCCESS) 
+		{
+			FatalError( "%s() failed: %s!\n%s, line %i", funcName, decodeError( res ), file, line );
+		}
 	}
 	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )
 	{

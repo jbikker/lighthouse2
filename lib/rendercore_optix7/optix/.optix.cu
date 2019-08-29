@@ -163,13 +163,13 @@ extern "C" __global__ void __closesthit__occlusion()
 
 extern "C" __global__ void __closesthit__radiance()
 {
-	const int prim_idx = optixGetPrimitiveIndex();
-	const int inst_idx = optixGetInstanceIndex();
+	const uint prim_idx = optixGetPrimitiveIndex();
+	const uint inst_idx = optixGetInstanceIndex();
 	const float2 bary = optixGetTriangleBarycentrics();
 	const float tmin = optixGetRayTmax();
 	optixSetPayload_0( __float_as_uint( bary.x ) );
 	optixSetPayload_1( __float_as_uint( bary.y ) );
-	optixSetPayload_2( (inst_idx << 24) + prim_idx );
+	optixSetPayload_2( (inst_idx << 20) + prim_idx );
 	optixSetPayload_3( __float_as_uint( tmin ) );
 }
 

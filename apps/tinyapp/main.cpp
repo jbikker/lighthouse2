@@ -32,11 +32,12 @@ static bool camMoved = false, hasFocus = true, running = true;
 void PrepareScene()
 {
 	// initialize scene
-	int worldID = renderer->AddMesh( "scene.gltf", "data\\pica\\", 10.0f );
+	renderer->AddScene( "scene.gltf", "data\\pica\\" );
+	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
+	renderer->SetNodeTransform( rootNode, mat4::RotateX( PI / 2 ) );
 	int carID = renderer->AddMesh( "legocar.obj", "data\\", 10.0f );
-	int lightMat = renderer->AddMaterial( make_float3( 250, 250, 200 ) );
+	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
-	renderer->AddInstance( worldID );
 	renderer->AddInstance( lightQuad );
 	car = renderer->AddInstance( carID );
 }
@@ -107,7 +108,7 @@ int main()
 	#if 1
 		// minimal rigid animation example
 		static float r = 0;
-		renderer->SetInstanceTransform( car, mat4::RotateY( r * 2.0f ) * mat4::RotateZ( 0.2f * sinf( r * 8.0f ) ) * mat4::Translate( make_float3( 0, 5, 0 ) ) );
+		renderer->SetNodeTransform( car, mat4::RotateY( r * 2.0f ) * mat4::RotateZ( 0.2f * sinf( r * 8.0f ) ) * mat4::Translate( make_float3( 0, 5, 0 ) ) );
 		r += deltaTime * 0.3f; if (r > 2 * PI) r -= 2 * PI;
 		camMoved = true;
 	#endif

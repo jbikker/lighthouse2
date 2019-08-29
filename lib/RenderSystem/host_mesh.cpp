@@ -26,12 +26,16 @@ static string GetFilePathExtension( string& fileName )
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostMesh::HostMesh                                                         |
-//  |  Constructor.                                                         LH2'19|
+//  |  Constructors.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
 HostMesh::HostMesh( const char* file, const char* dir, const float scale )
 {
-	// note: fbx files contain multiple meshes, and they are not collapsed.
 	LoadGeometry( file, dir, scale );
+}
+
+HostMesh::HostMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset )
+{
+	ConvertFromGTLFMesh( gltfMesh, gltfModel, matIdxOffset );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -66,14 +70,6 @@ void HostMesh::LoadGeometry( const char* file, const char* dir, const float scal
 	if (extension.compare( "obj" ) == 0)
 	{
 		LoadGeometryFromOBJ( cleanFileName.c_str(), dir, transform );
-	}
-	else if (extension.compare( "gltf" ) == 0)
-	{
-		LoadGeometryFromGLTF( cleanFileName.c_str(), transform );
-	}
-	else if (extension.compare( "fbx" ) == 0)
-	{
-		LoadGeometryFromFBX( cleanFileName.c_str(), dir, transform );
 	}
 	else
 	{
@@ -261,265 +257,174 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostMesh::LoadGeometryFromGLTF                                             |
-//  |  Load a gltf file using tiny_gltf.                                    LH2'19|
+//  |  HostMesh::ConvertFromGTLFMesh                                              |
+//  |  Convert a gltf mesh to a HostMesh.                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMesh::LoadGeometryFromGLTF( const string& fileName, const mat4& transform )
+void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset )
 {
-	// dummy
-	float scale = 1.0f;
-	// material offset: if we loaded an object before this one, material indices should not start at 0.
-	int matIdxOffset = (int)HostScene::materials.size();
-	// load gltf file
-	Model model;
-	TinyGLTF loader;
-	string err, warn;
-	bool ret = loader.LoadASCIIFromFile( &model, &err, &warn, fileName.c_str() );
-	// bool ret = loader.LoadBinaryFromFile( &model, &err, &warn, fileName.c_str() ); // for binary glTF (.glb)
-	if (!warn.empty()) printf( "Warn: %s\n", warn.c_str() );
-	if (!err.empty()) printf( "Err: %s\n", err.c_str() );
-	if (!ret) FatalError( "could not load glTF file:\n%s", fileName.c_str() );
-	// parse the loaded file
-	for (size_t i = 0; i < model.meshes.size(); i++)
+	for (int j = 0; j < gltfMesh.primitives.size(); j++)
 	{
-		Mesh& mesh = model.meshes[i];
-		for (int j = 0; j < mesh.primitives.size(); j++)
+		Primitive& prim = gltfMesh.primitives[j];
+		size_t vertIdxOffset = vertices.size();
+		size_t indexOffset = indices.size();
+		// load indices
+		const Accessor& indicesAccessor = gltfModel.accessors[prim.indices];
+		const BufferView& bufferView = gltfModel.bufferViews[indicesAccessor.bufferView];
+		const Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+		const uchar* a /* brevity */ = buffer.data.data() + bufferView.byteOffset + indicesAccessor.byteOffset;
+		const int byteStride = indicesAccessor.ByteStride( bufferView );
+		const size_t count = indicesAccessor.count;
+		// allocate the index array in the pointer-to-base declared in the parent scope
+		vector<int> tmpIndices;
+		vector<float3> normals, tmpVertices;
+		vector<float2> uvs;
+		switch (indicesAccessor.componentType)
 		{
-			Primitive& prim = mesh.primitives[j];
-			size_t vertIdxOffset = vertices.size();
-			size_t indexOffset = indices.size();
-			// load indices
-			bool convertedToTriangleList = false;
-			const Accessor& indicesAccessor = model.accessors[prim.indices];
-			const BufferView& bufferView = model.bufferViews[indicesAccessor.bufferView];
-			const Buffer& buffer = model.buffers[bufferView.buffer];
-			const uchar* dataAddress = buffer.data.data() + bufferView.byteOffset + indicesAccessor.byteOffset;
-			const int byteStride = indicesAccessor.ByteStride( bufferView );
-			const size_t count = indicesAccessor.count;
-			// allocate the index array in the pointer-to-base declared in the parent scope
-			vector<int> tmpIndices;
-			vector<float3> normals, tmpVertices;
-			vector<float2> uvs;
-			const unsigned char* a = dataAddress;
-			switch (indicesAccessor.componentType)
+		case TINYGLTF_COMPONENT_TYPE_BYTE: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((char*)a) ); break;
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((uchar*)a) ); break;
+		case TINYGLTF_COMPONENT_TYPE_SHORT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((short*)a) ); break;
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((ushort*)a) ); break;
+		case TINYGLTF_COMPONENT_TYPE_INT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((int*)a) ); break;
+		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((uint*)a) ); break;
+		default: break;
+		}
+		// turn into faces - re-arrange the indices so that it describes a simple list of triangles
+		if (prim.mode == TINYGLTF_MODE_TRIANGLE_FAN)
+		{
+			vector<int> fan = move( tmpIndices );
+			tmpIndices.clear();
+			for (size_t i = 2; i < fan.size(); i++)
 			{
-			case TINYGLTF_COMPONENT_TYPE_BYTE: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((char*)a) ); break;
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((uchar*)a) ); break;
-			case TINYGLTF_COMPONENT_TYPE_SHORT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((short*)a) ); break;
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((ushort*)a) ); break;
-			case TINYGLTF_COMPONENT_TYPE_INT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((int*)a) ); break;
-			case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((uint*)a) ); break;
-			default: break;
+				tmpIndices.push_back( fan[0] );
+				tmpIndices.push_back( fan[i - 1] );
+				tmpIndices.push_back( fan[i] );
 			}
-			// turn into faces - re-arrange the indices so that it describes a simple list of triangles
-			if (prim.mode == TINYGLTF_MODE_TRIANGLE_FAN)
+		}
+		else if (prim.mode == TINYGLTF_MODE_TRIANGLE_STRIP)
+		{
+			vector<int> strip = move( tmpIndices );
+			tmpIndices.clear();
+			for (size_t i = 2; i < strip.size(); i++)
 			{
-				if (!convertedToTriangleList) // this only has to be done once per primitive
-				{
-					convertedToTriangleList = true;
-					vector<int> fan = move( tmpIndices );
-					tmpIndices.clear();
-					for (size_t i = 2; i < fan.size(); i++)
-					{
-						tmpIndices.push_back( fan[0] );
-						tmpIndices.push_back( fan[i - 1] );
-						tmpIndices.push_back( fan[i] );
-					}
-				}
+				tmpIndices.push_back( strip[i - 2] );
+				tmpIndices.push_back( strip[i - 1] );
+				tmpIndices.push_back( strip[i] );
 			}
-			else if (prim.mode == TINYGLTF_MODE_TRIANGLE_STRIP)
+		}
+		else if (prim.mode != TINYGLTF_MODE_TRIANGLES) /* skipping non-triangle primitive. */ continue;
+		// we now have a simple list of vertex indices, 3 per triangle (TINYGLTF_MODE_TRIANGLES)
+		for (const auto& attribute : prim.attributes)
+		{
+			const Accessor attribAccessor = gltfModel.accessors[attribute.second];
+			const BufferView& bufferView = gltfModel.bufferViews[attribAccessor.bufferView];
+			const Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+			const uchar* dataPtr = buffer.data.data() + bufferView.byteOffset + attribAccessor.byteOffset, *a = dataPtr;
+			const int byte_stride = attribAccessor.ByteStride( bufferView );
+			const size_t count = attribAccessor.count;
+			if (attribute.first == "POSITION")
 			{
-				if (!convertedToTriangleList)
-				{
-					convertedToTriangleList = true;
-					vector<int> strip = move( tmpIndices );
-					tmpIndices.clear();
-					for (size_t i = 2; i < strip.size(); i++)
-					{
-						tmpIndices.push_back( strip[i - 2] );
-						tmpIndices.push_back( strip[i - 1] );
-						tmpIndices.push_back( strip[i] );
-					}
-				}
+				float3 boundsMin = make_float3( attribAccessor.minValues[0], attribAccessor.minValues[1], attribAccessor.minValues[2] );
+				float3 boundsMax = make_float3( attribAccessor.maxValues[0], attribAccessor.maxValues[1], attribAccessor.maxValues[2] );
+				if (attribAccessor.type == TINYGLTF_TYPE_VEC3)
+					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+						for (size_t i = 0; i < count; i++, a += byte_stride) tmpVertices.push_back( *((float3*)a) );
+					else FatalError( __FILE__, __LINE__, "double precision positions not supported in gltf file", "" );
+				else FatalError( __FILE__, __LINE__, "unsupported position definition in gltf file", "" );
 			}
-			else if (prim.mode != TINYGLTF_MODE_TRIANGLES)
+			if (attribute.first == "NORMAL")
 			{
-				printf( "skipping non-triangle primitive.\n" );
-				continue;
+				if (attribAccessor.type == TINYGLTF_TYPE_VEC3)
+					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+						for (size_t i = 0; i < count; i++, a += byte_stride) normals.push_back( *((float3*)a) );
+					else FatalError( __FILE__, __LINE__, "double precision normals not supported in gltf file", "" );
+				else FatalError( __FILE__, __LINE__, "expected vec3 normals in gltf file", "" );
 			}
-			// we now have a simple list of vertex indices, 3 per triangle (TINYGLTF_MODE_TRIANGLES)
-			for (const auto& attribute : prim.attributes)
+			if (attribute.first == "TANGENT") /* not yet supported */ continue;
+			if (attribute.first == "TEXCOORD_0")
 			{
-				const Accessor attribAccessor = model.accessors[attribute.second];
-				const BufferView& bufferView = model.bufferViews[attribAccessor.bufferView];
-				const Buffer& buffer = model.buffers[bufferView.buffer];
-				const uchar* dataPtr = buffer.data.data() + bufferView.byteOffset + attribAccessor.byteOffset, *a = dataPtr;
-				const int byte_stride = attribAccessor.ByteStride( bufferView );
-				const size_t count = attribAccessor.count;
-				if (attribute.first == "POSITION")
-				{
-					float3 boundsMin = make_float3( attribAccessor.minValues[0], attribAccessor.minValues[1], attribAccessor.minValues[2] );
-					float3 boundsMax = make_float3( attribAccessor.maxValues[0], attribAccessor.maxValues[1], attribAccessor.maxValues[2] );
-					if (attribAccessor.type == TINYGLTF_TYPE_VEC3)
-						if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-							for (size_t i = 0; i < count; i++, a += byte_stride) tmpVertices.push_back( *((float3*)a) * scale );
-						else FatalError( __FILE__, __LINE__, "double precision positions not supported in file", fileName.c_str() );
-					else FatalError( __FILE__, __LINE__, "unsupported position definition in file", fileName.c_str() );
-				}
-				if (attribute.first == "NORMAL")
-				{
-					if (attribAccessor.type == TINYGLTF_TYPE_VEC3)
-						if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-							for (size_t i = 0; i < count; i++, a += byte_stride) normals.push_back( *((float3*)a) );
-						else FatalError( __FILE__, __LINE__, "double precision normals not supported in file", fileName.c_str() );
-					else FatalError( __FILE__, __LINE__, "expected vec3 normals in file", fileName.c_str() );
-				}
-				if (attribute.first == "TANGENT")
-				{
-					// not yet supported
-					continue;
-				}
-				if (attribute.first == "TEXCOORD_0")
-				{
-					if (attribAccessor.type == TINYGLTF_TYPE_VEC2)
-						if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-							for (size_t i = 0; i < count; i++, a += byte_stride) uvs.push_back( *((float2*)a) );
-						else FatalError( __FILE__, __LINE__, "double precision uvs not supported in file", fileName.c_str() );
-					else FatalError( __FILE__, __LINE__, "expected vec2 uvs in file", fileName.c_str() );
-				}
+				if (attribAccessor.type == TINYGLTF_TYPE_VEC2)
+					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+						for (size_t i = 0; i < count; i++, a += byte_stride) uvs.push_back( *((float2*)a) );
+					else FatalError( __FILE__, __LINE__, "double precision uvs not supported in gltf file", "" );
+				else FatalError( __FILE__, __LINE__, "expected vec2 uvs in gltf file", "" );
 			}
-			// sanity checks
-			assert( uvs.size() == 0 || uvs.size() == tmpVertices.size() );
-			assert( tmpIndices.size() % 3 == 0 );
-			assert( normals.size() == 0 || normals.size() == tmpVertices.size() );
-			// calculate values for consistent normal interpolation
-			vector<float> alphas;
-			alphas.resize( normals.size(), 1.0f ); // we will have one alpha value per unique vertex normal
-			for (size_t i = 0; i < tmpIndices.size(); i += 3)
+		}
+		// calculate values for consistent normal interpolation
+		vector<float> alphas;
+		alphas.resize( normals.size(), 1.0f ); // we will have one alpha value per unique vertex normal
+		for (size_t i = 0; i < tmpIndices.size(); i += 3)
+		{
+			const uint v0idx = tmpIndices[i + 0], v1idx = tmpIndices[i + 1], v2idx = tmpIndices[i + 2];
+			const float3 vert0 = tmpVertices[v0idx], vert1 = tmpVertices[v1idx], vert2 = tmpVertices[v2idx];
+			const float3 vN0 = normals[v0idx], vN1 = normals[v1idx], vN2 = normals[v2idx];
+			float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
+			if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
+			// Note: we clamp at approx. 45 degree angles; beyond this the approach fails.
+			alphas[v0idx] = min( alphas[v0idx], max( 0.7f, dot( vN0, N ) ) );
+			alphas[v1idx] = min( alphas[v0idx], max( 0.7f, dot( vN1, N ) ) );
+			alphas[v2idx] = min( alphas[v0idx], max( 0.7f, dot( vN2, N ) ) );
+		}
+		for (size_t i = 0; i < alphas.size(); i++)
+		{
+			const float nnv = alphas[i]; // temporarily stored there
+			alphas[i] = acosf( nnv ) * (1 + 0.03632f * (1 - nnv) * (1 - nnv));
+		}
+		// all data has been read; add triangles to the HostMesh
+		const size_t newTriangleCount = tmpIndices.size() / 3;
+		size_t triIdx = triangles.size();
+		triangles.resize( triIdx + newTriangleCount );
+		for (size_t i = 0; i < newTriangleCount; i++, triIdx++)
+		{
+			HostTri& tri = triangles[triIdx];
+			const uint v0idx = tmpIndices[i * 3 + 0];
+			const uint v1idx = tmpIndices[i * 3 + 1];
+			const uint v2idx = tmpIndices[i * 3 + 2];
+			const int vertIdx = (int)vertices.size();
+			indices.push_back( make_uint3( vertIdx, vertIdx + 1, vertIdx + 2 ) );
+			const float3 v0pos = tmpVertices[v0idx];
+			const float3 v1pos = tmpVertices[v1idx];
+			const float3 v2pos = tmpVertices[v2idx];
+			vertices.push_back( make_float4( v0pos, 1 ) );
+			vertices.push_back( make_float4( v1pos, 1 ) );
+			vertices.push_back( make_float4( v2pos, 1 ) );
+			const float3 N = normalize( cross( v1pos - v0pos, v2pos - v0pos ) );
+			tri.Nx = N.x, tri.Ny = N.y, tri.Nz = N.z;
+			tri.vertex0 = tmpVertices[v0idx];
+			tri.vertex1 = tmpVertices[v1idx];
+			tri.vertex2 = tmpVertices[v2idx];
+			tri.alpha = make_float3( alphas[v0idx], alphas[v1idx], alphas[v2idx] );
+			if (normals.size() > 0)
+				tri.vN0 = normals[v0idx],
+				tri.vN1 = normals[v1idx],
+				tri.vN2 = normals[v2idx];
+			if (uvs.size() > 0)
 			{
-				const uint v0idx = tmpIndices[i + 0];
-				const uint v1idx = tmpIndices[i + 1];
-				const uint v2idx = tmpIndices[i + 2];
-				const float3 vert0 = tmpVertices[v0idx];
-				const float3 vert1 = tmpVertices[v1idx];
-				const float3 vert2 = tmpVertices[v2idx];
-				const float3 vN0 = normals[v0idx];
-				const float3 vN1 = normals[v1idx];
-				const float3 vN2 = normals[v2idx];
-				float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
-				if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
-				// Note: we clamp at approx. 45 degree angles; beyond this the approach fails.
-				alphas[v0idx] = min( alphas[v0idx], max( 0.7f, dot( vN0, N ) ) );
-				alphas[v1idx] = min( alphas[v0idx], max( 0.7f, dot( vN1, N ) ) );
-				alphas[v2idx] = min( alphas[v0idx], max( 0.7f, dot( vN2, N ) ) );
-			}
-			// finalize alpha values based on max dots
-			const float w = 0.03632f;
-			for (size_t i = 0; i < alphas.size(); i++)
-			{
-				const float nnv = alphas[i]; // temporarily stored there
-				alphas[i] = acosf( nnv ) * (1 + w * (1 - nnv) * (1 - nnv));
-			}
-			// all data has been read; add triangles to the HostMesh
-			const size_t newTriangleCount = tmpIndices.size() / 3;
-			size_t triIdx = triangles.size();
-			triangles.resize( triIdx + newTriangleCount );
-			for (size_t i = 0; i < newTriangleCount; i++, triIdx++)
-			{
-				HostTri& tri = triangles[triIdx];
-				const uint v0idx = tmpIndices[i * 3 + 0];
-				const uint v1idx = tmpIndices[i * 3 + 1];
-				const uint v2idx = tmpIndices[i * 3 + 2];
-				const int vertIdx = (int)vertices.size();
-				indices.push_back( make_uint3( vertIdx, vertIdx + 1, vertIdx + 2 ) );
-				const float3 v0pos = tmpVertices[v0idx];
-				const float3 v1pos = tmpVertices[v1idx];
-				const float3 v2pos = tmpVertices[v2idx];
-				vertices.push_back( make_float4( v0pos, 1 ) );
-				vertices.push_back( make_float4( v1pos, 1 ) );
-				vertices.push_back( make_float4( v2pos, 1 ) );
-				const float3 N = normalize( cross( v1pos - v0pos, v2pos - v0pos ) );
-				tri.Nx = N.x, tri.Ny = N.y, tri.Nz = N.z;
-				tri.vertex0 = tmpVertices[v0idx];
-				tri.vertex1 = tmpVertices[v1idx];
-				tri.vertex2 = tmpVertices[v2idx];
-				tri.alpha = make_float3( alphas[v0idx], alphas[v1idx], alphas[v2idx] );
-				if (normals.size() > 0)
-					tri.vN0 = normals[v0idx],
-					tri.vN1 = normals[v1idx],
-					tri.vN2 = normals[v2idx];
-				if (uvs.size() > 0)
+				tri.u0 = uvs[v0idx].x, tri.v0 = uvs[v0idx].y;
+				tri.u1 = uvs[v1idx].x, tri.v1 = uvs[v1idx].y;
+				tri.u2 = uvs[v2idx].x, tri.v2 = uvs[v2idx].y;
+				// calculate tangent vector based on uvs
+				float2 uv01 = make_float2( tri.u1 - tri.u0, tri.v1 - tri.v0 );
+				float2 uv02 = make_float2( tri.u2 - tri.u0, tri.v2 - tri.v0 );
+				if (dot( uv01, uv01 ) == 0 || dot( uv02, uv02 ) == 0)
 				{
-					tri.u0 = uvs[v0idx].x, tri.v0 = uvs[v0idx].y;
-					tri.u1 = uvs[v1idx].x, tri.v1 = uvs[v1idx].y;
-					tri.u2 = uvs[v2idx].x, tri.v2 = uvs[v2idx].y;
-					// calculate tangent vector based on uvs
-					float2 uv01 = make_float2( tri.u1 - tri.u0, tri.v1 - tri.v0 );
-					float2 uv02 = make_float2( tri.u2 - tri.u0, tri.v2 - tri.v0 );
-					if (dot( uv01, uv01 ) == 0 || dot( uv02, uv02 ) == 0)
-					{
-						tri.T = normalize( tri.vertex1 - tri.vertex0 );
-						tri.B = normalize( cross( N, tri.T ) );
-					}
-					else
-					{
-						// uvs cannot be used; use edges instead
-						tri.T = normalize( (tri.vertex1 - tri.vertex0) * uv02.y - (tri.vertex2 - tri.vertex0) * uv01.y );
-						tri.B = normalize( (tri.vertex2 - tri.vertex0) * uv01.x - (tri.vertex1 - tri.vertex0) * uv02.x );
-					}
-				}
-				else
-				{
-					// no uv information; use edges to calculate tangent vectors
 					tri.T = normalize( tri.vertex1 - tri.vertex0 );
 					tri.B = normalize( cross( N, tri.T ) );
 				}
-				tri.material = prim.material + matIdxOffset;
+				else
+				{
+					// uvs cannot be used; use edges instead
+					tri.T = normalize( (tri.vertex1 - tri.vertex0) * uv02.y - (tri.vertex2 - tri.vertex0) * uv01.y );
+					tri.B = normalize( (tri.vertex2 - tri.vertex0) * uv01.x - (tri.vertex1 - tri.vertex0) * uv02.x );
+				}
 			}
+			else
+			{
+				// no uv information; use edges to calculate tangent vectors
+				tri.T = normalize( tri.vertex1 - tri.vertex0 );
+				tri.B = normalize( cross( N, tri.T ) );
+			}
+			tri.material = prim.material + matIdxOffset;
 		}
-	}
-	// process textures
-	for (size_t i = 0; i < model.textures.size(); i++)
-	{
-		Texture& gltfTexture = model.textures[i];
-		HostTexture* texture = new HostTexture();
-		const Image& image = model.images[gltfTexture.source];
-		const size_t size = image.component * image.width * image.height;
-		texture->width = image.width;
-		texture->height = image.height;
-		texture->idata = (uchar4*)MALLOC64( texture->PixelsNeeded( image.width, image.height, MIPLEVELCOUNT ) * sizeof( uint ) );
-		texture->ID = (int)HostScene::textures.size();
-		texture->flags |= HostTexture::LDR;
-		memcpy( texture->idata, image.image.data(), size );
-		texture->ConstructMIPmaps();
-		HostScene::textures.push_back( texture );
-	}
-	// process materials
-	for (size_t i = 0; i < model.materials.size(); i++)
-	{
-		Material& gltfMaterial = model.materials[i];
-		HostMaterial* material = new HostMaterial();
-		material->ID = (int)HostScene::materials.size();
-		material->origin = fileName;
-		material->ConvertFrom( gltfMaterial, model );
-		material->flags |= HostMaterial::FROM_MTL;
-		HostScene::materials.push_back( material );
-		materialList.push_back( material->ID );
-	}
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  HostMesh::LoadGeometryFromGLTF                                             |
-//  |  Load a gltf file using tiny_gltf.                                    LH2'19|
-//  +-----------------------------------------------------------------------------+
-void HostMesh::LoadGeometryFromFBX( const string& fileName, const char* directory, const mat4& transform )
-{
-	vector<HostMesh*> meshes = FBXImporter::Import( fileName.c_str(), directory, transform );
-	for (int i = 0; i < meshes.size(); i++)
-	{
-		meshes[i]->ID = (int)HostScene::meshes.size();
-		HostScene::meshes.push_back( meshes[i] );
-		HostScene::AddInstance( meshes[i]->ID, mat4::Identity() );
 	}
 }
 
@@ -561,28 +466,6 @@ void HostMesh::UpdateAlphaFlags()
 	for (uint i = 0; i < triCount; i++)
 		if (HostScene::materials[triangles[i].material]->flags & HostMaterial::HASALPHA)
 			alphaFlags[i] = 1;
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  HostInstance::~HostInstance                                                |
-//  |  Destructor.                                                                |
-//  |  We are deleting an instance; if the mesh of this instance has emissive     |
-//  |  materials, we should remove the relevant area lights.                LH2'19|
-//  +-----------------------------------------------------------------------------+
-HostInstance::~HostInstance()
-{
-	HostMesh* mesh = HostScene::meshes[meshIdx];
-	for (auto materialIdx : mesh->materialList)
-	{
-		HostMaterial* material = HostScene::materials[materialIdx];
-		if (material->color.x > 1 || material->color.y > 1 || material->color.z > 1)
-		{
-			// mesh contains an emissive material; remove related area lights
-			vector<HostAreaLight*>& lightList = HostScene::areaLights;
-			for (int i = 0; i < lightList.size(); i++)
-				if (lightList[i]->instIdx == ID) lightList.erase( lightList.begin() + i-- );
-		}
-	}
 }
 
 // EOF

@@ -19,7 +19,7 @@ namespace lighthouse2 {
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostMesh                                                                   |
-//  |  Host-side model data storage.                                        LH2'19|
+//  |  Host-side mesh data storage.                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
 class HostMesh
 {
@@ -33,12 +33,11 @@ public:
 	void LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform );
 	void LoadGeometryFromGLTF( const string& fileName, const mat4& transform );
 	void LoadGeometryFromFBX( const string& fileName, const char* directory, const mat4& transform );
-	vector<HostMesh*> FBXImport( const string& fileName );
 	void BuildMaterialList();
 	void UpdateAlphaFlags();
 	// data members
 	string name = "unnamed";					// name for the mesh						
-	int ID = -1;								// unique ID for the model: position in model array
+	int ID = -1;								// unique ID for the mesh: position in mesh array
 	vector<float4> vertices;					// model vertices
 	vector<uint3> indices;						// connectivity data
 	vector<HostTri> triangles;					// full triangles
@@ -46,31 +45,19 @@ public:
 	vector<uint> alphaFlags;					// list containing 1 for each triangle that is flagged as HASALPHA, 0 otherwise 
 	bool isAnimated;							// true when this mesh has animation data
 	TRACKCHANGES;								// add Changed(), MarkAsDirty() methods, see system.h
+#ifdef RENDERSYSTEMBUILD
+	// this is ugly, but otherwise apps that include host_mesh.h need to know what tinygltf is.
+	friend class HostScene;
+protected:
+	HostMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset );
+	void ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset );
+#endif
 	// Note: design decision:
 	// Vertices and indices can be deduced from the list of HostTris, obviously. However, efficient intersection
 	// (e.g. in OptiX) requires only vertices and connectivity data. Shading on the other hand requires the full
 	// HostTris. The cores will thus benefit from having both structures. Now, we could let the core build the
 	// vertex and index lists. However, building these efficiently is non-trivial, therefore the 'smart' split 
 	// logic stays in the RenderSystem.
-};
-
-//  +-----------------------------------------------------------------------------+
-//  |  HostInstance                                                               |
-//  |  Host-side instance definition.                                       LH2'19|
-//  +-----------------------------------------------------------------------------+
-class HostInstance
-{
-public:
-	// constructor / destructor
-	HostInstance() = default;
-	HostInstance( int meshID, mat4 T = mat4() ) : meshIdx( meshID ), transform( T ) {}
-	~HostInstance();
-	// data members
-	int ID = -1;								// unique ID for the instance: position in instance array
-	int meshIdx = -1;							// id of the mesh this instance refers to
-	mat4 transform = mat4();					// transform for this instance
-	bool hasLTris = false;						// true if this instance uses an emissive material
-	TRACKCHANGES;
 };
 
 } // namespace lighthouse2

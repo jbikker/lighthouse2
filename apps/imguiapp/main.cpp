@@ -32,11 +32,18 @@ static bool camMoved = false, hasFocus = true, running = true;
 void PrepareScene()
 {
 	// initialize scene
-	int worldID = renderer->AddMesh( "scene.gltf", "data\\pica\\", 10.0f );
-	int lightMat = renderer->AddMaterial( make_float3( 250, 250, 200 ) );
+#if 0
+	int carID = renderer->AddMesh( "legocar.obj", "data\\", 10.0f );
+	renderer->AddInstance( carID, mat4::Translate( 0, 0, 0 ) );
+	renderer->AddInstance( carID, mat4::Translate( 5, 0, 0 ) );
+#else
+	renderer->AddScene( "scene.gltf", "data\\pica\\" );
+	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
+	renderer->SetNodeTransform( rootNode, mat4::RotateX( PI / 2 ) );
+	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
-	renderer->AddInstance( worldID );
 	renderer->AddInstance( lightQuad );
+#endif
 }
 
 //  +-----------------------------------------------------------------------------+

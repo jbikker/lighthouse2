@@ -24,6 +24,7 @@ namespace lighthouse2 {
 //  |  Module for scene I/O and host-side management.                             |
 //  |  This is a pure static class; we will not have more than one scene.   LH2'19|
 //  +-----------------------------------------------------------------------------+
+class HostNode;
 class HostScene
 {
 public:
@@ -38,21 +39,25 @@ public:
 	static int FindOrCreateTexture( const string& origin, const uint modFlags = 0 );
 	static int CreateTexture( const string& origin, const uint modFlags = 0 );
 	static int FindOrCreateMaterial( const string& name );
-	static int GetTriangleMaterial( const int instid, const int triid );
+	static int GetTriangleMaterial( const int nodeid, const int triid );
 	static int FindMaterialID( const char* name );
+	static int FindNode( const char* name );
+	static void SetNodeTransform( const int nodeId, const mat4& transform );
 	// scene construction / maintenance
-	static int AddMesh( const char* objFile, const char* dataDir, const float scale = 1.0f );
+	static int AddMesh( const char* objFile, const char* dir, const float scale = 1.0f );
+	static void AddScene( const char* sceneFile, const char* dir );
+	static int AddInstance( const int meshIdx, const mat4& transform );
 	static int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material );
-	static int AddInstance( const int meshId, const mat4& transform = mat4() );
-	static void SetInstanceTransform( const int instId, const mat4& T );
 	static int AddMaterial( const float3 color );
 	static int AddPointLight( const float3 pos, const float3 radiance, bool enabled = true );
 	static int AddSpotLight( const float3 pos, const float3 direction, const float inner, const float outer, const float3 radiance, bool enabled = true );
 	static int AddDirectionalLight( const float3 direction, const float3 radiance, bool enabled = true );
 	// data members
 	static HostSkyDome* sky;
+	static vector<int> scene; // node indices for scene 0; each of these may have children. TODO: scene 1..X.
+	static vector<HostNode*> nodes;
 	static vector<HostMesh*> meshes;
-	static vector<HostInstance*> instances;
+	static vector<int> instances; // list of indices of nodes that point to a mesh
 	static vector<HostMaterial*> materials;
 	static vector<HostTexture*> textures;
 	static vector<HostAreaLight*> areaLights;

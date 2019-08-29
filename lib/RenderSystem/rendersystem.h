@@ -24,7 +24,6 @@
 #include "tiny_obj_loader.h"
 #include "tinyxml2.h"
 #include "FreeImage.h"
-#include "fbxsdk.h"
 #endif
 #include "host_texture.h"
 #include "host_material.h"
@@ -33,10 +32,10 @@
 #include "host_skydome.h"
 #include "camera.h"
 #include "host_scene.h"
+#include "host_node.h"
 #include "render_api.h"
 
 #ifdef RENDERSYSTEMBUILD
-#include "host_mesh_fbx.h"
 #undef APIENTRY
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -77,8 +76,8 @@ private:
 	void SynchronizeTextures();
 	void SynchronizeMaterials();
 	void SynchronizeMeshes();
-	void SynchronizeInstances();
 	void SynchronizeLights();
+	void UpdateSceneGraph();
 private:
 	// private data members
 	CoreAPI_Base* core = nullptr;			// low-level rendering functionality

@@ -375,7 +375,7 @@ void RenderCore::UpdateToplevel()
 	if (instances.size() > (size_t)instanceArray->GetSize())
 	{
 		delete instanceArray;
-		instanceArray = new CoreBuffer<OptixInstance>( instanceArray->GetSize() + 4, ON_HOST | ON_DEVICE );
+		instanceArray = new CoreBuffer<OptixInstance>( instances.size() + 4, ON_HOST | ON_DEVICE );
 	}
 	// copy instance descriptors to the array, sync with device
 	for (int i = 0; i < instances.size(); i++) instanceArray->HostPtr()[i] = instances[i]->instance;

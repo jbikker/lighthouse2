@@ -385,6 +385,8 @@ public:
 	mat4() = default;
 	float cell[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
 	float& operator [] ( const int idx ) { return cell[idx]; }
+	float operator()( const int i, const int j ) const { return cell[i * 4 + j]; }
+	float& operator()( const int i, const int j ) { return cell[i * 4 + j]; }
 	float3 GetTranslation() { return make_float3( cell[3], cell[7], cell[11] ); }
 	static mat4 Identity() { mat4 r; return r; }
 	static mat4 RotateX( const float a ) { mat4 r; r.cell[5] = cosf( a ); r.cell[6] = -sinf( a ); r.cell[9] = sinf( a ); r.cell[10] = cosf( a ); return r; };
@@ -417,6 +419,7 @@ public:
 	}
 	static mat4 Translate( const float x, const float y, const float z ) { mat4 r; r.cell[3] = x; r.cell[7] = y; r.cell[11] = z; return r; };
 	static mat4 Translate( const float3 P ) { mat4 r; r.cell[3] = P.x; r.cell[7] = P.y; r.cell[11] = P.z; return r; };
+	float Trace3() const { return cell[0] + cell[5] + cell[10]; }
 	void Invert()
 	{
 		// from MESA, via http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
@@ -521,6 +524,114 @@ bool operator == ( const mat4& a, const mat4& b );
 bool operator != ( const mat4& a, const mat4& b );
 float4 operator * ( const mat4& a, const float4& b );
 float4 operator * ( const float4& a, const mat4& b );
+
+class quat // based on https://github.com/adafruit
+{
+public:
+	quat() = default;
+	quat( float _w, float _x, float _y, float _z ) : w( _w ), x( _x ), y( _y ), z( _z ) {}
+	quat( float _w, float3 v ) : w( _w ), x( v.x ), y( v.y ), z( v.z ) {}
+	float magnitude() const { return sqrtf( w * w + x * x + y * y + z * z ); }
+	void normalize() { float m = magnitude(); *this = this->scale( 1 / m ); }
+	quat conjugate() const { return quat( w, -x, -y, -z ); }
+	void fromAxisAngle( const float3& axis, float theta )
+	{
+		w = cosf( theta / 2 );
+		const float s = sinf( theta / 2 );
+		x = axis.x * s, y = axis.y * s, z = axis.z * s;
+	}
+	void fromMatrix( const mat4& m )
+	{
+		float tr = m.Trace3(), S;
+		if (tr > 0)
+		{
+			S = sqrtf( tr + 1.0 ) * 2, w = 0.25 * S;
+			x = (m( 2, 1 ) - m( 1, 2 )) / S;
+			y = (m( 0, 2 ) - m( 2, 0 )) / S;
+			z = (m( 1, 0 ) - m( 0, 1 )) / S;
+		}
+		else if (m( 0, 0 ) > m( 1, 1 ) && m( 0, 0 ) > m( 2, 2 ))
+		{
+			S = sqrt( 1.0 + m( 0, 0 ) - m( 1, 1 ) - m( 2, 2 ) ) * 2;
+			w = (m( 2, 1 ) - m( 1, 2 )) / S, x = 0.25 * S;
+			y = (m( 0, 1 ) + m( 1, 0 )) / S;
+			z = (m( 0, 2 ) + m( 2, 0 )) / S;
+		}
+		else if (m( 1, 1 ) > m( 2, 2 ))
+		{
+			S = sqrt( 1.0 + m( 1, 1 ) - m( 0, 0 ) - m( 2, 2 ) ) * 2;
+			w = (m( 0, 2 ) - m( 2, 0 )) / S;
+			x = (m( 0, 1 ) + m( 1, 0 )) / S, y = 0.25 * S;
+			z = (m( 1, 2 ) + m( 2, 1 )) / S;
+		}
+		else
+		{
+			S = sqrt( 1.0 + m( 2, 2 ) - m( 0, 0 ) - m( 1, 1 ) ) * 2;
+			w = (m( 1, 0 ) - m( 0, 1 )) / S;
+			x = (m( 0, 2 ) + m( 2, 0 )) / S;
+			y = (m( 1, 2 ) + m( 2, 1 )) / S, z = 0.25 * S;
+		}
+	}
+	void toAxisAngle( float3& axis, float& angle ) const
+	{
+		float s = sqrtf( 1 - w * w );
+		if (s == 0) return;
+		angle = 2 * acosf( w );
+		axis.x = x / s, axis.y = y / s, axis.z = z / s;
+	}
+	mat4 toMatrix() const
+	{
+		mat4 ret;
+		ret.cell[0] = 1 - 2 * y * y - 2 * z * z;
+		ret.cell[1] = 2 * x * y - 2 * w * z;
+		ret.cell[2] = 2 * x * z + 2 * w * y;
+		ret.cell[4] = 2 * x * y + 2 * w * z;
+		ret.cell[5] = 1 - 2 * x * x - 2 * z * z;
+		ret.cell[6] = 2 * y * z - 2 * w * x;
+		ret.cell[8] = 2 * x * z - 2 * w * y;
+		ret.cell[9] = 2 * y * z + 2 * w * x;
+		ret.cell[10] = 1 - 2 * x * x - 2 * y * y;
+		return ret;
+	}
+	float3 toEuler() const
+	{
+		float3 ret;
+		float sqw = w * w, sqx = x * x, sqy = y * y, sqz = z * z;
+		ret.x = atan2f( 2.0f * (x * y + z * w), (sqx - sqy - sqz + sqw) );
+		ret.y = asinf( -2.0f * (x * z - y * w) / (sqx + sqy + sqz + sqw) );
+		ret.z = atan2f( 2.0f * (y * z + x * w), (-sqx - sqy + sqz + sqw) );
+		return ret;
+	}
+	float3 toAngularVelocity( float dt ) const
+	{
+		float3 ret;
+		quat one( 1, 0, 0, 0 ), delta = one - *this, r = (delta / dt);
+		r = r * 2, r = r * one;
+		ret.x = r.x, ret.y = r.y, ret.z = r.z;
+		return ret;
+	}
+	float3 rotateVector( const float3& v ) const
+	{
+		float3 qv = make_float3( x, y, z );
+		float3 t = cross( qv, v ) * 2.0f;
+		return v + t * w + cross( qv, t );
+	}
+	quat operator * ( const quat& q ) const
+	{
+		return quat(
+			w * q.w - x * q.x - y * q.y - z * q.z,
+			w * q.x + x * q.w + y * q.z - z * q.y,
+			w * q.y - x * q.z + y * q.w + z * q.x,
+			w * q.z + x * q.y - y * q.x + z * q.w
+		);
+	}
+	quat operator + ( const quat& q ) const { return quat( w + q.w, x + q.x, y + q.y, z + q.z ); }
+	quat operator - ( const quat& q ) const { return quat( w - q.w, x - q.x, y - q.y, z - q.z ); }
+	quat operator / ( float s ) const { return quat( w / s, x / s, y / s, z / s ); }
+	quat operator * ( float s ) const { return scale( s ); }
+	quat scale( float s ) const { return quat( w * s, x * s, y * s, z * s ); }
+	float w = 1, x = 0, y = 0, z = 0;
+};
 
 #endif
 

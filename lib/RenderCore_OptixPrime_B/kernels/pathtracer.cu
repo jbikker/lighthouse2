@@ -31,7 +31,7 @@
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 
 // readability defines; data layout is optimized for 128-bit accesses
-#define INSTANCEIDX (prim >> 24)
+#define INSTANCEIDX (prim >> 20)
 #define HIT_U hitData.x
 #define HIT_V hitData.y
 #define HIT_T hitData.w
@@ -61,14 +61,14 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float4 T4 = pathStateData[jobIndex * 2 + 0];	// path thoughput rgb 
 	const float4 Q4 = pathStateData[jobIndex * 2 + 1];	// x, y: pd of the previous bounce, normal at the previous vertex
 	const Intersection hd = hits[jobIndex];				// TODO: when using instances, Optix Prime needs 5x4 bytes here...
-	const float4 hitData = make_float4( hd.u, hd.v, __int_as_float( hd.triid + (hd.triid == -1 ? 0 : (hd.instid << 24)) ), hd.t );
+	const float4 hitData = make_float4( hd.u, hd.v, __int_as_float( hd.triid + (hd.triid == -1 ? 0 : (hd.instid << 20)) ), hd.t );
 	uint data = __float_as_uint( T4.w );
 
 	// derived data
 	const float bsdfPdf = Q4.x;							// prob.density of the last sampled dir, postponed because of MIS
 	const float3 D = make_float3( D4 );
 	const int prim = __float_as_int( hitData.z );
-	const int primIdx = prim == -1 ? prim : (prim & 0xffffff);
+	const int primIdx = prim == -1 ? prim : (prim & 0xfffff);
 	float3 throughput = make_float3( T4 );
 	const CoreTri4* instanceTriangles = (const CoreTri4*)instanceDescriptors[INSTANCEIDX].triangles;
 	const uint pathIdx = PATHIDX;

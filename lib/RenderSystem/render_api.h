@@ -37,9 +37,10 @@ public:
 	void DeserializeCamera( const char* camera );
 	void SerializeCamera( const char* camera );
 	int AddMesh( const char* file, const char* dir, const float scale );
+	void AddScene( const char* file, const char* dir );
 	int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material );
 	int AddInstance( const int meshId, const mat4& transform = mat4() );
-	void SetInstanceTransform( const int instId, const mat4& transform );
+	void SetNodeTransform( const int nodeId, const mat4& transform );
 	void SynchronizeSceneData();
 	void Render( Convergence converge );
 	Camera* GetCamera();
@@ -47,6 +48,7 @@ public:
 	int GetTriangleMaterialID( const int triId, const int instId );
 	HostMaterial* GetTriangleMaterial( const int triId, const int instId );
 	HostMaterial* GetMaterial( const int matId );
+	int FindNode( const char* name );
 	int FindMaterialID( const char* name );
 	int AddMaterial( const float3 color );
 	int AddPointLight( const float3 pos, const float3 radiance, bool enabled = true );

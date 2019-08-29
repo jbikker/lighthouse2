@@ -20,7 +20,7 @@ namespace lh2core {
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
-void shade( const int smcount, float4* accumulator, const uint stride,
+void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
@@ -499,6 +499,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	Counters counters;
 	coreStats.deepRayCount = 0;
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
+	uint pathCount = scrwidth * scrheight * scrspp;
 	for (int pathLength = 1; pathLength <= 3; pathLength++)
 	{
 		// generate / extend
@@ -507,27 +508,27 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		{
 			// spawn and extend camera rays
 			context["phase"]->setUint( 0 );
-			coreStats.primaryRayCount = scrwidth * scrheight * scrspp;
-			InitCountersForExtend( scrwidth * scrheight * scrspp );
-			context->launch( 0, scrwidth * scrheight * scrspp );
+			coreStats.primaryRayCount = pathCount;
+			InitCountersForExtend( pathCount );
+			context->launch( 0, pathCount );
 		}
 		else
 		{
 			// extend bounced paths
 			context["phase"]->setUint( 1 );
-			if (pathLength == 2) coreStats.bounce1RayCount = counters.extensionRays;
-			else coreStats.deepRayCount += counters.extensionRays;
+			if (pathLength == 2) coreStats.bounce1RayCount = pathCount;
+			else coreStats.deepRayCount += pathCount;
 			counterBuffer->CopyToHost();
 			Counters& counters = counterBuffer->HostPtr()[0];
 			InitCountersSubsequent();
-			context->launch( 0, counters.extensionRays );
+			context->launch( 0, pathCount );
 		}
 		if (pathLength == 1) coreStats.traceTime0 = t.elapsed();
 		else if (pathLength == 2) coreStats.traceTime1 = t.elapsed();
 		else coreStats.traceTimeX += t.elapsed();
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
-		shade( SMcount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
+		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
 			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
@@ -535,6 +536,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
+		pathCount = counters.extensionRays;
 	}
 	// connect to light sources
 	Timer t;

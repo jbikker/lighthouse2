@@ -31,7 +31,7 @@
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 
 // readability defines; data layout is optimized for 128-bit accesses
-#define INSTANCEIDX (prim >> 24)
+#define INSTANCEIDX (prim >> 20)
 #define HIT_U hitData.x
 #define HIT_V hitData.y
 #define HIT_T hitData.w
@@ -65,7 +65,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	uint data = __float_as_uint( O4.w );
 	const float3 D = make_float3( D4 );
 	const int prim = __float_as_int( hitData.z );
-	const int primIdx = prim == -1 ? prim : (prim & 0xffffff);
+	const int primIdx = prim == -1 ? prim : (prim & 0xfffff);
 	float3 throughput = make_float3( T4 );
 	const CoreTri4* instanceTriangles = (const CoreTri4*)instanceDescriptors[INSTANCEIDX].triangles;
 	const uint pathIdx = PATHIDX;

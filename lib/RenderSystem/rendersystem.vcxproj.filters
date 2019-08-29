@@ -30,11 +30,11 @@
     <ClCompile Include="host_mesh_tinyobj.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="host_mesh_fbx.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="core_api_base.cpp">
       <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="host_node.cpp">
+      <Filter>scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -64,9 +64,6 @@
     <ClInclude Include="host_light.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="host_mesh_fbx.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="common_classes.h">
       <Filter>common</Filter>
     </ClInclude>
@@ -78,6 +75,9 @@
     </ClInclude>
     <ClInclude Include="core_api_base.h">
       <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="host_node.h">
+      <Filter>scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

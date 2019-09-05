@@ -261,7 +261,7 @@ void RenderCore::UpdateToplevel()
 	// see if topLevelGroup is large enough for current scene
 	if (topLevelGroup->getChildCount() != instances.size()) topLevelGroup->setChildCount( (int)instances.size() );
 	// set the topLevelGroup children
-	for (int i = 0; i < instances.size(); i++) topLevelGroup->setChild( i, instances[i]->transform );
+	for (int s = (int)instances.size(), i = 0; i < s; i++) topLevelGroup->setChild( i, instances[i]->transform );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -474,12 +474,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			id.invTransform = *(float4x4*)&invT;
 			instDescArray.push_back( id );
 		}
-		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)meshes.size())
+		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)instances.size())
 		{
 			delete instDescBuffer;
 			// size of instance list changed beyond capacity.
 			// Allocate a new buffer, with some slack, to prevent excessive reallocs.
-			instDescBuffer = new CoreBuffer<CoreInstanceDesc>( meshes.size() * 2, ON_HOST | ON_DEVICE );
+			instDescBuffer = new CoreBuffer<CoreInstanceDesc>( instances.size() * 2, ON_HOST | ON_DEVICE );
 			SetInstanceDescriptors( instDescBuffer->DevPtr() );
 		}
 		memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );

@@ -34,16 +34,17 @@ void PrepareScene()
 	// initialize scene
 #if 0
 	int carID = renderer->AddMesh( "legocar.obj", "data\\", 10.0f );
-	renderer->AddInstance( carID, mat4::Translate( 0, 0, 0 ) );
-	renderer->AddInstance( carID, mat4::Translate( 5, 0, 0 ) );
-#else
+	for (int x = 0; x < 4; x++) for (int y = 0; y < 4; y++)
+		renderer->AddInstance( carID, mat4::Translate( x * 4 - 4, 5, y * 4 - 4 ) );
+#endif
 	renderer->AddScene( "scene.gltf", "data\\pica\\" );
+	renderer->AddScene( "AnimatedMorphSphere.glb", "data\\", mat4::Translate( 0, 8, 0 ) );
+	// renderer->AddScene( "AnimatedCube.gltf", "data\\animatedCube\\", mat4::Translate( 0, 8, 0 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( PI / 2 ) );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 	renderer->AddInstance( lightQuad );
-#endif
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -105,6 +106,9 @@ int main()
 		if (renderer->GetCamera()->Changed()) camMoved = true;
 		// poll events, may affect probepos so needs to happen between HandleInput and Render
 		glfwPollEvents();
+		// update animations
+		renderer->UpdateAnimation( 0, 0.01f );
+		camMoved = true;
 		// render
 		deltaTime = timer.elapsed();
 		timer.reset();
@@ -128,10 +132,10 @@ int main()
 		ImGui::Text( "Deep rays:    %6.2fms", coreStats.traceTimeX * 1000 );
 		ImGui::Text( "Shadow rays:  %6.2fms", coreStats.shadowTraceTime * 1000 );
 		ImGui::Text( "Shading time: %6.2fms", coreStats.shadeTime * 1000 );
-		ImGui::Text( "# primary:    %6ik (%6.1fM/s)", coreStats.primaryRayCount / 1000, coreStats.primaryRayCount / (max( 1.0f, coreStats.traceTime0 * 1000000)) );
-		ImGui::Text( "# secondary:  %6ik (%6.1fM/s)", coreStats.bounce1RayCount / 1000, coreStats.bounce1RayCount / (max( 1.0f, coreStats.traceTime1 * 1000000)) );
-		ImGui::Text( "# deep rays:  %6ik (%6.1fM/s)", coreStats.deepRayCount / 1000, coreStats.deepRayCount / (max( 1.0f, coreStats.traceTimeX * 1000000)) );
-		ImGui::Text( "# shadw rays: %6ik (%6.1fM/s)", coreStats.totalShadowRays / 1000, coreStats.totalShadowRays / (max( 1.0f, coreStats.shadowTraceTime * 1000000)) );
+		ImGui::Text( "# primary:    %6ik (%6.1fM/s)", coreStats.primaryRayCount / 1000, coreStats.primaryRayCount / (max( 1.0f, coreStats.traceTime0 * 1000000 )) );
+		ImGui::Text( "# secondary:  %6ik (%6.1fM/s)", coreStats.bounce1RayCount / 1000, coreStats.bounce1RayCount / (max( 1.0f, coreStats.traceTime1 * 1000000 )) );
+		ImGui::Text( "# deep rays:  %6ik (%6.1fM/s)", coreStats.deepRayCount / 1000, coreStats.deepRayCount / (max( 1.0f, coreStats.traceTimeX * 1000000 )) );
+		ImGui::Text( "# shadw rays: %6ik (%6.1fM/s)", coreStats.totalShadowRays / 1000, coreStats.totalShadowRays / (max( 1.0f, coreStats.shadowTraceTime * 1000000 )) );
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );

@@ -90,7 +90,7 @@ void RenderSystem::SynchronizeMaterials()
 		// meshes using this material as dirty as well.
 		if (material->AlphaChanged()) for (auto mesh : scene->meshes)
 		{
-			for (int i = 0; i < mesh->materialList.size(); i++) if (mesh->materialList[i] == material->ID)
+			for (int s = (int)mesh->materialList.size(), i = 0; i < s; i++) if (mesh->materialList[i] == material->ID)
 			{
 				mesh->MarkAsDirty();
 				break;
@@ -128,7 +128,7 @@ void RenderSystem::SynchronizeMeshes()
 	if (modelsDirty)
 	{
 		// send scene geometry to core
-		for (int modelIdx = 0; modelIdx < scene->meshes.size(); modelIdx++)
+		for (int s = (int)scene->meshes.size(), modelIdx = 0; modelIdx < s; modelIdx++)
 		{
 			HostMesh* mesh = scene->meshes[modelIdx];
 			mesh->UpdateAlphaFlags();
@@ -149,7 +149,7 @@ void RenderSystem::UpdateSceneGraph()
 	// walk the scene graph to update matrices
 	int instanceCount = 0;
 	bool instancesChanged = false;
-	for( int i = 0; i < HostScene::scene.size(); i++ ) 
+	for( int s = (int)HostScene::scene.size(), i = 0; i < s; i++ ) 
 	{
 		int nodeIdx = HostScene::scene[i];
 		HostNode* node = HostScene::nodes[nodeIdx];

@@ -465,12 +465,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			id.invTransform = *(float4x4*)&T;
 			instDescArray.push_back( id );
 		}
-		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)meshes.size())
+		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)instances.size())
 		{
 			delete instDescBuffer;
 			// size of instance list changed beyond capacity.
 			// Allocate a new buffer, with some slack, to prevent excessive reallocs.
-			instDescBuffer = new CoreBuffer<CoreInstanceDesc>( meshes.size() * 2, ON_HOST | ON_DEVICE );
+			instDescBuffer = new CoreBuffer<CoreInstanceDesc>( instances.size() * 2, ON_HOST | ON_DEVICE );
 			SetInstanceDescriptors( instDescBuffer->DevPtr() );
 		}
 		memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );

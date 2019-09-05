@@ -33,9 +33,9 @@ static HostTri TransformedHostTri( HostTri* tri, mat4 T )
 //  |  HostNode::HostNode                                                         |
 //  |  Constructors.                                                        LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostNode::HostNode( tinygltf::Node& gltfNode )
+HostNode::HostNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase )
 {
-	ConvertFromGLTFNode( gltfNode );
+	ConvertFromGLTFNode( gltfNode, nodeBase, meshBase );
 }
 
 HostNode::HostNode( const int meshIdx, const mat4& transform )
@@ -65,7 +65,7 @@ HostNode::~HostNode()
 			{
 				// mesh contains an emissive material; remove related area lights
 				vector<HostAreaLight*>& lightList = HostScene::areaLights;
-				for (int i = 0; i < lightList.size(); i++)
+				for (int s = (int)lightList.size(), i = 0; i < s; i++)
 					if (lightList[i]->instIdx == ID) lightList.erase( lightList.begin() + i-- );
 			}
 		}
@@ -76,14 +76,14 @@ HostNode::~HostNode()
 //  |  HostNode::ConvertFromGLTFNode                                              |
 //  |  Create a node from a GLTF node.                                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostNode::ConvertFromGLTFNode( tinygltf::Node& gltfNode )
+void HostNode::ConvertFromGLTFNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase )
 {
 	// copy node name
 	name = gltfNode.name;
 	// set mesh ID
-	meshID = gltfNode.mesh;
+	meshID = gltfNode.mesh == -1 ? -1 : (gltfNode.mesh + meshBase);
 	// copy child node indices
-	for (int i = 0; i < gltfNode.children.size(); i++) childIdx.push_back( gltfNode.children[i] );
+	for (int s = (int)gltfNode.children.size(), i = 0; i < s; i++) childIdx.push_back( gltfNode.children[i] + nodeBase );
 	// obtain matrix
 	if (gltfNode.matrix.size() == 16)
 	{
@@ -110,15 +110,21 @@ void HostNode::ConvertFromGLTFNode( tinygltf::Node& gltfNode )
 		buildFromTRS = true;
 	}
 	// if we got T, R and/or S, reconstruct final matrix
-	if (buildFromTRS)
-	{
-		mat4 T = mat4::Translate( translation );
-		mat4 R = rotation.toMatrix();
-		mat4 S = mat4::Scale( scale );
-		localTransform = T * R * S;
-	}
+	if (buildFromTRS) UpdateTransformFromTRS();
 	// process light emitting surfaces
 	PrepareLights();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostNode::UpdateTransformFromTRS                                           |
+//  |  Process T, R, S data to localTransform.                              LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostNode::UpdateTransformFromTRS()
+{
+	mat4 T = mat4::Translate( translation );
+	mat4 R = rotation.toMatrix();
+	mat4 S = mat4::Scale( scale );
+	localTransform = T * R * S;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -148,7 +154,7 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 		}
 		posInInstanceArray++;
 	}
-	for (int i = 0; i < childIdx.size(); i++)
+	for (int s = (int)childIdx.size(), i = 0; i < s; i++)
 		instancesChanged |= HostScene::nodes[childIdx[i]]->Update( combinedTransform, posInInstanceArray );
 	return instancesChanged;
 }
@@ -162,7 +168,7 @@ void HostNode::PrepareLights()
 	if (meshID > -1)
 	{
 		HostMesh* mesh = HostScene::meshes[meshID];
-		for (int i = 0; i < mesh->triangles.size(); i++)
+		for (int s = (int)mesh->triangles.size(), i = 0; i < s; i++)
 		{
 			HostTri* tri = &mesh->triangles[i];
 			HostMaterial* mat = HostScene::materials[tri->material];
@@ -198,7 +204,7 @@ void HostNode::UpdateLights()
 {
 	if (!hasLTris) return;
 	HostMesh* mesh = HostScene::meshes[meshID];
-	for (int i = 0; i < mesh->triangles.size(); i++)
+	for (int s = (int)mesh->triangles.size(), i = 0; i < s; i++)
 	{
 		HostTri* tri = &mesh->triangles[i];
 		if (tri->ltriIdx == -1) continue;

@@ -24,6 +24,12 @@ namespace lighthouse2 {
 class HostMesh
 {
 public:
+	struct Pose
+	{
+		vector<float3> positions;
+		vector<float3> normals;
+		vector<float3> tangents;
+	};
 	// constructor / destructor
 	HostMesh() = default;
 	HostMesh( const char* name, const char* dir, const float scale = 1.0f );
@@ -31,8 +37,6 @@ public:
 	// methods
 	void LoadGeometry( const char* file, const char* dir, const float scale = 1.0f );
 	void LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform );
-	void LoadGeometryFromGLTF( const string& fileName, const mat4& transform );
-	void LoadGeometryFromFBX( const string& fileName, const char* directory, const mat4& transform );
 	void BuildMaterialList();
 	void UpdateAlphaFlags();
 	// data members
@@ -43,6 +47,7 @@ public:
 	vector<HostTri> triangles;					// full triangles
 	vector<int> materialList;					// list of materials used by the mesh; used to efficiently track light changes
 	vector<uint> alphaFlags;					// list containing 1 for each triangle that is flagged as HASALPHA, 0 otherwise 
+	vector<Pose*> poses;						// morph target data
 	bool isAnimated;							// true when this mesh has animation data
 	TRACKCHANGES;								// add Changed(), MarkAsDirty() methods, see system.h
 #ifdef RENDERSYSTEMBUILD

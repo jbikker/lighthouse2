@@ -43,9 +43,11 @@ public:
 	static int FindMaterialID( const char* name );
 	static int FindNode( const char* name );
 	static void SetNodeTransform( const int nodeId, const mat4& transform );
+	static void ResetAnimation( const int animId );
+	static void UpdateAnimation( const int animId, const float dt );
 	// scene construction / maintenance
 	static int AddMesh( const char* objFile, const char* dir, const float scale = 1.0f );
-	static void AddScene( const char* sceneFile, const char* dir );
+	static void AddScene( const char* sceneFile, const char* dir, const mat4& transform );
 	static int AddInstance( const int meshIdx, const mat4& transform );
 	static int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material );
 	static int AddMaterial( const float3 color );
@@ -57,6 +59,7 @@ public:
 	static vector<int> scene; // node indices for scene 0; each of these may have children. TODO: scene 1..X.
 	static vector<HostNode*> nodes;
 	static vector<HostMesh*> meshes;
+	static vector<HostAnimation*> animations;
 	static vector<int> instances; // list of indices of nodes that point to a mesh
 	static vector<HostMaterial*> materials;
 	static vector<HostTexture*> textures;

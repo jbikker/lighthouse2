@@ -31,6 +31,7 @@
 #include "host_light.h"
 #include "host_skydome.h"
 #include "camera.h"
+#include "host_anim.h"
 #include "host_scene.h"
 #include "host_node.h"
 #include "render_api.h"

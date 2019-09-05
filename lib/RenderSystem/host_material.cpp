@@ -74,7 +74,7 @@ void HostMaterial::ConvertFrom( tinyobj::material_t& original )
 //  |  HostMaterial::ConvertFrom                                                  |
 //  |  Converts a tinygltf material to a HostMaterial.                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMaterial::ConvertFrom( tinygltf::Material& original, tinygltf::Model& model )
+void HostMaterial::ConvertFrom( tinygltf::Material& original, tinygltf::Model& model, const int textureBase )
 {
 	name = original.name;
 	for (const auto& value : original.values)
@@ -94,7 +94,7 @@ void HostMaterial::ConvertFrom( tinygltf::Material& original, tinygltf::Model& m
 		}
 		if (value.first == "baseColorTexture") for (auto& item : value.second.json_double_value)
 		{
-			if (item.first == "index") map[TEXTURE0].textureID = (int)item.second;
+			if (item.first == "index") map[TEXTURE0].textureID = (int)item.second + textureBase;
 		}
 		// TODO: do a better automatic conversion.
 	}

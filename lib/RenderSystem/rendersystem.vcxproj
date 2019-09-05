@@ -29,6 +29,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">rendersystem.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="host_anim.cpp" />
     <ClCompile Include="host_light.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">rendersystem.h</PrecompiledHeaderFile>
@@ -107,6 +108,7 @@
     <ClInclude Include="common_settings.h" />
     <ClInclude Include="common_types.h" />
     <ClInclude Include="core_api_base.h" />
+    <ClInclude Include="host_anim.h" />
     <ClInclude Include="host_light.h" />
     <ClInclude Include="host_material.h" />
     <ClInclude Include="host_mesh.h" />

@@ -76,9 +76,9 @@ public:
 	// constructor / destructor
 	~SGNode()
 	{
-		for (int i = 0; i < child.size(); i++)
+		for (int s = (int)child.size(), i = 0; i < s; i++)
 		{
-			for (int j = i + 1; j < child.size(); j++) if (child[j] == child[i]) child[j] = 0;
+			for (int j = i + 1; j < s; j++) if (child[j] == child[i]) child[j] = 0;
 			delete child[i];
 		}
 	}

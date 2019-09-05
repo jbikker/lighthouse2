@@ -61,9 +61,9 @@ int RenderAPI::AddMesh( const char* file, const char* dir, const float scale )
 	return renderer->scene->AddMesh( file, dir, scale );
 }
 
-void RenderAPI::AddScene( const char* file, const char* dir )
+void RenderAPI::AddScene( const char* file, const char* dir, const mat4& transform )
 {
-	return renderer->scene->AddScene( file, dir );
+	return renderer->scene->AddScene( file, dir, transform );
 }
 
 int RenderAPI::AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material )
@@ -79,6 +79,16 @@ int RenderAPI::AddInstance( const int meshId, const mat4& transform )
 void RenderAPI::SetNodeTransform( const int nodeId, const mat4& transform )
 {
 	renderer->scene->SetNodeTransform( nodeId, transform );
+}
+
+void RenderAPI::ResetAnimation( const int animId )
+{
+	renderer->scene->ResetAnimation( animId );
+}
+
+void RenderAPI::UpdateAnimation( const int animId, const float dt )
+{
+	renderer->scene->UpdateAnimation( animId, dt );
 }
 
 void RenderAPI::SynchronizeSceneData()

@@ -179,6 +179,7 @@ void FatalError( const char* fmt, ... )
 	va_end( args );
 	printf( "\n%s\n", tmp.c_str() );
 	MessageBox( NULL, tmp.c_str(), "Fatal error", MB_OK );
+	assert( false );
 	while (1) exit( 0 );
 }
 

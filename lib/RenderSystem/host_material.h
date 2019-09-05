@@ -37,7 +37,7 @@ public:
 #ifdef RENDERSYSTEMBUILD
 	// methods visible to the RenderSystem only
 	void ConvertFrom( tinyobj::material_t& );
-	void ConvertFrom( tinygltf::Material&, tinygltf::Model& );
+	void ConvertFrom( tinygltf::Material&, tinygltf::Model&, const int textureBase );
 	void ConvertTo( CoreMaterial&, CoreMaterialEx& );
 #endif
 	// data members

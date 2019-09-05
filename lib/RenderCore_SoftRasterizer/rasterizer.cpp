@@ -165,8 +165,8 @@ void Mesh::Render( mat4& T )
 Scene::~Scene()
 {
 	delete root;
-	for (uint i = 0; i < texList.size(); i++) delete texList[i];
-	for (uint i = 0; i < matList.size(); i++) delete matList[i];
+	for (uint s = (uint)texList.size(), i = 0; i < s; i++) delete texList[i];
+	for (uint s = (uint)matList.size(), i = 0; i < s; i++) delete matList[i];
 }
 
 // -----------------------------------------------------------
@@ -178,7 +178,7 @@ void SGNode::Render( mat4& transform )
 {
 	mat4 M = transform * localTransform;
 	if (GetType() == SG_MESH) ((Mesh*)this)->Render( M );
-	for (uint i = 0; i < child.size(); i++) child[i]->Render( M );
+	for (uint s = (uint)child.size(), i = 0; i < s; i++) child[i]->Render( M );
 }
 
 // -----------------------------------------------------------

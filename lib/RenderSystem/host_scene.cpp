@@ -20,6 +20,7 @@ HostSkyDome* HostScene::sky = 0;
 vector<int> HostScene::scene;
 vector<HostNode*> HostScene::nodes;
 vector<HostMesh*> HostScene::meshes;
+vector<HostAnimation*> HostScene::animations;
 vector<int> HostScene::instances;
 vector<HostMaterial*> HostScene::materials;
 vector<HostTexture*> HostScene::textures;
@@ -62,7 +63,7 @@ void HostScene::SerializeMaterials( const char* xmlFile )
 	doc.InsertFirstChild( root );
 	int materialCount = (int)materials.size();
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "material_count" ) ))->SetText( materialCount );
-	for (uint i = 0; i < materials.size(); i++)
+	for (uint s = (uint)materials.size(), i = 0; i < s; i++)
 	{
 		// skip materials that were created at runtime
 		if ((materials[i]->flags & HostMaterial::FROM_MTL) == 0) continue;
@@ -195,22 +196,34 @@ int HostScene::AddMesh( const char* objFile, const char* dir, const float scale 
 //  |  Loads a collection of meshes from a gltf file. An instance and a scene     |
 //  |  graph node is created for each mesh.                                 LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostScene::AddScene( const char* sceneFile, const char* dir )
+void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& transform )
 {
-	// material offset: if we loaded an object before this one, material indices should not start at 0.
-	int matIdxOffset = (int)HostScene::materials.size();
+	// offsets: if we loaded an object before this one, indices should not start at 0.
+	const int materialBase = (int)materials.size();
+	const int textureBase = (int)textures.size();
+	const int meshBase = (int)meshes.size();
+	bool hasTransform = (transform != mat4::Identity());
+	const int nodeBase = (int)nodes.size() + (hasTransform ? 1 : 0);
 	// load gltf file
 	string cleanFileName = LowerCase( dir + string( sceneFile ) );
 	tinygltf::Model gltfModel;
 	tinygltf::TinyGLTF loader;
 	string err, warn;
-	bool ret = loader.LoadASCIIFromFile( &gltfModel, &err, &warn, cleanFileName );
-	// bool ret = loader.LoadBinaryFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() ); // for binary glTF (.glb)
+	bool ret = false;
+	if (cleanFileName.size() > 4)
+	{
+		string extension4 = cleanFileName.substr( cleanFileName.size() - 5, 5 );
+		string extension3 = cleanFileName.substr( cleanFileName.size() - 4, 4 );
+		if (extension4.compare( ".gltf" ) == 0) 
+			ret = loader.LoadASCIIFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() );
+		if (extension3.compare( ".bin" ) == 0 || extension3.compare( ".glb" ) == 0) 
+			ret = loader.LoadBinaryFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() );
+	}
 	if (!warn.empty()) printf( "Warn: %s\n", warn.c_str() );
 	if (!err.empty()) printf( "Err: %s\n", err.c_str() );
 	if (!ret) FatalError( "could not load glTF file:\n%s", cleanFileName.c_str() );
 	// convert textures
-	for (size_t i = 0; i < gltfModel.textures.size(); i++)
+	for (size_t s = gltfModel.textures.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Texture& gltfTexture = gltfModel.textures[i];
 		HostTexture* texture = new HostTexture();
@@ -219,44 +232,68 @@ void HostScene::AddScene( const char* sceneFile, const char* dir )
 		texture->width = image.width;
 		texture->height = image.height;
 		texture->idata = (uchar4*)MALLOC64( texture->PixelsNeeded( image.width, image.height, MIPLEVELCOUNT ) * sizeof( uint ) );
-		texture->ID = (int)HostScene::textures.size();
+		texture->ID = (int)i + textureBase;
 		texture->flags |= HostTexture::LDR;
 		memcpy( texture->idata, image.image.data(), size );
 		texture->ConstructMIPmaps();
-		HostScene::textures.push_back( texture );
+		textures.push_back( texture );
 	}
 	// convert materials
-	for (size_t i = 0; i < gltfModel.materials.size(); i++)
+	for (size_t s = gltfModel.materials.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Material& gltfMaterial = gltfModel.materials[i];
 		HostMaterial* material = new HostMaterial();
-		material->ID = (int)HostScene::materials.size();
+		material->ID = (int)i + materialBase;
 		material->origin = cleanFileName;
-		material->ConvertFrom( gltfMaterial, gltfModel );
+		material->ConvertFrom( gltfMaterial, gltfModel, textureBase );
 		material->flags |= HostMaterial::FROM_MTL;
-		HostScene::materials.push_back( material );
+		materials.push_back( material );
 		// materialList.push_back( material->ID ); // can't do that, need something smarter.
 	}
 	// convert meshes
-	for (size_t i = 0; i < gltfModel.meshes.size(); i++)
+	for (size_t s = gltfModel.meshes.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Mesh& gltfMesh = gltfModel.meshes[i];
-		HostMesh* newMesh = new HostMesh( gltfMesh, gltfModel, matIdxOffset );
-		newMesh->ID = (int)i;
+		HostMesh* newMesh = new HostMesh( gltfMesh, gltfModel, materialBase );
+		newMesh->ID = (int)i + meshBase;
 		meshes.push_back( newMesh );
 	}
 	// convert nodes
-	for (size_t i = 0; i < gltfModel.nodes.size(); i++)
+	if (hasTransform)
+	{
+		// push an extra node that holds a transform for the gltf scene
+		HostNode* newNode = new HostNode();
+		newNode->localTransform = transform;
+		newNode->ID = nodeBase - 1;
+		nodes.push_back( newNode );
+	}
+	for (size_t s = gltfModel.nodes.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Node& gltfNode = gltfModel.nodes[i];
-		HostNode* newNode = new HostNode( gltfNode );
-		newNode->ID = (int)i;
+		HostNode* newNode = new HostNode( gltfNode, nodeBase, meshBase );
+		newNode->ID = (int)i + nodeBase;
 		nodes.push_back( newNode );
+	}
+	// convert animations
+	for (size_t s = gltfModel.animations.size(), i = 0; i < s; i++)
+	{
+		tinygltf::Animation& gltfAnim = gltfModel.animations[i];
+		animations.push_back( new HostAnimation( gltfAnim, gltfModel, nodeBase ) );
 	}
 	// construct a scene graph for scene 0, assuming the GLTF file has one scene
 	tinygltf::Scene& glftScene = gltfModel.scenes[0];
-	for( size_t i = 0; i < glftScene.nodes.size(); i++ ) scene.push_back( glftScene.nodes[i] );
-
+	if (hasTransform)
+	{
+		// add the root nodes to the scene transform node
+		for (size_t i = 0; i < glftScene.nodes.size(); i++) nodes[nodeBase - 1]->childIdx.push_back( glftScene.nodes[i] + nodeBase );
+		// add the root transform to the scene
+		scene.push_back( nodeBase - 1 );
+	}
+	else
+	{
+		// add the root nodes to the scene
+		for (size_t i = 0; i < glftScene.nodes.size(); i++) scene.push_back( glftScene.nodes[i] + nodeBase );
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -398,6 +435,26 @@ void HostScene::SetNodeTransform( const int nodeId, const mat4& transform )
 {
 	if (nodeId < 0 || nodeId >= nodes.size()) return;
 	nodes[nodeId]->localTransform = transform;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::ResetAnimation                                                  |
+//  |  Reset the indicated animation.                                       LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostScene::ResetAnimation( const int animId )
+{
+	if (animId < 0 || animId >= animations.size()) return;
+	animations[animId]->Reset();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::ResetAnimation                                                  |
+//  |  Update the indicated animation.                                      LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostScene::UpdateAnimation( const int animId, const float dt )
+{
+	if (animId < 0 || animId >= animations.size()) return;
+	animations[animId]->Update( dt );
 }
 
 //  +-----------------------------------------------------------------------------+

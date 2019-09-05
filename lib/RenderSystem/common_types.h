@@ -387,6 +387,10 @@ public:
 	float& operator [] ( const int idx ) { return cell[idx]; }
 	float operator()( const int i, const int j ) const { return cell[i * 4 + j]; }
 	float& operator()( const int i, const int j ) { return cell[i * 4 + j]; }
+	bool operator==( const mat4& m )
+	{
+		for( int i = 0; i < 16; i++ ) if (m.cell[i] != cell[i]) return false; return true;
+	}
 	float3 GetTranslation() { return make_float3( cell[3], cell[7], cell[11] ); }
 	static mat4 Identity() { mat4 r; return r; }
 	static mat4 RotateX( const float a ) { mat4 r; r.cell[5] = cosf( a ); r.cell[6] = -sinf( a ); r.cell[9] = sinf( a ); r.cell[10] = cosf( a ); return r; };
@@ -624,6 +628,21 @@ public:
 			w * q.y - x * q.z + y * q.w + z * q.x,
 			w * q.z + x * q.y - y * q.x + z * q.w
 		);
+	}
+	static quat slerp( const quat& a, const quat& b, const float t )
+	{
+		quat r;
+		float t_ = 1 - t, Wa, Wb;
+		float theta = acosf( a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w );
+		float sn = sinf( theta );
+		Wa = sin( t_ * theta ) / sn;
+		Wb = sin( t * theta ) / sn;
+		r.x = Wa * a.x + Wb * b.x;
+		r.y = Wa * a.y + Wb * b.y;
+		r.z = Wa * a.z + Wb * b.z;
+		r.w = Wa * a.w + Wb * b.w;
+		r.normalize();
+		return r;
 	}
 	quat operator + ( const quat& q ) const { return quat( w + q.w, x + q.x, y + q.y, z + q.z ); }
 	quat operator - ( const quat& q ) const { return quat( w - q.w, x - q.x, y - q.y, z - q.z ); }

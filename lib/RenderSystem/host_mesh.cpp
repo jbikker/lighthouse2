@@ -121,10 +121,10 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	vector<float> alphas;
 	timer.reset();
 	alphas.resize( verts, 1.0f ); // we will have one alpha value per unique vertex normal
-	for (uint i = 0; i < shapes.size(); i++)
+	for (uint s = (uint)shapes.size(), i = 0; i < s; i++)
 	{
 		vector<tinyobj::index_t>& indices = shapes[i].mesh.indices;
-		for (uint f = 0; f < indices.size(); f += 3)
+		for (uint s = (uint)indices.size(), f = 0; f < s; f += 3)
 		{
 			const int idx0 = indices[f + 0].vertex_index, nidx0 = indices[f + 0].normal_index;
 			const int idx1 = indices[f + 1].vertex_index, nidx1 = indices[f + 1].normal_index;
@@ -156,10 +156,10 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	aabb sceneBounds;
 	int toReserve = 0;
 	timer.reset();
-	for (int idx = 0, i = 0; i < (int)shapes.size(); i++) toReserve += (int)shapes[i].mesh.indices.size();
+	for (int s = (int)shapes.size(), idx = 0, i = 0; i < s; i++) toReserve += (int)shapes[i].mesh.indices.size();
 	vertices.reserve( toReserve );
 	indices.reserve( toReserve / 3 );
-	for (int idx = 0, i = 0; i < (int)shapes.size(); i++) for (int f = 0; f < shapes[i].mesh.indices.size(); f += 3, idx += 3)
+	for (int s = (int)shapes.size(), idx = 0, i = 0; i < s; i++) for (int f = 0; f < shapes[i].mesh.indices.size(); f += 3, idx += 3)
 	{
 		const uint idx0 = shapes[i].mesh.indices[f + 0].vertex_index;
 		const uint idx1 = shapes[i].mesh.indices[f + 1].vertex_index;
@@ -185,10 +185,10 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	// extract full model data and materials
 	timer.reset();
 	triangles.resize( indices.size() );
-	for (int face = 0, i = 0; i < shapes.size(); i++)
+	for (int s = (int)shapes.size(), face = 0, i = 0; i < s; i++)
 	{
 		vector<tinyobj::index_t>& indices = shapes[i].mesh.indices;
-		for (int f = 0; f < shapes[i].mesh.indices.size(); f += 3, face++)
+		for (int s = (int)shapes[i].mesh.indices.size(), f = 0; f < s; f += 3, face++)
 		{
 			HostTri& tri = triangles[face];
 			tri.vertex0 = make_float3( vertices[face * 3 + 0] );
@@ -262,7 +262,8 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 //  +-----------------------------------------------------------------------------+
 void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset )
 {
-	for (int j = 0; j < gltfMesh.primitives.size(); j++)
+	const int targetCount = (int)gltfMesh.weights.size();
+	for (int s = (int)gltfMesh.primitives.size(), j = 0; j < s; j++)
 	{
 		Primitive& prim = gltfMesh.primitives[j];
 		size_t vertIdxOffset = vertices.size();
@@ -293,7 +294,7 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 		{
 			vector<int> fan = move( tmpIndices );
 			tmpIndices.clear();
-			for (size_t i = 2; i < fan.size(); i++)
+			for (size_t s = fan.size(), i = 2; i < s; i++)
 			{
 				tmpIndices.push_back( fan[0] );
 				tmpIndices.push_back( fan[i - 1] );
@@ -304,7 +305,7 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 		{
 			vector<int> strip = move( tmpIndices );
 			tmpIndices.clear();
-			for (size_t i = 2; i < strip.size(); i++)
+			for (size_t s = strip.size(), i = 2; i < s; i++)
 			{
 				tmpIndices.push_back( strip[i - 2] );
 				tmpIndices.push_back( strip[i - 1] );
@@ -318,7 +319,7 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 			const Accessor attribAccessor = gltfModel.accessors[attribute.second];
 			const BufferView& bufferView = gltfModel.bufferViews[attribAccessor.bufferView];
 			const Buffer& buffer = gltfModel.buffers[bufferView.buffer];
-			const uchar* dataPtr = buffer.data.data() + bufferView.byteOffset + attribAccessor.byteOffset, *a = dataPtr;
+			const uchar* a = buffer.data.data() + bufferView.byteOffset + attribAccessor.byteOffset;
 			const int byte_stride = attribAccessor.ByteStride( bufferView );
 			const size_t count = attribAccessor.count;
 			if (attribute.first == "POSITION")
@@ -349,10 +350,45 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 				else FatalError( __FILE__, __LINE__, "expected vec2 uvs in gltf file", "" );
 			}
 		}
+		// obtain morph targets
+		if (targetCount > 0)
+		{
+			// store base pose
+			poses.push_back( new Pose() );
+			for( int s = (int)tmpVertices.size(), i = 0; i < s; i++ )
+			{
+				poses[0]->positions.push_back( tmpVertices[i] );
+				poses[0]->normals.push_back( normals[i] );
+				poses[0]->tangents.push_back( make_float3( 0 ) /* TODO */ );
+			}
+		}
+		for( int i = 0; i < targetCount; i++ )
+		{
+			// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#morph-targets
+			poses.push_back( new Pose() );
+			for( const auto& target : prim.targets[i] )
+			{
+				const Accessor targetAccessor = gltfModel.accessors[target.second];
+				const BufferView& bufferView = gltfModel.bufferViews[targetAccessor.bufferView];
+				const Buffer& buffer = gltfModel.buffers[bufferView.buffer];
+				const uchar* a = buffer.data.data() + bufferView.byteOffset + targetAccessor.byteOffset;
+				const int stride = targetAccessor.ByteStride( bufferView );
+				assert( targetAccessor.count == tmpVertices.size() );
+				assert( targetAccessor.type == TINYGLTF_TYPE_VEC3 );
+				assert( targetAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT );
+				for( int j = 0; j < targetAccessor.count; j++, a += 3 * stride )
+				{
+					float3 v = make_float3( *((float*)a), *((float*)(a + stride)), *((float*)(a + 2 * stride)) );
+					if (target.first == "POSITION" ) poses[i + 1]->positions.push_back( v );
+					if (target.first == "NORMAL" ) poses[i + 1]->normals.push_back( v );
+					if (target.first == "TANGENT" ) poses[i + 1]->tangents.push_back( v );
+				}
+			}
+		}
 		// calculate values for consistent normal interpolation
 		vector<float> alphas;
 		alphas.resize( normals.size(), 1.0f ); // we will have one alpha value per unique vertex normal
-		for (size_t i = 0; i < tmpIndices.size(); i += 3)
+		for (size_t s = tmpIndices.size(), i = 0; i < s; i += 3)
 		{
 			const uint v0idx = tmpIndices[i + 0], v1idx = tmpIndices[i + 1], v2idx = tmpIndices[i + 2];
 			const float3 vert0 = tmpVertices[v0idx], vert1 = tmpVertices[v1idx], vert2 = tmpVertices[v2idx];
@@ -364,7 +400,7 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 			alphas[v1idx] = min( alphas[v0idx], max( 0.7f, dot( vN1, N ) ) );
 			alphas[v2idx] = min( alphas[v0idx], max( 0.7f, dot( vN2, N ) ) );
 		}
-		for (size_t i = 0; i < alphas.size(); i++)
+		for (size_t s = alphas.size(), i = 0; i < s; i++)
 		{
 			const float nnv = alphas[i]; // temporarily stored there
 			alphas[i] = acosf( nnv ) * (1 + 0.03632f * (1 - nnv) * (1 - nnv));

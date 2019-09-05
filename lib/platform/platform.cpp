@@ -116,8 +116,8 @@ void DrawQuad()
 		BindVBO( 0, 3, vertexBuffer );
 		BindVBO( 1, 2, UVBuffer );
 		glBindVertexArray( 0 );
-		glDisableVertexAttribArray( 0 );
-		glDisableVertexAttribArray( 1 );
+		// glDisableVertexAttribArray( 0 );
+		// glDisableVertexAttribArray( 1 );
 	}
 	glBindVertexArray( vao );
 	glDrawArrays( GL_TRIANGLES, 0, 6 );

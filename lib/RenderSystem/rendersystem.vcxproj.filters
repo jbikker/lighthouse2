@@ -36,6 +36,9 @@
     <ClCompile Include="host_node.cpp">
       <Filter>scene</Filter>
     </ClCompile>
+    <ClCompile Include="host_anim.cpp">
+      <Filter>scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rendersystem.h" />
@@ -77,6 +80,9 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="host_node.h">
+      <Filter>scene</Filter>
+    </ClInclude>
+    <ClInclude Include="host_anim.h">
       <Filter>scene</Filter>
     </ClInclude>
   </ItemGroup>

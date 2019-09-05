@@ -33,6 +33,7 @@ public:
 	~HostNode();
 	// methods
 	bool Update( mat4& T, int& instanceIdx );	// recursively update the transform of this node and its children
+	void UpdateTransformFromTRS();		// process T, R, S data to localTransform
 	void PrepareLights();				// detects emissive triangles and creates light triangles for them
 	void UpdateLights();				// when the transform changes, this fixes the light triangles
 	// data members
@@ -45,6 +46,7 @@ public:
 	int ID = -1;						// unique ID for the node: position in node array
 	int instanceID = -1;				// for mesh nodes: location in the instance array
 	int meshID = -1;					// id of the mesh this node refers to (if any)
+	vector<float> weights;				// morph target weights
 	int skinID = -1;					// TODO
 	bool hasLTris = false;				// true if this instance uses an emissive material
 	vector<int> childIdx;				// child nodes of this node
@@ -52,8 +54,8 @@ public:
 	// this is ugly, but otherwise apps that include host_scene.h need to know what tinygltf is.
 	friend class HostScene;
 protected:
-	HostNode( tinygltf::Node& gltfNode );
-	void ConvertFromGLTFNode( tinygltf::Node& gltfNode );
+	HostNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase );
+	void ConvertFromGLTFNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase );
 #endif
 	TRACKCHANGES;
 };

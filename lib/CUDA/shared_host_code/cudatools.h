@@ -30,7 +30,7 @@ public:
 	{
 		float elapsed;
 		cudaEventElapsedTime( &elapsed, start, end );
-		return elapsed * 0.001f; // report in seconds
+		return max( 1e-20f, elapsed ) * 0.001f; // report in seconds
 	}
 	static int _ConvertSMVer2Cores( int major, int minor )
 	{

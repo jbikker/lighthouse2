@@ -33,7 +33,7 @@ static HostTri TransformedHostTri( HostTri* tri, mat4 T )
 //  |  HostNode::HostNode                                                         |
 //  |  Constructors.                                                        LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostNode::HostNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase )
+HostNode::HostNode( tinygltfNode& gltfNode, const int nodeBase, const int meshBase )
 {
 	ConvertFromGLTFNode( gltfNode, nodeBase, meshBase );
 }
@@ -76,7 +76,7 @@ HostNode::~HostNode()
 //  |  HostNode::ConvertFromGLTFNode                                              |
 //  |  Create a node from a GLTF node.                                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostNode::ConvertFromGLTFNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase )
+void HostNode::ConvertFromGLTFNode( tinygltfNode& gltfNode, const int nodeBase, const int meshBase )
 {
 	// copy node name
 	name = gltfNode.name;

@@ -24,6 +24,23 @@
 #include "tiny_obj_loader.h"
 #include "tinyxml2.h"
 #include "FreeImage.h"
+typedef tinygltf::AnimationSampler tinygltfAnimationSampler;
+typedef tinygltf::AnimationChannel tinygltfAnimationChannel;
+typedef tinygltf::Animation tinygltfAnimation;
+typedef tinygltf::Model tinygltfModel;
+typedef tinygltf::Mesh tinygltfMesh;
+typedef tinygltf::Node tinygltfNode;
+typedef tinygltf::Material tinygltfMaterial;
+typedef tinyobj::material_t tinyobjMaterial;
+#else
+typedef int tinygltfAnimationSampler;
+typedef int tinygltfAnimationChannel;
+typedef int tinygltfAnimation;
+typedef int tinygltfModel;
+typedef int tinygltfMesh;
+typedef int tinygltfNode;
+typedef int tinygltfMaterial;
+typedef int tinyobjMaterial;
 #endif
 #include "host_texture.h"
 #include "host_material.h"

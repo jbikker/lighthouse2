@@ -33,7 +33,7 @@ HostMesh::HostMesh( const char* file, const char* dir, const float scale )
 	LoadGeometry( file, dir, scale );
 }
 
-HostMesh::HostMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset )
+HostMesh::HostMesh( tinygltfMesh& gltfMesh, tinygltfModel& gltfModel, const int matIdxOffset )
 {
 	ConvertFromGTLFMesh( gltfMesh, gltfModel, matIdxOffset );
 }
@@ -230,15 +230,15 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			}
 			tri.Nx = N.x, tri.Ny = N.y, tri.Nz = N.z;
 			tri.material = shapes[i].mesh.material_ids[f / 3] + matIdxOffset;
-#if 0
+		#if 0
 			const float a = (tri.vertex1 - tri.vertex0).length();
 			const float b = (tri.vertex2 - tri.vertex1).length();
 			const float c = (tri.vertex0 - tri.vertex2).length();
 			const float s = (a + b + c) * 0.5f;
 			tri.area = sqrtf( s * (s - a) * (s - b) * (s - c) ); // Heron's formula
-#else
+		#else
 			tri.area = 0; // we don't actually use it, except for lights, where it is also calculated
-#endif
+		#endif
 			tri.invArea = 0; // todo
 			tri.alpha = make_float3( alphas[nidx0], tri.alpha.y = alphas[nidx1], tri.alpha.z = alphas[nidx2] );
 			// calculate triangle LOD data
@@ -260,7 +260,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 //  |  HostMesh::ConvertFromGTLFMesh                                              |
 //  |  Convert a gltf mesh to a HostMesh.                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset )
+void HostMesh::ConvertFromGTLFMesh( tinygltfMesh& gltfMesh, tinygltfModel& gltfModel, const int matIdxOffset )
 {
 	const int targetCount = (int)gltfMesh.weights.size();
 	for (int s = (int)gltfMesh.primitives.size(), j = 0; j < s; j++)
@@ -355,18 +355,18 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 		{
 			// store base pose
 			poses.push_back( new Pose() );
-			for( int s = (int)tmpVertices.size(), i = 0; i < s; i++ )
+			for (int s = (int)tmpVertices.size(), i = 0; i < s; i++)
 			{
 				poses[0]->positions.push_back( tmpVertices[i] );
 				poses[0]->normals.push_back( normals[i] );
 				poses[0]->tangents.push_back( make_float3( 0 ) /* TODO */ );
 			}
 		}
-		for( int i = 0; i < targetCount; i++ )
+		for (int i = 0; i < targetCount; i++)
 		{
 			// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#morph-targets
 			poses.push_back( new Pose() );
-			for( const auto& target : prim.targets[i] )
+			for (const auto& target : prim.targets[i])
 			{
 				const Accessor targetAccessor = gltfModel.accessors[target.second];
 				const BufferView& bufferView = gltfModel.bufferViews[targetAccessor.bufferView];
@@ -376,12 +376,12 @@ void HostMesh::ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& g
 				assert( targetAccessor.count == tmpVertices.size() );
 				assert( targetAccessor.type == TINYGLTF_TYPE_VEC3 );
 				assert( targetAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT );
-				for( int j = 0; j < targetAccessor.count; j++, a += 3 * stride )
+				for (int j = 0; j < targetAccessor.count; j++, a += 3 * stride)
 				{
 					float3 v = make_float3( *((float*)a), *((float*)(a + stride)), *((float*)(a + 2 * stride)) );
-					if (target.first == "POSITION" ) poses[i + 1]->positions.push_back( v );
-					if (target.first == "NORMAL" ) poses[i + 1]->normals.push_back( v );
-					if (target.first == "TANGENT" ) poses[i + 1]->tangents.push_back( v );
+					if (target.first == "POSITION") poses[i + 1]->positions.push_back( v );
+					if (target.first == "NORMAL") poses[i + 1]->normals.push_back( v );
+					if (target.first == "TANGENT") poses[i + 1]->tangents.push_back( v );
 				}
 			}
 		}

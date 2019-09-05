@@ -19,7 +19,7 @@
 //  |  HostAnimation::Sampler::Sampler                                            |
 //  |  Constructor.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostAnimation::Sampler::Sampler( tinygltf::AnimationSampler& gltfSampler, tinygltf::Model& gltfModel )
+HostAnimation::Sampler::Sampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel )
 {
 	ConvertFromGLTFSampler( gltfSampler, gltfModel );
 }
@@ -28,7 +28,7 @@ HostAnimation::Sampler::Sampler( tinygltf::AnimationSampler& gltfSampler, tinygl
 //  |  HostAnimation::Sampler::ConvertFromGLTFSampler                             |
 //  |  Convert a gltf animation sampler.                                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltf::AnimationSampler& gltfSampler, tinygltf::Model& gltfModel )
+void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel )
 {
 	// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#animations
 	// extract animation times
@@ -88,7 +88,7 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltf::AnimationSampler&
 //  |  HostAnimation::Channel::Channel                                            |
 //  |  Constructor.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostAnimation::Channel::Channel( tinygltf::AnimationChannel& gltfChannel, tinygltf::Model& gltfModel, const int nodeBase )
+HostAnimation::Channel::Channel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase )
 {
 	ConvertFromGLTFChannel( gltfChannel, gltfModel, nodeBase );
 }
@@ -97,7 +97,7 @@ HostAnimation::Channel::Channel( tinygltf::AnimationChannel& gltfChannel, tinygl
 //  |  HostAnimation::Channel::ConvertFromGLTFChannel                             |
 //  |  Convert a gltf animation channel.                                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostAnimation::Channel::ConvertFromGLTFChannel( tinygltf::AnimationChannel& gltfChannel, tinygltf::Model& gltfModel, const int nodeBase )
+void HostAnimation::Channel::ConvertFromGLTFChannel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase )
 {
 	samplerIdx = gltfChannel.sampler;
 	nodeIdx = gltfChannel.target_node + nodeBase;
@@ -168,7 +168,7 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 //  |  HostAnimation::HostAnimation                                               |
 //  |  Constructor.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostAnimation::HostAnimation( tinygltf::Animation& gltfAnim, tinygltf::Model& gltfModel, const int nodeBase )
+HostAnimation::HostAnimation( tinygltfAnimation& gltfAnim, tinygltfModel& gltfModel, const int nodeBase )
 {
 	ConvertFromGLTFAnim( gltfAnim, gltfModel, nodeBase );
 }
@@ -177,7 +177,7 @@ HostAnimation::HostAnimation( tinygltf::Animation& gltfAnim, tinygltf::Model& gl
 //  |  HostAnimation::ConvertFromGLTFAnim                                         |
 //  |  Convert a gltf animation.                                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostAnimation::ConvertFromGLTFAnim( tinygltf::Animation& gltfAnim, tinygltf::Model& gltfModel, const int nodeBase )
+void HostAnimation::ConvertFromGLTFAnim( tinygltfAnimation& gltfAnim, tinygltfModel& gltfModel, const int nodeBase )
 {
 	for (int i = 0; i < gltfAnim.samplers.size(); i++) sampler.push_back( new Sampler( gltfAnim.samplers[i], gltfModel ) );
 	for (int i = 0; i < gltfAnim.channels.size(); i++) channel.push_back( new Channel( gltfAnim.channels[i], gltfModel, nodeBase ) );

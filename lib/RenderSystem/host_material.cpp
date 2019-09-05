@@ -32,7 +32,7 @@
 //  |  HostMaterial::ConvertFrom                                                  |
 //  |  Converts a tinyobjloader material to a HostMaterial.                 LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMaterial::ConvertFrom( tinyobj::material_t& original )
+void HostMaterial::ConvertFrom( tinyobjMaterial& original )
 {
 	// properties
 	name = original.name;
@@ -74,7 +74,7 @@ void HostMaterial::ConvertFrom( tinyobj::material_t& original )
 //  |  HostMaterial::ConvertFrom                                                  |
 //  |  Converts a tinygltf material to a HostMaterial.                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMaterial::ConvertFrom( tinygltf::Material& original, tinygltf::Model& model, const int textureBase )
+void HostMaterial::ConvertFrom( tinygltfMaterial& original, tinygltfModel& model, const int textureBase )
 {
 	name = original.name;
 	for (const auto& value : original.values)

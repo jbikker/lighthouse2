@@ -30,8 +30,10 @@ public:
 	// constructor / destructor
 	HostNode() = default;
 	HostNode( const int meshIdx, const mat4& transform );
+	HostNode( tinygltfNode& gltfNode, const int nodeBase, const int meshBase );
 	~HostNode();
 	// methods
+	void ConvertFromGLTFNode( tinygltfNode& gltfNode, const int nodeBase, const int meshBase );
 	bool Update( mat4& T, int& instanceIdx );	// recursively update the transform of this node and its children
 	void UpdateTransformFromTRS();		// process T, R, S data to localTransform
 	void PrepareLights();				// detects emissive triangles and creates light triangles for them
@@ -50,13 +52,6 @@ public:
 	int skinID = -1;					// TODO
 	bool hasLTris = false;				// true if this instance uses an emissive material
 	vector<int> childIdx;				// child nodes of this node
-#ifdef RENDERSYSTEMBUILD
-	// this is ugly, but otherwise apps that include host_scene.h need to know what tinygltf is.
-	friend class HostScene;
-protected:
-	HostNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase );
-	void ConvertFromGLTFNode( tinygltf::Node& gltfNode, const int nodeBase, const int meshBase );
-#endif
 	TRACKCHANGES;
 };
 

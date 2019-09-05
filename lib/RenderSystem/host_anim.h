@@ -24,39 +24,33 @@ class HostAnimation
 class Sampler
 {
 public:
+	Sampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel );
+	void ConvertFromGLTFSampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel );
 	vector<float> t;				// key frame times
 	vector<float3> vec3Key;			// vec3 key frames (location or scale)
 	vector<quat> vec4Key;			// vec4 key frames (rotation)
 	vector<float> floatKey;			// float key frames (weight)
-#ifdef RENDERSYSTEMBUILD
-	Sampler( tinygltf::AnimationSampler& gltfSampler, tinygltf::Model& gltfModel );
-	void ConvertFromGLTFSampler( tinygltf::AnimationSampler& gltfSampler, tinygltf::Model& gltfModel );
-#endif
 };
 class Channel
 {
 public:
+	Channel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase );
 	int samplerIdx;					// sampler used by this channel
 	int nodeIdx;					// index of the node this channel affects
 	int target;						// 0: translation, 1: rotation, 2: scale, 3: weights
 	void Reset() { t = 0; }
 	void Update( const float t, const Sampler* sampler );	// apply this channel to the target nde for time t
+	void ConvertFromGLTFChannel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase );
 	// data
 	float t;						// animation timer
-#ifdef RENDERSYSTEMBUILD
-	Channel( tinygltf::AnimationChannel& gltfChannel, tinygltf::Model& gltfModel, const int nodeBase );
-	void ConvertFromGLTFChannel( tinygltf::AnimationChannel& gltfChannel, tinygltf::Model& gltfModel, const int nodeBase );
-#endif
 };
 public:
+	HostAnimation( tinygltfAnimation& gltfAnim, tinygltfModel& gltfModel, const int nodeBase );
 	vector<Sampler*> sampler;		// animation samplers
 	vector<Channel*> channel;		// animation channels
 	void Reset();					// reset all channels
 	void Update( const float dt );	// advance and apply all channels
-#ifdef RENDERSYSTEMBUILD
-	HostAnimation( tinygltf::Animation& gltfAnim, tinygltf::Model& gltfModel, const int nodeBase );
-	void ConvertFromGLTFAnim( tinygltf::Animation& gltfAnim, tinygltf::Model& gltfModel, const int nodeBase );
-#endif
+	void ConvertFromGLTFAnim( tinygltfAnimation& gltfAnim, tinygltfModel& gltfModel, const int nodeBase );
 };
 
 } // namespace lighthouse2

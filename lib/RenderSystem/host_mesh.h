@@ -33,10 +33,12 @@ public:
 	// constructor / destructor
 	HostMesh() = default;
 	HostMesh( const char* name, const char* dir, const float scale = 1.0f );
+	HostMesh( tinygltfMesh& gltfMesh, tinygltfModel& gltfModel, const int matIdxOffset );
 	~HostMesh();
 	// methods
 	void LoadGeometry( const char* file, const char* dir, const float scale = 1.0f );
 	void LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform );
+	void ConvertFromGTLFMesh( tinygltfMesh& gltfMesh, tinygltfModel& gltfModel, const int matIdxOffset );
 	void BuildMaterialList();
 	void UpdateAlphaFlags();
 	// data members
@@ -50,13 +52,6 @@ public:
 	vector<Pose*> poses;						// morph target data
 	bool isAnimated;							// true when this mesh has animation data
 	TRACKCHANGES;								// add Changed(), MarkAsDirty() methods, see system.h
-#ifdef RENDERSYSTEMBUILD
-	// this is ugly, but otherwise apps that include host_mesh.h need to know what tinygltf is.
-	friend class HostScene;
-protected:
-	HostMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset );
-	void ConvertFromGTLFMesh( tinygltf::Mesh& gltfMesh, tinygltf::Model& gltfModel, const int matIdxOffset );
-#endif
 	// Note: design decision:
 	// Vertices and indices can be deduced from the list of HostTris, obviously. However, efficient intersection
 	// (e.g. in OptiX) requires only vertices and connectivity data. Shading on the other hand requires the full

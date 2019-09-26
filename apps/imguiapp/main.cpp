@@ -32,16 +32,10 @@ static bool camMoved = false, hasFocus = true, running = true;
 void PrepareScene()
 {
 	// initialize scene
-#if 0
-	int carID = renderer->AddMesh( "legocar.obj", "data\\", 10.0f );
-	for (int x = 0; x < 4; x++) for (int y = 0; y < 4; y++)
-		renderer->AddInstance( carID, mat4::Translate( x * 4 - 4, 5, y * 4 - 4 ) );
-#endif
-	renderer->AddScene( "scene.gltf", "data\\pica\\" );
-	renderer->AddScene( "AnimatedMorphSphere.glb", "data\\", mat4::Translate( 0, 8, 0 ) );
-	// renderer->AddScene( "AnimatedCube.gltf", "data\\animatedCube\\", mat4::Translate( 0, 8, 0 ) );
+	renderer->AddScene( "scene.gltf", "data\\pica\\", mat4::Translate( 0, -10.2f, 0 ) );
+	renderer->AddScene( "CesiumMan.glb", "data\\", mat4::Translate( 0, -2, -9 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
-	renderer->SetNodeTransform( rootNode, mat4::RotateX( PI / 2 ) );
+	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 	renderer->AddInstance( lightQuad );
@@ -107,7 +101,8 @@ int main()
 		// poll events, may affect probepos so needs to happen between HandleInput and Render
 		glfwPollEvents();
 		// update animations
-		renderer->UpdateAnimation( 0, 0.01f );
+		for( int i = 0; i < renderer->AnimationCount(); i++ )
+			renderer->UpdateAnimation( i, deltaTime );
 		camMoved = true;
 		// render
 		deltaTime = timer.elapsed();

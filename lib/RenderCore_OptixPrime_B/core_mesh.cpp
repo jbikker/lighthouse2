@@ -53,23 +53,30 @@ CoreMesh::~CoreMesh()
 void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags )
 {
 	// copy triangle data to GPU
-	delete triangles;
-	triangles = new CoreBuffer<CoreTri4>( triCount, ON_DEVICE, tris );
-	// create dummy index data
-	delete indexData;
-	indexData = new uint3[triCount];
-	for( int i = 0; i < triCount; i++ ) indexData[i] = make_uint3( i * 3 + 0, i * 3 + 1, i * 3 + 2 );
-	// create float3 vertex data
-	delete vertex3Data;
-	vertex3Data = new float3[vertexCount];
+	bool reallocate = (triangles == 0);
+	if (triangles) if (triCount > triangles->GetSize()) reallocate = true;
+	if (reallocate)
+	{
+		delete triangles;
+		triangles = new CoreBuffer<CoreTri4>( triCount, ON_DEVICE, tris );
+		// create dummy index data
+		delete indexData;
+		indexData = new uint3[triCount];
+		for( int i = 0; i < triCount; i++ ) indexData[i] = make_uint3( i * 3 + 0, i * 3 + 1, i * 3 + 2 );
+		// create float3 vertex data
+		delete vertex3Data;
+		vertex3Data = new float3[vertexCount];
+		// create OptiX geometry buffers
+		CHK_PRIME( rtpBufferDescCreate( RenderCore::context, RTP_BUFFER_FORMAT_INDICES_INT3, RTP_BUFFER_TYPE_HOST, indexData, &indicesDesc ) );
+		CHK_PRIME( rtpBufferDescCreate( RenderCore::context, RTP_BUFFER_FORMAT_VERTEX_FLOAT3, RTP_BUFFER_TYPE_HOST, vertex3Data, &verticesDesc ) );
+		CHK_PRIME( rtpBufferDescSetRange( indicesDesc, 0, triCount ) );
+		CHK_PRIME( rtpBufferDescSetRange( verticesDesc, 0, vertexCount ) );
+		// create model
+		CHK_PRIME( rtpModelCreate( RenderCore::context, &model ) );
+	}
+	// copy new vertex positions
 	for( int i = 0; i < vertexCount; i++ ) vertex3Data[i] = make_float3( vertexData[i] );
-	// create OptiX geometry buffers
-	CHK_PRIME( rtpBufferDescCreate( RenderCore::context, RTP_BUFFER_FORMAT_INDICES_INT3, RTP_BUFFER_TYPE_HOST, indexData, &indicesDesc ) );
-	CHK_PRIME( rtpBufferDescCreate( RenderCore::context, RTP_BUFFER_FORMAT_VERTEX_FLOAT3, RTP_BUFFER_TYPE_HOST, vertex3Data, &verticesDesc ) );
-	CHK_PRIME( rtpBufferDescSetRange( indicesDesc, 0, triCount ) );
-	CHK_PRIME( rtpBufferDescSetRange( verticesDesc, 0, vertexCount ) );
-	// create model
-	CHK_PRIME( rtpModelCreate( RenderCore::context, &model ) );
+	// update accstruc
 	CHK_PRIME( rtpModelSetTriangles( model, indicesDesc, verticesDesc ) );
 	CHK_PRIME( rtpModelUpdate( model, RTP_MODEL_HINT_NONE /* blocking; try RTP_MODEL_HINT_ASYNC + rtpModelFinish for async version. */ ) );
 }

@@ -66,15 +66,15 @@
 
 char* ParseOptixError( OptixResult r );
 #define CHK_OPTIX( c ) do { OptixResult r = c; if (r) { \
-	FatalError( "Error at line %i of %s:\n%s\n%s (%i)", __LINE__, __FILE__, #c, ParseOptixError( r ), r ); \
+	FatalError( __FILE__, __LINE__, ParseOptixError( r ) ); \
 	system( "pause" ); exit( 1 ); } } while( 0 )
 
 #define CHK_OPTIX_LOG( c ) do { OptixResult r = c; if (r) { \
-	FatalError( "Error at line %i of %s:\n%s\n%s (%i)\n%s", __LINE__, __FILE__, #c, ParseOptixError( r ), r, log ); \
+	FatalError( __FILE__, __LINE__, ParseOptixError( r ), log ); \
 	system( "pause" ); exit( 1 ); } } while( 0 )
 
 #define CHK_CUDA( c ) do { cudaError_t r = c; if (r) {					\
-	FatalError( "Error at line %i of %s:\n%s", __LINE__, __FILE__, #c);	\
+	FatalError( __FILE__, __LINE__, #c);	\
 	system( "pause" ); exit( 1 ); } } while( 0 )
 
 using namespace lighthouse2;

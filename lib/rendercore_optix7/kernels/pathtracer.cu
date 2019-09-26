@@ -31,9 +31,10 @@
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 
 // readability defines; data layout is optimized for 128-bit accesses
-#define INSTANCEIDX (prim >> 20)
-#define HIT_U hitData.x
-#define HIT_V hitData.y
+#define PRIMIDX __float_as_int( hitData.z )
+#define INSTANCEIDX __float_as_int( hitData.y )
+#define HIT_U ((__float_as_uint( hitData.x ) & 65535) * (1.0f / 65535.0f))
+#define HIT_V ((__float_as_uint( hitData.x ) >> 16) * (1.0f / 65535.0f))
 #define HIT_T hitData.w
 #define RAY_O make_float3( O4 )
 #define FLAGS data
@@ -64,8 +65,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// derived data
 	uint data = __float_as_uint( O4.w );
 	const float3 D = make_float3( D4 );
-	const int prim = __float_as_int( hitData.z );
-	const int primIdx = prim == -1 ? prim : (prim & 0xfffff);
 	float3 throughput = make_float3( T4 );
 	const CoreTri4* instanceTriangles = (const CoreTri4*)instanceDescriptors[INSTANCEIDX].triangles;
 	const uint pathIdx = PATHIDX;
@@ -73,10 +72,10 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const uint sampleIdx = pathIdx / (w * h) + pass;
 
 	// initialize depth in accumulator for DOF shader
-	if (pathLength == 1) accumulator[pixelIdx].w += primIdx == NOHIT ? 10000 : HIT_T;
+	if (pathLength == 1) accumulator[pixelIdx].w += PRIMIDX == NOHIT ? 10000 : HIT_T;
 
 	// use skydome if we didn't hit any geometry
-	if (primIdx == NOHIT)
+	if (PRIMIDX == NOHIT)
 	{
 		float3 contribution = throughput * make_float3( SampleSkydome( D, pathLength ) ) * (1.0f / bsdfPdf);
 		CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
@@ -88,7 +87,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// object picking
 	if (pixelIdx == probePixelIdx && pathLength == 1 && sampleIdx == 0)
 		counters->probedInstid = INSTANCEIDX,	// record instace id at the selected pixel
-		counters->probedTriid = primIdx,		// record primitive id at the selected pixel
+		counters->probedTriid = PRIMIDX,		// record primitive id at the selected pixel
 		counters->probedDist = HIT_T;			// record primary ray hit distance
 
 	// get shadingData and normals
@@ -96,7 +95,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	float3 N, iN, fN, T;
 	const float3 I = RAY_O + HIT_T * D;
 	const float coneWidth = spreadAngle * HIT_T;
-	GetShadingData( D, HIT_U, HIT_V, coneWidth, instanceTriangles[primIdx], INSTANCEIDX, shadingData, N, iN, fN, T );
+	GetShadingData( D, HIT_U, HIT_V, coneWidth, instanceTriangles[PRIMIDX], INSTANCEIDX, shadingData, N, iN, fN, T );
 
 	// we need to detect alpha in the shading code.
 	if (shadingData.flags & 1)
@@ -131,7 +130,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 			{
 				// last vertex was not specular: apply MIS
 				const float3 lastN = UnpackNormal( __float_as_uint( D4.w ) );
-				const CoreTri& tri = (const CoreTri&)instanceTriangles[primIdx];
+				const CoreTri& tri = (const CoreTri&)instanceTriangles[PRIMIDX];
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
 				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
 				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));

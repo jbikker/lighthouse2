@@ -43,6 +43,7 @@ public:
 	void SetNodeTransform( const int nodeId, const mat4& transform );
 	void ResetAnimation( int animId );
 	void UpdateAnimation( int animId, const float dt );
+	int AnimationCount();
 	void SynchronizeSceneData();
 	void Render( Convergence converge );
 	Camera* GetCamera();

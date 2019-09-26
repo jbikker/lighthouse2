@@ -29,6 +29,7 @@ typedef tinygltf::AnimationChannel tinygltfAnimationChannel;
 typedef tinygltf::Animation tinygltfAnimation;
 typedef tinygltf::Model tinygltfModel;
 typedef tinygltf::Mesh tinygltfMesh;
+typedef tinygltf::Skin tinygltfSkin;
 typedef tinygltf::Node tinygltfNode;
 typedef tinygltf::Material tinygltfMaterial;
 typedef tinyobj::material_t tinyobjMaterial;
@@ -38,6 +39,7 @@ typedef int tinygltfAnimationChannel;
 typedef int tinygltfAnimation;
 typedef int tinygltfModel;
 typedef int tinygltfMesh;
+typedef int tinygltfSkin;
 typedef int tinygltfNode;
 typedef int tinygltfMaterial;
 typedef int tinyobjMaterial;
@@ -100,6 +102,7 @@ private:
 	// private data members
 	CoreAPI_Base* core = nullptr;			// low-level rendering functionality
 	GLTexture* renderTarget = nullptr;		// CUDA will render to this OpenGL texture
+	bool meshesChanged = false;				// rebuild scene graph if a mesh was rebuilt / refit
 public:
 	// public data members
 	HostScene* scene = nullptr;				// scene I/O and management module

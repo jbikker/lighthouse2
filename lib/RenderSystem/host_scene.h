@@ -45,6 +45,7 @@ public:
 	static void SetNodeTransform( const int nodeId, const mat4& transform );
 	static void ResetAnimation( const int animId );
 	static void UpdateAnimation( const int animId, const float dt );
+	static int AnimationCount() { return (int)animations.size(); }
 	// scene construction / maintenance
 	static int AddMesh( const char* objFile, const char* dir, const float scale = 1.0f );
 	static void AddScene( const char* sceneFile, const char* dir, const mat4& transform );
@@ -59,6 +60,7 @@ public:
 	static vector<int> scene; // node indices for scene 0; each of these may have children. TODO: scene 1..X.
 	static vector<HostNode*> nodes;
 	static vector<HostMesh*> meshes;
+	static vector<HostSkin*> skins;
 	static vector<HostAnimation*> animations;
 	static vector<int> instances; // list of indices of nodes that point to a mesh
 	static vector<HostMaterial*> materials;

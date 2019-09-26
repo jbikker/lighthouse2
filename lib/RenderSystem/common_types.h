@@ -50,8 +50,8 @@ __declspec(align(4)) struct uchar4 { uchar x, y, z, w; };
 
 inline float fminf( float a, float b ) { return a < b ? a : b; }
 inline float fmaxf( float a, float b ) { return a > b ? a : b; }
-inline int max( int a, int b ) { return a > b ? a : b; }
-inline int min( int a, int b ) { return a < b ? a : b; }
+// inline int max( int a, int b ) { return a > b ? a : b; }
+// inline int min( int a, int b ) { return a < b ? a : b; }
 inline float rsqrtf( float x ) { return 1.0f / sqrtf( x ); }
 
 inline float2 make_float2( float a, float b ) { float2 f2; f2.x = a, f2.y = b; return f2; }
@@ -387,26 +387,33 @@ public:
 	float& operator [] ( const int idx ) { return cell[idx]; }
 	float operator()( const int i, const int j ) const { return cell[i * 4 + j]; }
 	float& operator()( const int i, const int j ) { return cell[i * 4 + j]; }
+	mat4& operator += ( const mat4& a )
+	{
+		for (int i = 0; i < 16; i++) cell[i] += a.cell[i];
+		return *this;
+	}
 	bool operator==( const mat4& m )
 	{
-		for( int i = 0; i < 16; i++ ) if (m.cell[i] != cell[i]) return false; return true;
+		for (int i = 0; i < 16; i++) if (m.cell[i] != cell[i]) return false; return true;
 	}
 	float3 GetTranslation() { return make_float3( cell[3], cell[7], cell[11] ); }
 	static mat4 Identity() { mat4 r; return r; }
+	static mat4 ZeroMatrix() { mat4 r; memset( r.cell, 0, 64 ); return r; }
 	static mat4 RotateX( const float a ) { mat4 r; r.cell[5] = cosf( a ); r.cell[6] = -sinf( a ); r.cell[9] = sinf( a ); r.cell[10] = cosf( a ); return r; };
 	static mat4 RotateY( const float a ) { mat4 r; r.cell[0] = cosf( a ); r.cell[2] = sinf( a ); r.cell[8] = -sinf( a ); r.cell[10] = cosf( a ); return r; };
 	static mat4 RotateZ( const float a ) { mat4 r; r.cell[0] = cosf( a ); r.cell[1] = -sinf( a ); r.cell[4] = sinf( a ); r.cell[5] = cosf( a ); return r; };
 	static mat4 Scale( const float s ) { mat4 r; r.cell[0] = r.cell[5] = r.cell[10] = s; return r; }
 	static mat4 Scale( const float3 s ) { mat4 r; r.cell[0] = s.x, r.cell[5] = s.y, r.cell[10] = s.z; return r; }
 	static mat4 Scale( const float4 s ) { mat4 r; r.cell[0] = s.x, r.cell[5] = s.y, r.cell[10] = s.z, r.cell[15] = s.w; return r; }
-	static mat4 Rotate( const float3& u, float a )
+	static mat4 Rotate( const float3& u, const float a ) { return Rotate( u.x, u.y, u.z, a ); }
+	static mat4 Rotate( const float x, const float y, const float z, const float a )
 	{
 		const float c = cosf( a ), l_c = 1 - c, s = sinf( a );
 		// row major
 		mat4 m;
-		m[0] = u.x * u.x + (1 - u.x * u.x) * c, m[1] = u.x * u.y * l_c + u.z * s, m[2] = u.x * u.z * l_c - u.y * s, m[3] = 0;
-		m[4] = u.x * u.y * l_c - u.z * s, m[5] = u.y * u.y + (1 - u.y * u.y) * c, m[6] = u.y * u.z * l_c + u.x * s, m[7] = 0;
-		m[8] = u.x * u.z * l_c + u.y * s, m[9] = u.y * u.z * l_c - u.x * s, m[10] = u.z * u.z + (1 - u.z * u.z) * c, m[11] = 0;
+		m[0] = x * x + (1 - x * x) * c, m[1] = x * y * l_c + z * s, m[2] = x * z * l_c - y * s, m[3] = 0;
+		m[4] = x * y * l_c - z * s, m[5] = y * y + (1 - y * y) * c, m[6] = y * z * l_c + x * s, m[7] = 0;
+		m[8] = x * z * l_c + y * s, m[9] = y * z * l_c - x * s, m[10] = z * z + (1 - z * z) * c, m[11] = 0;
 		m[12] = m[13] = m[14] = 0, m[15] = 1;
 		return m;
 	}
@@ -424,7 +431,7 @@ public:
 	static mat4 Translate( const float x, const float y, const float z ) { mat4 r; r.cell[3] = x; r.cell[7] = y; r.cell[11] = z; return r; };
 	static mat4 Translate( const float3 P ) { mat4 r; r.cell[3] = P.x; r.cell[7] = P.y; r.cell[11] = P.z; return r; };
 	float Trace3() const { return cell[0] + cell[5] + cell[10]; }
-	void Invert()
+	mat4 Inverted()
 	{
 		// from MESA, via http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		const float inv[16] = {
@@ -462,11 +469,13 @@ public:
 			cell[4] * cell[2] * cell[9] + cell[8] * cell[1] * cell[6] - cell[8] * cell[2] * cell[5]
 		};
 		const float det = cell[0] * inv[0] + cell[1] * inv[4] + cell[2] * inv[8] + cell[3] * inv[12];
+		mat4 retVal;
 		if (det != 0)
 		{
 			const float invdet = 1.0f / det;
-			for (int i = 0; i < 16; i++) cell[i] = inv[i] * invdet;
+			for (int i = 0; i < 16; i++) retVal.cell[i] = inv[i] * invdet;
 		}
+		return retVal;
 	}
 };
 
@@ -524,6 +533,9 @@ public:
 };
 
 mat4 operator * ( const mat4& a, const mat4& b );
+mat4 operator + ( const mat4& a, const mat4& b );
+mat4 operator * ( const mat4& a, const float s );
+mat4 operator * ( const float s, const mat4& a );
 bool operator == ( const mat4& a, const mat4& b );
 bool operator != ( const mat4& a, const mat4& b );
 float4 operator * ( const mat4& a, const float4& b );
@@ -631,18 +643,31 @@ public:
 	}
 	static quat slerp( const quat& a, const quat& b, const float t )
 	{
-		quat r;
-		float t_ = 1 - t, Wa, Wb;
-		float theta = acosf( a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w );
-		float sn = sinf( theta );
-		Wa = sin( t_ * theta ) / sn;
-		Wb = sin( t * theta ) / sn;
-		r.x = Wa * a.x + Wb * b.x;
-		r.y = Wa * a.y + Wb * b.y;
-		r.z = Wa * a.z + Wb * b.z;
-		r.w = Wa * a.w + Wb * b.w;
-		r.normalize();
-		return r;
+		// from https://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/slerp/index.htm
+		quat qm;
+		float cosHalfTheta = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+		if (abs( cosHalfTheta ) >= 1.0)
+		{
+			qm.w = a.w, qm.x = a.x, qm.y = a.y, qm.z = a.z;
+			return qm;
+		}
+		float halfTheta = acosf( cosHalfTheta );
+		float sinHalfTheta = sqrtf( 1.0f - cosHalfTheta * cosHalfTheta );
+		if (fabs( sinHalfTheta ) < 0.001f)
+		{
+			qm.w = a.w * 0.5f + b.w * 0.5f;
+			qm.x = a.x * 0.5f + b.x * 0.5f;
+			qm.y = a.y * 0.5f + b.y * 0.5f;
+			qm.z = a.z * 0.5f + b.z * 0.5f;
+			return qm;
+		}
+		float ratioA = sinf( (1 - t) * halfTheta ) / sinHalfTheta;
+		float ratioB = sinf( t * halfTheta ) / sinHalfTheta;
+		qm.w = (a.w * ratioA + b.w * ratioB);
+		qm.x = (a.x * ratioA + b.x * ratioB);
+		qm.y = (a.y * ratioA + b.y * ratioB);
+		qm.z = (a.z * ratioA + b.z * ratioB);
+		return qm;
 	}
 	quat operator + ( const quat& q ) const { return quat( w + q.w, x + q.x, y + q.y, z + q.z ); }
 	quat operator - ( const quat& q ) const { return quat( w - q.w, x - q.x, y - q.y, z - q.z ); }

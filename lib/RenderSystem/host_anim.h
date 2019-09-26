@@ -24,8 +24,8 @@ class HostAnimation
 class Sampler
 {
 public:
-	Sampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel );
-	void ConvertFromGLTFSampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel );
+	Sampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel );
+	void ConvertFromGLTFSampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel );
 	vector<float> t;				// key frame times
 	vector<float3> vec3Key;			// vec3 key frames (location or scale)
 	vector<quat> vec4Key;			// vec4 key frames (rotation)
@@ -34,15 +34,15 @@ public:
 class Channel
 {
 public:
-	Channel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase );
+	Channel( const tinygltfAnimationChannel& gltfChannel, const tinygltfModel& gltfModel, const int nodeBase );
 	int samplerIdx;					// sampler used by this channel
 	int nodeIdx;					// index of the node this channel affects
 	int target;						// 0: translation, 1: rotation, 2: scale, 3: weights
 	void Reset() { t = 0; }
 	void Update( const float t, const Sampler* sampler );	// apply this channel to the target nde for time t
-	void ConvertFromGLTFChannel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase );
+	void ConvertFromGLTFChannel( const tinygltfAnimationChannel& gltfChannel, const tinygltfModel& gltfModel, const int nodeBase );
 	// data
-	float t;						// animation timer
+	float t = 0;					// animation timer
 };
 public:
 	HostAnimation( tinygltfAnimation& gltfAnim, tinygltfModel& gltfModel, const int nodeBase );

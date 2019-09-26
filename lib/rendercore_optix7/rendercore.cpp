@@ -378,7 +378,11 @@ void RenderCore::UpdateToplevel()
 		instanceArray = new CoreBuffer<OptixInstance>( instances.size() + 4, ON_HOST | ON_DEVICE );
 	}
 	// copy instance descriptors to the array, sync with device
-	for (int s = (int)instances.size(), i = 0; i < s; i++) instanceArray->HostPtr()[i] = instances[i]->instance;
+	for (int s = (int)instances.size(), i = 0; i < s; i++) 
+	{
+		instances[i]->instance.traversableHandle = meshes[instances[i]->mesh]->gasHandle;
+		instanceArray->HostPtr()[i] = instances[i]->instance;
+	}
 	instanceArray->CopyToDevice();
 	// build the top-level tree
 	OptixBuildInput buildInput = {};
@@ -611,8 +615,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			{
 				T = mat4::Identity();
 				memcpy( &T, instance->transform, 12 * sizeof( float ) );
-				invT = T;
-				invT.Invert();
+				invT = T.Inverted();
 			}
 			else
 			{

@@ -34,8 +34,8 @@ public:
 	// constructor / destructor
 	HostMaterial() = default;
 	// methods
-	void ConvertFrom( tinyobjMaterial& );
-	void ConvertFrom( tinygltfMaterial&, tinygltfModel&, const int textureBase );
+	void ConvertFrom( const tinyobjMaterial& );
+	void ConvertFrom( const tinygltfMaterial&, const tinygltfModel&, const int textureBase );
 	void ConvertTo( CoreMaterial&, CoreMaterialEx& );
 	// data members
 	enum

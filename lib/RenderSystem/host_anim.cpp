@@ -19,7 +19,7 @@
 //  |  HostAnimation::Sampler::Sampler                                            |
 //  |  Constructor.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostAnimation::Sampler::Sampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel )
+HostAnimation::Sampler::Sampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel )
 {
 	ConvertFromGLTFSampler( gltfSampler, gltfModel );
 }
@@ -28,7 +28,7 @@ HostAnimation::Sampler::Sampler( tinygltfAnimationSampler& gltfSampler, tinygltf
 //  |  HostAnimation::Sampler::ConvertFromGLTFSampler                             |
 //  |  Convert a gltf animation sampler.                                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& gltfSampler, tinygltfModel& gltfModel )
+void HostAnimation::Sampler::ConvertFromGLTFSampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel )
 {
 	// https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#animations
 	// extract animation times
@@ -39,7 +39,6 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& g
 	const float* a = (const float*)(buffer.data.data() + bufferView.byteOffset + inputAccessor.byteOffset);
 	size_t count = inputAccessor.count;
 	for( int i = 0; i < count; i++ ) t.push_back( a[i] );
-	
 	// extract animation keys
 	auto outputAccessor = gltfModel.accessors[gltfSampler.output];
 	bufferView = gltfModel.bufferViews[outputAccessor.bufferView];
@@ -49,7 +48,8 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& g
 	{
 		// b is an array of floats (for scale or translation)
 		float* f = (float*)b;
-		for( int i = 0; i < inputAccessor.count; i++ ) vec3Key.push_back( make_float3( f[i * 3], f[i * 3 + 1], f[i * 3 + 2] ) );
+		const int N = (int)outputAccessor.count;
+		for( int i = 0; i < N; i++ ) vec3Key.push_back( make_float3( f[i * 3], f[i * 3 + 1], f[i * 3 + 2] ) );
 	}
 	else if (outputAccessor.type == TINYGLTF_TYPE_SCALAR)
 	{
@@ -64,7 +64,7 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& g
 		case TINYGLTF_COMPONENT_TYPE_SHORT: for (int k = 0; k < N; k++, b += 2) fdata.push_back( max( *((char*)b) / 32767.0f, -1 ) ); break;
 		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: for (int k = 0; k < N; k++, b += 2) fdata.push_back( *((char*)b) / 65535.0f ); break;
 		}
-		for( int i = 0; i < inputAccessor.count; i++ ) floatKey.push_back( fdata[i] );
+		for( int i = 0; i < N; i++ ) floatKey.push_back( fdata[i] );
 	}
 	else if (outputAccessor.type == TINYGLTF_TYPE_VEC4)
 	{
@@ -79,7 +79,7 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& g
 		case TINYGLTF_COMPONENT_TYPE_SHORT: for (int k = 0; k < N; k++, b += 2) fdata.push_back( max( *((char*)b) / 32767.0f, -1 ) ); break;
 		case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: for (int k = 0; k < N; k++, b += 2) fdata.push_back( *((char*)b) / 65535.0f ); break;
 		}
-		for( int i = 0; i < inputAccessor.count; i++ ) vec4Key.push_back( quat( fdata[i * 4], fdata[i * 4 + 1], fdata[i * 4 + 2], fdata[i * 4 + 3] ) );
+		for( int i = 0; i < outputAccessor.count; i++ ) vec4Key.push_back( quat( fdata[i * 4 + 3], fdata[i * 4], fdata[i * 4 + 1], fdata[i * 4 + 2] ) );
 	}
 	else assert( false );
 }
@@ -88,7 +88,7 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( tinygltfAnimationSampler& g
 //  |  HostAnimation::Channel::Channel                                            |
 //  |  Constructor.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostAnimation::Channel::Channel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase )
+HostAnimation::Channel::Channel( const tinygltfAnimationChannel& gltfChannel, const tinygltfModel& gltfModel, const int nodeBase )
 {
 	ConvertFromGLTFChannel( gltfChannel, gltfModel, nodeBase );
 }
@@ -97,14 +97,14 @@ HostAnimation::Channel::Channel( tinygltfAnimationChannel& gltfChannel, tinygltf
 //  |  HostAnimation::Channel::ConvertFromGLTFChannel                             |
 //  |  Convert a gltf animation channel.                                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostAnimation::Channel::ConvertFromGLTFChannel( tinygltfAnimationChannel& gltfChannel, tinygltfModel& gltfModel, const int nodeBase )
+void HostAnimation::Channel::ConvertFromGLTFChannel( const tinygltfAnimationChannel& gltfChannel, const tinygltfModel& gltfModel, const int nodeBase )
 {
 	samplerIdx = gltfChannel.sampler;
 	nodeIdx = gltfChannel.target_node + nodeBase;
 	if (gltfChannel.target_path.compare( "translation" ) == 0) target = 0;
 	if (gltfChannel.target_path.compare( "rotation" ) == 0) target = 1;
 	if (gltfChannel.target_path.compare( "scale" ) == 0) target = 2;
-	if (gltfChannel.target_path.compare( "weight" ) == 0) target = 3;
+	if (gltfChannel.target_path.compare( "weights" ) == 0) target = 3;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -123,7 +123,7 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	for( ; keyIdx < keyCount; keyIdx++ )
 	{
 		// TODO: optimize this loop, this is silly.
-		float t0 = sampler->t[keyIdx];
+		float t0 = sampler->t[keyIdx % keyCount];
 		float t1 = sampler->t[(keyIdx + 1) % keyCount];
 		if (t >= t0 && t <= t1)
 		{	
@@ -135,33 +135,42 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	// apply anination key
 	if (target == 0) // translation
 	{
-		float3 key0 = sampler->vec3Key[keyIdx];
-		float3 key1 = sampler->vec3Key[(keyIdx + 1) % keyCount];
-		float3 key = (1 - f) * key0 + f * key1;
-		HostScene::nodes[nodeIdx]->scale = key;
-	}
-	else if (target == 1) // rotation
-	{
-		quat key0 = sampler->vec4Key[keyIdx];
-		quat key1 = sampler->vec4Key[(keyIdx + 1) % keyCount];
-		quat key = quat::slerp( key0, key1, f );
-		HostScene::nodes[nodeIdx]->rotation = key;
-	}
-	else if (target == 2) // scale
-	{
-		float3 key0 = sampler->vec3Key[keyIdx];
+		float3 key0 = sampler->vec3Key[keyIdx % keyCount];
 		float3 key1 = sampler->vec3Key[(keyIdx + 1) % keyCount];
 		float3 key = (1 - f) * key0 + f * key1;
 		HostScene::nodes[nodeIdx]->translation = key;
+		HostScene::nodes[nodeIdx]->transformed = true;
+	}
+	else if (target == 1) // rotation
+	{
+		quat key0 = sampler->vec4Key[keyIdx % keyCount];
+		quat key1 = sampler->vec4Key[(keyIdx + 1) % keyCount];
+		quat key = quat::slerp( key0, key1, f );
+		key.normalize();
+		HostScene::nodes[nodeIdx]->rotation = key;
+		HostScene::nodes[nodeIdx]->transformed = true;
+	}
+	else if (target == 2) // scale
+	{
+		float3 key0 = sampler->vec3Key[keyIdx % keyCount];
+		float3 key1 = sampler->vec3Key[(keyIdx + 1) % keyCount];
+		float3 key = (1 - f) * key0 + f * key1;
+		HostScene::nodes[nodeIdx]->scale = key;
+		HostScene::nodes[nodeIdx]->transformed = true;
 	}
 	else // target == 3, weight
 	{
-		/* float key0 = sampler->floatKey[keyIdx];
-		float key1 = sampler->floatKey[(keyIdx + 1) % keyCount];
-		float key = (1 - f) * key0 + f * key1;
-		HostScene::nodes[nodeIdx]->weights[0] = key; */
+		int weightCount = (int)(sampler->floatKey.size() / sampler->t.size());
+		for ( int i = 0; i < weightCount; i++ )
+		{
+			const int keyIdx1 = (keyIdx + 1) % keyCount;
+			float key0 = sampler->floatKey[(keyIdx % keyCount) * weightCount + i];
+			float key1 = sampler->floatKey[keyIdx1 * weightCount + i];
+			float key = (1 - f) * key0 + f * key1;
+			HostScene::nodes[nodeIdx]->weights[i] = key;
+		}
+		HostScene::nodes[nodeIdx]->morphed = true;
 	}
-	HostScene::nodes[nodeIdx]->UpdateTransformFromTRS();
 }
 
 //  +-----------------------------------------------------------------------------+

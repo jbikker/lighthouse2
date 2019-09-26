@@ -123,16 +123,14 @@ void RenderSystem::SynchronizeMaterials()
 //  +-----------------------------------------------------------------------------+
 void RenderSystem::SynchronizeMeshes()
 {
-	bool modelsDirty = false;
-	for (auto mesh : scene->meshes) if (mesh->Changed()) modelsDirty = true;
-	if (modelsDirty)
+	for (int s = (int)scene->meshes.size(), modelIdx = 0; modelIdx < s; modelIdx++)
 	{
-		// send scene geometry to core
-		for (int s = (int)scene->meshes.size(), modelIdx = 0; modelIdx < s; modelIdx++)
+		HostMesh* mesh = scene->meshes[modelIdx];
+		if (mesh->Changed())
 		{
-			HostMesh* mesh = scene->meshes[modelIdx];
 			mesh->UpdateAlphaFlags();
-			core->SetGeometry( modelIdx, mesh->vertices.data(), (int)mesh->vertices.size(), (int)mesh->indices.size(), (CoreTri*)mesh->triangles.data(), mesh->alphaFlags.data() );
+			core->SetGeometry( modelIdx, mesh->vertices.data(), (int)mesh->vertices.size(), (int)mesh->triangles.size(), (CoreTri*)mesh->triangles.data(), mesh->alphaFlags.data() );
+			meshesChanged = true; // trigger scene graph update
 		}
 	}
 }
@@ -157,7 +155,7 @@ void RenderSystem::UpdateSceneGraph()
 		instancesChanged |= node->Update( T /* start with an identity matrix */, instanceCount );
 	}
 	// synchronize instances to device if anything changed
-	if (instancesChanged)
+	if (instancesChanged || meshesChanged)
 	{
 		// resize vector (this is free if the size didn't change)
 		HostScene::instances.resize( instanceCount );
@@ -172,6 +170,7 @@ void RenderSystem::UpdateSceneGraph()
 		}
 		// finalize
 		core->UpdateToplevel();
+		meshesChanged = false;
 	}
 }
 

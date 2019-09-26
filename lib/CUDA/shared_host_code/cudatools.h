@@ -21,7 +21,7 @@ enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2 };
 
 #define STRINGIFY2(x) #x
 #define CHK_NVRTC( func ) { nvrtcResult code = func; if (code != NVRTC_SUCCESS) \
-	FatalError( "Error in %s, line %i:\n%s", __FILE__, __LINE__, nvrtcGetErrorString( code ) ); }
+	FatalError( __FILE__, __LINE__, nvrtcGetErrorString( code ) ); }
 
 class CUDATools
 {
@@ -145,7 +145,7 @@ public:
 	{
 		if (res != CUDA_SUCCESS) 
 		{
-			FatalError( "%s() failed: %s!\n%s, line %i", funcName, decodeError( res ), file, line );
+			FatalError( file, line, decodeError( res ), funcName );
 		}
 	}
 	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )
@@ -323,6 +323,7 @@ public:
 	T* DevPtr() { return devPtr; }
 	T** DevPtrPtr() { return &devPtr; /* Optix7 wants an array of pointers; this returns an array of 1 pointers. */ } 
 	T* HostPtr() { return hostPtr; }
+	void SetHostData( T* hostData ) { hostPtr = hostData; }
 	// member data
 private:
 	__int64 location = NOT_ALLOCATED, owner = 0, sizeInBytes = 0, numElements = 0;

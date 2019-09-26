@@ -32,7 +32,7 @@
 //  |  HostMaterial::ConvertFrom                                                  |
 //  |  Converts a tinyobjloader material to a HostMaterial.                 LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMaterial::ConvertFrom( tinyobjMaterial& original )
+void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 {
 	// properties
 	name = original.name;
@@ -74,7 +74,7 @@ void HostMaterial::ConvertFrom( tinyobjMaterial& original )
 //  |  HostMaterial::ConvertFrom                                                  |
 //  |  Converts a tinygltf material to a HostMaterial.                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMaterial::ConvertFrom( tinygltfMaterial& original, tinygltfModel& model, const int textureBase )
+void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltfModel& model, const int textureBase )
 {
 	name = original.name;
 	for (const auto& value : original.values)
@@ -183,6 +183,7 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 		gpuMat.smapwidth = s->width, gpuMat.smapheight = s->height,
 		gpuMat.suoffs = map[SPECULARITY].uvoffset.x, gpuMat.svoffs = map[SPECULARITY].uvoffset.y,
 		gpuMat.suscale = map[SPECULARITY].uvscale.x, gpuMat.svscale = map[SPECULARITY].uvscale.y;
+#if 0
 	if (cm) // color mask map
 		gpuMat.cmapwidth = cm->width, gpuMat.cmapheight = cm->height,
 		gpuMat.cuoffs = map[COLORMASK].uvoffset.x, gpuMat.cvoffs = map[COLORMASK].uvoffset.y,
@@ -191,6 +192,7 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 		gpuMat.amapwidth = am->width, gpuMat.amapheight = am->height,
 		gpuMat.auoffs = map[ALPHAMASK].uvoffset.x, gpuMat.avoffs = map[ALPHAMASK].uvoffset.y,
 		gpuMat.auscale = map[ALPHAMASK].uvscale.x, gpuMat.avscale = map[ALPHAMASK].uvscale.y;
+#endif
 }
 
 // EOF

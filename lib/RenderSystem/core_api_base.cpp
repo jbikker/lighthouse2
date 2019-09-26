@@ -46,7 +46,7 @@ CoreAPI_Base* CoreAPI_Base::CreateCoreAPI( const char* dllName )
 			if (module == 0) FatalError( "dll not found: %s", dllName );
 		}
 		createCore = (createCoreFunction)GetProcAddress( module, "CreateCore" );
-		if (createCore == 0) FatalError( "could not find entrypoint in dll" );
+		if (createCore == 0) FatalError( __FILE__, __LINE__, "could not find entrypoint in dll" );
 		api = createCore();
 		api->Init();
 	}

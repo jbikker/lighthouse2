@@ -20,6 +20,7 @@ HostSkyDome* HostScene::sky = 0;
 vector<int> HostScene::scene;
 vector<HostNode*> HostScene::nodes;
 vector<HostMesh*> HostScene::meshes;
+vector<HostSkin*> HostScene::skins;
 vector<HostAnimation*> HostScene::animations;
 vector<int> HostScene::instances;
 vector<HostMaterial*> HostScene::materials;
@@ -199,9 +200,11 @@ int HostScene::AddMesh( const char* objFile, const char* dir, const float scale 
 void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& transform )
 {
 	// offsets: if we loaded an object before this one, indices should not start at 0.
+	// based on https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/base/VulkanglTFModel.hpp
 	const int materialBase = (int)materials.size();
 	const int textureBase = (int)textures.size();
 	const int meshBase = (int)meshes.size();
+	const int skinBase = (int)skins.size();
 	bool hasTransform = (transform != mat4::Identity());
 	const int nodeBase = (int)nodes.size() + (hasTransform ? 1 : 0);
 	// load gltf file
@@ -214,9 +217,9 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 	{
 		string extension4 = cleanFileName.substr( cleanFileName.size() - 5, 5 );
 		string extension3 = cleanFileName.substr( cleanFileName.size() - 4, 4 );
-		if (extension4.compare( ".gltf" ) == 0) 
+		if (extension4.compare( ".gltf" ) == 0)
 			ret = loader.LoadASCIIFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() );
-		if (extension3.compare( ".bin" ) == 0 || extension3.compare( ".glb" ) == 0) 
+		if (extension3.compare( ".bin" ) == 0 || extension3.compare( ".glb" ) == 0)
 			ret = loader.LoadBinaryFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() );
 	}
 	if (!warn.empty()) printf( "Warn: %s\n", warn.c_str() );
@@ -254,7 +257,7 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 	for (size_t s = gltfModel.meshes.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Mesh& gltfMesh = gltfModel.meshes[i];
-		HostMesh* newMesh = new HostMesh( gltfMesh, gltfModel, materialBase );
+		HostMesh* newMesh = new HostMesh( gltfMesh, gltfModel, materialBase, gltfModel.materials.size() == 0 ? 0 : -1 );
 		newMesh->ID = (int)i + meshBase;
 		meshes.push_back( newMesh );
 	}
@@ -270,15 +273,20 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 	for (size_t s = gltfModel.nodes.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Node& gltfNode = gltfModel.nodes[i];
-		HostNode* newNode = new HostNode( gltfNode, nodeBase, meshBase );
+		HostNode* newNode = new HostNode( gltfNode, nodeBase, meshBase, skinBase );
 		newNode->ID = (int)i + nodeBase;
 		nodes.push_back( newNode );
 	}
-	// convert animations
-	for (size_t s = gltfModel.animations.size(), i = 0; i < s; i++)
+	// convert animations and skins
+	for (tinygltf::Animation& gltfAnim : gltfModel.animations) 
 	{
-		tinygltf::Animation& gltfAnim = gltfModel.animations[i];
-		animations.push_back( new HostAnimation( gltfAnim, gltfModel, nodeBase ) );
+		HostAnimation* anim = new HostAnimation( gltfAnim, gltfModel, nodeBase );
+		animations.push_back( anim );
+	}
+	for (tinygltf::Skin &source : gltfModel.skins) 
+	{
+		HostSkin* newSkin = new HostSkin( source, gltfModel, nodeBase );
+		skins.push_back( newSkin );
 	}
 	// construct a scene graph for scene 0, assuming the GLTF file has one scene
 	tinygltf::Scene& glftScene = gltfModel.scenes[0];
@@ -317,9 +325,6 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 	newMesh->vertices.push_back( make_float4( pos + B - T, 1 ) );
 	newMesh->vertices.push_back( make_float4( pos + B + T, 1 ) );
 	newMesh->vertices.push_back( make_float4( pos - B + T, 1 ) );
-	// connectivity data for two triangles
-	newMesh->indices.push_back( make_uint3( 0, 1, 2 ) );
-	newMesh->indices.push_back( make_uint3( 3, 4, 5 ) );
 	// triangles
 	HostTri tri1, tri2;
 	tri1.material = tri2.material = material;

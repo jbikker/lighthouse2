@@ -193,8 +193,15 @@ struct CoreMaterial
 	/* read if bit 10 set */ short nmapwidth2, nmapheight2; half nuscale2, nvscale2, nuoffs2, nvoffs2; uint nmapaddr2;
 	/* read if bit  4 set */ short smapwidth, smapheight; half suscale, svscale, suoffs, svoffs; uint smapaddr;
 	/* read if bit  5 set */ short rmapwidth, rmapheight; half ruscale, rvscale, ruoffs, rvoffs; uint rmapaddr;
+#if 1
+	// WUT
 	/* read if bit 17 set */ short cmapwidth, cmapheight; half cuscale, cvscale, cuoffs, cvoffs; uint cmapaddr;
 	/* read if bit 18 set */ short amapwidth, amapheight; half auscale, avscale, auoffs, avoffs; uint amapaddr;
+#else
+	// TODO: to match CoreMaterial4
+	/* read if bit 17 set */ short m0mapwidth, m0mapheight; half m0uscale, m0vscale, m0uoffs, m0voffs; uint m0mapaddr;
+	/* read if bit 18 set */ short m1mapwidth, m1mapheight; half m1uscale, m1vscale, m1uoffs, m1voffs; uint m1mapaddr;
+#endif
 };
 // texture layers in HostMaterial and CoreMaterialEx
 #define TEXTURE0		0
@@ -261,8 +268,8 @@ struct CoreMaterial4
 	uint4 rdata4;
 	uint4 m0data4;
 	uint4 m1data4;
-	float4 dielec4;
-	float4 spec4;
+	// float4 dielec4;
+	// float4 spec4;
 	// flag query macros
 #define MAT_ISDIELECTRIC			(flags & (1 << 0))
 #define MAT_DIFFUSEMAPISHDR			(flags & (1 << 1))

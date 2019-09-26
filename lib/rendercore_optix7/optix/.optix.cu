@@ -103,7 +103,7 @@ __device__ void setupPrimaryRay( const uint pathIdx, const uint stride )
 	params.pathStates[pathIdx] = make_float4( O, __uint_as_float( (pathIdx << 8) + 1 /* S_SPECULAR in CUDA code */ ) );
 	params.pathStates[pathIdx + stride] = make_float4( D, 0 );
 	// trace eye ray
-	uint u0, u1, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
+	uint u0, u1 = 0, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, O, D, params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
 	params.hitData[pathIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
@@ -115,7 +115,7 @@ __device__ void setupSecondaryRay( const uint rayIdx, const uint stride )
 	const float4 D4 = params.pathStates[rayIdx + stride];
 	float4 result = make_float4( 0, 0, __int_as_float( -1 ), 0 );
 	uint pixelIdx = __float_as_uint( O4.w ) >> 8;
-	uint u0, u1, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
+	uint u0, u1 = 0, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
 	params.hitData[rayIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
@@ -167,9 +167,9 @@ extern "C" __global__ void __closesthit__radiance()
 	const uint inst_idx = optixGetInstanceIndex();
 	const float2 bary = optixGetTriangleBarycentrics();
 	const float tmin = optixGetRayTmax();
-	optixSetPayload_0( __float_as_uint( bary.x ) );
-	optixSetPayload_1( __float_as_uint( bary.y ) );
-	optixSetPayload_2( (inst_idx << 20) + prim_idx );
+	optixSetPayload_0( (uint)(65535.0f * bary.x) + ((uint)(65535.0f * bary.y) << 16) );
+	optixSetPayload_1( inst_idx );
+	optixSetPayload_2( prim_idx );
 	optixSetPayload_3( __float_as_uint( tmin ) );
 }
 

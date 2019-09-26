@@ -33,9 +33,9 @@ static HostTri TransformedHostTri( HostTri* tri, mat4 T )
 //  |  HostNode::HostNode                                                         |
 //  |  Constructors.                                                        LH2'19|
 //  +-----------------------------------------------------------------------------+
-HostNode::HostNode( tinygltfNode& gltfNode, const int nodeBase, const int meshBase )
+HostNode::HostNode( const tinygltfNode& gltfNode, const int nodeBase, const int meshBase, const int skinBase )
 {
-	ConvertFromGLTFNode( gltfNode, nodeBase, meshBase );
+	ConvertFromGLTFNode( gltfNode, nodeBase, meshBase, skinBase );
 }
 
 HostNode::HostNode( const int meshIdx, const mat4& transform )
@@ -76,21 +76,29 @@ HostNode::~HostNode()
 //  |  HostNode::ConvertFromGLTFNode                                              |
 //  |  Create a node from a GLTF node.                                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostNode::ConvertFromGLTFNode( tinygltfNode& gltfNode, const int nodeBase, const int meshBase )
+void HostNode::ConvertFromGLTFNode( const tinygltfNode& gltfNode, const int nodeBase, const int meshBase, const int skinBase )
 {
 	// copy node name
 	name = gltfNode.name;
-	// set mesh ID
+	// set mesh / skin ID
 	meshID = gltfNode.mesh == -1 ? -1 : (gltfNode.mesh + meshBase);
+	skinID = gltfNode.skin == -1 ? -1 : (gltfNode.skin + skinBase);
+	// if the mesh has morph targets, the node should have weights for them
+	if (meshID != -1)
+	{
+		const int morphTargets = (int)HostScene::meshes[meshID]->poses.size() - 1;
+		if (morphTargets > 0) weights.resize( morphTargets, 0.0f );
+	}
 	// copy child node indices
 	for (int s = (int)gltfNode.children.size(), i = 0; i < s; i++) childIdx.push_back( gltfNode.children[i] + nodeBase );
 	// obtain matrix
+	bool buildFromTRS = false;
 	if (gltfNode.matrix.size() == 16)
 	{
 		// we get a full matrix
-		for (int i = 0; i < 16; i++) localTransform.cell[i] = gltfNode.matrix[i];
+		for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) matrix.cell[i * 4 + j] = gltfNode.matrix[j * 4 + i];
+		buildFromTRS = true;
 	}
-	bool buildFromTRS = false;
 	if (gltfNode.translation.size() == 3)
 	{
 		// the GLTF node contains a translation
@@ -100,7 +108,7 @@ void HostNode::ConvertFromGLTFNode( tinygltfNode& gltfNode, const int nodeBase, 
 	if (gltfNode.rotation.size() == 4)
 	{
 		// the GLTF node contains a rotation
-		rotation = quat( gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2], gltfNode.rotation[3] );
+		rotation = quat( gltfNode.rotation[3], gltfNode.rotation[0], gltfNode.rotation[1], gltfNode.rotation[2] );
 		buildFromTRS = true;
 	}
 	if (gltfNode.scale.size() == 3)
@@ -124,7 +132,7 @@ void HostNode::UpdateTransformFromTRS()
 	mat4 T = mat4::Translate( translation );
 	mat4 R = rotation.toMatrix();
 	mat4 S = mat4::Scale( scale );
-	localTransform = T * R * S;
+	localTransform = T * R * S * matrix;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -135,15 +143,30 @@ void HostNode::UpdateTransformFromTRS()
 //  +-----------------------------------------------------------------------------+
 bool HostNode::Update( mat4& T, int& posInInstanceArray )
 {
-	bool instancesChanged = false;
-	combinedTransform = localTransform * T;
+	// update the combined transform for this node
+	bool thisWasModified = Changed();
+	bool instancesChanged = thisWasModified;
+	if (transformed)
+	{
+		UpdateTransformFromTRS();
+		transformed = false;
+	}
+	combinedTransform = T * localTransform;
+	// update the combined transforms of the children
+	for (int s = (int)childIdx.size(), i = 0; i < s; i++)
+	{
+		HostNode* child = HostScene::nodes[childIdx[i]];
+		instancesChanged |= child->Update( combinedTransform, posInInstanceArray );
+	}
+	// update animations
 	if (meshID > -1)
 	{
-		if (Changed()) 
+		if (morphed)
 		{
-			if (hasLTris) UpdateLights();
-			instancesChanged = true;
+			HostScene::meshes[meshID]->SetPose( weights );
+			morphed = false;
 		}
+		if (thisWasModified && hasLTris) UpdateLights();
 		if (instanceID != posInInstanceArray)
 		{
 			instancesChanged = true;
@@ -152,10 +175,22 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 			else
 				HostScene::instances.push_back( ID );
 		}
+		if (skinID > -1)
+		{
+			HostSkin* skin = HostScene::skins[skinID];
+			mat4 meshTransform = combinedTransform;
+			mat4 meshTransformInverted = meshTransform.Inverted();
+			for (int s = (int)skin->joints.size(), j = 0; j < s; j++)
+			{
+				HostNode* jointNode = HostScene::nodes[skin->joints[j]];
+				// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_020_Skins.md
+				skin->jointMat[j] = meshTransformInverted * jointNode->combinedTransform * skin->inverseBindMatrices[j];
+			}
+			HostScene::meshes[meshID]->SetPose( skin, meshTransform );
+		}
 		posInInstanceArray++;
 	}
-	for (int s = (int)childIdx.size(), i = 0; i < s; i++)
-		instancesChanged |= HostScene::nodes[childIdx[i]]->Update( combinedTransform, posInInstanceArray );
+	// all done.
 	return instancesChanged;
 }
 

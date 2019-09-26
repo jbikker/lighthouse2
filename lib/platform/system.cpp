@@ -37,7 +37,31 @@ mat4 operator * ( const mat4& a, const mat4& b )
 {
 	mat4 r;
 	for (uint i = 0; i < 16; i += 4) for (uint j = 0; j < 4; ++j)
-		r[i + j] = (b.cell[i + 0] * a.cell[j + 0]) + (b.cell[i + 1] * a.cell[j + 4]) + (b.cell[i + 2] * a.cell[j + 8]) + (b.cell[i + 3] * a.cell[j + 12]);
+	{
+		r[i + j] =
+			(a.cell[i + 0] * b.cell[j + 0]) +
+			(a.cell[i + 1] * b.cell[j + 4]) +
+			(a.cell[i + 2] * b.cell[j + 8]) +
+			(a.cell[i + 3] * b.cell[j + 12]);
+	}
+	return r;
+}
+mat4 operator * ( const mat4& a, const float s )
+{
+	mat4 r;
+	for (uint i = 0; i < 16; i += 4) r.cell[i] = a.cell[i] * s;
+	return r;
+}
+mat4 operator * ( const float s, const mat4& a )
+{
+	mat4 r;
+	for (uint i = 0; i < 16; i++) r.cell[i] = a.cell[i] * s;
+	return r;
+}
+mat4 operator + ( const mat4& a, const mat4& b )
+{
+	mat4 r;
+	for (uint i = 0; i < 16; i += 4) r.cell[i] = a.cell[i] + b.cell[i];
 	return r;
 }
 bool operator == ( const mat4& a, const mat4& b ) { for (uint i = 0; i < 16; i++) if (a.cell[i] != b.cell[i]) return false; return true; }
@@ -170,15 +194,27 @@ static void setfv( string& s, const char* fmt, va_list args )
 	s = buffer;
 }
 
-void FatalError( const char* fmt, ... )
+void FatalError( const char* source, const int line, const char* message, const char* part2 )
 {
-	string tmp;
-	va_list args;
-	va_start( args, fmt );
-	setfv( tmp, fmt, args );
-	va_end( args );
-	printf( "\n%s\n", tmp.c_str() );
-	MessageBox( NULL, tmp.c_str(), "Fatal error", MB_OK );
+	printf( "Error executing line %i of file %s:\n%s", line, source, message );
+	char t[16384];
+	sprintf_s( t, 16384, "Error executing line %i of file %s:\n%s", line, source, message );
+	if (part2)
+	{
+		strcat_s( t, "\n" );
+		strcat_s( t, part2 );
+	}
+	MessageBox( NULL, t, "Fatal error", MB_OK );
+	assert( false );
+	while (1) exit( 0 );
+}
+
+void FatalError( const char* message, const char* part2 )
+{
+	printf( "Error: %s\n(%s)", message, part2 );
+	char t[16384];
+	sprintf_s( t, 16384, "Error: %s\n(%s)", message, part2 );
+	MessageBox( NULL, t, "Fatal error", MB_OK );
 	assert( false );
 	while (1) exit( 0 );
 }

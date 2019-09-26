@@ -38,7 +38,7 @@ using namespace half_float;
 #include <GLFW/glfw3.h>		// needed for Timer class
 
 #define FATALERROR(m) FatalError( "Error on line %i of %s: %s", __LINE__, __FILE__, m )
-#define ERRORMESSAGE(m,c) FatalError( "Error on line %i of %s: %s (%s)", __LINE__, __FILE__, m, c )
+#define ERRORMESSAGE(m,c) FatalError( __FILE__, __LINE__, c, m )
 
 #define MALLOC64(x) ((x)==0?0:_aligned_malloc((x),64))
 #define FREE64(x) _aligned_free(x)
@@ -168,7 +168,8 @@ float RandomFloat( uint& seed );
 float Rand( float range );
 
 // forward declaration of the helper functions
-void FatalError( const char* fmt, ... );
+void FatalError( const char* message, const char* part2 );
+void FatalError( const char* source, const int line, const char* message, const char* part2 = 0 );
 void OpenConsole();
 bool FileIsNewer( const char* file1, const char* file2 );
 bool NeedsRecompile( const char* path, const char* target, const char* s1, const char* s2 = 0, const char* s3 = 0, const char* s4 = 0 );

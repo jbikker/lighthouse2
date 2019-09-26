@@ -36,11 +36,23 @@ CoreMesh::~CoreMesh()
 void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags )
 {
 	// copy triangle data to GPU
-	delete triangles;
-	delete positions4;
 	triangleCount = triCount;
-	triangles = new CoreBuffer<CoreTri4>( triCount, ON_DEVICE, tris );
-	positions4 = new CoreBuffer<float4>( triangleCount * 3, ON_DEVICE, vertexData );
+	bool reallocate = (triangles == 0);
+	if (triangles) if (triCount > triangles->GetSize()) reallocate = true;
+	if (reallocate)
+	{
+		delete triangles;
+		delete positions4;
+		triangles = new CoreBuffer<CoreTri4>( triCount, ON_DEVICE, tris );
+		positions4 = new CoreBuffer<float4>( triangleCount * 3, ON_DEVICE, vertexData );
+	}
+	else
+	{
+		triangles->SetHostData( (CoreTri4*)tris );
+		triangles->CopyToDevice();
+		positions4->SetHostData( (float4*)vertexData );
+		positions4->CopyToDevice();
+	}
 	// prepare acceleration structure build parameters
 	buildInput = {};
 	buildInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;

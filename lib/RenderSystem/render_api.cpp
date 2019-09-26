@@ -91,6 +91,11 @@ void RenderAPI::UpdateAnimation( const int animId, const float dt )
 	renderer->scene->UpdateAnimation( animId, dt );
 }
 
+int RenderAPI::AnimationCount()
+{
+	return renderer->scene->AnimationCount();
+}
+
 void RenderAPI::SynchronizeSceneData()
 {
 	renderer->SynchronizeSceneData();

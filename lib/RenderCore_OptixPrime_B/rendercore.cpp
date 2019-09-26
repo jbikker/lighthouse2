@@ -460,8 +460,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		{
 			CoreInstanceDesc id;
 			id.triangles = meshes[instance->mesh]->triangles->DevPtr();
-			mat4 T = instance->transform;
-			T.Invert();
+			mat4 T = instance->transform.Inverted();
 			id.invTransform = *(float4x4*)&T;
 			instDescArray.push_back( id );
 		}

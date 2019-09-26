@@ -15,7 +15,24 @@
 
 #pragma once
 
-namespace lighthouse2 {
+namespace lighthouse2
+{
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostSkin                                                                   |
+//  |  Skin data storage.                                                   LH2'19|
+//  +-----------------------------------------------------------------------------+
+class HostSkin
+{
+public:
+	HostSkin( const tinygltfSkin& gltfSkin, const tinygltfModel& gltfModel, const int nodeBase );
+	void ConvertFromGLTFSkin( const tinygltfSkin& gltfSkin, const tinygltfModel& gltfModel, const int nodeBase );
+	string name;
+	int skeletonRoot = 0;
+	vector<mat4> inverseBindMatrices;
+	vector<mat4> jointMat;
+	vector<int> joints; // node indices of the joints
+};
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostMesh                                                                   |
@@ -33,23 +50,30 @@ public:
 	// constructor / destructor
 	HostMesh() = default;
 	HostMesh( const char* name, const char* dir, const float scale = 1.0f );
-	HostMesh( tinygltfMesh& gltfMesh, tinygltfModel& gltfModel, const int matIdxOffset );
+	HostMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride = -1 );
 	~HostMesh();
 	// methods
 	void LoadGeometry( const char* file, const char* dir, const float scale = 1.0f );
 	void LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform );
-	void ConvertFromGTLFMesh( tinygltfMesh& gltfMesh, tinygltfModel& gltfModel, const int matIdxOffset );
+	void ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride );
+	void BuildFromIndexedData( const vector<int>& tmpIndices, const vector<float3>& tmpVertices,
+		const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<Pose>& tmpPoses,
+		const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights,  const int materialIdx );
 	void BuildMaterialList();
 	void UpdateAlphaFlags();
+	void SetPose( const vector<float>& weights );
+	void SetPose( const HostSkin* skin, const mat4& meshTransform );
 	// data members
 	string name = "unnamed";					// name for the mesh						
 	int ID = -1;								// unique ID for the mesh: position in mesh array
 	vector<float4> vertices;					// model vertices
-	vector<uint3> indices;						// connectivity data
+	vector<float4> original;					// skinning: base pose; will be transformed into vector vertices
 	vector<HostTri> triangles;					// full triangles
 	vector<int> materialList;					// list of materials used by the mesh; used to efficiently track light changes
 	vector<uint> alphaFlags;					// list containing 1 for each triangle that is flagged as HASALPHA, 0 otherwise 
-	vector<Pose*> poses;						// morph target data
+	vector<uint4> joints;						// skinning: joints
+	vector<float4> weights;						// skinning: joint weights
+	vector<Pose> poses;							// morph target data
 	bool isAnimated;							// true when this mesh has animation data
 	TRACKCHANGES;								// add Changed(), MarkAsDirty() methods, see system.h
 	// Note: design decision:

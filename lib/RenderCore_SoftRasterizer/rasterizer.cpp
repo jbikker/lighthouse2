@@ -226,7 +226,7 @@ void Rasterizer::Render( mat4& transform )
 {
 	memset( Mesh::screen->pixels, 0, Mesh::screen->width * Mesh::screen->height * sizeof( uint ) );
 	memset( zbuffer, 0, Mesh::screen->width * Mesh::screen->height * sizeof( float ) );
-	transform.Invert();
+	transform.Inverted();
 	scene.root->Render( transform );
 }
 

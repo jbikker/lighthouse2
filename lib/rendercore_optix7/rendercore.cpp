@@ -663,7 +663,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			coreStats.primaryRayCount = pathCount;
 			InitCountersForExtend( pathCount );
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, params.scrsize.x, params.scrsize.y, 1 ) );
+			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, params.scrsize.x, params.scrsize.y * scrspp, 1 ) );
 		}
 		else
 		{

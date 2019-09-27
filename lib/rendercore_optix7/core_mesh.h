@@ -36,6 +36,8 @@ public:
 	int triangleCount = 0;					// number of triangles in the mesh
 	CoreBuffer<float4>* positions4 = 0;		// vertex data for intersection
 	CoreBuffer<CoreTri4>* triangles = 0;	// original triangle data, as received from RenderSystem, for shading
+	CoreBuffer<uchar>* buildTemp = 0;		// reusable temporary buffer for Optix BVH construction
+	CoreBuffer<uchar>* buildBuffer = 0;		// reusable target buffer for Optix BVH construction
 	// aceleration structure
 	uint32_t inputFlags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT /* handled in CUDA shading code instead */ };
 	OptixBuildInput buildInput;				// acceleration structure build parameters

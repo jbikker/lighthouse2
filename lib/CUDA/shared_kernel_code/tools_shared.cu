@@ -83,7 +83,7 @@ LH2_DEVFUNC uint PackNormal( float3 N )
 {
 #if 1
 	// more efficient
-	const float f = 65535.0f / sqrtf( 8.0f * N.z + 8.0f );
+	const float f = 65535.0f / fmaxf( sqrtf( 8.0f * N.z + 8.0f), 0.0001f ); // Thanks Robbin Marcus
 	return (uint)(N.x * f + 32767.0f) + ((uint)(N.y * f + 32767.0f) << 16);
 #else
 	float2 enc = normalize( make_float2( N ) ) * (sqrtf( -N.z * 0.5f + 0.5f ));

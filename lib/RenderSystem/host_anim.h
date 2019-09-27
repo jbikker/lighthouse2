@@ -24,12 +24,19 @@ class HostAnimation
 class Sampler
 {
 public:
+	enum
+	{
+		LINEAR = 0,
+		SPLINE,
+		STEP
+	};
 	Sampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel );
 	void ConvertFromGLTFSampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel );
 	vector<float> t;				// key frame times
 	vector<float3> vec3Key;			// vec3 key frames (location or scale)
 	vector<quat> vec4Key;			// vec4 key frames (rotation)
 	vector<float> floatKey;			// float key frames (weight)
+	int interpolation;				// interpolation type: linear, spline, step
 };
 class Channel
 {
@@ -38,11 +45,12 @@ public:
 	int samplerIdx;					// sampler used by this channel
 	int nodeIdx;					// index of the node this channel affects
 	int target;						// 0: translation, 1: rotation, 2: scale, 3: weights
-	void Reset() { t = 0; }
+	void Reset() { t = 0, k = 0; }
 	void Update( const float t, const Sampler* sampler );	// apply this channel to the target nde for time t
 	void ConvertFromGLTFChannel( const tinygltfAnimationChannel& gltfChannel, const tinygltfModel& gltfModel, const int nodeBase );
 	// data
 	float t = 0;					// animation timer
+	int k = 0;						// current keyframe
 };
 public:
 	HostAnimation( tinygltfAnimation& gltfAnim, tinygltfModel& gltfModel, const int nodeBase );

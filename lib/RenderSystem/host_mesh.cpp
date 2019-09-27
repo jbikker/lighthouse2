@@ -51,10 +51,10 @@ void HostSkin::ConvertFromGLTFSkin( const tinygltfSkin& gltfSkin, const tinygltf
 		memcpy( inverseBindMatrices.data(), &buffer.data[accessor.byteOffset + bufferView.byteOffset], accessor.count * sizeof( mat4 ) );
 		jointMat.resize( accessor.count );
 		// convert gltf's column-major to row-major
-		for( int k = 0; k < accessor.count; k++ ) 
+		for (int k = 0; k < accessor.count; k++)
 		{
 			mat4 M = inverseBindMatrices[k];
-			for( int i = 0; i < 4; i++ ) for( int j = 0; j < 4; j++ ) inverseBindMatrices[k].cell[j * 4 + i] = M.cell[i * 4 + j];
+			for (int i = 0; i < 4; i++) for (int j = 0; j < 4; j++) inverseBindMatrices[k].cell[j * 4 + i] = M.cell[i * 4 + j];
 		}
 	}
 }
@@ -394,10 +394,10 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 			{
 				if (attribAccessor.type == TINYGLTF_TYPE_VEC4)
 					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
-						for (size_t i = 0; i < count; i++, a += byte_stride) 
+						for (size_t i = 0; i < count; i++, a += byte_stride)
 							tmpJoints.push_back( make_uint4( *((ushort*)a), *((ushort*)(a + 2)), *((ushort*)(a + 4)), *((ushort*)(a + 6)) ) );
 					else if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
-						for (size_t i = 0; i < count; i++, a += byte_stride) 
+						for (size_t i = 0; i < count; i++, a += byte_stride)
 							tmpJoints.push_back( make_uint4( *((uchar*)a), *((uchar*)(a + 1)), *((uchar*)(a + 2)), *((uchar*)(a + 3)) ) );
 					else FatalError( __FILE__, __LINE__, "expected ushorts or uchars for joints in gltf file", "" );
 				else FatalError( __FILE__, __LINE__, "expected vec4s for joints in gltf file", "" );
@@ -406,7 +406,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 			{
 				if (attribAccessor.type == TINYGLTF_TYPE_VEC4)
 					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
-						for (size_t i = 0; i < count; i++, a += byte_stride) 
+						for (size_t i = 0; i < count; i++, a += byte_stride)
 						{
 							float4 w4 = *((float4*)a);
 							float norm = 1.0f / (w4.x + w4.y + w4.z + w4.w);
@@ -473,9 +473,9 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 		const float3 vert0 = tmpVertices[v0idx], vert1 = tmpVertices[v1idx], vert2 = tmpVertices[v2idx];
 		float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
 		float3 vN0, vN1, vN2;
-		if (tmpNormals.size() > 0) 
+		if (tmpNormals.size() > 0)
 		{
-			vN0 = tmpNormals[v0idx], vN1 = tmpNormals[v1idx], vN2 = tmpNormals[v2idx]; 
+			vN0 = tmpNormals[v0idx], vN1 = tmpNormals[v1idx], vN2 = tmpNormals[v2idx];
 			if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
 		}
 		else
@@ -493,6 +493,8 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 		const float nnv = tmpAlphas[i]; // temporarily stored there
 		tmpAlphas[i] = acosf( nnv ) * (1 + 0.03632f * (1 - nnv) * (1 - nnv));
 	}
+	// prepare poses
+	if (tmpPoses.size() > 0) for (int s = (int)tmpPoses.size(), i = 0; i < s; i++) poses.push_back( Pose() );
 	// build final mesh structures
 	const size_t newTriangleCount = tmpIndices.size() / 3;
 	size_t triIdx = triangles.size();
@@ -548,38 +550,29 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			tri.B = normalize( cross( N, tri.T ) );
 		}
 		tri.material = materialIdx;
-	}
-	// build poses
-	if (tmpPoses.size() > 0)
-	{
+		// process joints / weights
+		if (tmpJoints.size() > 0)
+		{
+			joints.push_back( tmpJoints[v0idx] );
+			joints.push_back( tmpJoints[v1idx] );
+			joints.push_back( tmpJoints[v2idx] );
+			weights.push_back( tmpWeights[v0idx] );
+			weights.push_back( tmpWeights[v1idx] );
+			weights.push_back( tmpWeights[v2idx] );
+		}
+		// build poses
 		for (int s = (int)tmpPoses.size(), i = 0; i < s; i++)
 		{
-			poses.push_back( Pose() );
-			for (int s = (int)triangles.size(), j = 0; j < s; j++)
-			{
-				const uint v0idx = tmpIndices[j * 3 + 0], v1idx = tmpIndices[j * 3 + 1], v2idx = tmpIndices[j * 3 + 2];
-				poses[i].positions.push_back( tmpPoses[i].positions[v0idx] );
-				poses[i].positions.push_back( tmpPoses[i].positions[v1idx] );
-				poses[i].positions.push_back( tmpPoses[i].positions[v2idx] );
-				poses[i].normals.push_back( tmpPoses[i].normals[v0idx] );
-				poses[i].normals.push_back( tmpPoses[i].normals[v1idx] );
-				poses[i].normals.push_back( tmpPoses[i].normals[v2idx] );
-				poses[i].tangents.push_back( tmpPoses[i].tangents[v0idx] );
-				poses[i].tangents.push_back( tmpPoses[i].tangents[v1idx] );
-				poses[i].tangents.push_back( tmpPoses[i].tangents[v2idx] );
-			}
+			poses[i].positions.push_back( tmpPoses[i].positions[v0idx] );
+			poses[i].positions.push_back( tmpPoses[i].positions[v1idx] );
+			poses[i].positions.push_back( tmpPoses[i].positions[v2idx] );
+			poses[i].normals.push_back( tmpPoses[i].normals[v0idx] );
+			poses[i].normals.push_back( tmpPoses[i].normals[v1idx] );
+			poses[i].normals.push_back( tmpPoses[i].normals[v2idx] );
+			poses[i].tangents.push_back( tmpPoses[i].tangents[v0idx] );
+			poses[i].tangents.push_back( tmpPoses[i].tangents[v1idx] );
+			poses[i].tangents.push_back( tmpPoses[i].tangents[v2idx] );
 		}
-	}
-	// process joints / weights
-	if (tmpJoints.size() > 0) for (int s = (int)triangles.size(), j = 0; j < s; j++)
-	{
-		const uint v0idx = tmpIndices[j * 3 + 0], v1idx = tmpIndices[j * 3 + 1], v2idx = tmpIndices[j * 3 + 2];
-		joints.push_back( tmpJoints[v0idx] );
-		joints.push_back( tmpJoints[v1idx] );
-		joints.push_back( tmpJoints[v2idx] );
-		weights.push_back( tmpWeights[v0idx] );
-		weights.push_back( tmpWeights[v1idx] );
-		weights.push_back( tmpWeights[v2idx] );
 	}
 }
 
@@ -679,7 +672,7 @@ void HostMesh::SetPose( const HostSkin* skin, const mat4& meshTransform )
 		skinMatrix += w4.y * skin->jointMat[j4.y];
 		skinMatrix += w4.z * skin->jointMat[j4.z];
 		skinMatrix += w4.w * skin->jointMat[j4.w];
-        vertices[i] = skinMatrix * original[i];
+		vertices[i] = skinMatrix * original[i];
 	}
 	// adjust full triangles, TODO: code repetition; TODO: normals
 	for (int s = (int)triangles.size(), i = 0; i < s; i++)

@@ -32,7 +32,7 @@ void ReshapeWindowCallback( GLFWwindow* window, int w, int h )
 	delete renderTarget;
 	renderTarget = new GLTexture( scrwidth, scrheight, GLTexture::FLOAT );
 	glViewport( 0, 0, scrwidth, scrheight );
-	renderer->SetTarget( renderTarget, 1 );
+	renderer->SetTarget( renderTarget, scrspp );
 }
 void KeyEventCallback( GLFWwindow* window, int key, int scancode, int action, int mods )
 {

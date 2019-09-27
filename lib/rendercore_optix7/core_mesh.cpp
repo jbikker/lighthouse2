@@ -31,14 +31,18 @@ CoreMesh::~CoreMesh()
 
 //  +-----------------------------------------------------------------------------+
 //  |  CoreMesh::SetGeometry                                                      |
-//  |  Set the geometry data.                                               LH2'19|
+//  |  Set the geometry data and build / update the OptiX BVH.              LH2'19|
 //  +-----------------------------------------------------------------------------+
 void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags )
 {
-	// copy triangle data to GPU
+	// allocate for the first frame, reallocate when the triangle data grows
+	bool reallocate = false;
+	if (triangles == 0) reallocate = true; else if (triCount > triangles->GetSize()) reallocate = true;
+	// BVH compaction is done for the first frame only.
+	// If we get here a second time we will assume this is an animation and compaction is not worthwhile.
+	bool allowCompaction = (triangles == 0);
+	// allocate and copy triangle data to GPU
 	triangleCount = triCount;
-	bool reallocate = (triangles == 0);
-	if (triangles) if (triCount > triangles->GetSize()) reallocate = true;
 	if (reallocate)
 	{
 		delete triangles;
@@ -64,30 +68,52 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 	buildInput.triangleArray.numSbtRecords = 1;
 	// set acceleration structure build options
 	buildOptions = {};
-	buildOptions.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+	buildOptions.buildFlags = (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
 	buildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
 	// determine buffer sizes for the acceleration structure
 	CHK_OPTIX( optixAccelComputeMemoryUsage( RenderCore::optixContext, &buildOptions, &buildInput, 1, &buildSizes ) );
 	uint compactedSizeOffset = roundUp<uint>( (uint)buildSizes.outputSizeInBytes, 8 );
-	CoreBuffer<uchar> temp( buildSizes.tempSizeInBytes, ON_DEVICE );
-	CoreBuffer<uchar>* output = new CoreBuffer<uchar>( compactedSizeOffset + 8, ON_DEVICE );
-	OptixAccelEmitDesc emitProperty = {};
-	emitProperty.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-	emitProperty.result = (CUdeviceptr)((char*)output->DevPtr() + compactedSizeOffset);
-	CHK_OPTIX( optixAccelBuild( RenderCore::optixContext, 0, &buildOptions, &buildInput, 1,
-		(CUdeviceptr)temp.DevPtr(), buildSizes.tempSizeInBytes, (CUdeviceptr)output->DevPtr(),
-		buildSizes.outputSizeInBytes, &gasHandle, &emitProperty, 1 ) );
-	// compact
-	size_t compacted_gas_size;
-	cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof( size_t ), cudaMemcpyDeviceToHost );
-	if (compacted_gas_size < buildSizes.outputSizeInBytes)
+	// (re)allocate when needed
+	if (buildTemp == 0 || (size_t)buildTemp->GetSize() < buildSizes.tempSizeInBytes)
 	{
-		CoreBuffer<uchar>* compacted = new CoreBuffer<uchar>( compacted_gas_size, ON_DEVICE );
-		gasData = (CUdeviceptr)compacted->DevPtr();
-		CHK_OPTIX( optixAccelCompact( RenderCore::optixContext, 0, gasHandle, gasData, compacted_gas_size, &gasHandle ) );
-		delete output;
+		delete buildTemp;
+		buildTemp = new CoreBuffer<uchar>( buildSizes.tempSizeInBytes, ON_DEVICE );
 	}
-	else gasData = (CUdeviceptr)output->DevPtr();
+	if (buildBuffer == 0 || buildBuffer->GetSize() < compactedSizeOffset)
+	{
+		delete buildBuffer;
+		buildBuffer = new CoreBuffer<uchar>( compactedSizeOffset + 8, ON_DEVICE );
+	}
+	// build
+	if (allowCompaction)
+	{
+		// build with compaction
+		OptixAccelEmitDesc emitProperty = {};
+		emitProperty.type = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
+		emitProperty.result = (CUdeviceptr)((char*)buildBuffer->DevPtr() + compactedSizeOffset);
+		CHK_OPTIX( optixAccelBuild( RenderCore::optixContext, 0, &buildOptions, &buildInput, 1,
+			(CUdeviceptr)buildTemp->DevPtr(), buildSizes.tempSizeInBytes, (CUdeviceptr)buildBuffer->DevPtr(),
+			buildSizes.outputSizeInBytes, &gasHandle, &emitProperty, 1 ) );
+		size_t compacted_gas_size;
+		cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof( size_t ), cudaMemcpyDeviceToHost );
+		if (compacted_gas_size < buildSizes.outputSizeInBytes)
+		{
+			CoreBuffer<uchar>* compacted = new CoreBuffer<uchar>( compacted_gas_size, ON_DEVICE );
+			gasData = (CUdeviceptr)compacted->DevPtr();
+			CHK_OPTIX( optixAccelCompact( RenderCore::optixContext, 0, gasHandle, gasData, compacted_gas_size, &gasHandle ) );
+			delete buildBuffer;
+			buildBuffer = compacted;
+		}
+		else gasData = (CUdeviceptr)buildBuffer->DevPtr();
+	}
+	else
+	{
+		// build without compaction
+		CHK_OPTIX( optixAccelBuild( RenderCore::optixContext, 0, &buildOptions, &buildInput, 1,
+			(CUdeviceptr)buildTemp->DevPtr(), buildSizes.tempSizeInBytes, (CUdeviceptr)buildBuffer->DevPtr(),
+			buildSizes.outputSizeInBytes, &gasHandle, 0, 0 ) );
+		gasData = (CUdeviceptr)buildBuffer->DevPtr();
+	}
 }
 
 // EOF

@@ -20,7 +20,7 @@
 static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0;
 static Shader* shader = 0;
-static uint scrwidth = 0, scrheight = 0;
+static uint scrwidth = 0, scrheight = 0, scrspp = 2;
 static bool camMoved = false, hasFocus = true, running = true;
 
 #include "main_tools.h"
@@ -32,8 +32,14 @@ static bool camMoved = false, hasFocus = true, running = true;
 void PrepareScene()
 {
 	// initialize scene
+#if 0
+	renderer->AddScene( "project_polly.glb", "data\\", mat4::Translate( 0, 2, -5 ) );
+#else
 	renderer->AddScene( "scene.gltf", "data\\pica\\", mat4::Translate( 0, -10.2f, 0 ) );
 	renderer->AddScene( "CesiumMan.glb", "data\\", mat4::Translate( 0, -2, -9 ) );
+	// renderer->AddScene( "InterpolationTest.glb", "data\\", mat4::Translate( 0, 2, -5 ) );
+	// renderer->AddScene( "AnimatedMorphCube.glb", "data\\", mat4::Translate( 0, 2, 9 ) );
+#endif
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
@@ -77,8 +83,8 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7.dll" );				// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7.dll" );			// OPTIX7 core, best for RTX devices
+	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );			// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );		// OPTIX6 core, for reference
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
 

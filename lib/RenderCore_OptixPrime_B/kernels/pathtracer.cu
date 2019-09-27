@@ -62,7 +62,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float4 T4 = pathStateData[jobIndex * 2 + 0];	// path thoughput rgb 
 	const float4 Q4 = pathStateData[jobIndex * 2 + 1];	// x, y: pd of the previous bounce, normal at the previous vertex
 	const Intersection hd = hits[jobIndex];				// TODO: when using instances, Optix Prime needs 5x4 bytes here...
-	const float4 hitData = make_float4( (uint)(65535.0f * hd.u) + ((uint)(65535.0f * hd.v) << 16), __int_as_float( hd.triid == -1 ? 0 : hd.instid ), __int_as_float( hd.triid ), hd.t );
+	const float4 hitData = make_float4( __uint_as_float( (uint)(65535.0f * hd.u) + ((uint)(65535.0f * hd.v) << 16) ), __int_as_float( hd.triid == -1 ? 0 : hd.instid ), __int_as_float( hd.triid ), hd.t );
 	uint data = __float_as_uint( T4.w );
 
 	// derived data

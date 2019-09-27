@@ -32,6 +32,9 @@ public:
 	};
 	Sampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel );
 	void ConvertFromGLTFSampler( const tinygltfAnimationSampler& gltfSampler, const tinygltfModel& gltfModel );
+	float SampleFloat( float t, int k, int i, int count ) const;
+	float3 SampleVec3( float t, int k ) const;
+	quat SampleQuat( float t, int k ) const;
 	vector<float> t;				// key frame times
 	vector<float3> vec3Key;			// vec3 key frames (location or scale)
 	vector<quat> vec4Key;			// vec4 key frames (rotation)

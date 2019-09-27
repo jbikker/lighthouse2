@@ -20,7 +20,7 @@
 static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0;
 static Shader* shader = 0;
-static uint scrwidth = 0, scrheight = 0, scrspp = 2;
+static uint scrwidth = 0, scrheight = 0, scrspp = 1;
 static bool camMoved = false, hasFocus = true, running = true;
 
 #include "main_tools.h"
@@ -37,7 +37,7 @@ void PrepareScene()
 #else
 	renderer->AddScene( "scene.gltf", "data\\pica\\", mat4::Translate( 0, -10.2f, 0 ) );
 	renderer->AddScene( "CesiumMan.glb", "data\\", mat4::Translate( 0, -2, -9 ) );
-	// renderer->AddScene( "InterpolationTest.glb", "data\\", mat4::Translate( 0, 2, -5 ) );
+	renderer->AddScene( "InterpolationTest.glb", "data\\", mat4::Translate( 0, 2, -5 ) );
 	// renderer->AddScene( "AnimatedMorphCube.glb", "data\\", mat4::Translate( 0, 2, 9 ) );
 #endif
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );

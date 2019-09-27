@@ -89,6 +89,93 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( const tinygltfAnimationSamp
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  Sampler::SampleFloat, SampleVec3, SampleVec4                               |
+//  |  Get a value from the sampler.                                        LH2'19|
+//  +-----------------------------------------------------------------------------+
+float HostAnimation::Sampler::SampleFloat( float currentTime, int k, int i, int count ) const
+{
+	// determine interpolation parameters
+	const int keyCount = (int)t.size();
+	const float animDuration = t[keyCount - 1];
+	const float t0 = t[k % keyCount], t1 = t[(k + 1) % keyCount];
+	const float f = (currentTime - t0) / (t1 - t0);
+	// sample
+	if (f <= 0) return floatKey[0];
+	switch (interpolation)
+	{
+	case SPLINE:
+	{
+		const float t = f, t2 = t * t, t3 = t2 * t;
+		const float p0 = floatKey[(k * count + i) * 3 + 1];
+		const float m0 = (t1 - t0) * floatKey[(k * count + i) * 3 + 2];
+		const float p1 = floatKey[((k + 1) * count + i) * 3 + 1];
+		const float m1 = (t1 - t0) * floatKey[((k + 1) * count + i) * 3];
+		return m0 * (t3 - 2 * t2 + t) + p0 * (2 * t3 - 3 * t2 + 1) + p1 * (-2 * t3 + 3 * t2) + m1 * (t3 - t2);
+	}
+	case Sampler::STEP: return floatKey[k];
+	default: return (1 - f) * floatKey[k * count + i] + f * floatKey[(k + 1) * count + i];
+	};
+}
+float3 HostAnimation::Sampler::SampleVec3( float currentTime, int k ) const
+{
+	// determine interpolation parameters
+	const int keyCount = (int)t.size();
+	const float animDuration = t[keyCount - 1];
+	const float t0 = t[k % keyCount], t1 = t[(k + 1) % keyCount];
+	const float f = (currentTime - t0) / (t1 - t0);
+	// sample
+	if (f <= 0) return vec3Key[0];
+	switch (interpolation)
+	{
+	case SPLINE:
+	{
+		const float t = f, t2 = t * t, t3 = t2 * t;
+		const float3 p0 = vec3Key[k * 3 + 1];
+		const float3 m0 = (t1 - t0) * vec3Key[k * 3 + 2];
+		const float3 p1 = vec3Key[(k + 1) * 3 + 1];
+		const float3 m1 = (t1 - t0) * vec3Key[(k + 1) * 3];
+		return m0 * (t3 - 2 * t2 + t) + p0 * (2 * t3 - 3 * t2 + 1) + p1 * (-2 * t3 + 3 * t2) + m1 * (t3 - t2);
+	}
+	case Sampler::STEP: return vec3Key[k];
+	default: return (1 - f) * vec3Key[k] + f * vec3Key[k + 1];
+	};
+}
+quat HostAnimation::Sampler::SampleQuat( float currentTime, int k ) const
+{
+	// determine interpolation parameters
+	const int keyCount = (int)t.size();
+	const float animDuration = t[keyCount - 1];
+	const float t0 = t[k % keyCount], t1 = t[(k + 1) % keyCount];
+	const float f = (currentTime - t0) / (t1 - t0);
+	// sample
+	quat key;
+	if (f <= 0) key = vec4Key[0]; else switch (interpolation)
+	{
+	case SPLINE:
+	{
+		const float t = f, t2 = t * t, t3 = t2 * t;
+		const quat p0 = vec4Key[k * 3 + 1];
+		const quat m0 = vec4Key[k * 3 + 2] * (t1 - t0);
+		const quat p1 = vec4Key[(k + 1) * 3 + 1];
+		const quat m1 = vec4Key[(k + 1) * 3] * (t1 - t0);
+		key = m0 * (t3 - 2 * t2 + t) + p0 * (2 * t3 - 3 * t2 + 1) + p1 * (-2 * t3 + 3 * t2) + m1 * (t3 - t2);
+		break;
+	}
+	case Sampler::STEP: 
+	{
+		key = vec4Key[k];
+		break;
+	default: 
+		// key = quat::slerp( vec4Key[k], vec4Key[k + 1], f );
+		key = (vec4Key[k] * (1 - f)) + (vec4Key[k + 1] * f);
+		break;
+	}
+	};
+	key.normalize();
+	return key;
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  HostAnimation::Channel::Channel                                            |
 //  |  Constructor.                                                         LH2'19|
 //  +-----------------------------------------------------------------------------+
@@ -130,121 +217,34 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	// apply anination key
 	if (target == 0) // translation
 	{
-		switch (sampler->interpolation)
-		{
-		case Sampler::SPLINE:
-		{
-			float t = f, t2 = t * t, t3 = t2 * t;
-			float3 p0 = sampler->vec3Key[k * 3 + 1];
-			float3 m0 = (t1 - t0) * sampler->vec3Key[k * 3 + 2];
-			float3 p1 = sampler->vec3Key[(k + 1) * 3 + 1];
-			float3 m1 = (t1 - t0) * sampler->vec3Key[(k + 1) * 3];
-			HostScene::nodes[nodeIdx]->translation =
-				m0 * (t3 - 2 * t2 + t) +
-				p0 * (2 * t3 - 3 * t2 + 1) +
-				p1 * (-2 * t3 + 3 * t2) +
-				m1 * (t3 - t2);
-			break;
-		}
-		case Sampler::STEP:
-			HostScene::nodes[nodeIdx]->translation = sampler->vec3Key[k];
-			break;
-		default:
-		{
-			float3 key1 = sampler->vec3Key[k];
-			float3 key2 = sampler->vec3Key[k + 1];
-			HostScene::nodes[nodeIdx]->translation = (1 - f) * key1 + f * key2;
-			break;
-		}
-		};
+		HostScene::nodes[nodeIdx]->translation = sampler->SampleVec3( t, k );
 		HostScene::nodes[nodeIdx]->transformed = true;
 	}
 	else if (target == 1) // rotation
 	{
-		switch (sampler->interpolation)
-		{
-		case Sampler::SPLINE:
-		{
-		#if 0
-			quat key0 = sampler->vec4Key[k + keyCount];
-			quat key1 = sampler->vec4Key[k + 1 + keyCount];
-			quat interpolatedKey = quat::slerp( key0, key1, f );
-			interpolatedKey.normalize();
-			HostScene::nodes[nodeIdx]->rotation = interpolatedKey;
-		#else
-			float t = f, t2 = t * t, t3 = t2 * t;
-			quat p0 = sampler->vec4Key[k * 3 + 1];
-			quat m0 = sampler->vec4Key[k * 3 + 2] * (t1 - t0);
-			quat p1 = sampler->vec4Key[(k + 1) * 3 + 1];
-			quat m1 = sampler->vec4Key[(k + 1) * 3] * (t1 - t0);
-			quat interpolatedKey =
-				m0 * (t3 - 2 * t2 + t) +
-				p0 * (2 * t3 - 3 * t2 + 1) +
-				p1 * (-2 * t3 + 3 * t2) +
-				m1 * (t3 - t2);
-			interpolatedKey.normalize();
-			HostScene::nodes[nodeIdx]->rotation = interpolatedKey;
-		#endif
-			break;
-		}
-		case Sampler::STEP:
-		{
-			quat interpolatedKey = sampler->vec4Key[k];
-			interpolatedKey.normalize();
-			HostScene::nodes[nodeIdx]->rotation = interpolatedKey;
-			break;
-		}
-		default:
-		{
-			quat key0 = sampler->vec4Key[k];
-			quat key1 = sampler->vec4Key[k + 1];
-			quat interpolatedKey = quat::slerp( key0, key1, f );
-			interpolatedKey.normalize();
-			HostScene::nodes[nodeIdx]->rotation = interpolatedKey;
-			break;
-		};
+		HostScene::nodes[nodeIdx]->rotation = sampler->SampleQuat( t, k );
 		HostScene::nodes[nodeIdx]->transformed = true;
-		}
 	}
 	else if (target == 2) // scale
 	{
-		switch (sampler->interpolation)
-		{
-		case Sampler::SPLINE:
-		{
-			float t = f, t2 = t * t, t3 = t2 * t;
-			float3 p0 = sampler->vec3Key[k * 3 + 1];
-			float3 m0 = (t1 - t0) * sampler->vec3Key[k * 3 + 2];
-			float3 p1 = sampler->vec3Key[(k + 1) * 3 + 1];
-			float3 m1 = (t1 - t0) * sampler->vec3Key[(k + 1) * 3];
-			HostScene::nodes[nodeIdx]->scale =
-				m0 * (t3 - 2 * t2 + t) +
-				p0 * (2 * t3 - 3 * t2 + 1) +
-				p1 * (-2 * t3 + 3 * t2) +
-				m1 * (t3 - t2);
-			break;
-		};
-		case Sampler::STEP:
-			HostScene::nodes[nodeIdx]->scale = sampler->vec3Key[k];
-			break;
-		default:
-			float3 key0 = sampler->vec3Key[k];
-			float3 key1 = sampler->vec3Key[k + 1];
-			float3 interpolatedKey = (1 - f) * key0 + f * key1;
-			HostScene::nodes[nodeIdx]->scale = interpolatedKey;
-			break;
-		};
+		HostScene::nodes[nodeIdx]->scale = sampler->SampleVec3( t, k );
 		HostScene::nodes[nodeIdx]->transformed = true;
 	}
 	else // target == 3, weight
 	{
-		int weightCount = (int)(sampler->floatKey.size() / sampler->t.size());
+		int weightCount = HostScene::nodes[nodeIdx]->weights.size(); // (int)(sampler->floatKey.size() / (sampler->t.size() * sampler->in));
 		for (int i = 0; i < weightCount; i++)
 		{
-			float key0 = sampler->floatKey[k * weightCount + i];
-			float key1 = sampler->floatKey[(k + 1) * weightCount + i];
-			float interpolatedKey = (1 - f) * key0 + f * key1;
-			HostScene::nodes[nodeIdx]->weights[i] = interpolatedKey;
+			HostScene::nodes[nodeIdx]->weights[i] = sampler->SampleFloat( t, k, i, weightCount );
+		#if 0
+			floatKey[i]; else
+			{
+				float key0 = sampler->floatKey[k * weightCount + i];
+				float key1 = sampler->floatKey[(k + 1) * weightCount + i];
+				float interpolatedKey = (1 - f) * key0 + f * key1;
+				HostScene::nodes[nodeIdx]->weights[i] = interpolatedKey;
+			}
+		#endif
 		}
 		HostScene::nodes[nodeIdx]->morphed = true;
 	}

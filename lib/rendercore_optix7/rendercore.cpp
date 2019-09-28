@@ -679,7 +679,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
+			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
 		cudaEventRecord( shadeEnd[pathLength - 1] );

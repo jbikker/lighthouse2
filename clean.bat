@@ -13,6 +13,8 @@ rem | Clean up RenderCore folders
 
 rd lib\RenderCore_OptixPrime\lib /S /Q
 rd lib\RenderCore_OptixPrime\x64 /S /Q
+rd lib\RenderCore_PrimeRef\lib /S /Q
+rd lib\RenderCore_PrimeRef\x64 /S /Q
 rd lib\RenderCore_OptixPrime_B\lib /S /Q
 rd lib\RenderCore_OptixPrime_B\x64 /S /Q
 rd lib\RenderCore_OptixRTX\lib /S /Q

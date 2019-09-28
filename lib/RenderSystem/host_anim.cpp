@@ -232,7 +232,7 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	}
 	else // target == 3, weight
 	{
-		int weightCount = HostScene::nodes[nodeIdx]->weights.size(); // (int)(sampler->floatKey.size() / (sampler->t.size() * sampler->in));
+		int weightCount = (int)HostScene::nodes[nodeIdx]->weights.size();
 		for (int i = 0; i < weightCount; i++)
 		{
 			HostScene::nodes[nodeIdx]->weights[i] = sampler->SampleFloat( t, k, i, weightCount );

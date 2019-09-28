@@ -4,7 +4,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ void finalizeRender( const float4* accumulator, const int w, const int h, const 
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* extensionData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays, float4* connectionT4,
-	const uint R0, const uint* blueNoise, const int pass,
+	const uint R0, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
 void finalizeConnections( int rayCount, float4* accumulator, uint* hitBuffer, float4* contributions );
@@ -57,7 +57,7 @@ void SetGeometryEpsilon( float e );
 void SetClampValue( float c );
 void SetCounters( Counters* p );
 void generateEyeRays( int pathCount, Ray4* rayBuffer, float4* extensionRayExBuffer,
-	const uint R0, const uint* blueNoise, const int pass /* multiple of SPP */,
+	const uint R0, const int pass /* multiple of SPP */,
 	const float lensSize, const float3 camPos, const float3 right, const float3 up, const float3 p1,
 	const int4 screenParams );
 
@@ -122,20 +122,10 @@ void RenderCore::Init()
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
 	SetClampValue( 10.0f );
-	// prepare the bluenoise data
-	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
-	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
-	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
-	data8 = (uchar*)scr256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
-	data8 = (uchar*)rnk256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
-	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
-	delete data32;
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// timing events
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
+	for (int i = 0; i < MAXPATHLENGTH; i++)
 	{
 		cudaEventCreate( &shadeStart[i] );
 		cudaEventCreate( &shadeEnd[i] );
@@ -186,7 +176,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		delete shadowRayPotential;
 		delete shadowHitBuffer;
 		delete accumulator;
-		const uint maxShadowRays = maxPixels * spp * MAXPATHLENGTH; // upper limit; safe but wasteful
+		const uint maxShadowRays = maxPixels * spp; // we will trace shadow rays per pass to save memory
 		extensionHitBuffer = new CoreBuffer<Intersection>( maxPixels * spp, ON_DEVICE );
 		shadowRayBuffer = new CoreBuffer<Ray4>( maxShadowRays, ON_DEVICE );
 		shadowRayPotential = new CoreBuffer<float4>( maxShadowRays, ON_DEVICE ); // .w holds pixel index
@@ -476,17 +466,17 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		instDescBuffer->CopyToDevice();
 		// instancesDirty = false;
 	}
-	// render image
-	coreStats.totalExtensionRays = 0;
 	// setup primary rays
+	coreStats.shadowTraceTime = 0;
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
 	generateEyeRays( SMcount, extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
-		RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
+		RandomUInt( camRNGseed ), samplesTaken,
 		view.aperture, view.pos, right, up, view.p1, GetScreenParams() );
 	// start wavefront loop
-	RTPquery query;
+	RTPquery query, squery;
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &query ) );
+	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &squery ) );
 	uint pathCount = scrwidth * scrheight * scrspp;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
@@ -506,10 +496,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(), extensionHitBuffer->DevPtr(),
 			extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
 			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(),
-			samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
+			samplesTaken * 7907 + pathLength * 91771, samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle,
 			view.p1, view.p2, view.p3, view.pos );
-		if (pathLength == MAXPATHLENGTH) 
+		if (pathLength == MAXPATHLENGTH)
 		{
 			// prevent the CopyToHost in the last iteration; it's expensive
 			cudaEventRecord( shadeEnd[pathLength - 1] );
@@ -520,31 +510,28 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		pathCount = counters.extensionRays;
 		swap( inBuffer, outBuffer );
+		// connect
+		if (counters.shadowRays > 0)
+		{
+			t.reset();
+			CHK_PRIME( rtpBufferDescSetRange( shadowRaysDesc, 0, counters.shadowRays ) );
+			CHK_PRIME( rtpBufferDescSetRange( shadowHitsDesc, 0, counters.shadowRays ) );
+			CHK_PRIME( rtpQuerySetRays( squery, shadowRaysDesc ) );
+			CHK_PRIME( rtpQuerySetHits( squery, shadowHitsDesc ) );
+			CHK_PRIME( rtpQueryExecute( squery, RTP_QUERY_HINT_NONE ) );
+			coreStats.shadowTraceTime += t.elapsed();
+			finalizeConnections( counters.shadowRays, accumulator->DevPtr(), shadowHitBuffer->DevPtr(), shadowRayPotential->DevPtr() );
+		}
+		// prepare counters for next wave
 		InitCountersSubsequent();
 	}
 	CHK_PRIME( rtpQueryDestroy( query ) );
-	// loop completed; handle gathered shadow rays
+	CHK_PRIME( rtpQueryDestroy( squery ) );
+	// gather ray tracing statistics
 	counterBuffer->CopyToHost();
 	Counters& counters = counterBuffer->HostPtr()[0];
-	if (counters.shadowRays > 0)
-	{
-		// trace the shadow rays using OptiX Prime
-		Timer t;
-		RTPquery query;
-		CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &query ) );
-		CHK_PRIME( rtpBufferDescSetRange( shadowRaysDesc, 0, counters.shadowRays ) );
-		CHK_PRIME( rtpBufferDescSetRange( shadowHitsDesc, 0, counters.shadowRays ) );
-		CHK_PRIME( rtpQuerySetRays( query, shadowRaysDesc ) );
-		CHK_PRIME( rtpQuerySetHits( query, shadowHitsDesc ) );
-		CHK_PRIME( rtpQueryExecute( query, RTP_QUERY_HINT_NONE ) );
-		CHK_PRIME( rtpQueryDestroy( query ) );
-		coreStats.shadowTraceTime = t.elapsed();
-		// process intersection results
-		finalizeConnections( counters.shadowRays, accumulator->DevPtr(), shadowHitBuffer->DevPtr(), shadowRayPotential->DevPtr() );
-	}
-	// gather ray tracing statistics
-	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
+	coreStats.totalShadowRays = counters.totalShadowRays;
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
@@ -553,7 +540,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// finalize statistics
 	coreStats.renderTime = timer.elapsed();
 	coreStats.shadeTime = 0;
-	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
+	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;

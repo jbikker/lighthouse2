@@ -74,8 +74,10 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 		// create model
 		CHK_PRIME( rtpModelCreate( RenderCore::context, &model ) );
 	}
-	// copy new vertex positions
+	// copy new vertex positions and normals
 	for( int i = 0; i < vertexCount; i++ ) vertex3Data[i] = make_float3( vertexData[i] );
+	triangles->SetHostData( (CoreTri4*)tris );
+	triangles->CopyToDevice();
 	// update accstruc
 	CHK_PRIME( rtpModelSetTriangles( model, indicesDesc, verticesDesc ) );
 	CHK_PRIME( rtpModelUpdate( model, RTP_MODEL_HINT_NONE /* blocking; try RTP_MODEL_HINT_ASYNC + rtpModelFinish for async version. */ ) );

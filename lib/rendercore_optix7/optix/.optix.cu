@@ -126,7 +126,7 @@ __device__ void generateShadowRay( const uint rayIdx, const uint stride )
 	const float4 O4 = params.connectData[rayIdx]; // O4
 	const float4 D4 = params.connectData[rayIdx + stride * MAXPATHLENGTH]; // D4
 	// launch shadow ray
-	uint u0 = 0;
+	uint u0 = 1;
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, D4.w, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT, 1, 2, 1, u0 );
 	if (u0) return;
@@ -156,9 +156,9 @@ extern "C" __global__ void __raygen__rg()
 	}
 }
 
-extern "C" __global__ void __closesthit__occlusion()
+extern "C" __global__ void __miss__occlusion()
 {
-	optixSetPayload_0( 1u );
+	optixSetPayload_0( 0u ); // instead of any hit. suggested by WillUsher.io.
 }
 
 extern "C" __global__ void __closesthit__radiance()

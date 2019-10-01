@@ -661,8 +661,17 @@ void HostMesh::SetPose( const HostSkin* skin, const mat4& meshTransform )
 {
 	// ensure that we have a backup of the original vertex positions
 	if (original.size() == 0)
+	{
 		for (int s = (int)vertices.size(), i = 0; i < s; i++)
 			original.push_back( vertices[i] );
+		for (int s = (int)triangles.size(), i = 0; i < s; i++)
+		{
+			origNormal.push_back( triangles[i].vN0 );
+			origNormal.push_back( triangles[i].vN1 );
+			origNormal.push_back( triangles[i].vN2 );
+		}
+		vertexNormals.resize( vertices.size() );
+	}
 	// transform original into vertex vector using skin matrices
 	for (int s = (int)vertices.size(), i = 0; i < s; i++)
 	{
@@ -673,6 +682,7 @@ void HostMesh::SetPose( const HostSkin* skin, const mat4& meshTransform )
 		skinMatrix += w4.z * skin->jointMat[j4.z];
 		skinMatrix += w4.w * skin->jointMat[j4.w];
 		vertices[i] = skinMatrix * original[i];
+		vertexNormals[i] = normalize( make_float3( make_float4( origNormal[i], 0 ) * skinMatrix ) );
 	}
 	// adjust full triangles, TODO: code repetition; TODO: normals
 	for (int s = (int)triangles.size(), i = 0; i < s; i++)
@@ -680,6 +690,13 @@ void HostMesh::SetPose( const HostSkin* skin, const mat4& meshTransform )
 		triangles[i].vertex0 = make_float3( vertices[i * 3 + 0] );
 		triangles[i].vertex1 = make_float3( vertices[i * 3 + 1] );
 		triangles[i].vertex2 = make_float3( vertices[i * 3 + 2] );
+		float3 N = normalize( cross( triangles[i].vertex1 - triangles[i].vertex0, triangles[i].vertex2- triangles[i].vertex0 ) );
+		triangles[i].vN0 = vertexNormals[i * 3 + 0];
+		triangles[i].vN1 = vertexNormals[i * 3 + 1];
+		triangles[i].vN2 = vertexNormals[i * 3 + 2];
+		triangles[i].Nx = N.x;
+		triangles[i].Ny = N.y;
+		triangles[i].Nz = N.z;
 	}
 	// mark as dirty; changing vector contents doesn't trigger this
 	MarkAsDirty();

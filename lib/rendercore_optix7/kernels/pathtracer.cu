@@ -44,7 +44,11 @@
 //  |  shadeKernel                                                                |
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
-__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm */ )
+#if __CUDA_ARCH__ > 700 // Volta deliberately excluded
+__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm TURING */ )
+#else
+__global__  __launch_bounds__( 128 /* max block size */, 8 /* min blocks per sm, PASCAL, VOLTA */ )
+#endif
 void shadeKernel( float4* accumulator, const uint stride,
 	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
@@ -224,10 +228,10 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN );
 	if (!(FLAGS & S_SPECULAR)) FLAGS |= S_BOUNCED; else FLAGS |= S_VIASPECULAR;
-	((float4*)pathStates)[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
-	((float4*)pathStates)[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
+	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
+	pathStates[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
 	FIXNAN_FLOAT3( throughput );
-	((float4*)pathStates)[extensionRayIdx + stride * 2] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), newBsdfPdf );
+	pathStates[extensionRayIdx + stride * 2] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), newBsdfPdf );
 }
 
 //  +-----------------------------------------------------------------------------+

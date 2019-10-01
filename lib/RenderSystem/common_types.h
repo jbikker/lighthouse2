@@ -431,6 +431,14 @@ public:
 	static mat4 Translate( const float x, const float y, const float z ) { mat4 r; r.cell[3] = x; r.cell[7] = y; r.cell[11] = z; return r; };
 	static mat4 Translate( const float3 P ) { mat4 r; r.cell[3] = P.x; r.cell[7] = P.y; r.cell[11] = P.z; return r; };
 	float Trace3() const { return cell[0] + cell[5] + cell[10]; }
+	mat4 Transposed()
+	{
+		mat4 M;
+		M[0] = cell[0], M[1] = cell[4], M[2] = cell[8];
+		M[4] = cell[1], M[5] = cell[5], M[6] = cell[9];
+		M[8] = cell[2], M[9] = cell[6], M[10] = cell[10];
+		return M;
+	}
 	mat4 Inverted()
 	{
 		// from MESA, via http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix

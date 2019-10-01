@@ -184,6 +184,8 @@ void RenderCore::CreateOptixContext( int cc )
 	group.miss.entryFunctionName = nullptr;
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAD_MISS] ) );
+	group.miss.module = ptxModule;
+	group.miss.entryFunctionName = "__miss__occlusion";
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[OCC_MISS] ) );
 	group = {};
@@ -192,7 +194,8 @@ void RenderCore::CreateOptixContext( int cc )
 	group.hitgroup.entryFunctionNameCH = "__closesthit__radiance";
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[RAD_HIT] ) );
-	group.hitgroup.entryFunctionNameCH = "__closesthit__occlusion";
+	group.hitgroup.moduleCH = nullptr;
+	group.hitgroup.entryFunctionNameCH = nullptr; // NULL hit program for shadow rays
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixProgramGroupCreate( optixContext, &group, 1, &groupOptions, log, &logSize, &progGroup[OCC_HIT] ) );
 

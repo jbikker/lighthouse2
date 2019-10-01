@@ -67,7 +67,9 @@ public:
 	string name = "unnamed";					// name for the mesh						
 	int ID = -1;								// unique ID for the mesh: position in mesh array
 	vector<float4> vertices;					// model vertices
+	vector<float3> vertexNormals;				// vertex normals
 	vector<float4> original;					// skinning: base pose; will be transformed into vector vertices
+	vector<float3> origNormal;					// skinning: base pose normals
 	vector<HostTri> triangles;					// full triangles
 	vector<int> materialList;					// list of materials used by the mesh; used to efficiently track light changes
 	vector<uint> alphaFlags;					// list containing 1 for each triangle that is flagged as HASALPHA, 0 otherwise 

@@ -31,8 +31,8 @@
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 
 // readability defines; data layout is optimized for 128-bit accesses
-#define INSTANCEIDX __float_as_int( hitData.y )
 #define PRIMIDX __float_as_int( hitData.z )
+#define INSTANCEIDX __float_as_int( hitData.y )
 #define HIT_U ((__float_as_uint( hitData.x ) & 65535) * (1.0f / 65535.0f))
 #define HIT_V ((__float_as_uint( hitData.x ) >> 16) * (1.0f / 65535.0f))
 #define HIT_T hitData.w
@@ -44,7 +44,11 @@
 //  |  shadeKernel                                                                |
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
-__global__  __launch_bounds__( 128 /* max block size */, 1 /* min blocks per sm */ )
+#if __CUDA_ARCH__ > 700 // Volta deliberately excluded
+__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm TURING */ )
+#else
+__global__  __launch_bounds__( 128 /* max block size */, 8 /* min blocks per sm, PASCAL, VOLTA */ )
+#endif
 void shadeKernel( float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut, Ray4* connections, float4* potentials,
@@ -193,8 +197,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
-	float newBsdfPdf;
-	float r3, r4;
+	float newBsdfPdf, r3, r4;
 	if (sampleIdx < 256)
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;

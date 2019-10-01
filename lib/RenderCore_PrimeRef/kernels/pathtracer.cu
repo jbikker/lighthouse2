@@ -94,7 +94,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float3 I = RAY_O + HIT_T * D;
 	const float coneWidth = spreadAngle * HIT_T;
 	GetShadingData( D, HIT_U, HIT_V, coneWidth, instanceTriangles[PRIMIDX], INSTANCEIDX, shadingData, N, iN, fN, T );
-	iN = fN = N;
 
 	// stop on light
 	if (shadingData.IsEmissive() /* r, g or b exceeds 1 */)

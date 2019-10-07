@@ -38,7 +38,7 @@ public:
 	void SerializeCamera( const char* camera );
 	int AddMesh( const char* file, const char* dir, const float scale );
 	void AddScene( const char* file, const char* dir, const mat4& transform = mat4::Identity() );
-	int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material );
+	int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material, const int meshID = -1 );
 	int AddInstance( const int meshId, const mat4& transform = mat4() );
 	void SetNodeTransform( const int nodeId, const mat4& transform );
 	void ResetAnimation( int animId );

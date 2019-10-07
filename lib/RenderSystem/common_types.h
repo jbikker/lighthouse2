@@ -439,7 +439,7 @@ public:
 		M[8] = cell[2], M[9] = cell[6], M[10] = cell[10];
 		return M;
 	}
-	mat4 Inverted()
+	mat4 Inverted() const
 	{
 		// from MESA, via http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		const float inv[16] = {

@@ -278,12 +278,12 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 		nodes.push_back( newNode );
 	}
 	// convert animations and skins
-	for (tinygltf::Animation& gltfAnim : gltfModel.animations) 
+	for (tinygltf::Animation& gltfAnim : gltfModel.animations)
 	{
 		HostAnimation* anim = new HostAnimation( gltfAnim, gltfModel, nodeBase );
 		animations.push_back( anim );
 	}
-	for (tinygltf::Skin &source : gltfModel.skins) 
+	for (tinygltf::Skin &source : gltfModel.skins)
 	{
 		HostSkin* newSkin = new HostSkin( source, gltfModel, nodeBase );
 		skins.push_back( newSkin );
@@ -310,15 +310,22 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 //  |  centroid position and a material. Typically used to add an area light      |
 //  |  to a scene.                                                          LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddQuad( float3 N, const float3 pos, const float width, const float height, const int material )
+int HostScene::AddQuad( float3 N, const float3 pos, const float width, const float height, const int material, const int meshID )
 {
-	HostMesh* newMesh = new HostMesh();
+	HostMesh* newMesh = meshID > -1 ? meshes[meshID] : new HostMesh();
 	N = normalize( N ); // let's not assume the normal is normalized.
+#if 1
+	const float3 tmp = N.x > 0.9f ? make_float3( 0, 1, 0 ) : make_float3( 1, 0, 0 );
+	const float3 T = 0.5f * width * normalize( cross( N, tmp ) );
+	const float3 B = 0.5f * height * normalize( cross( normalize( T ), N ) );
+#else
 	// "Building an Orthonormal Basis, Revisited"
 	const float sign = copysignf( 1.0f, N.z ), a = -1.0f / (sign + N.z), b = N.x * N.y * a;
 	const float3 B = 0.5f * width * make_float3( 1.0f + sign * N.x * N.x * a, sign * b, -sign * N.x );
 	const float3 T = 0.5f * height * make_float3( b, sign + N.y * N.y * a, -N.y );
+#endif
 	// calculate corners
+	uint vertBase = (uint)newMesh->vertices.size();
 	newMesh->vertices.push_back( make_float4( pos - B - T, 1 ) );
 	newMesh->vertices.push_back( make_float4( pos + B - T, 1 ) );
 	newMesh->vertices.push_back( make_float4( pos - B + T, 1 ) );
@@ -334,18 +341,21 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 	tri2.Nx = N.x, tri2.Ny = N.y, tri2.Nz = N.z;
 	tri1.u0 = tri1.u1 = tri1.u2 = tri1.v0 = tri1.v1 = tri1.v2 = 0;
 	tri2.u0 = tri2.u1 = tri2.u2 = tri2.v0 = tri2.v1 = tri2.v2 = 0;
-	tri1.vertex0 = make_float3( newMesh->vertices[0] );
-	tri1.vertex1 = make_float3( newMesh->vertices[1] );
-	tri1.vertex2 = make_float3( newMesh->vertices[2] );
-	tri2.vertex0 = make_float3( newMesh->vertices[3] );
-	tri2.vertex1 = make_float3( newMesh->vertices[4] );
-	tri2.vertex2 = make_float3( newMesh->vertices[5] );
+	tri1.vertex0 = make_float3( newMesh->vertices[vertBase + 0] );
+	tri1.vertex1 = make_float3( newMesh->vertices[vertBase + 1] );
+	tri1.vertex2 = make_float3( newMesh->vertices[vertBase + 2] );
+	tri2.vertex0 = make_float3( newMesh->vertices[vertBase + 3] );
+	tri2.vertex1 = make_float3( newMesh->vertices[vertBase + 4] );
+	tri2.vertex2 = make_float3( newMesh->vertices[vertBase + 5] );
 	newMesh->triangles.push_back( tri1 );
 	newMesh->triangles.push_back( tri2 );
-	// add mesh to scene mesh list
-	newMesh->ID = (int)meshes.size();
-	newMesh->materialList.push_back( material );
-	meshes.push_back( newMesh );
+	// if the mesh was newly created, add it to scene mesh list
+	if (meshID == -1)
+	{
+		newMesh->ID = (int)meshes.size();
+		newMesh->materialList.push_back( material );
+		meshes.push_back( newMesh );
+	}
 	return newMesh->ID;
 }
 

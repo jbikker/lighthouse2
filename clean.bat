@@ -26,6 +26,9 @@ del lib\RenderCore_OptixRTX_B\optix\*.ptx /S /Q
 rd lib\RenderCore_Optix7\lib /S /Q
 rd lib\RenderCore_Optix7\x64 /S /Q
 del lib\RenderCore_Optix7\optix\*.ptx /S /Q
+rd lib\RenderCore_Optix7Filter\lib /S /Q
+rd lib\RenderCore_Optix7Filter\x64 /S /Q
+del lib\RenderCore_Optix7Filter\optix\*.ptx /S /Q
 rd lib\RenderCore_SoftRasterizer\lib /S /Q
 rd lib\RenderCore_SoftRasterizer\x64 /S /Q
 rd lib\RenderCore_RTX_AO\lib /S /Q
@@ -35,6 +38,8 @@ rd lib\RenderCore_OpenCL\lib /S /Q
 rd lib\RenderCore_OpenCL\x64 /S /Q
 rd lib\RenderCore_Embree\x64 /S /Q
 rd lib\RenderCore_Embree\lib /S /Q
+rd lib\RenderCore_vulkan_rt\lib /S /Q
+rd lib\RenderCore_vulkan_rt\x64 /S /Q
 rd coredlls\debug /S /Q
 rd coredlls\release /S /Q
 
@@ -74,6 +79,13 @@ del apps\imguiapp\*.iobj /Q
 del apps\imguiapp\*.ipdb /Q
 del apps\imguiapp\*.pdb /Q
 del apps\imguiapp\*.ilk /Q
+rd apps\rtxbvhreveng\x64 /S /Q
+del apps\rtxbvhreveng\data\sky_15.bin
+del apps\rtxbvhreveng\*.exe /Q
+del apps\rtxbvhreveng\*.iobj /Q
+del apps\rtxbvhreveng\*.ipdb /Q
+del apps\rtxbvhreveng\*.pdb /Q
+del apps\rtxbvhreveng\*.ilk /Q
 
 rem | Clean up other components
 

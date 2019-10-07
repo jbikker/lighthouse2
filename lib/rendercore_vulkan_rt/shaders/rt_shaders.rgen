@@ -1,0 +1,212 @@
+/* rt_shaders.rgen - Copyright 2019 Utrecht University
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#extension GL_NV_ray_tracing : require
+
+#include "../bindings.h"
+#include "structures.glsl"
+#include "tools.glsl"
+#include "random.glsl"
+
+layout(push_constant) uniform State {
+	uint pathLength;
+	uint pathCount;
+	uint phase;
+};
+
+layout( set = 0, binding = rtACCUMULATION_BUFFER ) buffer accumulationBuffer { vec4 acPixels[]; };
+layout( set = 0, binding = rtACCELERATION_STRUCTURE ) uniform accelerationStructureNV scene;
+layout( set = 0, binding = rtCAMERA ) uniform uniformCamera { Camera camera; };
+
+layout( set = 0, binding = rtPATH_STATES ) buffer pathStates { vec4 data[]; } states[2];
+layout( set = 0, binding = rtPATH_ORIGINS ) buffer pathOrigins { vec4 data[]; } origins[2];
+layout( set = 0, binding = rtPATH_DIRECTIONS ) buffer pathDirections { vec4 data[]; } directions[2];
+
+layout( set = 0, binding = rtPOTENTIAL_CONTRIBUTIONS ) buffer potentialContributionsBuffer { PotentialContribution potentialContributions[]; };
+layout( set = 0, binding = rtBLUENOISE ) buffer blueNoiseBuffer { int blueNoise[]; };
+
+layout( location = 0 ) rayPayloadNV vec4 hitData;
+layout( location = 1 ) rayPayloadNV int occluded;
+
+vec3 RandomPointOnLens( float r0, float r1, const vec4 posLensSize, const vec3 right, const vec3 up )
+{
+	const float blade = ( r0 * 9.0f );
+	float r2 = ( r0 - blade * ( 1.0f / 9.0f ) ) * 9.0f;
+	float arg = blade * PI;
+	const float x1 = cos( arg );
+	const float y1 = sin( arg );
+	arg = (blade + 1.0) * PI / 4.5f;
+	const float x2 = cos( arg );
+	const float y2 = sin( arg );
+	if ( ( r1 + r2 ) > 1.0 ) r1 = 1.0 - r1, r2 = 1.0 - r2;
+	const float xr = x1 * r1 + x2 * r2;
+	const float yr = y1 * r1 + y2 * r2;
+	return vec3( posLensSize.xyz ) + posLensSize.w * ( right * xr + up * yr );
+}
+
+float blueNoiseSampler( int x, int y, int sampleIdx, int sampleDimension )
+{
+	// wrap arguments
+	x &= 127;
+	y &= 127;
+	sampleIdx &= 255;
+	sampleDimension &= 255;
+
+	// xor index based on optimized ranking
+	int rankedSampleIndex = sampleIdx ^ blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3];
+
+	// fetch value in sequence
+	int value = blueNoise[sampleDimension + rankedSampleIndex * 256];
+
+	// if the dimension is optimized, xor sequence value based on optimized scrambling
+	value ^= blueNoise[(sampleDimension & 7) + (x + y * 128) * 8 + 65536];
+
+	// convert to float and return
+	return (0.5f + value) * (1.0f / 256.0f);
+}
+
+void GenerateEyeRay(inout vec3 O, inout vec3 D, const uint pixelIdx, const uint sampleIdx, inout uint seed)
+{
+	const int sx = int(pixelIdx) % camera.scrwidth;
+	const int sy = int(pixelIdx) / camera.scrwidth;
+
+	const vec2 pixelCenter = vec2( gl_LaunchIDNV.xy ) + vec2( 0.5 );
+
+	float r0, r1, r2, r3;
+ #ifdef BLUENOISE
+	if (sampleIdx < 256)
+	{
+		r0 = blueNoiseSampler(sx, sy, int(sampleIdx), 0);
+		r1 = blueNoiseSampler(sx, sy, int(sampleIdx), 1);
+		r2 = blueNoiseSampler(sx, sy, int(sampleIdx), 2);
+		r3 = blueNoiseSampler(sx, sy, int(sampleIdx), 3);
+	}
+	else
+	{
+		r0 = RandomFloat( seed );
+		r1 = RandomFloat( seed );
+		r2 = RandomFloat( seed );
+		r3 = RandomFloat( seed );
+	}
+#else
+	r0 = RandomFloat( seed );
+	r1 = RandomFloat( seed );
+	r2 = RandomFloat( seed );
+	r3 = RandomFloat( seed );
+#endif
+
+	const vec3 p1 = camera.p1.xyz;
+	const vec3 right = camera.right_aperture.xyz;
+	const vec3 up = camera.up_spreadAngle.xyz;
+
+	O = RandomPointOnLens( r2, r3, camera.posLensSize, right, up );
+	const float u = ( float( sx ) + r0 ) * ( 1.0f / float( camera.scrwidth ) );
+	const float v = ( float( sy ) + r1 ) * ( 1.0f / float( camera.scrheight ) );
+	const vec3 pointOnPixel = p1 + u * right + v * up;
+	D = normalize( pointOnPixel - camera.posLensSize.xyz );
+}
+
+void main()
+{
+	const int pathIdx = int( gl_LaunchIDNV.x );
+	if (pathIdx > pathCount) return; // Check bounds
+
+	const uint shadeBufferIndex = (pathLength % 2); // Buffers used to shade current rays
+	//const uint shadeBufferIndex =  0; // Buffers used to shade current rays
+
+	const uint rayFlags = gl_RayFlagsOpaqueNV;
+	const uint cullMask = 0xFF;
+
+	if (phase == STAGE_PRIMARY_RAY)
+	{
+		const int samplesTaken = camera.samplesTaken;
+
+		vec3 O, D;
+		const int scrwidth = camera.scrwidth;
+		const int scrheight = camera.scrheight;
+		const uint pixelIdx = pathIdx % (scrwidth * scrheight);
+		const uint sampleIdx = pathIdx / (scrwidth * scrheight) + samplesTaken;
+		uint seed = WangHash( pathIdx * 16789 + samplesTaken * 1791 );
+		GenerateEyeRay(O, D, pixelIdx, sampleIdx, seed);
+		origins[shadeBufferIndex].data[pathIdx] = vec4(O, uintBitsToFloat((pathIdx << 8) + 1));
+		directions[shadeBufferIndex].data[pathIdx] = vec4(D, 0.0);
+
+		traceNV(
+			scene,
+			rayFlags,
+			cullMask,
+			0 /*sbtRecordOffset*/,
+			0 /*sbtRecordStride*/,
+			0 /*missIndex*/,
+			O /*origin*/,
+			0 /*tmin*/,
+			D /*direction*/,
+			1e34f /*tmax*/,
+			0 /*payload location*/
+		);
+
+		states[shadeBufferIndex].data[pathIdx] = hitData;
+	}
+	else if (phase == STAGE_SECONDARY_RAY)
+	{
+		const vec4 O = origins[shadeBufferIndex].data[pathIdx];
+		const vec4 D = directions[shadeBufferIndex].data[pathIdx];
+
+		traceNV(
+			scene,
+			rayFlags,
+			cullMask,
+			0 /*sbtRecordOffset*/,
+			0 /*sbtRecordStride*/,
+			0 /*missIndex*/,
+			O.xyz /*origin*/,
+			0 /*tmin*/,
+			D.xyz /*direction*/,
+			1e34f /*tmax*/,
+			0 /*payload location*/
+		);
+
+		states[shadeBufferIndex].data[pathIdx] = hitData;
+	}
+	else if (phase == STAGE_SHADOW_RAY)
+	{
+		const vec4 O = potentialContributions[pathIdx].Origin;
+		const vec4 D = potentialContributions[pathIdx].Direction;
+
+		occluded = 1;
+
+		traceNV(
+			scene,
+			gl_RayFlagsTerminateOnFirstHitNV ,
+			cullMask,
+			1 /*sbtRecordOffset*/,
+			0 /*sbtRecordStride*/,
+			0 /*missIndex*/,
+			O.xyz /*origin*/,
+			0 /*tmin*/,
+			D.xyz /*direction*/,
+			D.w /*tmax*/,
+			1 /*payload location*/
+		);
+
+		if (occluded == 1) return;
+
+		const vec4 E_Idx = potentialContributions[pathIdx].Emission_pixelIdx;
+		const uint pixelIdx = floatBitsToUint(E_Idx.w);
+		acPixels[pixelIdx] += vec4(E_Idx.xyz, 0.0);
+	}
+}

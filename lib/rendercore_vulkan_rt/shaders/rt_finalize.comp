@@ -1,0 +1,53 @@
+/* rt_finalize.comp - Copyright 2019 Utrecht University
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+	   http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
+#version 460
+#extension GL_GOOGLE_include_directive : require
+
+#include "../bindings.h"
+
+struct FinalizeParams {
+	uint scrwidth;
+	uint scrheight;
+	uint spp;
+	uint _idummy;
+	float pixelValueScale;
+	float brightness;
+	float contrastFactor;
+	float _dummy;
+};
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout( set = 0, binding = fACCUMULATION_BUFFER ) buffer accumulationBuffer { vec4 acPixels[]; };
+layout( set = 0, binding = fUNIFORM_CONSTANTS ) uniform uniformConstants { FinalizeParams params; };
+layout( set = 0, binding = fOUTPUT ) uniform writeonly image2D outputImage;
+
+void main()
+{
+	const ivec2 imageIndex = ivec2(gl_GlobalInvocationID.xy);
+	const uint currentIndex = imageIndex.x + imageIndex.y * params.scrwidth;
+
+	if ((imageIndex.x >= params.scrwidth) || (imageIndex.y >= params.scrheight)) return;
+
+	// plot scaled pixel, gamma corrected
+	vec4 value = acPixels[currentIndex] * params.pixelValueScale;
+
+	const float r = sqrt( max( 0.0f, (value.x - 0.5f) * params.contrastFactor + 0.5f + params.brightness ) );
+	const float g = sqrt( max( 0.0f, (value.y - 0.5f) * params.contrastFactor + 0.5f + params.brightness ) );
+	const float b = sqrt( max( 0.0f, (value.z - 0.5f) * params.contrastFactor + 0.5f + params.brightness ) );
+
+	imageStore(outputImage, imageIndex, vec4(r, g, b, value.w));
+}

@@ -684,7 +684,7 @@ void HostMesh::SetPose( const HostSkin* skin, const mat4& meshTransform )
 		vertices[i] = skinMatrix * original[i];
 		vertexNormals[i] = normalize( make_float3( make_float4( origNormal[i], 0 ) * skinMatrix ) );
 	}
-	// adjust full triangles, TODO: code repetition; TODO: normals
+	// adjust full triangles
 	for (int s = (int)triangles.size(), i = 0; i < s; i++)
 	{
 		triangles[i].vertex0 = make_float3( vertices[i * 3 + 0] );

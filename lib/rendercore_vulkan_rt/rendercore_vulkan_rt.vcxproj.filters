@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="core_settings.h" />
+    <ClInclude Include="rendercore.h" />
+    <ClInclude Include="core_api.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="core_mesh.h" />
+    <ClInclude Include="bottom_level_as.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="top_level_as.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="uniform_objects.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_device.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_gl_texture_interop.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_image.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_shader.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_shader_binding_table_generator.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="bindings.h" />
+    <ClInclude Include="vulkan_descriptor_set.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_ray_trace_nv_pipeline.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_compute_pipeline.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkan_core_buffer.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="rendercore.cpp" />
+    <ClCompile Include="core_api.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="core_mesh.cpp" />
+    <ClCompile Include="bottom_level_as.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="top_level_as.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="uniform_objects.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_device.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_gl_texture_interop.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_image.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_shader.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_shader_binding_table_generator.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_descriptor_set.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_ray_trace_nv_pipeline.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkan_compute_pipeline.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="API">
+      <UniqueIdentifier>{f900179f-467e-4fda-a273-1067594d9b8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{ff5eb084-9fda-4542-8331-5157e968366e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Vulkan">
+      <UniqueIdentifier>{03d8d413-92b8-4b36-bda3-c9f269b5bbe8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\counters.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\disney.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\lambert.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\material.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\random.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_finalize.comp">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_shade.comp">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_shaders.rchit">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_shaders.rgen">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_shaders.rmiss">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_shadow.rmiss">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\sampling.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\structures.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\tools.glsl">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>

@@ -60,6 +60,7 @@ public:
 	void SetTarget( GLTexture* tex, const uint spp );
 	void SetProbePos( const int2 pos );
 	CoreStats GetCoreStats();
+	SystemStats GetSystemStats();
 };
 
 } // namespace lighthouse2

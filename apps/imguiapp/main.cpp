@@ -21,7 +21,7 @@ static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0;
 static Shader* shader = 0;
 static uint scrwidth = 0, scrheight = 0, scrspp = 1;
-static bool camMoved = false, hasFocus = true, running = true;
+static bool camMoved = false, spaceDown = false, hasFocus = true, running = true, animPaused = false;
 
 #include "main_tools.h"
 
@@ -34,6 +34,7 @@ void PrepareScene()
 	// initialize scene
 	renderer->AddScene( "scene.gltf", "data\\pica\\", mat4::Translate( 0, -10.2f, 0 ) );
 	renderer->AddScene( "CesiumMan.glb", "data\\", mat4::Translate( 0, -2, -9 ) );
+	renderer->AddScene( "project_polly.glb", "data\\", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	// renderer->AddScene( "InterpolationTest.glb", "data\\", mat4::Translate( 0, 2, -5 ) );
 	// renderer->AddScene( "AnimatedMorphCube.glb", "data\\", mat4::Translate( 0, 2, 9 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
@@ -64,6 +65,7 @@ bool HandleInput( float frameTime )
 	if (GetAsyncKeyState( VK_DOWN )) { changed = true; camera->TranslateTarget( make_float3( 0, rotateSpeed, 0 ) ); }
 	if (GetAsyncKeyState( VK_LEFT )) { changed = true; camera->TranslateTarget( make_float3( -rotateSpeed, 0, 0 ) ); }
 	if (GetAsyncKeyState( VK_RIGHT )) { changed = true; camera->TranslateTarget( make_float3( rotateSpeed, 0, 0 ) ); }
+	if (GetAsyncKeyState( 32 )) { if (!spaceDown) spaceDown = changed = true, animPaused = !animPaused; } else spaceDown = false;
 	// let the main loop know if the camera should update
 	return changed;
 }
@@ -79,13 +81,13 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
+	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7filter.dll" );		// OPTIX7 core, with filtering
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7.dll" );			// OPTIX7 core, best for RTX devices
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_vulkan_rt.dll" );			// Meir's Vulkan / RTX core
 	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );			// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_primeref.dll" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optixrtx_b.dll" );		// OPTIX6 core, for reference
 	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7filter.dll" );		// OPTIX7 core, with filtering, in progress
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
@@ -98,24 +100,22 @@ int main()
 	float deltaTime = 0;
 	while (!glfwWindowShouldClose( window ))
 	{
-		renderer->SynchronizeSceneData();
-		Convergence c = Converge;
-		if (camMoved) c = Restart, camMoved = false;
 		// detect camera changes
-		if (renderer->GetCamera()->Changed()) camMoved = true;
+		camMoved = false;
+		deltaTime = timer.elapsed();
+		if (HandleInput( deltaTime )) camMoved = true;
 		// poll events, may affect probepos so needs to happen between HandleInput and Render
 		glfwPollEvents();
 		// update animations
-		for( int i = 0; i < renderer->AnimationCount(); i++ )
+		if (!animPaused) for( int i = 0; i < renderer->AnimationCount(); i++ )
 		{
 			renderer->UpdateAnimation( i, deltaTime );
 			camMoved = true; // will remain false if scene has no animations
 		}
+		renderer->SynchronizeSceneData();
 		// render
-		deltaTime = timer.elapsed();
 		timer.reset();
-		renderer->Render( c );
-		if (HandleInput( deltaTime )) camMoved = true;
+		renderer->Render( camMoved ? Restart : Converge );
 		// postprocess
 		shader->Bind();
 		shader->SetInputTexture( 0, "color", renderTarget );
@@ -128,7 +128,9 @@ int main()
 		ImGui::NewFrame();
 		ImGui::Begin( "Render statistics", 0 );
 		CoreStats coreStats = renderer->GetCoreStats();
+		SystemStats systemStats = renderer->GetSystemStats();
 		ImGui::Text( "Frame time:   %6.2fms", coreStats.renderTime * 1000 );
+		ImGui::Text( "Scene update: %6.2fms", systemStats.sceneUpdateTime * 1000 );
 		ImGui::Text( "Primary rays: %6.2fms", coreStats.traceTime0 * 1000 );
 		ImGui::Text( "Secondary:    %6.2fms", coreStats.traceTime1 * 1000 );
 		ImGui::Text( "Deep rays:    %6.2fms", coreStats.traceTimeX * 1000 );

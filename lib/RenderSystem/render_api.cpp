@@ -177,4 +177,9 @@ CoreStats RenderAPI::GetCoreStats()
 	return renderer->GetCoreStats();
 }
 
+SystemStats RenderAPI::GetSystemStats()
+{
+	return renderer->GetSystemStats();
+}
+
 // EOF

@@ -145,6 +145,7 @@ void RenderSystem::SynchronizeMeshes()
 void RenderSystem::UpdateSceneGraph()
 {
 	// walk the scene graph to update matrices
+	Timer timer;
 	int instanceCount = 0;
 	bool instancesChanged = false;
 	for( int s = (int)HostScene::scene.size(), i = 0; i < s; i++ ) 
@@ -154,6 +155,7 @@ void RenderSystem::UpdateSceneGraph()
 		mat4 T;
 		instancesChanged |= node->Update( T /* start with an identity matrix */, instanceCount );
 	}
+	stats.sceneUpdateTime = timer.elapsed();
 	// synchronize instances to device if anything changed
 	if (instancesChanged || meshesChanged)
 	{

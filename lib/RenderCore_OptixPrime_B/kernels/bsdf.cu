@@ -31,7 +31,7 @@
 // It returns the BSDF itself, and also the sampled direction and probability density for this direction.
 // ----------------------------------------------------------------
 
-#if 0
+#if 1
 
 // simple reference bsdf: Lambert plus specular reflection
 #include "bsdfs/lambert.h"

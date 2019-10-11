@@ -90,6 +90,7 @@ public:
 	void SetProbePos( int2 pos ) { if (core) core->SetProbePos( pos ); }
 	void Shutdown();
 	CoreStats GetCoreStats() { return core ? core->GetCoreStats() : CoreStats(); }
+	SystemStats GetSystemStats() { return stats; }
 private:
 	// private methods
 	void SynchronizeSky();
@@ -103,6 +104,7 @@ private:
 	CoreAPI_Base* core = nullptr;			// low-level rendering functionality
 	GLTexture* renderTarget = nullptr;		// CUDA will render to this OpenGL texture
 	bool meshesChanged = false;				// rebuild scene graph if a mesh was rebuilt / refit
+	SystemStats stats;						// performance counters
 public:
 	// public data members
 	HostScene* scene = nullptr;				// scene I/O and management module

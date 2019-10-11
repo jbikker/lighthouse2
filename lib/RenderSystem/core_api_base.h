@@ -60,6 +60,17 @@ struct CoreStats
 };
 
 //  +-----------------------------------------------------------------------------+
+//  |  CoreStats                                                                  |
+//  |  Container for various statistics, filled by the render system. Obtain a    |
+//  |  const ref to this data by calling CoreAPI::GetSystemStats().         LH2'19|
+//  +-----------------------------------------------------------------------------+
+struct SystemStats
+{
+	// scene
+	float sceneUpdateTime = 0;			// time spent updating the scene graph
+};
+
+//  +-----------------------------------------------------------------------------+
 //  |  CoreAPI_Base                                                               |
 //  |  Interface between the RenderCore and the RenderSystem.               LH2'19|
 //  +-----------------------------------------------------------------------------+

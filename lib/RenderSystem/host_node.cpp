@@ -146,6 +146,7 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 	// update the combined transform for this node
 	bool thisWasModified = Changed();
 	bool instancesChanged = thisWasModified;
+	treeChanged = thisWasModified;
 	if (transformed)
 	{
 		UpdateTransformFromTRS();
@@ -156,7 +157,9 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 	for (int s = (int)childIdx.size(), i = 0; i < s; i++)
 	{
 		HostNode* child = HostScene::nodes[childIdx[i]];
-		instancesChanged |= child->Update( combinedTransform, posInInstanceArray );
+		bool childChanged = child->Update( combinedTransform, posInInstanceArray );
+		instancesChanged |= childChanged;
+		treeChanged |= childChanged;
 	}
 	// update animations
 	if (meshID > -1)
@@ -183,7 +186,6 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 			for (int s = (int)skin->joints.size(), j = 0; j < s; j++)
 			{
 				HostNode* jointNode = HostScene::nodes[skin->joints[j]];
-				// https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_020_Skins.md
 				skin->jointMat[j] = meshTransformInverted * jointNode->combinedTransform * skin->inverseBindMatrices[j];
 			}
 			HostScene::meshes[meshID]->SetPose( skin, meshTransform );

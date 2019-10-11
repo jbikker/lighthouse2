@@ -13,7 +13,7 @@ __device__ static float3 SampleBSDF( const ShadingData& shadingData, float3 iN, 
 	const float r3, const float r4, float3& wi, float& pdf )
 {
 	// specular and diffuse
-	if (0) // fabs( ROUGHNESS ) < 0.1f)
+	if (fabs( ROUGHNESS ) < 0.1f)
 	{
 		// pure specular
 		wi = -reflect( wo, iN );

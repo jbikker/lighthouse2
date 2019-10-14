@@ -142,8 +142,6 @@ void main()
 		const uint sampleIdx = pathIdx / (scrwidth * scrheight) + samplesTaken;
 		uint seed = WangHash( pathIdx * 16789 + samplesTaken * 1791 );
 		GenerateEyeRay(O, D, pixelIdx, sampleIdx, seed);
-		origins[shadeBufferIndex].data[pathIdx] = vec4(O, uintBitsToFloat((pathIdx << 8) + 1));
-		directions[shadeBufferIndex].data[pathIdx] = vec4(D, 0.0);
 
 		traceNV(
 			scene,
@@ -160,6 +158,8 @@ void main()
 		);
 
 		states[shadeBufferIndex].data[pathIdx] = hitData;
+		origins[shadeBufferIndex].data[pathIdx] = vec4(O, uintBitsToFloat((pathIdx << 8) + 1));
+		directions[shadeBufferIndex].data[pathIdx] = vec4(D, 0.0);
 	}
 	else if (phase == STAGE_SECONDARY_RAY)
 	{

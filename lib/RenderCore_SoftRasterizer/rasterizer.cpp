@@ -80,11 +80,12 @@ void Mesh::Render( mat4& T )
 	for (int i = 0; i < tris; i++)
 	{
 		Material* mat = Rasterizer::scene.matList[material[i]];
-		if (!mat->texture) continue; // for now: texture required.
-		uint* src = mat->texture->pixels;
+		static uint p;
+		uint* src = mat->texture ? mat->texture->pixels : &p;
+		if (!mat->texture) p = mat->diffuse;
 		float* zbuffer = Rasterizer::zbuffer, f;
-		const float tw = (float)mat->texture->width;
-		const float th = (float)mat->texture->height;
+		const float tw = mat->texture ? (float)mat->texture->width : 1;
+		const float th = mat->texture ? (float)mat->texture->height : 1;
 		const int umask = (int)tw - 1, vmask = (int)th - 1;
 		// cull triangle
 		float3 Nt = make_float3( make_float4( N[i], 0 ) * T );

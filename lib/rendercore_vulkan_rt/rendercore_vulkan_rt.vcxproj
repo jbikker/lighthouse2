@@ -228,8 +228,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\counters.glsl" />
-    <None Include="shaders\disney.glsl" />
-    <None Include="shaders\lambert.glsl" />
     <None Include="shaders\material.glsl" />
     <None Include="shaders\random.glsl" />
     <None Include="shaders\rt_finalize.comp" />

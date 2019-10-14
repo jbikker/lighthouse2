@@ -13,18 +13,12 @@
     <ClInclude Include="kernels\.cuda.h">
       <Filter>CUDA</Filter>
     </ClInclude>
-    <ClInclude Include="kernels\bsdfs\lambert.h">
-      <Filter>CUDA\bsdfs</Filter>
-    </ClInclude>
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="..\CUDA\shared_host_code\interoptexture.h" />
     <ClInclude Include="core_api.h">
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="core_mesh.h" />
-    <ClInclude Include="kernels\bsdfs\disney.h">
-      <Filter>CUDA\bsdfs</Filter>
-    </ClInclude>
     <ClInclude Include="..\CUDA\shared_host_code\cudatools.h" />
   </ItemGroup>
   <ItemGroup>

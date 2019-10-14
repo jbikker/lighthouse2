@@ -100,12 +100,6 @@
     <None Include="shaders\counters.glsl">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\disney.glsl">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\lambert.glsl">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\material.glsl">
       <Filter>shaders</Filter>
     </None>
@@ -124,9 +118,6 @@
     <None Include="shaders\rt_shaders.rgen">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\rt_shaders.rmiss">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\rt_shadow.rmiss">
       <Filter>shaders</Filter>
     </None>
@@ -137,6 +128,9 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\tools.glsl">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\rt_shaders.rmiss">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

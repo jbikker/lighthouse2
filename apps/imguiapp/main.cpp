@@ -34,7 +34,7 @@ void PrepareScene()
 	// initialize scene
 	renderer->AddScene( "scene.gltf", "data\\pica\\", mat4::Translate( 0, -10.2f, 0 ) );
 	renderer->AddScene( "CesiumMan.glb", "data\\", mat4::Translate( 0, -2, -9 ) );
-	renderer->AddScene( "project_polly.glb", "data\\", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
+	// renderer->AddScene( "project_polly.glb", "data\\", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	// renderer->AddScene( "InterpolationTest.glb", "data\\", mat4::Translate( 0, 2, -5 ) );
 	// renderer->AddScene( "AnimatedMorphCube.glb", "data\\", mat4::Translate( 0, 2, 9 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );

@@ -19,7 +19,11 @@ inline std::string get_cwd()
 {
 	char *cwd;
 	cwd = new char[FILENAME_MAX * sizeof( char )];
+#ifdef WIN32
+	_getcwd( cwd, FILENAME_MAX );
+#else
 	getcwd( cwd, FILENAME_MAX );
+#endif
 
 	std::string cwdStr = std::string( cwd );
 	delete[] cwd;
@@ -29,6 +33,7 @@ inline std::string get_cwd()
 namespace lh2core
 {
 std::string VulkanShader::BaseFolder = "";
+std::string VulkanShader::BSDFFolder = "";
 
 inline bool IsSPIR_V( const std::string_view &fileName )
 {
@@ -93,8 +98,12 @@ VulkanShader::VulkanShader( const VulkanDevice &device, const std::string_view &
 	m_CompileOptions.SetTargetEnvironment( shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_1 );
 	m_CompileOptions.SetSourceLanguage( shaderc_source_language_glsl );
 	m_CompileOptions.SetOptimizationLevel( shaderc_optimization_level_performance );
+	m_Finder.search_path().push_back(BSDFFolder);
 
-	for ( auto &defPair : definitions ) // Add given definitions to compiler
+	std::vector<std::pair<std::string, std::string>> defs = definitions;
+	defs.push_back(std::make_pair("__VK_GLSL__", "1"));
+
+	for ( auto &defPair : defs ) // Add given definitions to compiler
 		m_CompileOptions.AddMacroDefinition( defPair.first, defPair.second );
 
 	if ( IsSPIR_V( fileName ) ) // In case we get fed an pre-compiled SPIR-V shader

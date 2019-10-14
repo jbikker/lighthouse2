@@ -101,15 +101,15 @@ struct CoreTri
 struct ShadingData
 {
 	// This structure is filled for an intersection point. It will contain the spatially varying material properties.
-	vec4 color_flags; // int flags;
-	vec4 absorption_matID;  // int matID;
+	vec3 color; int flags;
+	vec3 absorption; int matID;
 	uvec4 parameters;
 	/* 16 uchars:   x: roughness, metallic, specTrans, specularTint;
 					y: diffTrans, anisotropic, sheen, sheenTint;
 					z: clearcoat, clearcoatGloss, scatterDistance, relativeIOR;
 					w: flatness, ior, dummy1, dummy2. */
 #define IS_SPECULAR (0)
-#define IS_EMISSIVE (shadingData.color_flags.x > 1.0f || shadingData.color_flags.y > 1.0f || shadingData.color_flags.z > 1.0f)
+#define IS_EMISSIVE (shadingData.color.x > 1.0f || shadingData.color.y > 1.0f || shadingData.color.z > 1.0f)
 #define METALLIC CHAR2FLT( shadingData.parameters.x, 0 )
 #define SUBSURFACE CHAR2FLT( shadingData.parameters.x, 8 )
 #define SPECULAR CHAR2FLT( shadingData.parameters.x, 16 )
@@ -128,9 +128,6 @@ struct ShadingData
 #define CUSTOM3 CHAR2FLT( shadingData.parameters.w, 16 )
 #define CUSTOM4 CHAR2FLT( shadingData.parameters.w, 24 )
 };
-
-int IsSpecular(ShadingData data) { return 0; /* for now. */}
-bool IsEmissive(ShadingData data) { return data.color_flags.x > 1.0f || data.color_flags.y > 1.0f || data.color_flags.z > 1.0f; }
 
 struct CoreLightTri4
 {

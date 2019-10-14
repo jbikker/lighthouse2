@@ -17,7 +17,7 @@
 #include "tools.glsl"
 #include "sampling.glsl"
 
-layout( set = 0, binding = cMATERIALS ) buffer materialBuffer { Material data[]; } materials;
+layout(set = 0, binding = cMATERIALS) buffer materialBuffer { Material data[]; } materials;
 
 void GetShadingData(
 	const vec3 D, // IN: incoming ray direction
@@ -29,7 +29,7 @@ void GetShadingData(
 	inout vec3 N, inout vec3 iN, inout vec3 fN, // geometric normal, interpolated normal, final normal
 	inout vec3 T,  // tangent vector
 	const mat3 invTransform // inverse instance transformation matrix
-	)
+)
 {
 	const float w = 1.0f - u - v;
 	const vec4 tdata1 = tri.v4;
@@ -47,15 +47,15 @@ void GetShadingData(
 	const vec2 medium_gb = unpackHalf2x16(baseData.z);
 	const uint flags = MAT_FLAGS;
 
-	retVal.color_flags = vec4(base_rg.x, base_rg.y, base_b_medium_r.x, uintBitsToFloat(0)); // int flags;
-	retVal.absorption_matID = vec4(base_b_medium_r.y, medium_gb.x, medium_gb.y, uintBitsToFloat(0));  // int matID;
+	retVal.color = vec3(base_rg.x, base_rg.y, base_b_medium_r.x), retVal.flags = 0; // int flags;
+	retVal.absorption = vec3(base_b_medium_r.y, medium_gb.x, medium_gb.y), retVal.matID = 0;  // int matID;
 	retVal.parameters = mat.parameters;
 
 	N = TRI_N, iN = N, fN;
 	T = TRI_T;
 
 	if (MAT_HASSMOOTHNORMALS)
-		iN = normalize( w * TRI_N0 + u * TRI_N1 + v * TRI_N2 );
+		iN = normalize(w * TRI_N0 + u * TRI_N1 + v * TRI_N2);
 
 	// Transform normals from local space to world space
 	N = invTransform * N, iN = invTransform * iN;
@@ -91,23 +91,23 @@ void GetShadingData(
 		const vec4 texel = FetchTexelTrilinear(lambda, uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16));
 		if (MAT_HASALPHA && texel.w < 0.5f)
 		{
-			retVal.color_flags.w = uintBitsToFloat(floatBitsToUint(retVal.color_flags.w) | 1);
+			retVal.flags |= 1;
 			return;
 		}
-		retVal.color_flags.xyz = retVal.color_flags.xyz * texel.xyz;
+		retVal.color = retVal.color * texel.xyz;
 		if (MAT_HAS2NDDIFFUSEMAP) // must have base texture; second and third layers are additive
 		{
 			data = mat.t1data4;
 			uvscale = unpackHalf2x16(data.y);
 			uvoffs = unpackHalf2x16(data.z);
-			retVal.color_flags.xyz += FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), ARGB32).xyz;
+			retVal.color += FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), ARGB32).xyz;
 		}
 		if (MAT_HAS3RDDIFFUSEMAP)
 		{
 			data = mat.t2data4;
 			uvscale = unpackHalf2x16(data.y);
 			uvoffs = unpackHalf2x16(data.z);
-			retVal.color_flags.xyz += FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), ARGB32).xyz;
+			retVal.color += FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), ARGB32).xyz;
 		}
 	}
 	// Normal mapping
@@ -117,7 +117,7 @@ void GetShadingData(
 		const vec3 B = TRI_B;
 		uvec4 data = mat.n0data4;
 		const uint part3 = baseData.z;
-		const float n0scale = -0.0001f + 0.0001f * exp(0.1 * abs(float((part3 >> 8) & 255 ) - 128.0f)) * sign(float((part3 >> 8)& 255) - 128.0f);
+		const float n0scale = -0.0001f + 0.0001f * exp(0.1 * abs(float((part3 >> 8) & 255) - 128.0f))* sign(float((part3 >> 8) & 255) - 128.0f);
 		vec2 uvscale = unpackHalf2x16(data.y);
 		vec2 uvoffs = unpackHalf2x16(data.z);
 		vec3 shadingNormal = (FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), NRM32).xyz - vec3(0.5f)) * 2.0f;
@@ -127,7 +127,7 @@ void GetShadingData(
 		if (MAT_HAS2NDNORMALMAP)
 		{
 			data = mat.n1data4;
-			const float n1scale = -0.0001f + 0.0001f * exp(0.1 * abs(float((part3 >> 8) & 255 ) - 128.0f)) * sign(float((part3 >> 8)& 255) - 128.0f);
+			const float n1scale = -0.0001f + 0.0001f * exp(0.1 * abs(float((part3 >> 8) & 255) - 128.0f))* sign(float((part3 >> 8) & 255) - 128.0f);
 			vec2 uvscale = unpackHalf2x16(data.y);
 			vec2 uvoffs = unpackHalf2x16(data.z);
 			vec3 normalLayer1 = (FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), NRM32).xyz - vec3(0.5f)) * 2.0f;
@@ -138,7 +138,7 @@ void GetShadingData(
 		if (MAT_HAS3RDNORMALMAP)
 		{
 			data = mat.n2data4;
-			const float n2scale = -0.0001f + 0.0001f * exp(0.1 * abs(float((part3 >> 8) & 255 ) - 128.0f)) * sign(float((part3 >> 8)& 255) - 128.0f);
+			const float n2scale = -0.0001f + 0.0001f * exp(0.1 * abs(float((part3 >> 8) & 255) - 128.0f))* sign(float((part3 >> 8) & 255) - 128.0f);
 			vec2 uvscale = unpackHalf2x16(data.y);
 			vec2 uvoffs = unpackHalf2x16(data.z);
 			vec3 normalLayer2 = (FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xFFFF), int(data.x >> 16), NRM32).xyz - vec3(0.5f)) * 2.0f;
@@ -156,7 +156,7 @@ void GetShadingData(
 		const vec2 uvscale = unpackHalf2x16(data.y);
 		const vec2 uvoffs = unpackHalf2x16(data.z);
 		const uint blend = (retVal.parameters.x & 0xffffff) +
-			(uint(FetchTexel(uvscale * (uvoffs + vec2( tu, tv )), int(data.w), int(data.x & 0xffff), int(data.x >> 16), ARGB32).x * 255.0f) << 24);
+			(uint(FetchTexel(uvscale * (uvoffs + vec2(tu, tv)), int(data.w), int(data.x & 0xffff), int(data.x >> 16), ARGB32).x * 255.0f) << 24);
 		retVal.parameters.x = blend;
 	}
 }

@@ -55,7 +55,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>COREDLL_EXPORTS;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../half2.1.0;../tinyobjloader;../OptiX/include;../platform;.;../RenderSystem</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../half2.1.0;../tinyobjloader;../OptiX/include;../platform;.;../RenderSystem;../sharedBSDFs</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -84,7 +84,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>COREDLL_EXPORTS;WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../half2.1.0;../tinyobjloader;../OptiX/include;../platform;.;../RenderSystem</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../half2.1.0;../tinyobjloader;../OptiX/include;../platform;.;../RenderSystem;../sharedBSDFs</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -142,9 +142,6 @@
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="core_mesh.h" />
     <ClInclude Include="kernels\.cuda.h" />
-    <ClInclude Include="kernels\bsdfs\disney.h" />
-    <ClInclude Include="kernels\bsdfs\lambert.h" />
-    <ClInclude Include="kernels\bsdfs\plastic.h" />
     <ClInclude Include="rendercore.h" />
   </ItemGroup>
   <ItemGroup>

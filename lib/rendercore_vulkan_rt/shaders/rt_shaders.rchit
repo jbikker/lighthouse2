@@ -17,20 +17,12 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_NV_ray_tracing : require
 
-#include "../bindings.h"
-
 layout( location = 0 ) rayPayloadInNV vec4 hitData;
 
 hitAttributeNV vec2 attribs;
 
 void main()
 {
-
-	const int index = int( gl_LaunchIDNV.x );
-	const int prim_idx = int(gl_PrimitiveID);
-	const int inst_idx = int(gl_InstanceCustomIndexNV);
-	const vec2 bary = attribs;
-	const float tmax = gl_RayTmaxNV;
-	const int indices = (( inst_idx << 20 ) + prim_idx);
-	hitData = vec4(bary.x, bary.y, intBitsToFloat( indices ), tmax);
+	const uint bary = uint(65535.0f * attribs.x) + (uint(65535.0f * attribs.y) << 16);
+	hitData = vec4(uintBitsToFloat(bary), intBitsToFloat(int(gl_InstanceCustomIndexNV)), intBitsToFloat(int(gl_PrimitiveID)), gl_RayTmaxNV);
 }

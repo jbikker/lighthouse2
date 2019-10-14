@@ -22,8 +22,7 @@
 #include "sampling.glsl"
 
 #include "../bindings.h"
-#include "disney.glsl"
-// #include "lambert.glsl"
+#include "bsdf.h"
 #include "random.glsl"
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -75,10 +74,10 @@ layout( set = 0, binding = cBLUENOISE ) buffer   blueNoiseBuffer { int blueNoise
 #define S_BOUNCED		2	// path encountered a diffuse vertex
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 
-#define INSTANCEIDX (indices >> 20)
-#define PRIMIDX (indices & 0xfffff)
-#define HIT_U pathState.x
-#define HIT_V pathState.y
+#define HIT_U (float( floatBitsToUint(pathState.x) & 65535) * (1.0f / 65535.0f))
+#define HIT_V (float( floatBitsToUint(pathState.x) >> 16) * (1.0f / 65535.0f))
+#define INSTANCEIDX floatBitsToInt( pathState.y )
+#define PRIMIDX floatBitsToInt( pathState.z )
 #define HIT_T pathState.w
 #define RAY_O O4.xyz
 #define FLAGS data
@@ -158,7 +157,7 @@ void main()
 	vec3 N, iN, fN, T;
 	const float coneWidth = camera.up_spreadAngle.w * HIT_T;
 	GetShadingData(D, HIT_U, HIT_V, coneWidth, tri, instance_id, shadingData, N, iN, fN, T, mat3(invTransforms[instance_id]));
-	const uint flags = floatBitsToUint(shadingData.color_flags.w);
+	const uint flags = shadingData.flags;
 
 	if ((flags & 1) == 1) // Check if object hit was translucent
 	{
@@ -187,7 +186,7 @@ void main()
 			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
 			{
 				// Only camera rays will be treated special
-				contribution = shadingData.color_flags.xyz;
+				contribution = shadingData.color;
 			}
 			else
 			{
@@ -195,8 +194,8 @@ void main()
 				const vec3 lastN = UnpackNormal(floatBitsToUint(D4.w));
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.T4.w, N );
 				const float pickProb = LightPickProb( int(floatBitsToUint(tri.u4.w)), RAY_O, lastN, I /* the N at the previous vertex */ );
-				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color_flags.xyz * (1.0f / (bsdfPdf + lightPdf * pickProb));
-				contribution = throughput * shadingData.color_flags.xyz * (1.0f / (bsdfPdf + lightPdf));
+				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
+				contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
 			}
 		}
 

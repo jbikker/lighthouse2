@@ -38,6 +38,7 @@ class VulkanShader
 									   shaderc_shader_kind shaderKind = shaderc_glsl_infer_from_source );
 
 	static std::string BaseFolder;
+	static std::string BSDFFolder;
 
   private:
 	// Helper classes taken from glslc: https://github.com/google/shaderc

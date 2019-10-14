@@ -478,6 +478,8 @@ void RenderCore::InitializeDescriptorSets()
 void RenderCore::Init()
 {
 	VulkanShader::BaseFolder = R"(../../lib/RenderCore_Vulkan_RT/shaders/)";
+	VulkanShader::BSDFFolder = R"(../../lib/sharedBSDFs/)";
+
 	m_Initialized = false;
 	RenderCore::instance = this;
 	CreateInstance();

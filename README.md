@@ -74,7 +74,8 @@ half 1.12 http://half.sourceforge.net<br>
 tinygltf https://github.com/syoyo/tinygltf<br>
 tinyobj https://github.com/syoyo/tinyobjloader<br>
 tinyxml2 https://github.com/leethomason/tinyxml2<br>
-zlib https://www.zlib.net<br>
+zlib https://www.zlib.net
+
 The Lighthouse2 Vulkan core (and sharedBSDF) was developed by Meir Noordermeer (https://github.com/MeirBon).
 
 Lighthouse 2 implements research by (very incomplete):

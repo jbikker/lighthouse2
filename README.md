@@ -6,6 +6,8 @@ Lighthouse 2 uses a state-of-the-art wavefront / streaming ray tracing implement
 (using Optix 7) and pre-RTX hardware (using Optix 5 Prime) and soon on AMD hardware (using RadeonRays / OpenCL) and CPUs (using Embree).
 A software rasterizer is also included, mostly as an example of a minimal API implementation.
 
+![ScreenShot](/screenshots/lighthouse_cobra.png)
+
 Quick pointers / Important advice:
 
 * Building Lighthouse 2: CUDA 10.1 currently does *not* properly support vs2019; use vs2017 for now.

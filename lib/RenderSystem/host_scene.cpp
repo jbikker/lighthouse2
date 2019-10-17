@@ -30,6 +30,7 @@ vector<HostPointLight*> HostScene::pointLights;
 vector<HostSpotLight*> HostScene::spotLights;
 vector<HostDirectionalLight*> HostScene::directionalLights;
 Camera* HostScene::camera = 0;
+int HostScene::nodeListHoles = 0;
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostScene::HostScene                                                       |
@@ -360,18 +361,53 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostScene::AddInstance                                             |
-//  |  Return a texture: if it already exists, return the existing texture (after |
-//  |  increasing its refCount), otherwise, create a new texture and return its   |
-//  |  ID.                                                                  LH2'19|
+//  |  HostScene::AddInstance                                                     |
+//  |  Add an instance of an existing mesh to the scene.                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddInstance( const int meshIdx, const mat4& transform )
+int HostScene::AddInstance( const int meshId, const mat4& transform )
 {
-	HostNode* newNode = new HostNode( meshIdx, transform );
+	HostNode* newNode = new HostNode( meshId, transform );
+	if (nodeListHoles > 0) 
+	{
+		// we have holes in the nodes vector due to instance deletions; search from the
+		// end of the list to speed up frequent additions / deletions in complex scenes.
+		for( int i = nodes.size() - 1; i >= 0; i-- ) if (!nodes[i])
+		{
+			// overwrite an empty slot, created by deleting an instance
+			nodes[i] = newNode;
+			newNode->ID = i;
+			scene.push_back( i );
+			nodeListHoles--; // plugged one hole.
+			return i;
+		}
+	}
+	// no empty slots available or found; make sure we don't look for them again.
+	nodeListHoles = 0;
+	// insert the new node at the end of the list
 	newNode->ID = (int)nodes.size();
 	nodes.push_back( newNode );
 	scene.push_back( newNode->ID );
 	return newNode->ID;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::RemoveInstance                                                  |
+//  |  Remove an instance from the scene.                                   LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostScene::RemoveInstance( const int instId )
+{
+	// remove the instance from the scene graph
+	for( int s = (int)scene.size(), i = 0; i < s; i++ ) if (scene[i] == instId)
+	{
+		scene[i] = scene[s - 1];
+		scene.pop_back();
+		break;
+	}
+	// delete the instance
+	HostNode* node = nodes[instId];
+	nodes[instId] = 0; // safe; we only access the nodes vector indirectly.
+	delete node;
+	nodeListHoles++; // HostScene::AddInstance will fill up holes first.
 }
 
 //  +-----------------------------------------------------------------------------+

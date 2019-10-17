@@ -18,6 +18,13 @@
 
 #include "core_settings.h"
 
+uint ScaleColor( uint c, int scale )
+{
+	unsigned int rb = (((c & 0xff00ff) * scale) >> 8) & 0xff00ff;
+	unsigned int g = (((c & 0xff00) * scale) >> 8) & 0xff00;
+	return rb + g;
+}
+
 // -----------------------------------------------------------
 // static data for the rasterizer
 // -----------------------------------------------------------
@@ -117,6 +124,7 @@ void Mesh::Render( mat4& T )
 			pos[v].x = ((pos[v].x * screen->width) / -pos[v].z) + screen->width / 2,
 			pos[v].y = ((pos[v].y * screen->width) / pos[v].z) + screen->height / 2;
 		// draw
+		uint shade = (uint)((N[i].z + 1) * 64.0f + 127.9f);
 		for (int j = 0; j < nin; j++)
 		{
 			int vert0 = j, vert1 = (j + 1) % nin;
@@ -154,7 +162,7 @@ void Mesh::Render( mat4& T )
 				if (z0 >= zbuf[x]) continue;
 				const float z = 1.0f / z0;
 				const int u = (int)(u0 * z * tw) & umask, v = (int)(v0 * z * th) & vmask;
-				dest[x] = src[u + v * (umask + 1)], zbuf[x] = z0;
+				dest[x] = ScaleColor( src[u + v * (umask + 1)], shade ), zbuf[x] = z0;
 			}
 		}
 	}

@@ -55,12 +55,20 @@ void OpenConsole();
 void InitGLFW()
 {
 	// open a window
-	if (!glfwInit()) exit( EXIT_FAILURE );
+	if (!glfwInit()) 
+	{
+		printf( "glfwInit failed.\n" );
+		exit( EXIT_FAILURE );
+	}
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 5 );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
 	glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
-	if (!(window = glfwCreateWindow( SCRWIDTH, SCRHEIGHT, "LightHouse v2.0", nullptr, nullptr ))) exit( EXIT_FAILURE );
+	if (!(window = glfwCreateWindow( SCRWIDTH, SCRHEIGHT, "LightHouse v2.0", nullptr, nullptr ))) 
+	{
+		printf( "glfwCreateWindow failed.\n" );
+		exit( EXIT_FAILURE );
+	}
 	glfwMakeContextCurrent( window );
 	// register callbacks
 	glfwSetFramebufferSizeCallback( window, ReshapeWindowCallback );
@@ -70,7 +78,11 @@ void InitGLFW()
 	glfwSetCursorPosCallback( window, MousePosCallback );
 	glfwSetCharCallback( window, CharEventCallback );
 	// initialize GLAD
-	if (!gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress )) exit( EXIT_FAILURE );
+	if (!gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress )) 
+	{
+		printf( "gladLoadGLLoader failed.\n" );
+		exit( EXIT_FAILURE );
+	}
 	// prepare OpenGL state
 	glDisable( GL_DEPTH_TEST );
 	glDisable( GL_CULL_FACE );
@@ -117,7 +129,11 @@ void InitImGui()
 {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
+	if (!ImGui::CreateContext())
+	{
+		printf( "ImGui::CreateContext failed.\n" );
+		exit( EXIT_FAILURE );
+	}
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	ImGui::StyleColorsDark(); // or ImGui::StyleColorsClassic();

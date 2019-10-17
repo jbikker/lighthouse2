@@ -76,6 +76,11 @@ int RenderAPI::AddInstance( const int meshId, const mat4& transform )
 	return renderer->scene->AddInstance( meshId, transform );
 }
 
+void RenderAPI::RemoveInstance( const int instId )
+{
+	return renderer->scene->RemoveInstance( instId );
+}
+
 void RenderAPI::SetNodeTransform( const int nodeId, const mat4& transform )
 {
 	renderer->scene->SetNodeTransform( nodeId, transform );

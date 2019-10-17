@@ -145,7 +145,15 @@ public:
 	{
 		if (res != CUDA_SUCCESS) 
 		{
-			FatalError( file, line, decodeError( res ), funcName );
+			if (!strcmp( funcName, "cudaGraphicsGLRegisterImage" ))
+			{
+				FatalError( file, line, decodeError( res ), 
+					"cudaGraphicsGLRegisterImage\n(Are you running using the IGP?\nUse NVIDIA control panel to enable the high performance GPU.)" );
+			}
+			else
+			{
+				FatalError( file, line, decodeError( res ), funcName );
+			}
 		}
 	}
 	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )

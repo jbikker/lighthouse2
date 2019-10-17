@@ -49,7 +49,8 @@ public:
 	// scene construction / maintenance
 	static int AddMesh( const char* objFile, const char* dir, const float scale = 1.0f );
 	static void AddScene( const char* sceneFile, const char* dir, const mat4& transform );
-	static int AddInstance( const int meshIdx, const mat4& transform );
+	static int AddInstance( const int meshId, const mat4& transform );
+	static void RemoveInstance( const int instId );
 	static int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material, const int meshID = -1 );
 	static int AddMaterial( const float3 color );
 	static int AddPointLight( const float3 pos, const float3 radiance, bool enabled = true );
@@ -70,6 +71,8 @@ public:
 	static vector<HostSpotLight*> spotLights;
 	static vector<HostDirectionalLight*> directionalLights;
 	static Camera* camera;
+private:
+	static int nodeListHoles; // zero if no instance deletions occurred; adding instances will be faster.
 };
 
 } // namespace lighthouse2

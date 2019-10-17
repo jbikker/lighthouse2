@@ -59,6 +59,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_primeref", "lib\RenderCore_PrimeRef\rendercore_primeref.vcxproj", "{FF0D391E-1A93-48B0-A700-650F6BAF2597}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_vulkan_rt", "lib\rendercore_vulkan_rt\rendercore_vulkan_rt.vcxproj", "{0FA8FEF9-6E1C-4153-B169-523B14CBC615}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -5,9 +5,6 @@
     <ClCompile Include="..\..\lib\imgui\imgui.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\lib\imgui\imgui_demo.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\lib\imgui\imgui_draw.cpp">
       <Filter>imgui</Filter>
     </ClCompile>

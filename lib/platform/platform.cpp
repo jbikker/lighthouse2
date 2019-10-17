@@ -28,7 +28,6 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "windows.h"
-#include "stdarg.h"
 
 #pragma comment( linker, "/subsystem:windows /ENTRY:mainCRTStartup" )
 
@@ -345,18 +344,12 @@ void Shader::SetUInt( const char* name, const uint v )
         https://glad.dav1d.de/#profile=compatibility&language=c&specification=gl&loader=on&api=gl%3D4.6&extensions=GL_EXT_memory_object&extensions=GL_EXT_memory_object_fd&extensions=GL_EXT_memory_object_win32
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <glad/glad.h>
-
 static void* get_proc(const char *namez);
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #ifndef _WINDOWS_
 #undef APIENTRY
 #endif
-#include <windows.h>
 static HMODULE libGL;
 
 typedef void* (APIENTRYP PFNWGLGETPROCADDRESSPROC_PRIVATE)(const char*);
@@ -372,11 +365,13 @@ static PFNWGLGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 #endif
 #endif
 
+#if 0
 #ifdef HAVE_WINAPIFAMILY
   #include <winapifamily.h>
   #if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
     #define IS_UWP 1
   #endif
+#endif
 #endif
 
 static

@@ -431,12 +431,14 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	glFinish();
 	Timer timer;
 	// clean accumulator, if requested
-	if (converge == Restart)
+	if (converge == Restart || firstConvergingFrame)
 	{
 		accumulator->Clear( ON_DEVICE );
 		samplesTaken = 0;
+		firstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
+	if (converge == Converge) firstConvergingFrame = false;
 	// update instance descriptor array on device
 	// Note: we are not using the built-in OptiX instance system for shading. Instead,
 	// we figure out which triangle we hit, and to what instance it belongs; from there,

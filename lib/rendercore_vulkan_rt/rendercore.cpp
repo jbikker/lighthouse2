@@ -909,7 +909,12 @@ void RenderCore::Render( const ViewPyramid &view, const Convergence converge, co
 	Counters &c = m_Counters->GetHostBuffer()[0];
 
 	auto queue = m_Device.GetGraphicsQueue();
-	if (converge == Restart) m_SamplesTaken = 0;
+	if (converge == Restart || m_FirstConvergingFrame)
+	{
+		m_SamplesTaken = 0;
+		m_FirstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
+	}
+	if (converge == Converge) m_FirstConvergingFrame = false;
 	const bool recordCommandBuffers = rtDescriptorSet->IsDirty() || shadeDescriptorSet->IsDirty() || finalizeDescriptorSet->IsDirty() || m_First; // Before we render we potentially have to update our command buffers
 	m_First = false;
 	if (recordCommandBuffers)

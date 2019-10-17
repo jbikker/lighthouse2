@@ -105,6 +105,7 @@ private:
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
 	DeviceVars vars;								// copy of device-side variables, to detect changes
+	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.

@@ -24,15 +24,14 @@
 
 // system includes
 #define NOMINMAX
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include "windows.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
-#include <vector>
-#include <string>
-#include <algorithm>
 #include "zlib.h"
-#include "emmintrin.h"
 #include <assert.h>
 #include "freeimage.h"
 

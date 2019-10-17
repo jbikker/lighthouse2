@@ -114,6 +114,7 @@ private:
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
 	uint seed = 0x23456789;							// generic seed
 	DeviceVars vars;								// copy of device-side variables, to detect changes
+	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	// timing
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
 public:

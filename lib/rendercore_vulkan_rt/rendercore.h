@@ -100,6 +100,7 @@ class RenderCore
 	std::vector<lh2core::CoreMesh *> m_Meshes{};
 	std::vector<CoreTexDesc> m_TexDescs{};
 	VulkanDevice m_Device;
+
 	// Frame data
 	VulkanGLTextureInterop *m_InteropTexture = nullptr;
 	uint32_t m_SamplesPP;
@@ -110,6 +111,7 @@ class RenderCore
 	int m_InstanceMeshMappingDirty = true;
 	int m_SamplesTaken = 0;
 	uint4 m_LightCounts;
+	bool m_FirstConvergingFrame = false;
 
 	// Uniform data
 	UniformCamera *m_UniformCamera{};
@@ -119,12 +121,15 @@ class RenderCore
 	// Ray trace pipeline
 	VulkanDescriptorSet *rtDescriptorSet = nullptr;
 	VulkanRayTraceNVPipeline *rtPipeline = nullptr;
+
 	// Shade pipeline
 	VulkanDescriptorSet *shadeDescriptorSet = nullptr;
 	VulkanComputePipeline *shadePipeline = nullptr;
+
 	// Finalize pipeline
 	VulkanDescriptorSet *finalizeDescriptorSet = nullptr;
 	VulkanComputePipeline *finalizePipeline = nullptr;
+
 	// Storage buffers
 	VulkanCoreBuffer<mat4> *m_InvTransformsBuffer = nullptr;
 	VulkanCoreBuffer<Counters> *m_CounterTransferBuffer = nullptr;

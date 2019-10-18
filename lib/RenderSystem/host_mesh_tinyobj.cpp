@@ -16,6 +16,7 @@
    settings even when debugging.
 */
 
+#include "rendersystem.h"
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 

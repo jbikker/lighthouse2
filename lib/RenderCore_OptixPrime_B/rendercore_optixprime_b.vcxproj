@@ -64,7 +64,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
@@ -96,7 +96,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
@@ -138,33 +138,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\CUDA\shared_host_code\interoptexture.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\finalize_shared.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\lights_shared.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\material_shared.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\sampling_shared.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\tools_shared.h" />
     <ClInclude Include="core_api.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="core_mesh.h" />
     <ClInclude Include="kernels\.cuda.h" />
+    <ClInclude Include="kernels\bsdf.h" />
+    <ClInclude Include="kernels\camera.h" />
+    <ClInclude Include="kernels\connections.h" />
+    <ClInclude Include="kernels\pathtracer.h" />
     <ClInclude Include="rendercore.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\finalize_shared.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\lights_shared.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\material_shared.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\sampling_shared.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\tools_shared.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
     <CudaCompile Include="kernels\.cuda.cu">
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
@@ -172,26 +161,6 @@
       <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.cu,finalize.cu,lghts.cu,pathtrace.cu,tools.cu,.cuda.h;bsdfs/lambert.h;bsdfs/microfacet.h</AdditionalDeps>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
       <MaxRegCount Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0</MaxRegCount>
-    </CudaCompile>
-    <CudaCompile Include="kernels\bsdf.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <Warning Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">W0</Warning>
-      <Warning Condition="'$(Configuration)|$(Platform)'=='Release|x64'">W0</Warning>
-    </CudaCompile>
-    <CudaCompile Include="kernels\camera.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="kernels\connections.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="kernels\pathtracer.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-      <Warning Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">W0</Warning>
-      <Warning Condition="'$(Configuration)|$(Platform)'=='Release|x64'">W0</Warning>
     </CudaCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

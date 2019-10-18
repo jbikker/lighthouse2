@@ -371,7 +371,7 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 	{
 		// we have holes in the nodes vector due to instance deletions; search from the
 		// end of the list to speed up frequent additions / deletions in complex scenes.
-		for( int i = nodes.size() - 1; i >= 0; i-- ) if (!nodes[i])
+		for( int i = (int)nodes.size() - 1; i >= 0; i-- ) if (!nodes[i])
 		{
 			// overwrite an empty slot, created by deleting an instance
 			nodes[i] = newNode;

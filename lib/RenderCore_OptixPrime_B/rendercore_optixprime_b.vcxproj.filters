@@ -19,6 +19,33 @@
       <Filter>API</Filter>
     </ClInclude>
     <ClInclude Include="core_mesh.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\finalize_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\lights_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\material_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\sampling_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\tools_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\camera.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\connections.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\pathtracer.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\bsdf.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="CUDA">
@@ -27,39 +54,9 @@
     <Filter Include="API">
       <UniqueIdentifier>{85ca225a-7b4b-4626-9d4f-c778bf53cb0c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="CUDA\bsdfs">
-      <UniqueIdentifier>{402a8309-93b0-4477-b6d9-3cbd3a31d06e}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="kernels\.cuda.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\pathtracer.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\bsdf.cu">
-      <Filter>CUDA\bsdfs</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\camera.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="kernels\connections.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\finalize_shared.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\lights_shared.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\material_shared.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\sampling_shared.cu">
-      <Filter>CUDA</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\CUDA\shared_kernel_code\tools_shared.cu">
       <Filter>CUDA</Filter>
     </CudaCompile>
   </ItemGroup>

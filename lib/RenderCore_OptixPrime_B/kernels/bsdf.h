@@ -32,6 +32,6 @@
 // ----------------------------------------------------------------
 
 // forward to Meir's API-agnostic sharedBRDFs folder.
-#include "bsdf.h"
+#include "sharedbsdf.h"
 
 // EOF

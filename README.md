@@ -80,8 +80,13 @@ zlib https://www.zlib.net
 
 The Lighthouse2 Vulkan core (and sharedBSDF) was developed by Mèir Noordermeer (https://github.com/MeirBon).
 
+A Linux port by Marijn Suijten (https://github.com/MarijnS95) is being incorporated in the main repo.
+
 Lighthouse 2 implements research by (very incomplete):
 
 * Marsaglia: random numbers
 * Van Antwerpen, Laine, Karras, Aila: streaming path tracing
 * Aila, Laine: persistent kernels
+* Schied et al.: Spatiotemporal Variance-Guided Filtering (SVGF)
+* Victor Voorhuis: improved SVGF for specular and glossy reprojection
+* Eric Heitz: Blue noise distributions

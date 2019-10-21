@@ -15,11 +15,8 @@
 
 #pragma once
 
-namespace lh2core {
-
-// from OptiX SDK, putil.h
-#define CHK_OPTIX(c){RTresult r=c;if(r){const char*e;rtContextGetErrorString(RenderCore::context,r,&e);\
-FatalError( "Error at line %i of %s:\n%s", __LINE__, __FILE__, e);system("pause");exit(1);}}
+namespace lh2core
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |
@@ -30,6 +27,10 @@ struct DeviceVars
 	// impossible values to trigger an update in the first frame
 	float clampValue = -1.0f;
 	float geometryEpsilon = 1e34f;
+	float filterClampDirect = 2.5f;
+	float filterClampIndirect = 15.0f;
+	uint filterEnabled = 1;
+	uint TAAEnabled = 1;
 };
 
 //  +-----------------------------------------------------------------------------+
@@ -68,6 +69,9 @@ public:
 	// internal methods
 private:
 	void SyncStorageType( const TexelStorage storage );
+	void CreateOptixContext( int cc );
+	// cuda call abbreviation
+	void applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass = 0, const float brightness = 0, const float contrast = 0 );
 	// data members
 	int scrwidth = 0, scrheight = 0;				// current screen width and height
 	int scrspp = 1;									// samples to be taken per screen pixel
@@ -88,41 +92,65 @@ private:
 	CoreBuffer<float4>* texel128Buffer = 0;			// texel buffer 1: hdr ARGB128 texture data
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
 	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
-	optix::Group topLevelGroup = 0;					// the top-level node; combines all instances and is the entry point for ray queries
-	optix::Material dummyMaterial = 0;				// we will just use it to obtain an instance index for a hit
-	InteropBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
+	CoreBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
+#ifdef USE_OPTIX_PERSISTENT_THREADS
 	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
+#else
+	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
+#endif
 	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
 	CoreBuffer<uint>* texel32Buffer = 0;			// texel buffer 0: regular ARGB32 texture data
-	InteropBuffer<float4>* hitBuffer = 0;			// intersection results
-	InteropBuffer<float4>* pathStateBuffer = 0;		// path state buffer
-	InteropBuffer<float4>* connectionBuffer = 0;	// shadow rays
-	optix::Buffer performanceCounters = 0;			// ray counting in OptiX
+	CoreBuffer<float4>* hitBuffer = 0;				// intersection results
+	CoreBuffer<float4>* pathStateBuffer = 0;		// path state buffer
+	CoreBuffer<float4>* connectionBuffer = 0;		// shadow rays
+	CoreBuffer<OptixInstance>* instanceArray = 0;	// instance descriptors for Optix
+	CoreBuffer<Params>* optixParams;				// parameters to be used in optix code
 	CoreTexDesc* texDescs = 0;						// array of texture descriptors
 	int textureCount = 0;							// size of texture descriptor array
 	int SMcount = 0;								// multiprocessor count, used for persistent threads
 	int computeCapability;							// device compute capability
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
+	uint frameCycle = 0;							// keeping track of the frame, for TAA
+	float prevj0 = 0, prevj1 = 0;					// jittering values of the previous frame
 	DeviceVars vars;								// copy of device-side variables, to detect changes
+	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
+	// filtering data
+	CoreBuffer<uint4>* features = 0;				// features for filtering
+	CoreBuffer<float4>* shading = 0;				// illumination to be filtered
+	CoreBuffer<float2>* motion = 0;					// motion vectors (actually: position in history buffers)
+	CoreBuffer<float4>* moments = 0;				// luminance moments for variance estimation in SVGF
+	CoreBuffer<float4>* prevMoments = 0;			// luminance moments history
+	CoreBuffer<float4>* prevPixels = 0;				// raw pixels from the previous frame, for TAA
+	CoreBuffer<float4>* worldPos = 0;				// fragment worldspace positions, for filter
+	CoreBuffer<float4>* prevWorldPos = 0;			// previous frame fragment worldspace positions
+	CoreBuffer<float4>* filteredIN = 0;				// filtered data from the previous frame
+	CoreBuffer<float4>* filteredOUT = 0;			// result of filtering in the current frame
+	CoreBuffer<float4>* deltaDepth = 0;				// depth derivatives for filtering
+	CoreBuffer<float4>* debugData = 0;				// used to store arbitrary data for inspection
+	ViewPyramid prevView;							// previous view frustum, for reprojection
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
-	InteropBuffer<uint>* blueNoise = 0;
+	CoreBuffer<uint>* blueNoise = 0;
+	int blueSlot = 0;
 	// timing
+	cudaEvent_t traceStart[MAXPATHLENGTH], traceEnd[MAXPATHLENGTH];
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];
+	cudaEvent_t shadowStart, shadowEnd;
 public:
-	static optix::Context context;					// the OptiX context
-	static optix::Program optixRaygen;				// eye ray generation code
 	CoreStats coreStats;							// rendering statistics
+	static OptixDeviceContext optixContext;			// static, for access from CoreMesh
+	enum { RAYGEN = 0, RAD_MISS, OCC_MISS, RAD_HIT, OCC_HIT };
+	OptixShaderBindingTable sbt;
+	OptixModule ptxModule;
+	OptixPipeline pipeline;
+	OptixProgramGroup progGroup[5];
+	OptixTraversableHandle bvhRoot;
+	Params params;
+	CUdeviceptr d_params;
 };
-
-// Note:
-// OptiX prefers to maintain its own render target. It is tempting to take over this functionality,
-// but that is not a good idea: when rendering on multiple GPUs, buffer maintenance is non-trivial and
-// better left to the OptiX system. We will just pay a small price for a final device-to-device copy
-// of the final buffer to our OpenGL texture data.
 
 } // namespace lh2core
 

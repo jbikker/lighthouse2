@@ -148,7 +148,7 @@ void RenderSystem::UpdateSceneGraph()
 	Timer timer;
 	int instanceCount = 0;
 	bool instancesChanged = false;
-	for( int s = (int)HostScene::scene.size(), i = 0; i < s; i++ ) 
+	for (int s = (int)HostScene::scene.size(), i = 0; i < s; i++)
 	{
 		int nodeIdx = HostScene::scene[i];
 		HostNode* node = HostScene::nodes[nodeIdx];
@@ -228,7 +228,7 @@ void RenderSystem::SynchronizeSceneData()
 //  |  RenderSystem::Render                                                       |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderSystem::Render( ViewPyramid& view, Convergence converge )
+void RenderSystem::Render( const ViewPyramid& view, Convergence converge )
 {
 	// forward to core; core may ignore or accept a setting
 	core->Setting( "epsilon", settings.geometryEpsilon );

@@ -22,7 +22,7 @@ CoreMesh::CoreMesh( VulkanDevice device )
 	: m_Device( device )
 {
 	triangles = new VulkanCoreBuffer<CoreTri>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal,
-											   vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
+		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 }
 
 CoreMesh::~CoreMesh()
@@ -32,20 +32,20 @@ CoreMesh::~CoreMesh()
 
 void CoreMesh::SetGeometry( const float4 *vertexData, const int vertexCount, const int triCount, const CoreTri *tris, const uint *alphaFlags )
 {
-	const bool sameTriCount = triangles && ( triangles->GetSize() / sizeof( CoreTri ) == triCount );
+	const bool sameTriCount = triangles && (triangles->GetSize() / sizeof( CoreTri ) == triCount);
 
-	if ( !sameTriCount )
+	if (!sameTriCount)
 	{
 		delete triangles;
 		triangles = new VulkanCoreBuffer<CoreTri>( m_Device, triCount, vk::MemoryPropertyFlagBits::eDeviceLocal,
-												   vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
+			vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 	}
 
 	triangles->CopyToDevice( tris, triCount * sizeof( CoreTri ) );
 
-	if ( accelerationStructure != nullptr )
+	if (accelerationStructure != nullptr)
 	{
-		if ( accelerationStructure->CanUpdate() && sameTriCount ) // Same data count, rebuild acceleration structure
+		if (accelerationStructure->CanUpdate() && sameTriCount) // Same data count, rebuild acceleration structure
 		{
 			accelerationStructure->UpdateVertices( vertexData, vertexCount );
 			accelerationStructure->Rebuild();
@@ -69,8 +69,8 @@ void CoreMesh::SetGeometry( const float4 *vertexData, const int vertexCount, con
 
 void CoreMesh::Cleanup()
 {
-	if ( accelerationStructure ) delete accelerationStructure, accelerationStructure = nullptr;
-	if ( triangles ) delete triangles, triangles = nullptr;
+	if (accelerationStructure) delete accelerationStructure, accelerationStructure = nullptr;
+	if (triangles) delete triangles, triangles = nullptr;
 }
 
 } // namespace lh2core

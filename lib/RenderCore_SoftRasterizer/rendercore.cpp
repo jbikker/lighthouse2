@@ -144,7 +144,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, c
 		else rasterizer.scene.matList.push_back( m = new Material() );
 		m->texture = 0;
 		int texID = matEx[i].texture[TEXTURE0];
-		if (texID == -1) 
+		if (texID == -1)
 		{
 			float r = mat[i].diffuse_r, g = mat[i].diffuse_g, b = mat[i].diffuse_b;
 			m->diffuse = ((int)(r * 255.0f) << 16) + ((int)(g * 255.0f) << 8) + (int)(b * 255.0f);

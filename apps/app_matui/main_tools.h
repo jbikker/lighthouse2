@@ -87,7 +87,7 @@ void InitGLFW()
 	glDisable( GL_CULL_FACE );
 	glDisable( GL_BLEND );
 	// logo
-	GLTexture* logo = new GLTexture( "data//system//logo.png", GL_LINEAR );
+	GLTexture* logo = new GLTexture( "data/system/logo.png", GL_LINEAR );
 	shader = new Shader( "shaders/vignette.vert", "shaders/vignette.frag" );
 	shader->Bind();
 	shader->SetInputTexture( 0, "color", logo );
@@ -107,6 +107,7 @@ void InitGLFW()
 //  +-----------------------------------------------------------------------------+
 void OpenConsole()
 {
+#ifdef _MSC_VER
 	CONSOLE_SCREEN_BUFFER_INFO coninfo;
 	AllocConsole();
 	GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &coninfo );
@@ -118,6 +119,7 @@ void OpenConsole()
 	freopen_s( &file, "CON", "w", stderr );
 	SetWindowPos( GetConsoleWindow(), HWND_TOP, 0, 0, 1280, 800, 0 );
 	glfwShowWindow( window );
+#endif
 }
 
 // EOF

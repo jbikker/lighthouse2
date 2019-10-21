@@ -23,7 +23,8 @@
 #pragma once
 
 #ifndef __OPENCLCC__
-namespace lighthouse2 {
+namespace lighthouse2
+{
 #endif
 #ifdef __OPENCLCC__
 #define __CLORCUDA__

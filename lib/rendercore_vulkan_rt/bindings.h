@@ -13,7 +13,6 @@
    limitations under the License.
 */
 
-
 #ifndef BINDINGS_H
 #define BINDINGS_H
 

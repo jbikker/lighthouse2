@@ -4,7 +4,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -125,17 +125,17 @@ void RenderCore::Init()
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
 	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
-	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
+	for (int i = 0; i < 65536; i++) data32[i] = data8[i]; // convert
 	data8 = (uchar*)scr256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 65536] = data8[i];
 	data8 = (uchar*)rnk256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 3 * 65536] = data8[i];
 	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
 	delete data32;
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// timing events
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
+	for (int i = 0; i < MAXPATHLENGTH; i++)
 	{
 		cudaEventCreate( &shadeStart[i] );
 		cudaEventCreate( &shadeEnd[i] );
@@ -191,7 +191,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		shadowRayBuffer = new CoreBuffer<Ray4>( maxShadowRays, ON_DEVICE );
 		shadowRayPotential = new CoreBuffer<float4>( maxShadowRays, ON_DEVICE ); // .w holds pixel index
 		shadowHitBuffer = new CoreBuffer<uint>( (maxShadowRays + 31) >> 5 /* one bit per ray */, ON_DEVICE );
-		accumulator = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
+		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
 		for (int i = 0; i < 2; i++)
 		{
 			extensionRayBuffer[i] = new CoreBuffer<Ray4>( maxPixels * spp, ON_DEVICE ),
@@ -511,7 +511,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 			samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle,
 			view.p1, view.p2, view.p3, view.pos );
-		if (pathLength == MAXPATHLENGTH) 
+		if (pathLength == MAXPATHLENGTH)
 		{
 			// prevent the CopyToHost in the last iteration; it's expensive
 			cudaEventRecord( shadeEnd[pathLength - 1] );
@@ -555,7 +555,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// finalize statistics
 	coreStats.renderTime = timer.elapsed();
 	coreStats.shadeTime = 0;
-	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
+	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;

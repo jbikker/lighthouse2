@@ -40,7 +40,7 @@ static lh2core::RenderCore *core = 0;
 
 void CoreAPI::Init()
 {
-	if ( !core )
+	if (!core)
 	{
 		core = new RenderCore();
 		core->Init();
@@ -90,14 +90,14 @@ void CoreAPI::SetMaterials( CoreMaterial *mat, const CoreMaterialEx *matEx, cons
 }
 
 void CoreAPI::SetLights( const CoreLightTri *areaLights, const int areaLightCount,
-						 const CorePointLight *pointLights, const int pointLightCount,
-						 const CoreSpotLight *spotLights, const int spotLightCount,
-						 const CoreDirectionalLight *directionalLights, const int directionalLightCount )
+	const CorePointLight *pointLights, const int pointLightCount,
+	const CoreSpotLight *spotLights, const int spotLightCount,
+	const CoreDirectionalLight *directionalLights, const int directionalLightCount )
 {
 	core->SetLights( areaLights, areaLightCount,
-					 pointLights, pointLightCount,
-					 spotLights, spotLightCount,
-					 directionalLights, directionalLightCount );
+		pointLights, pointLightCount,
+		spotLights, spotLightCount,
+		directionalLights, directionalLightCount );
 }
 
 void CoreAPI::SetSkyData( const float3 *pixels, const uint width, const uint height )

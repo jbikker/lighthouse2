@@ -15,6 +15,8 @@
 
 #include "rendersystem.h"
 
+#include <fstream>
+
 #define SKYCDF(x,y) cdf[RadicalInverse8bit( y ) + x * (IBLHEIGHT + 1)] // columns stored sequentially for better cache coherence
 #define COLCDF(x) columncdf[RadicalInverse9bit( x )]
 
@@ -81,16 +83,15 @@ void HostSkyDome::Load()
 	{
 		// attempt to load skydome from binary file
 		memcpy( strstr( t, ".hdr" ), ".bin", 4 );
-		FILE* f;
-		fopen_s( &f, t, "rb" );
+		std::ifstream f( t, std::ios::binary );
 		if (f)
 		{
 			printf( "loading cached hdr data... " );
-			fread( &width, 4, 1, f );
-			fread( &height, 4, 1, f );
+			f.read( (char*)&width, sizeof( width ) );
+			f.read( (char*)&height, sizeof( height ) );
+			// TODO: Mmap
 			pixels = (float3*)MALLOC64( width * height * sizeof( float3 ) );
-			fread( pixels, sizeof( float ), width * height * 3, f );
-			fclose( f );
+			f.read( (char*)pixels, sizeof( float3 ) * width * height );
 		}
 		else memcpy( strstr( t, ".bin" ), ".hdr", 4 );
 	}
@@ -115,13 +116,11 @@ void HostSkyDome::Load()
 		for (int y = 0; y < height; y++) memcpy( pixels + y * width, FreeImage_GetScanLine( dib, height - 1 - y ), width * sizeof( float3 ) );
 		FreeImage_Unload( dib );
 		// save skydome to binary file, .hdr is slow to load
-		FILE* f;
 		memcpy( strstr( t, ".hdr" ), ".bin", 4 );
-		fopen_s( &f, t, "wb" );
-		fwrite( &width, 4, 1, f );
-		fwrite( &height, 4, 1, f );
-		fwrite( pixels, 4, width * height * 3, f );
-		fclose( f );
+		std::ofstream f( t, std::ios::binary );
+		f.write( (char*)&width, sizeof( width ) );
+		f.write( (char*)&height, sizeof( height ) );
+		f.write( (char*)pixels, sizeof( float3 ) * width * height );
 	}
 #ifdef IBL
 	// convert to pdf

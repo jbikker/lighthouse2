@@ -15,6 +15,11 @@
 
 #include "rendersystem.h"
 
+// Local hack:
+#ifndef _MSC_VER
+#define strcat_s strcat
+#endif
+
 //  +-----------------------------------------------------------------------------+
 //  |  HostTexture::HostTexture                                                   |
 //  |  Constructor.                                                         LH2'19|
@@ -131,12 +136,8 @@ void HostTexture::ConstructMIPmaps()
 void HostTexture::Load( const char* fileName, const uint modFlags, bool normalMap )
 {
 	// check if texture exists
-	if (!FileExists( fileName ))
-	{
-		char error[1024];
-		sprintf_s( error, "File not found: %s", fileName );
-		FatalError( __FILE__, __LINE__, error );
-	}
+	FATALERROR_IF( !FileExists( fileName ), "File %s not found", fileName );
+
 #ifdef CACHEIMAGES
 	// see if we can fetch a binary blob; faster than most FreeImage formats
 	if (strlen( fileName ) > 4) if (fileName[strlen( fileName ) - 4] == '.')
@@ -146,7 +147,11 @@ void HostTexture::Load( const char* fileName, const uint modFlags, bool normalMa
 		binFile[strlen( fileName ) - 4] = 0;
 		strcat_s( binFile, ".bin" );
 		FILE* f;
+	#ifdef _MSC_VER
 		fopen_s( &f, binFile, "rb" );
+	#else
+		f = fopen( binFile, "rb" );
+	#endif
 		if (f)
 		{
 			uint version;
@@ -182,12 +187,7 @@ void HostTexture::Load( const char* fileName, const uint modFlags, bool normalMa
 	// get filetype
 	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType( fileName, 0 );
 	if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename( fileName );
-	if (fif == FIF_UNKNOWN)
-	{
-		char error[1024];
-		sprintf_s( error, "Unsupported texture filetype: %s", fileName );
-		FatalError( __FILE__, __LINE__, error );
-	}
+	FATALERROR_IF( fif == FIF_UNKNOWN, "%s contains an unsupported texture filetype", fileName );
 	// load image
 	FIBITMAP* tmp = FreeImage_Load( fif, fileName );
 	FIBITMAP* img = FreeImage_ConvertTo32Bits( tmp ); // converts 1 4 8 16 24 32 48 64 bpp to 32 bpp, fails otherwise
@@ -251,7 +251,11 @@ void HostTexture::Load( const char* fileName, const uint modFlags, bool normalMa
 		binFile[strlen( fileName ) - 4] = 0;
 		strcat_s( binFile, ".bin" );
 		FILE* f;
-		fopen_s( &f, binFile, "wb" );
+	#ifdef _MSC_VER
+		fopen_s( &f, binFile, "rb" );
+	#else
+		f = fopen( binFile, "rb" );
+	#endif
 		if (f)
 		{
 			uint version = BINTEXFILEVERSION;

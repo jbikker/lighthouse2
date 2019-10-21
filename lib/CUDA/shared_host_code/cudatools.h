@@ -13,15 +13,28 @@
    limitations under the License.
 */
 
-#pragma once 
+#pragma once
+
+#include <cstdint>
 
 enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2 };
 
-#define CUDACHECK(x,y) CUDATools::CheckError( __FILE__, __LINE__, x, y )
+#define CHK_CUDA( stmt )                                                                                         \
+	do                                                                                                           \
+	{                                                                                                            \
+		auto ret = ( stmt );                                                                                     \
+		if ( ret )                                                                                               \
+		{                                                                                                        \
+			if ( !strncmp( #stmt, "cudaGraphicsGLRegisterImage", sizeof( "cudaGraphicsGLRegisterImage" ) - 1 ) ) \
+				FATALERROR_IN( #stmt, CUDATools::decodeError( ret ),                                             \
+							   "\n\t(Are you running using the IGP?\n"                                           \
+							   "Use NVIDIA control panel to enable the high performance GPU.)" )                 \
+			else                                                                                                 \
+				FATALERROR_IN( #stmt, CUDATools::decodeError( ret ), "" )                                        \
+		}                                                                                                        \
+	} while ( 0 )
 
-#define STRINGIFY2(x) #x
-#define CHK_NVRTC( func ) { nvrtcResult code = func; if (code != NVRTC_SUCCESS) \
-	FatalError( __FILE__, __LINE__, nvrtcGetErrorString( code ) ); }
+#define CHK_NVRTC( stmt ) FATALERROR_IN_CALL( ( stmt ), nvrtcGetErrorString, "" )
 
 class CUDATools
 {
@@ -61,7 +74,7 @@ public:
 				if (deviceProp.major == 9999 && deviceProp.minor == 9999) smperproc = 1; else
 					smperproc = _ConvertSMVer2Cores( deviceProp.major, deviceProp.minor );
 				uint64_t compute_perf = (uint64_t)deviceProp.multiProcessorCount * smperproc * deviceProp.clockRate;
-				if (compute_perf > max_perf) 
+				if (compute_perf > max_perf)
 				{
 					max_perf = compute_perf;
 					fastest = curdev;
@@ -73,15 +86,6 @@ public:
 		if (prohibited == count) exit( EXIT_FAILURE );
 		return fastest;
 	}
-	static void setfv( string& s, const char* fmt, va_list args )
-	{
-		static char* buffer = 0;
-		if (!buffer) buffer = new char[16384];
-		int len = _vscprintf( fmt, args );
-		if (!len) return;
-		vsprintf_s( buffer, len + 1, fmt, args );
-		s = buffer;
-	}
 	static void fail( const char* t )
 	{
 		printf( t );
@@ -89,71 +93,54 @@ public:
 	}
 	static const char* decodeError( cudaError_t res )
 	{
-		static char error[128];
-		switch (res)
+		switch ((cudaError_enum)res)
 		{
-		default:                                        strcpy_s( error, "Unknown cudaError_t" ); break;
-		case CUDA_SUCCESS:                              strcpy_s( error, "No error" ); break;
-		case CUDA_ERROR_INVALID_VALUE:                  strcpy_s( error, "Invalid value" ); break;
-		case CUDA_ERROR_OUT_OF_MEMORY:                  strcpy_s( error, "Out of memory" ); break;
-		case CUDA_ERROR_NOT_INITIALIZED:                strcpy_s( error, "Not initialized" ); break;
-		case CUDA_ERROR_DEINITIALIZED:                  strcpy_s( error, "Deinitialized" ); break;
-		case CUDA_ERROR_NO_DEVICE:                      strcpy_s( error, "No device" ); break;
-		case CUDA_ERROR_INVALID_DEVICE:                 strcpy_s( error, "Invalid device" ); break;
-		case CUDA_ERROR_INVALID_IMAGE:                  strcpy_s( error, "Invalid image" ); break;
-		case CUDA_ERROR_INVALID_CONTEXT:                strcpy_s( error, "Invalid context" ); break;
-		case CUDA_ERROR_CONTEXT_ALREADY_CURRENT:        strcpy_s( error, "Context already current" ); break;
-		case CUDA_ERROR_MAP_FAILED:                     strcpy_s( error, "Map failed" ); break;
-		case CUDA_ERROR_UNMAP_FAILED:                   strcpy_s( error, "Unmap failed" ); break;
-		case CUDA_ERROR_ARRAY_IS_MAPPED:                strcpy_s( error, "Array is mapped" ); break;
-		case CUDA_ERROR_ALREADY_MAPPED:                 strcpy_s( error, "Already mapped" ); break;
-		case CUDA_ERROR_NO_BINARY_FOR_GPU:              strcpy_s( error, "No binary for GPU" ); break;
-		case CUDA_ERROR_ALREADY_ACQUIRED:               strcpy_s( error, "Already acquired" ); break;
-		case CUDA_ERROR_NOT_MAPPED:                     strcpy_s( error, "Not mapped" ); break;
-		case CUDA_ERROR_INVALID_SOURCE:                 strcpy_s( error, "Invalid source" ); break;
-		case CUDA_ERROR_FILE_NOT_FOUND:                 strcpy_s( error, "File not found" ); break;
-		case CUDA_ERROR_INVALID_HANDLE:                 strcpy_s( error, "Invalid handle" ); break;
-		case CUDA_ERROR_NOT_FOUND:                      strcpy_s( error, "Not found" ); break;
-		case CUDA_ERROR_NOT_READY:                      strcpy_s( error, "Not ready" ); break;
-		case CUDA_ERROR_LAUNCH_FAILED:                  strcpy_s( error, "Launch failed" ); break;
-		case CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES:        strcpy_s( error, "Launch out of resources" ); break;
-		case CUDA_ERROR_LAUNCH_TIMEOUT:                 strcpy_s( error, "Launch timeout" ); break;
-		case CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING:  strcpy_s( error, "Launch incompatible texturing" ); break;
-		case CUDA_ERROR_UNKNOWN:                        strcpy_s( error, "Unknown error" ); break;
-		case CUDA_ERROR_PROFILER_DISABLED:              strcpy_s( error, "Profiler disabled" ); break;
-		case CUDA_ERROR_PROFILER_NOT_INITIALIZED:       strcpy_s( error, "Profiler not initialized" ); break;
-		case CUDA_ERROR_PROFILER_ALREADY_STARTED:       strcpy_s( error, "Profiler already started" ); break;
-		case CUDA_ERROR_PROFILER_ALREADY_STOPPED:       strcpy_s( error, "Profiler already stopped" ); break;
-		case CUDA_ERROR_NOT_MAPPED_AS_ARRAY:            strcpy_s( error, "Not mapped as array" ); break;
-		case CUDA_ERROR_NOT_MAPPED_AS_POINTER:          strcpy_s( error, "Not mapped as pointer" ); break;
-		case CUDA_ERROR_ECC_UNCORRECTABLE:              strcpy_s( error, "ECC uncorrectable" ); break;
-		case CUDA_ERROR_UNSUPPORTED_LIMIT:              strcpy_s( error, "Unsupported limit" ); break;
-		case CUDA_ERROR_CONTEXT_ALREADY_IN_USE:         strcpy_s( error, "Context already in use" ); break;
-		case CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND: strcpy_s( error, "Shared object symbol not found" ); break;
-		case CUDA_ERROR_SHARED_OBJECT_INIT_FAILED:      strcpy_s( error, "Shared object init failed" ); break;
-		case CUDA_ERROR_OPERATING_SYSTEM:               strcpy_s( error, "Operating system error" ); break;
-		case CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED:    strcpy_s( error, "Peer access already enabled" ); break;
-		case CUDA_ERROR_PEER_ACCESS_NOT_ENABLED:        strcpy_s( error, "Peer access not enabled" ); break;
-		case CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE:         strcpy_s( error, "Primary context active" ); break;
-		case CUDA_ERROR_CONTEXT_IS_DESTROYED:           strcpy_s( error, "Context is destroyed" ); break;
-		case CUDA_ERROR_ILLEGAL_ADDRESS:				strcpy_s( error, "Illegal address" ); break;
-		case CUDA_ERROR_MISALIGNED_ADDRESS:				strcpy_s( error, "Misaligned address" ); break;
-		}
-		return error;
-	}
-	static void CheckError( const char* file, int line, const char* funcName, cudaError_t res )
-	{
-		if (res != CUDA_SUCCESS) 
-		{
-			if (!strcmp( funcName, "cudaGraphicsGLRegisterImage" ))
-			{
-				FatalError( file, line, decodeError( res ), 
-					"cudaGraphicsGLRegisterImage\n(Are you running using the IGP?\nUse NVIDIA control panel to enable the high performance GPU.)" );
-			}
-			else
-			{
-				FatalError( file, line, decodeError( res ), funcName );
-			}
+		default:                                        return "Unknown cudaError_t";
+		case CUDA_SUCCESS:                              return "No error";
+		case CUDA_ERROR_INVALID_VALUE:                  return "Invalid value";
+		case CUDA_ERROR_OUT_OF_MEMORY:                  return "Out of memory";
+		case CUDA_ERROR_NOT_INITIALIZED:                return "Not initialized";
+		case CUDA_ERROR_DEINITIALIZED:                  return "Deinitialized";
+		case CUDA_ERROR_NO_DEVICE:                      return "No device";
+		case CUDA_ERROR_INVALID_DEVICE:                 return "Invalid device";
+		case CUDA_ERROR_INVALID_IMAGE:                  return "Invalid image";
+		case CUDA_ERROR_INVALID_CONTEXT:                return "Invalid context";
+		case CUDA_ERROR_CONTEXT_ALREADY_CURRENT:        return "Context already current";
+		case CUDA_ERROR_MAP_FAILED:                     return "Map failed";
+		case CUDA_ERROR_UNMAP_FAILED:                   return "Unmap failed";
+		case CUDA_ERROR_ARRAY_IS_MAPPED:                return "Array is mapped";
+		case CUDA_ERROR_ALREADY_MAPPED:                 return "Already mapped";
+		case CUDA_ERROR_NO_BINARY_FOR_GPU:              return "No binary for GPU";
+		case CUDA_ERROR_ALREADY_ACQUIRED:               return "Already acquired";
+		case CUDA_ERROR_NOT_MAPPED:                     return "Not mapped";
+		case CUDA_ERROR_INVALID_SOURCE:                 return "Invalid source";
+		case CUDA_ERROR_FILE_NOT_FOUND:                 return "File not found";
+		case CUDA_ERROR_INVALID_HANDLE:                 return "Invalid handle";
+		case CUDA_ERROR_NOT_FOUND:                      return "Not found";
+		case CUDA_ERROR_NOT_READY:                      return "Not ready";
+		case CUDA_ERROR_LAUNCH_FAILED:                  return "Launch failed";
+		case CUDA_ERROR_LAUNCH_OUT_OF_RESOURCES:        return "Launch out of resources";
+		case CUDA_ERROR_LAUNCH_TIMEOUT:                 return "Launch timeout";
+		case CUDA_ERROR_LAUNCH_INCOMPATIBLE_TEXTURING:  return "Launch incompatible texturing";
+		case CUDA_ERROR_UNKNOWN:                        return "Unknown error";
+		case CUDA_ERROR_PROFILER_DISABLED:              return "Profiler disabled";
+		case CUDA_ERROR_PROFILER_NOT_INITIALIZED:       return "Profiler not initialized";
+		case CUDA_ERROR_PROFILER_ALREADY_STARTED:       return "Profiler already started";
+		case CUDA_ERROR_PROFILER_ALREADY_STOPPED:       return "Profiler already stopped";
+		case CUDA_ERROR_NOT_MAPPED_AS_ARRAY:            return "Not mapped as array";
+		case CUDA_ERROR_NOT_MAPPED_AS_POINTER:          return "Not mapped as pointer";
+		case CUDA_ERROR_ECC_UNCORRECTABLE:              return "ECC uncorrectable";
+		case CUDA_ERROR_UNSUPPORTED_LIMIT:              return "Unsupported limit";
+		case CUDA_ERROR_CONTEXT_ALREADY_IN_USE:         return "Context already in use";
+		case CUDA_ERROR_SHARED_OBJECT_SYMBOL_NOT_FOUND: return "Shared object symbol not found";
+		case CUDA_ERROR_SHARED_OBJECT_INIT_FAILED:      return "Shared object init failed";
+		case CUDA_ERROR_OPERATING_SYSTEM:               return "Operating system error";
+		case CUDA_ERROR_PEER_ACCESS_ALREADY_ENABLED:    return "Peer access already enabled";
+		case CUDA_ERROR_PEER_ACCESS_NOT_ENABLED:        return "Peer access not enabled";
+		case CUDA_ERROR_PRIMARY_CONTEXT_ACTIVE:         return "Primary context active";
+		case CUDA_ERROR_CONTEXT_IS_DESTROYED:           return "Context is destroyed";
+		case CUDA_ERROR_ILLEGAL_ADDRESS:                return "Illegal address";
+		case CUDA_ERROR_MISALIGNED_ADDRESS:             return "Misaligned address";
 		}
 	}
 	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )
@@ -163,15 +150,38 @@ public:
 		CHK_NVRTC( nvrtcCreateProgram( &prog, cuSource, 0, 0, NULL, NULL ) );
 		// gather NVRTC options
 		vector<const char*> options;
+	#if 0
+		// @Marijn: this doesn't work. Optix is used in several versions, distributed with LH2.
+		// TODO: Throw FatalError if no path is defined for the requested OptiX version!
+		if (optixVer > 6)
+		{
+		#ifdef OPTIX_INCLUDE_PATH
+			options.push_back( "-I" OPTIX_INCLUDE_PATH );
+		#else
+			FATALERROR( "No include path defined for OptiX %d!", optixVer );
+		#endif
+		}
+		else
+		{
+		#ifdef OPTIX_6_INCLUDE_PATH
+			options.push_back( "-I" OPTIX_6_INCLUDE_PATH );
+		#else
+			FATALERROR( "No include path defined for OptiX %d!", optixVer );
+		#endif
+		}
+	#else
 		if (optixVer > 6) options.push_back( "-I../../lib/Optix7/include/" ); else options.push_back( "-I../../lib/Optix/include/" );
+	#endif
 		string optionString = "-I";
 		optionString += string( sourceDir );
 		options.push_back( optionString.c_str() );
+	#ifdef _MSC_VER
 		options.push_back( "-IC:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1/include/" );
+	#endif
 		options.push_back( "-I../../lib/CUDA/" );
 		// collect NVRTC options
 		char versionString[64];
-		sprintf_s( versionString, "compute_%i", cc >= 70 ? 70 : 50 );
+		snprintf( versionString, sizeof( versionString ), "compute_%i", cc >= 70 ? 70 : 50 );
 		const char* compiler_options[] = { "-arch", versionString, "-restrict", "-std=c++11", "-use_fast_math", "-default-device", "-rdc", "true", "-D__x86_64", 0 };
 		const size_t n_compiler_options = sizeof( compiler_options ) / sizeof( compiler_options[0] );
 		for (size_t i = 0; i < n_compiler_options - 1; i++) options.push_back( compiler_options[i] );
@@ -186,7 +196,7 @@ public:
 		static string nvrtcLog;
 		nvrtcLog.resize( log_size );
 		if (log_size > 1) CHK_NVRTC( nvrtcGetProgramLog( prog, &nvrtcLog[0] ) );
-		if (compileRes != NVRTC_SUCCESS) FatalError( "Compilation failed.\n%s", nvrtcLog.c_str() );
+		FATALERROR_IF( compileRes != NVRTC_SUCCESS, "Compilation failed.\n%s", nvrtcLog.c_str() );
 		// retrieve PTX code
 		size_t ptx_size = 0;
 		CHK_NVRTC( nvrtcGetPTXSize( prog, &ptx_size ) );
@@ -201,7 +211,7 @@ template <class T> class CoreBuffer
 {
 public:
 	CoreBuffer() = default;
-	CoreBuffer( __int64 elements, __int64 loc, const void* source = 0 ) : location( loc )
+	CoreBuffer( uint64_t elements, uint64_t loc, const void* source = 0 ) : location( loc )
 	{
 		numElements = elements;
 		sizeInBytes = elements * sizeof( T );
@@ -210,20 +220,20 @@ public:
 			if (location & ON_DEVICE)
 			{
 				// location is ON_DEVICE; allocate room on device
-				CUDACHECK( "cudaMalloc", cudaMalloc( &devPtr, sizeInBytes ) );
+				CHK_CUDA( cudaMalloc( &devPtr, sizeInBytes ) );
 				owner |= ON_DEVICE;
 			}
 			if (location & ON_HOST)
 			{
 				// location is ON_HOST; use supplied pointer or allocate room if no source was specified
-				if (source) 
+				if (source)
 				{
-					hostPtr = (T*)source; 
+					hostPtr = (T*)source;
 					if (location & ON_DEVICE) CopyToDevice();
 				}
-				else 
+				else
 				{
-					hostPtr = (T*)_aligned_malloc( sizeInBytes, 64 ), owner |= ON_HOST;
+					hostPtr = (T*)MALLOC64( sizeInBytes ), owner |= ON_HOST;
 				}
 			}
 			else if (source && (location & ON_DEVICE))
@@ -241,13 +251,13 @@ public:
 		{
 			if (owner & ON_HOST)
 			{
-				_aligned_free( hostPtr );
+				FREE64( hostPtr );
 				hostPtr = 0;
 				owner &= ~ON_HOST;
 			}
 			if (owner & ON_DEVICE)
 			{
-				CUDACHECK( "cudaFree", cudaFree( devPtr ) );
+				CHK_CUDA( cudaFree( devPtr ) );
 				owner &= ~ON_DEVICE;
 			}
 		}
@@ -258,11 +268,11 @@ public:
 		{
 			if (!(location & ON_DEVICE))
 			{
-				CUDACHECK( "cudaMalloc", cudaMalloc( &devPtr, sizeInBytes ) );
+				CHK_CUDA( cudaMalloc( &devPtr, sizeInBytes ) );
 				location |= ON_DEVICE;
 				owner |= ON_DEVICE;
 			}
-			CUDACHECK( "cudaMemcpy", cudaMemcpy( devPtr, hostPtr, sizeInBytes, cudaMemcpyHostToDevice ) );
+			CHK_CUDA( cudaMemcpy( devPtr, hostPtr, sizeInBytes, cudaMemcpyHostToDevice ) );
 		}
 		return devPtr;
 	}
@@ -272,18 +282,18 @@ public:
 		{
 			if (!(location & ON_DEVICE))
 			{
-				CUDACHECK( "cudaMalloc", cudaMalloc( &devPtr, sizeInBytes ) );
+				CHK_CUDA( cudaMalloc( &devPtr, sizeInBytes ) );
 				location |= ON_DEVICE;
 				owner |= ON_DEVICE;
 			}
-			CUDACHECK( "cudaMemcpyAsync", cudaMemcpyAsync( devPtr, hostPtr, sizeInBytes, cudaMemcpyHostToDevice, stream ) );	
+			CHK_CUDA( cudaMemcpyAsync( devPtr, hostPtr, sizeInBytes, cudaMemcpyHostToDevice, stream ) );
 		}
 		return devPtr;
 	}
 	void* MoveToDevice()
 	{
 		CopyToDevice();
-		if (sizeInBytes > 0) _aligned_free( hostPtr );
+		if (sizeInBytes > 0) FREE64( hostPtr );
 		hostPtr = 0;
 		owner &= ~ON_HOST;
 		location &= ~ON_HOST;
@@ -295,11 +305,11 @@ public:
 		{
 			if (!(location & ON_HOST))
 			{
-				hostPtr = (T*)_aligned_malloc( sizeInBytes, 64 );
+				hostPtr = (T*)MALLOC64( sizeInBytes );
 				location |= ON_HOST;
 				owner |= ON_HOST;
 			}
-			CUDACHECK( "cudaMemcpy", cudaMemcpy( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost ) );
+			CHK_CUDA( cudaMemcpy( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost ) );
 		}
 		return hostPtr;
 	}
@@ -309,11 +319,11 @@ public:
 		{
 			if (!(location & ON_HOST))
 			{
-				hostPtr = (T*)_aligned_malloc( sizeInBytes, 64 );
+				hostPtr = (T*)MALLOC64( sizeInBytes );
 				location |= ON_HOST;
 				owner |= ON_HOST;
 			}
-			CUDACHECK( "cudaMemcpyAsync", cudaMemcpyAsync( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost, stream ) );
+			CHK_CUDA( cudaMemcpyAsync( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost, stream ) );
 		}
 		return hostPtr;
 	}
@@ -323,18 +333,18 @@ public:
 		{
 			int bytesToClear = overrideSize == -1 ? sizeInBytes : overrideSize;
 			if (location & ON_HOST) memset( hostPtr, 0, bytesToClear );
-			if (location & ON_DEVICE) CUDACHECK( "cuMemset", cudaMemset( devPtr, 0, bytesToClear ) );
+			if (location & ON_DEVICE) CHK_CUDA( cudaMemset( devPtr, 0, bytesToClear ) );
 		}
 	}
-	__int64 GetSizeInBytes() const { return sizeInBytes; }
-	__int64 GetSize() const { return numElements; }
+	uint64_t GetSizeInBytes() const { return sizeInBytes; }
+	uint64_t GetSize() const { return numElements; }
 	T* DevPtr() { return devPtr; }
-	T** DevPtrPtr() { return &devPtr; /* Optix7 wants an array of pointers; this returns an array of 1 pointers. */ } 
+	T** DevPtrPtr() { return &devPtr; /* Optix7 wants an array of pointers; this returns an array of 1 pointers. */ }
 	T* HostPtr() { return hostPtr; }
 	void SetHostData( T* hostData ) { hostPtr = hostData; }
 	// member data
 private:
-	__int64 location = NOT_ALLOCATED, owner = 0, sizeInBytes = 0, numElements = 0;
+	uint64_t location = NOT_ALLOCATED, owner = 0, sizeInBytes = 0, numElements = 0;
 	T* devPtr = 0;
 	T* hostPtr = 0;
 };

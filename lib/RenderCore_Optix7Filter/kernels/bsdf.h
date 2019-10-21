@@ -31,16 +31,7 @@
 // It returns the BSDF itself, and also the sampled direction and probability density for this direction.
 // ----------------------------------------------------------------
 
-#if 0
-
-// simple reference bsdf: Lambert plus specular reflection
-#include "bsdfs/lambert.h"
-
-#else
-
-// Disney's principled BRDF, adapted from https://www.shadertoy.com/view/XdyyDd
-#include "bsdf.h"
-
-#endif
+// forward to Meir's API-agnostic sharedBRDFs folder.
+#include "sharedbsdf.h"
 
 // EOF

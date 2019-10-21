@@ -13,27 +13,27 @@
    limitations under the License.
 */
 
-#include "core_settings.h"
+#include <core_settings.h>
 
 //  +-----------------------------------------------------------------------------+
 //  |  InteropTexture implementation.                                       LH2'19|
 //  +-----------------------------------------------------------------------------+
 InteropTexture::~InteropTexture()
 {
-	if (bound) CUDACHECK( "cudaGraphicsUnmapResources", cudaGraphicsUnmapResources( 1, &res, 0 ) );
-	if (linked) CUDACHECK( "cudaGraphicsUnregisterResource", cudaGraphicsUnregisterResource( res ) );
+	if (bound) CHK_CUDA( cudaGraphicsUnmapResources( 1, &res, 0 ) );
+	if (linked) CHK_CUDA( cudaGraphicsUnregisterResource( res ) );
 }
 
 void InteropTexture::SetTexture( GLTexture* t )
 {
-	if (bound) 
+	if (bound)
 	{
-		CUDACHECK( "cudaGraphicsUnmapResources", cudaGraphicsUnmapResources( 1, &res, 0 ) );
+		CHK_CUDA( cudaGraphicsUnmapResources( 1, &res, 0 ) );
 		bound = false;
 	}
-	if (linked) 
+	if (linked)
 	{
-		CUDACHECK( "cudaGraphicsUnregisterResource", cudaGraphicsUnregisterResource( res ) );
+		CHK_CUDA( cudaGraphicsUnregisterResource( res ) );
 		linked = false;
 	}
 	texture = t;
@@ -46,9 +46,9 @@ void InteropTexture::LinkToSurface( const surfaceReference* s )
 	if (linked)
 	{
 		// we were already linked; unlink first
-		CUDACHECK( "cudaGraphicsUnregisterResource", cudaGraphicsUnregisterResource( res ) );
+		CHK_CUDA( cudaGraphicsUnregisterResource( res ) );
 	}
-	CUDACHECK( "cudaGraphicsGLRegisterImage", cudaGraphicsGLRegisterImage( &res, texture->ID, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsSurfaceLoadStore ) );
+	CHK_CUDA( cudaGraphicsGLRegisterImage( &res, texture->ID, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsSurfaceLoadStore ) );
 	linked = true;
 }
 
@@ -56,18 +56,18 @@ void InteropTexture::BindSurface()
 {
 	assert( !bound );
 	cudaArray* ar;
-	CUDACHECK( "cudaGraphicsMapResources", cudaGraphicsMapResources( 1, &res, 0 /* DEFAULTSTREAM */ ) );
-	CUDACHECK( "cudaGraphicsSubResourceGetMappedArray", cudaGraphicsSubResourceGetMappedArray( &ar, res, 0, 0 ) );
+	CHK_CUDA( cudaGraphicsMapResources( 1, &res, 0 /* DEFAULTSTREAM */ ) );
+	CHK_CUDA( cudaGraphicsSubResourceGetMappedArray( &ar, res, 0, 0 ) );
 	cudaChannelFormatDesc desc;
-	CUDACHECK( "cudaGetChannelDesc", cudaGetChannelDesc( &desc, ar ) );
-	CUDACHECK( "cudaBindSurfaceToArray", cudaBindSurfaceToArray( surfRef, ar, &desc ) );
+	CHK_CUDA( cudaGetChannelDesc( &desc, ar ) );
+	CHK_CUDA( cudaBindSurfaceToArray( surfRef, ar, &desc ) );
 	bound = true;
 }
 
 void InteropTexture::UnbindSurface()
 {
 	assert( bound );
-	CUDACHECK( "cudaGraphicsUnmapResources", cudaGraphicsUnmapResources( 1, &res, 0 ) );
+	CHK_CUDA( cudaGraphicsUnmapResources( 1, &res, 0 ) );
 	bound = false;
 }
 

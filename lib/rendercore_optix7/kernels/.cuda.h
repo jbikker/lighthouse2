@@ -19,10 +19,9 @@
 // custom types
 typedef unsigned int uint;
 typedef unsigned char uchar;
-typedef unsigned __int64 uint64;
 
 // platform specific
-#include "..\CUDA\helper_math.h"
+#include "../CUDA/helper_math.h"
 #ifdef __CUDACC__
 #include "cuda_fp16.h"
 #else

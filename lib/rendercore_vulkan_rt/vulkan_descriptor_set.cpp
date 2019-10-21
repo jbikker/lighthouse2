@@ -40,7 +40,7 @@ void lh2core::VulkanDescriptorSet::Cleanup()
 void lh2core::VulkanDescriptorSet::AddBinding( uint32_t binding, uint32_t descriptorCount, vk::DescriptorType type,
 											   vk::ShaderStageFlags stage, vk::Sampler *sampler )
 {
-	if ( m_Generated ) FATALERROR( "Cannot add bindings after descriptor set has been generated." );
+	FATALERROR_IF( m_Generated, "Cannot add bindings after descriptor set has been generated." );
 	vk::DescriptorSetLayoutBinding b{};
 	b.setBinding( binding );
 	b.setDescriptorCount( descriptorCount );
@@ -48,16 +48,7 @@ void lh2core::VulkanDescriptorSet::AddBinding( uint32_t binding, uint32_t descri
 	b.setPImmutableSamplers( sampler );
 	b.setStageFlags( stage );
 
-	if ( m_Bindings.find( binding ) != m_Bindings.end() )
-	{
-		char buffer[128];
-#ifdef WIN32
-		sprintf_s( buffer, "Binding collision at %i", binding );
-#else
-		sprintf( buffer, "Binding collision at %i", binding );
-#endif
-		FATALERROR( buffer );
-	}
+	FATALERROR_IF( m_Bindings.find( binding ) != m_Bindings.end(), "Binding collision at %i", binding );
 
 	m_Bindings[binding] = b;
 }

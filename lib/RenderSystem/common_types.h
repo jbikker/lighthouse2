@@ -24,29 +24,42 @@ typedef unsigned short ushort;
 
 #ifndef __CUDACC__
 
-typedef unsigned __int64 uint64;
+#ifdef _MSC_VER
 typedef unsigned char BYTE; // for freeimage.h
 typedef unsigned short WORD; // for freeimage.h
 typedef unsigned long DWORD; // for freeimage.h
 typedef int BOOL; // for freeimage.h
 
+#define ALIGN( x ) __declspec( align( x ) )
+#else
+#define ALIGN( x ) __attribute__( ( aligned( x ) ) )
+#endif
+
 #pragma warning (disable : 4244 )
 
 #include <math.h>
 
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#define CHECK_RESULT __attribute__ ((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define CHECK_RESULT _Check_return_
+#else
+#define CHECK_RESULT
+#endif
+
 #ifndef CUDABUILD
 
 // vector type placeholders, carefully matching CUDA's layout and alignment
-__declspec(align(8)) struct int2 { int x, y; };
-__declspec(align(8)) struct uint2 { uint x, y; };
-__declspec(align(8)) struct float2 { float x, y; };
+struct ALIGN( 8 ) int2 { int x, y; };
+struct ALIGN( 8 ) uint2 { uint x, y; };
+struct ALIGN( 8 ) float2 { float x, y; };
 struct int3 { int x, y, z; };
 struct uint3 { uint x, y, z; };
 struct float3 { float x, y, z; };
-__declspec(align(16)) struct int4 { int x, y, z, w; };
-__declspec(align(16)) struct uint4 { uint x, y, z, w; };
-__declspec(align(16)) struct float4 { float x, y, z, w; };
-__declspec(align(4)) struct uchar4 { uchar x, y, z, w; };
+struct ALIGN( 16 ) int4 { int x, y, z, w; };
+struct ALIGN( 16 ) uint4 { uint x, y, z, w; };
+struct ALIGN( 16 ) float4 { float x, y, z, w; };
+struct ALIGN( 4 ) uchar4 { uchar x, y, z, w; };
 
 inline float fminf( float a, float b ) { return a < b ? a : b; }
 inline float fmaxf( float a, float b ) { return a > b ? a : b; }
@@ -431,7 +444,7 @@ public:
 	static mat4 Translate( const float x, const float y, const float z ) { mat4 r; r.cell[3] = x; r.cell[7] = y; r.cell[11] = z; return r; };
 	static mat4 Translate( const float3 P ) { mat4 r; r.cell[3] = P.x; r.cell[7] = P.y; r.cell[11] = P.z; return r; };
 	float Trace3() const { return cell[0] + cell[5] + cell[10]; }
-	mat4 Transposed()
+	CHECK_RESULT mat4 Transposed() const
 	{
 		mat4 M;
 		M[0] = cell[0], M[1] = cell[4], M[2] = cell[8];
@@ -439,7 +452,7 @@ public:
 		M[8] = cell[2], M[9] = cell[6], M[10] = cell[10];
 		return M;
 	}
-	mat4 Inverted() const
+	CHECK_RESULT mat4 Inverted() const
 	{
 		// from MESA, via http://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 		const float inv[16] = {

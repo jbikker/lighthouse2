@@ -524,19 +524,56 @@ __host__ void finalizeNoTAA( float4* pixels, const uint w, const uint h, const f
 //  |  finalizeFilterDebugKernel                                                  |
 //  |  Raw dump of debug data.                                              LH2'19|
 //  +-----------------------------------------------------------------------------+
-__global__ void finalizeFilterDebugKernel( const uint scrwidth, const uint scrheight )
+__global__ void finalizeFilterDebugKernel( const uint scrwidth, const uint scrheight, const uint4* features, const float4* worldPos,
+	const float4* prevWorldPos, const float4* deltaDepth, const float2* motion, const float4* moments, const float4* shading )
 {
 	// get x and y for pixel
 	const uint x = threadIdx.x + blockIdx.x * blockDim.x;
 	const uint y = threadIdx.y + blockIdx.y * blockDim.y;
 	if (x == 0 || y == 0 || x >= (scrwidth - 1) || y >= (scrheight - 1)) return;
+#if 1
+	// extract data for a multi-view of the various buffers we have at this point
+	int pixelIdx = x + y * scrwidth;
+	float3 albedo = RGB32toHDR( features[pixelIdx].x );
+	// uint matID = features[pixelIdx].w >> 4;
+	float3 deltaWorldPos = make_float3( worldPos[pixelIdx] - prevWorldPos[pixelIdx] );
+	float3 N = UnpackNormal2( features[pixelIdx].y /* or __float_as_uint( worldPos[pixelIdx].w ) */ );
+	float dist = __uint_as_float( features[pixelIdx].z );
+	float3 directLight = GetDirectFromFloat4( shading[pixelIdx] );
+	float3 indirectLight = GetIndirectFromFloat4( shading[pixelIdx] );
+	// prepare the multi-view
+	float4 pixel;
+	if (x < (scrwidth / 2))
+	{
+		if (y < (scrheight / 2)) pixel = make_float4( (N + make_float3( 1 )) * 0.5f, 1 );
+		else pixel = make_float4( (x < (scrwidth / 4) ? directLight : indirectLight), 1 );
+	}
+	else
+	{
+		// if (y < (scrheight / 2)) pixel = dist < 1000 ? make_float4( (deltaWorldPos + make_float3( 1 )) * 0.5f, 1 ) : make_float4( 0 );
+		if (y < (scrheight / 2)) pixel = dist < 1000 ? make_float4( motion[pixelIdx].x, motion[pixelIdx].y, 0, 1 ) : make_float4( 0 );
+		else pixel = make_float4( albedo, 1 );
+	}
+#else
+	// simply show the contents of debugData for this pixel
 	float4 pixel = debugData[x + y * scrwidth];
+#endif
 	surf2Dwrite<float4>( pixel, renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
 }
-__host__ void finalizeFilterDebug( const uint w, const uint h )
+__host__ void finalizeFilterDebug( const uint w, const uint h,
+	// data available after gathering frame data in shade (pathtracer.h)
+	const uint4* features,		// x: albedo; y: packed normal; z: dist from cam; w: flags + (matid << 4)
+	const float4* worldPos,		// xyz: world pos first non-specular vertex; w: packed normal (again)
+	const float4* prevWorldPos, // worldPos data for the previous frame
+	const float4* deltaDepth,	// xy: unused; zw: depth derivatives over x and y
+	// data available after processing gathered frame data in prepareFilter
+	const float2* motion,		// per-pixel motion vectors
+	const float4* moments,		// xyzw: lumDirect, lumDirect2, lumIndirect, lumIndirect2
+	const float4* shading		// indirect and indirect shading; unpack using Get(Ind|D)irectFromFloat4
+)
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
-	finalizeFilterDebugKernel << < gridDim, blockDim >> > (w, h);
+	finalizeFilterDebugKernel << < gridDim, blockDim >> > (w, h, features, worldPos, prevWorldPos, deltaDepth, motion, moments, shading);
 }
 
 // EOF

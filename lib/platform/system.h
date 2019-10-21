@@ -19,14 +19,19 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
 #include <algorithm>
-#include <assert.h>
-#include <ctime>
-#include <ratio>
+#include <cassert>
 #include <chrono>
-#include "half.hpp"
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
+#include <half.hpp>
+#include <ratio>
+#include <string>
+#include <thread>
+#include <vector>
 
 using namespace std;
 using namespace half_float;
@@ -37,20 +42,42 @@ using namespace half_float;
 #include "common_classes.h"
 #include <GLFW/glfw3.h>		// needed for Timer class
 
-#define FATALERROR(m) FatalError( "Error on line %i of %s: %s", __LINE__, __FILE__, m )
-#define ERRORMESSAGE(m,c) FatalError( __FILE__, __LINE__, c, m )
+// https://devblogs.microsoft.com/cppblog/msvc-preprocessor-progress-towards-conformance/
+// MSVC _Should_ support this extended functionality for the token-paste operator:
+#define FATALERROR( fmt, ... ) FatalError( "Error on line %d of %s: " fmt "\n", __LINE__, __FILE__, ##__VA_ARGS__ )
+#define FATALERROR_IF( condition, fmt, ... ) do { if ( ( condition ) ) FATALERROR( fmt, ##__VA_ARGS__ ); } while ( 0 )
 
-#define MALLOC64(x) ((x)==0?0:_aligned_malloc((x),64))
-#define FREE64(x) _aligned_free(x)
+#define FATALERROR_IN( prefix, errstr, fmt, ... )                \
+	FatalError( prefix " returned error '%s' at %s:%d" fmt "\n", \
+				errstr, __FILE__, __LINE__,                      \
+				##__VA_ARGS__ );
+
+// Fatal error helper. Executes statement and throws fatal error on non-zero result.
+// The result is converted to string by calling error_parser( ret )
+#define FATALERROR_IN_CALL( stmt, error_parser, fmt, ... )                         \
+	do                                                                             \
+	{                                                                              \
+		auto ret = ( stmt );                                                       \
+		if ( ret ) FATALERROR_IN( #stmt, error_parser( ret ), fmt, ##__VA_ARGS__ ) \
+	} while ( 0 )
+
+#ifdef _MSC_VER
+#define ALIGN( x ) __declspec( align( x ) )
+#define MALLOC64( x ) ((x)==0?0:_aligned_malloc((x),64))
+#define FREE64( x ) _aligned_free( x )
+#else
+#define ALIGN( x ) __attribute__( ( aligned( x ) ) )
+#define MALLOC64( x ) ((x)==0?0:aligned_alloc(64, (x)))
+#define FREE64( x ) free( x )
+#endif
 
 // threading
 class Thread
 {
 public:
-	Thread() { thread = 0; }
 	void start();
-	virtual void run() {};
-	unsigned long* thread;
+	inline virtual void run() {};
+	std::thread thread;
 };
 extern "C" { uint sthread_proc( void* param ); }
 
@@ -58,15 +85,15 @@ extern "C" { uint sthread_proc( void* param ); }
 struct Timer
 {
 	Timer() { reset(); }
-	float elapsed() const 
-	{ 
+	float elapsed() const
+	{
 		std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - start);
 		return (float)time_span.count();
 	}
-	void reset() 
-	{ 
-		start = std::chrono::high_resolution_clock::now(); 
+	void reset()
+	{
+		start = std::chrono::high_resolution_clock::now();
 	}
 	std::chrono::high_resolution_clock::time_point start;
 };
@@ -76,9 +103,9 @@ __inline float sqr( const float x ) { return x * x; }
 template <class T> void Swap( T& x, T& y ) { T t; t = x; x = y; y = t; }
 
 // crc64, from https://sourceforge.net/projects/crc64/
-#define UINT64C(x) ((unsigned __int64) x##ULL)
+#define UINT64C(x) ((uint64_t) x##ULL)
 #define CLEARCRC64 (UINT64C( 0xffffffffffffffff ))
-const unsigned __int64 crc64_table[256] = {
+const uint64_t crc64_table[256] = {
 	UINT64C( 0x0000000000000000 ), UINT64C( 0x42F0E1EBA9EA3693 ), UINT64C( 0x85E1C3D753D46D26 ), UINT64C( 0xC711223CFA3E5BB5 ),
 	UINT64C( 0x493366450E42ECDF ), UINT64C( 0x0BC387AEA7A8DA4C ), UINT64C( 0xCCD2A5925D9681F9 ), UINT64C( 0x8E224479F47CB76A ),
 	UINT64C( 0x9266CC8A1C85D9BE ), UINT64C( 0xD0962D61B56FEF2D ), UINT64C( 0x17870F5D4F51B498 ), UINT64C( 0x5577EEB6E6BB820B ),
@@ -144,9 +171,9 @@ const unsigned __int64 crc64_table[256] = {
 	UINT64C( 0x14DEA25F3AF9026D ), UINT64C( 0x562E43B4931334FE ), UINT64C( 0x913F6188692D6F4B ), UINT64C( 0xD3CF8063C0C759D8 ),
 	UINT64C( 0x5DEDC41A34BBEEB2 ), UINT64C( 0x1F1D25F19D51D821 ), UINT64C( 0xD80C07CD676F8394 ), UINT64C( 0x9AFCE626CE85B507 )
 };
-__inline unsigned __int64 calccrc64( unsigned char* pbData, int len )
+__inline uint64_t calccrc64( unsigned char* pbData, int len )
 {
-	unsigned __int64 crc = CLEARCRC64;
+	uint64_t crc = CLEARCRC64;
 	unsigned char* p = pbData;
 	unsigned int t, l = len;
 	while (l-- > 0)
@@ -154,11 +181,11 @@ __inline unsigned __int64 calccrc64( unsigned char* pbData, int len )
 		crc = crc64_table[t] ^ (crc << 8);
 	return crc ^ CLEARCRC64;
 }
-#define TRACKCHANGES public: bool Changed() { unsigned __int64 currentcrc = crc64; \
-crc64 = CLEARCRC64; unsigned __int64 newcrc = calccrc64( (uchar*)this, sizeof( *this ) ); \
+#define TRACKCHANGES public: bool Changed() { uint64_t currentcrc = crc64; \
+crc64 = CLEARCRC64; uint64_t newcrc = calccrc64( (uchar*)this, sizeof( *this ) ); \
 bool changed = newcrc != currentcrc; crc64 = newcrc; return changed; } \
 void MarkAsDirty() { dirty++; } \
-private: unsigned __int64 crc64 = CLEARCRC64; uint dirty = 0; \
+private: uint64_t crc64 = CLEARCRC64; uint dirty = 0; \
 
 // rng
 uint RandomUInt();
@@ -168,8 +195,7 @@ float RandomFloat( uint& seed );
 float Rand( float range );
 
 // forward declaration of the helper functions
-void FatalError( const char* message, const char* part2 );
-void FatalError( const char* source, const int line, const char* message, const char* part2 = 0 );
+void FatalError( const char* fmt, ... );
 void OpenConsole();
 bool FileIsNewer( const char* file1, const char* file2 );
 bool NeedsRecompile( const char* path, const char* target, const char* s1, const char* s2 = 0, const char* s3 = 0, const char* s4 = 0 );
@@ -181,7 +207,8 @@ void SerializeString( string s, FILE* f );
 string DeserializeString( FILE* f );
 
 // globally accessible classes
-namespace lighthouse2 {
+namespace lighthouse2
+{
 
 class Bitmap
 {
@@ -203,7 +230,7 @@ public:
 	};
 	// constructor / destructor
 	GLTexture( uint width, uint height, uint type = DEFAULT );
-	GLTexture( char* fileName, int filter = GL_NEAREST );
+	GLTexture( const char* fileName, int filter = GL_NEAREST );
 	~GLTexture();
 	// methods
 	void Bind();
@@ -218,5 +245,27 @@ public:
 
 // library namespace
 using namespace lighthouse2;
+
+// https://stackoverflow.com/questions/2164827/explicitly-exporting-shared-library-functions-in-linux
+#if defined(_MSC_VER)
+	//  Microsoft
+#define COREDLL_EXPORT __declspec(dllexport)
+#define COREDLL_IMPORT __declspec(dllimport)
+#elif defined(__GNUC__)
+	//  GCC
+#define COREDLL_EXPORT __attribute__((visibility("default")))
+#define COREDLL_IMPORT
+#else
+	//  do nothing and hope for the best?
+#define COREDLL_EXPORT
+#define COREDLL_IMPORT
+#pragma warning Unknown dynamic link import/export semantics.
+#endif
+
+#ifdef COREDLL_EXPORTS
+#define COREDLL_API COREDLL_EXPORT
+#else
+#define COREDLL_API COREDLL_IMPORT
+#endif
 
 // EOF

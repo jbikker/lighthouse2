@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include "cuda_runtime.h"
-
 typedef unsigned int uint;
 typedef unsigned short ushort;
 
@@ -32,6 +30,8 @@ typedef unsigned short ushort;
 #endif
 
 #ifndef __CUDACC__
+#include <cuda_runtime.h>
+
 #pragma warning (disable : 4244 )
 #include <math.h>
 

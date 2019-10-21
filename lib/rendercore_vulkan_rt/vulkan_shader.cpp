@@ -83,15 +83,7 @@ VulkanShader::VulkanShader( const VulkanDevice &device, const std::string_view &
 
 	// Sanity check
 	if ( !FileExists( fileLocation.c_str() ) )
-	{
-		char buffer[256];
-#ifdef WIN32
-		sprintf_s( buffer, "File: \"%s\" does not exist.", fileLocation.data() );
-#else
-		sprintf( buffer, "File: \"%s\" does not exist.", fileLocation.data() );
-#endif
-		FATALERROR( buffer );
-	}
+		FATALERROR( "File: \"%s\" does not exist.", fileLocation.data() );
 
 	// Setup compiler environment
 	m_CompileOptions.SetIncluder( std::make_unique<FileIncluder>( &m_Finder ) );
@@ -111,16 +103,7 @@ VulkanShader::VulkanShader( const VulkanDevice &device, const std::string_view &
 		const auto source = ReadFile( fileLocation );
 		vk::ShaderModuleCreateInfo shaderModuleCreateInfo = vk::ShaderModuleCreateInfo( vk::ShaderModuleCreateFlags(), source.size(), (uint32_t *)( source.data() ) );
 		m_Module = m_Device->createShaderModule( shaderModuleCreateInfo );
-		if ( !m_Module )
-		{
-			char buffer[128];
-#ifdef WIN32
-			sprintf_s( buffer, "Could not create shader module for shader: \"%s\".", fileLocation.data() );
-#else
-			sprintf( buffer, "Could not create shader module for shader: \"%s\".", fileLocation.data() );
-#endif
-			FATALERROR( buffer );
-		}
+		FATALERROR_IF( !m_Module, "Could not create shader module for shader: \"%s\".", fileLocation.data() );
 	}
 	else // We need to compile the shader ourselves
 	{
@@ -130,16 +113,7 @@ VulkanShader::VulkanShader( const VulkanDevice &device, const std::string_view &
 		const auto binary = CompileFile( fileLocation, result, kind );			  // Produce SPIR-V binary
 
 		m_Module = m_Device->createShaderModule( vk::ShaderModuleCreateInfo( {}, binary.size() * sizeof( uint32_t ), binary.data() ) );
-		if ( !m_Module )
-		{
-			char buffer[256];
-#ifdef WIN32
-			sprintf_s( buffer, "Could not create shader module for shader: \"%s\".", fileLocation.data() );
-#else
-			sprintf( buffer, "Could not create shader module for shader: \"%s\".", fileLocation.data() );
-#endif
-			FATALERROR( buffer );
-		}
+		FATALERROR_IF( !m_Module, "Could not create shader module for shader: \"%s\".", fileLocation.data() );
 	}
 }
 
@@ -207,7 +181,7 @@ std::string VulkanShader::PreprocessShader( const std::string_view &fileName, co
 	auto result = m_Compiler.PreprocessGlsl( source, shaderKind, fileName.data(), m_CompileOptions );
 	if ( result.GetCompilationStatus() != shaderc_compilation_status_success )
 	{
-		FATALERROR( result.GetErrorMessage().data() );
+		FATALERROR( "%s", result.GetErrorMessage().data() );
 		return "";
 	}
 	return {result.cbegin(), result.cend()};
@@ -219,7 +193,7 @@ std::string VulkanShader::CompileToAssembly( const std::string_view &fileName, c
 
 	if ( result.GetCompilationStatus() != shaderc_compilation_status_success )
 	{
-		FATALERROR( result.GetErrorMessage().data() );
+		FATALERROR( "%s", result.GetErrorMessage().data() );
 		return "";
 	}
 	return {result.cbegin(), result.cend()};
@@ -231,7 +205,7 @@ std::vector<uint32_t> VulkanShader::CompileFile( const std::string_view &fileNam
 
 	if ( module.GetCompilationStatus() != shaderc_compilation_status_success )
 	{
-		FATALERROR( module.GetErrorMessage().data() );
+		FATALERROR( "%s", module.GetErrorMessage().data() );
 		return std::vector<uint32_t>();
 	}
 
@@ -615,7 +589,7 @@ shaderc_include_result *VulkanShader::FileIncluder::GetInclude(
 			if ( input_file.fail() )
 			{
 				std::string errorMessage = std::string( "Cannot open input file: " ) + input_file_name;
-				FATALERROR( errorMessage.data() );
+				FATALERROR( "%s", errorMessage.data() );
 				return false;
 			}
 		}

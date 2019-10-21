@@ -4,7 +4,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,7 +30,7 @@ class CoreMesh
 public:
 	// constructor / destructor
 	CoreMesh() = default;
-	CoreMesh::~CoreMesh();
+	~CoreMesh();
 	// methods
 	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags = 0 );
 	// data

@@ -47,7 +47,6 @@
 #else
 #pragma comment(lib, "../platform/lib/release/platform.lib" )
 #endif
-#pragma comment(lib, "../OptiX/lib64/optix.6.0.0.lib" )
 
 #define CUDABUILD			// signal system.h to include full CUDA headers
 #include "helper_math.h"	// for vector types
@@ -61,13 +60,32 @@
 #include "shared_host_code/cudatools.h"
 #include "shared_host_code/interoptexture.h"
 
-#include <optixu/optixpp_namespace.h>
-using namespace optix;
+#include <optix.h>
+#include <optix_stubs.h>
+#include <optix_stack_size.h>
+
+char* ParseOptixError( OptixResult r );
+#define CHK_OPTIX( c ) do { OptixResult r = c; if (r) { \
+	FatalError( __FILE__, __LINE__, ParseOptixError( r ) ); \
+	system( "pause" ); exit( 1 ); } } while( 0 )
+
+#define CHK_OPTIX_LOG( c ) do { OptixResult r = c; if (r) { \
+	FatalError( __FILE__, __LINE__, ParseOptixError( r ), log ); \
+	system( "pause" ); exit( 1 ); } } while( 0 )
+
+#define CHK_CUDA( c ) do { cudaError_t r = c; if (r) {					\
+	FatalError( __FILE__, __LINE__, #c);	\
+	system( "pause" ); exit( 1 ); } } while( 0 )
+
 using namespace lighthouse2;
 
 #include "core_mesh.h"
 
 using namespace lh2core;
+
+#else
+
+#include <optix.h>
 
 #endif
 
@@ -114,6 +132,24 @@ struct Counters
 	float probedDist;
 };
 
+// path tracer parameters
+struct Params
+{
+	float4 posLensSize;
+	float3 right, up, p1;
+	float geometryEpsilon;
+	int3 scrsize;
+	int pass, phase;
+	float j0, j1;
+	Counters counters;
+	float4* accumulator;
+	float4* connectData;
+	float4* hitData;
+	float4* pathStates;
+	uint* blueNoise;
+	OptixTraversableHandle bvhRoot;
+};
+
 // ------------------------------------------------------------------------------
 // Below this line: derived, low-level and internal.
 
@@ -131,127 +167,6 @@ struct Counters
 #define _USE_MATH_DEFINES
 #include "core_api_base.h"
 #include "core_api.h"
-
-namespace lh2core {
-
-template <class T> class InteropBuffer
-{
-	// Note: the OptiX API uses a 'Buffer' object to synchronize data between host and device.
-	// Theoretically, this facilitates setups more complex than ours, e.g. when using multiple
-	// GPUs, in which case a single buffer should reside on multiple devices, which is then
-	// transparently handled by OptiX (or at least, supposedly so). However, this comes at the
-	// expense of transparency: when what data is copied to which device is not entirely clear,
-	// and the 'dirty' system is something we would rather manage ourselves.
-	// Since we use a blend of OptiX code and pure CUDA code (for wavefront PT / filtering),
-	// and because the behavior of raw CoreBuffers feels more familiar, intuitive and low-level,
-	// we construct OptiX buffer objects often using an existing device pointer obtained from
-	// a CoreBuffer.
-	// The InteropBuffer facilitates this method. An InteropBuffer is constructed much like a 
-	// CoreBuffer, but it can now also be conveniently used to feed an rtBuffer object in OptiX
-	// code.
-	// Additionally, we can now create rtBuffers, and access the related device pointer for use
-	// in CUDA. This behavior is assumed whenever bufferType is not RT_BUFFER_INPUT.
-public:
-	InteropBuffer( __int64 elementCount, __int64 loc, uint bufferType, RTformat rtFormat, const char* name, void* source = 0 )
-	{
-		// TODO: when rtFormat == RT_FORMAT_USER, the component size is deduced from T.
-		// If this is as efficient as the built-in types, we can use RT_FORMAT_USER for
-		// all buffers, which reduces the argument count of the constructor by 1.
-		// Let's check impact on performance in OptiX 5.2 before doing this.
-		if (bufferType == RT_BUFFER_INPUT)
-		{
-			// this buffer is for OptiX to read from; CUDA creates it
-			// Note: RT_BUFFER_COPY_ON_DIRTY supposedly limits buffer syncs to those occasions where we explicitly 
-			// marked the buffer as dirty. The idea is that this never happens, and the flag is intended to prevent 
-			// smart behavior from OptiX. These assumptions are not carefully verified though.
-			cudaBuffer = new CoreBuffer<T>( max( 1, elementCount /* OptiX buffers may not be nullptrs */ ), loc, source );
-			optixBuffer = RenderCore::context->createBufferForCUDA( bufferType | RT_BUFFER_COPY_ON_DIRTY, rtFormat );
-			if (rtFormat == RT_FORMAT_USER) optixBuffer->setElementSize( sizeof( T ) );
-			optixBuffer->setDevicePointer( 0, cudaBuffer->DevPtr() );
-			RenderCore::context[name]->setBuffer( optixBuffer );
-			cudaOwned = true;
-		}
-		else // RT_BUFFER_INPUT or RT_BUFFER_INPUT_OUTPUT
-		{
-			// this buffer is for OptiX to write to; OptiX creates it
-			assert( source == 0 /* no host-side init data for OptiX buffers */ );
-			optixBuffer = RenderCore::context->createBuffer( bufferType | RT_BUFFER_COPY_ON_DIRTY, rtFormat, elementCount );
-			if (rtFormat == RT_FORMAT_USER) optixBuffer->setElementSize( sizeof( T ) );
-			RenderCore::context[name]->setBuffer( optixBuffer );
-			cudaOwned = false;
-		}
-	}
-	InteropBuffer( __int64 width, __int64 height, __int64 loc, uint bufferType, RTformat rtFormat, const char* name, void* source = 0 )
-	{
-		// A 2D buffer must be an OptiX buffer.
-		assert( bufferType != RT_BUFFER_INPUT );
-		assert( source == 0 /* no host-side init data for OptiX buffers */ );
-		optixBuffer = RenderCore::context->createBuffer( bufferType | RT_BUFFER_COPY_ON_DIRTY, rtFormat, width, height );
-		if (rtFormat == RT_FORMAT_USER) optixBuffer->setElementSize( sizeof( T ) );
-		RenderCore::context[name]->setBuffer( optixBuffer );
-		cudaOwned = false;
-	}
-	~InteropBuffer()
-	{
-		if (optixBuffer) optixBuffer->destroy();
-		delete cudaBuffer;
-		optixBuffer = 0;
-		cudaBuffer = 0;
-	}
-	T* DevPtr()
-	{
-		if (cudaOwned) return cudaBuffer->DevPtr();
-		T* payload;
-		optixBuffer->getDevicePointer( 0 /* not considering multi-GPU */, (void**)&payload );
-		return payload;
-	}
-	T* HostPtr()
-	{
-		assert( cudaOwned );
-		return cudaBuffer->HostPtr();
-	}
-	T* DebugHostPtr()
-	{
-		if (cudaOwned)
-		{
-			cudaBuffer->CopyToHost();
-			return cudaBuffer->HostPtr();
-		}
-		return (T*)optixBuffer->map(); // really just for debugging; we should unmap to continue safely.
-	}
-	void Clear( __int64 loc )
-	{
-		assert( loc == ON_DEVICE ); // for consistency with CoreBuffer
-		if (cudaOwned) cudaBuffer->Clear( ON_DEVICE ); else
-		{
-			T* payload;
-			optixBuffer->getDevicePointer( 0 /* not considering multi-GPU */, (void**)&payload );
-			cudaMemset( payload, 0, GetSize() * sizeof( T ) );
-		}
-	}
-	// TODO: buffers owned by OptiX can't be moved to/from host (although we can 'map' them);
-	// for now we limit these functions to cuda-owned buffers, by means of an assert.
-	void* MoveToDevice() { assert( cudaOwned ); return cudaBuffer->MoveToDevice(); }
-	void* CopyToDevice() { assert( cudaOwned ); return cudaBuffer->CopyToDevice(); }
-	void* CopyFromDevice() { assert( cudaOwned ); return cudaBuffer->CopyToHost(); }
-	void* CopyToHost() { assert( cudaOwned ); return cudaBuffer->CopyToHost(); }
-	long long GetSize()
-	{
-		if (cudaOwned) return cudaBuffer->GetSize(); else
-		{
-			RTsize size;
-			optixBuffer->getSize( size );
-			return size;
-		}
-	}
-private:
-	CoreBuffer<T>* cudaBuffer = 0;		// the device data, encapsulated as CoreBuffer
-	optix::Buffer optixBuffer = 0;		// the device data, encapsualted as OptixBuffer
-	bool cudaOwned;						// false if OptiX created the buffer
-};
-
-} // namespace lh2core
-
 #include "rendercore.h"
 
 // blue noise data, from https://eheitzresearch.wordpress.com/762-2

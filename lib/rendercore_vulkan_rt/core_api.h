@@ -26,7 +26,7 @@ namespace lh2core
 //  +-----------------------------------------------------------------------------+
 class CoreAPI : public CoreAPI_Base
 {
-  public:
+public:
 	// Init: initialize the core
 	void Init();
 	// GetCoreStats_: obtain a const ref to the CoreStats object, which provides statistics on the rendering process.
@@ -47,9 +47,9 @@ class CoreAPI : public CoreAPI_Base
 	void SetMaterials( CoreMaterial *mat, const CoreMaterialEx *matEx, const int materialCount );
 	// SetLights: update the point lights, spot lights and directional lights.
 	void SetLights( const CoreLightTri *areaLights, const int areaLightCount,
-					const CorePointLight *pointLights, const int pointLightCount,
-					const CoreSpotLight *spotLights, const int spotLightCount,
-					const CoreDirectionalLight *directionalLights, const int directionalLightCount );
+		const CorePointLight *pointLights, const int pointLightCount,
+		const CoreSpotLight *spotLights, const int spotLightCount,
+		const CoreDirectionalLight *directionalLights, const int directionalLightCount );
 	// SetSkyData: specify the data required for sky dome rendering.
 	void SetSkyData( const float3 *pixels, const uint width, const uint height );
 	// SetGeometry: update the geometry for a single mesh.
@@ -61,13 +61,6 @@ class CoreAPI : public CoreAPI_Base
 };
 
 } // namespace lh2core
-
-
-#ifdef COREDLL_EXPORTS
-#define COREDLL_API __declspec( dllexport )
-#else
-#define COREDLL_API __declspec( dllimport )
-#endif
 
 extern "C" COREDLL_API CoreAPI_Base *CreateCore();
 extern "C" COREDLL_API void DestroyCore();

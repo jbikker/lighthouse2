@@ -14,14 +14,16 @@
 */
 
 #include "platform.h"
-#include "system.h"
 #include "rendersystem.h"
+
+#include <bitset>
 
 static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0;
 static Shader* shader = 0;
 static uint scrwidth = 0, scrheight = 0, scrspp = 1;
 static bool camMoved = false, spaceDown = false, hasFocus = true, running = true, animPaused = false;
+static std::bitset<1024> keystates;
 
 #include "main_tools.h"
 
@@ -32,9 +34,9 @@ static bool camMoved = false, spaceDown = false, hasFocus = true, running = true
 void PrepareScene()
 {
 	// initialize scene
-	renderer->AddScene( "scene.gltf", "data\\pica\\", mat4::Translate( 0, -10.2f, 0 ) );
-	renderer->AddScene( "CesiumMan.glb", "data\\", mat4::Translate( 0, -2, -9 ) );
-	// renderer->AddScene( "project_polly.glb", "data\\", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
+	renderer->AddScene( "scene.gltf", "data/pica/", mat4::Translate( 0, -10.2f, 0 ) );
+	// renderer->AddScene( "CesiumMan.glb", "data/", mat4::Translate( 0, -2, -9 ) );
+	// renderer->AddScene( "project_polly.glb", "data/", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
@@ -49,21 +51,60 @@ void PrepareScene()
 bool HandleInput( float frameTime )
 {
 	// handle keyboard input
-	float translateSpeed = (GetAsyncKeyState( VK_SHIFT ) ? 15.0f : 5.0f) * frameTime, rotateSpeed = 2.5f * frameTime;
+	float translateSpeed = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rotateSpeed = 2.5f * frameTime;
 	bool changed = false;
-	Camera* camera = renderer->GetCamera();
-	if (GetAsyncKeyState( 'A' )) { changed = true; camera->TranslateRelative( make_float3( -translateSpeed, 0, 0 ) ); }
-	if (GetAsyncKeyState( 'D' )) { changed = true; camera->TranslateRelative( make_float3( translateSpeed, 0, 0 ) ); }
-	if (GetAsyncKeyState( 'W' )) { changed = true; camera->TranslateRelative( make_float3( 0, 0, translateSpeed ) ); }
-	if (GetAsyncKeyState( 'S' )) { changed = true; camera->TranslateRelative( make_float3( 0, 0, -translateSpeed ) ); }
-	if (GetAsyncKeyState( 'R' )) { changed = true; camera->TranslateRelative( make_float3( 0, translateSpeed, 0 ) ); }
-	if (GetAsyncKeyState( 'F' )) { changed = true; camera->TranslateRelative( make_float3( 0, -translateSpeed, 0 ) ); }
-	if (GetAsyncKeyState( 'B' )) changed = true; // force restart
-	if (GetAsyncKeyState( VK_UP )) { changed = true; camera->TranslateTarget( make_float3( 0, -rotateSpeed, 0 ) ); }
-	if (GetAsyncKeyState( VK_DOWN )) { changed = true; camera->TranslateTarget( make_float3( 0, rotateSpeed, 0 ) ); }
-	if (GetAsyncKeyState( VK_LEFT )) { changed = true; camera->TranslateTarget( make_float3( -rotateSpeed, 0, 0 ) ); }
-	if (GetAsyncKeyState( VK_RIGHT )) { changed = true; camera->TranslateTarget( make_float3( rotateSpeed, 0, 0 ) ); }
-	if (GetAsyncKeyState( 32 )) { if (!spaceDown) spaceDown = changed = true, animPaused = !animPaused; } else spaceDown = false;
+	Camera *camera = renderer->GetCamera();
+	if (keystates[GLFW_KEY_A])
+	{
+		changed = true;
+		camera->TranslateRelative( make_float3( -translateSpeed, 0, 0 ) );
+	}
+	if (keystates[GLFW_KEY_D])
+	{
+		changed = true;
+		camera->TranslateRelative( make_float3( translateSpeed, 0, 0 ) );
+	}
+	if (keystates[GLFW_KEY_W])
+	{
+		changed = true;
+		camera->TranslateRelative( make_float3( 0, 0, translateSpeed ) );
+	}
+	if (keystates[GLFW_KEY_S])
+	{
+		changed = true;
+		camera->TranslateRelative( make_float3( 0, 0, -translateSpeed ) );
+	}
+	if (keystates[GLFW_KEY_R])
+	{
+		changed = true;
+		camera->TranslateRelative( make_float3( 0, translateSpeed, 0 ) );
+	}
+	if (keystates[GLFW_KEY_F])
+	{
+		changed = true;
+		camera->TranslateRelative( make_float3( 0, -translateSpeed, 0 ) );
+	}
+	if (keystates[GLFW_KEY_B]) changed = true; // force restart
+	if (keystates[GLFW_KEY_UP])
+	{
+		changed = true;
+		camera->TranslateTarget( make_float3( 0, -rotateSpeed, 0 ) );
+	}
+	if (keystates[GLFW_KEY_DOWN])
+	{
+		changed = true;
+		camera->TranslateTarget( make_float3( 0, rotateSpeed, 0 ) );
+	}
+	if (keystates[GLFW_KEY_LEFT])
+	{
+		changed = true;
+		camera->TranslateTarget( make_float3( -rotateSpeed, 0, 0 ) );
+	}
+	if (keystates[GLFW_KEY_RIGHT])
+	{
+		changed = true;
+		camera->TranslateTarget( make_float3( rotateSpeed, 0, 0 ) );
+	}
 	// let the main loop know if the camera should update
 	return changed;
 }
@@ -79,12 +120,12 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7filter.dll" );		// OPTIX7 core, with filtering (SOON)
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7.dll" );			// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_vulkan_rt.dll" );			// Meir's Vulkan / RTX core
-	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );			// OPTIX PRIME, best for pre-RTX CUDA devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_primeref.dll" );			// REFERENCE, for image validation
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
@@ -104,7 +145,7 @@ int main()
 		// poll events, may affect probepos so needs to happen between HandleInput and Render
 		glfwPollEvents();
 		// update animations
-		if (!animPaused) for( int i = 0; i < renderer->AnimationCount(); i++ )
+		if (!animPaused) for (int i = 0; i < renderer->AnimationCount(); i++)
 		{
 			renderer->UpdateAnimation( i, deltaTime );
 			camMoved = true; // will remain false if scene has no animations

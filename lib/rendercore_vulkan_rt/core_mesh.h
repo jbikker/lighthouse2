@@ -25,7 +25,7 @@ class RenderCore;
 class BottomLevelAS;
 class CoreMesh
 {
-  public:
+public:
 	CoreMesh( VulkanDevice device );
 	~CoreMesh();
 
@@ -35,7 +35,7 @@ class CoreMesh
 	VulkanCoreBuffer<CoreTri> *triangles = nullptr;
 	BottomLevelAS *accelerationStructure = nullptr;
 
-  private:
+private:
 	VulkanDevice m_Device;
 };
 

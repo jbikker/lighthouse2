@@ -13,7 +13,7 @@
    limitations under the License.
 */
 
-#include "anttweakbar.h"
+#include <AntTweakBar.h>
 
 // AntTweakBar data
 float mraysincl = 0, mraysexcl = 0;
@@ -120,12 +120,12 @@ void InitFPSPrinter()
 	// load digits
 	for (int i = 0; i < 10; i++)
 	{
-		char t[128] = "data//system//digit0.png";
+		char t[128] = "data/system/digit0.png";
 		t[strlen( t ) - 5] += i;
 		digit[i] = new GLTexture( t, GL_LINEAR );
 	}
 	// load HUD
-	hud = new GLTexture( "data//system//hud.png", GL_LINEAR );
+	hud = new GLTexture( "data/system/hud.png", GL_LINEAR );
 	// load shaders
 	plainShader = new Shader( "shaders/plain.vert", "shaders/plain.frag" );
 	shadowShader = new Shader( "shaders/plain.vert", "shaders/plain_shadow.frag" );

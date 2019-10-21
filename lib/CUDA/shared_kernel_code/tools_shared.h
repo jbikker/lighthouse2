@@ -54,9 +54,9 @@ struct ShadingData4 { float4 data0, data1; uint4 data2; /* for fast 128-bit acce
 
 // random numbers
 
-LH2_DEVFUNC __inline__ uint WangHash( uint s ) { s = (s ^ 61) ^ (s >> 16), s *= 9, s = s ^ (s >> 4), s *= 0x27d4eb2d, s = s ^ (s >> 15); return s; }
-LH2_DEVFUNC __inline__ uint RandomInt( uint& s ) { s ^= s << 13, s ^= s >> 17, s ^= s << 5; return s; }
-LH2_DEVFUNC __inline__ float RandomFloat( uint& s ) { return RandomInt( s ) * 2.3283064365387e-10f; }
+LH2_DEVFUNC uint WangHash( uint s ) { s = (s ^ 61) ^ (s >> 16), s *= 9, s = s ^ (s >> 4), s *= 0x27d4eb2d, s = s ^ (s >> 15); return s; }
+LH2_DEVFUNC uint RandomInt( uint& s ) { s ^= s << 13, s ^= s >> 17, s ^= s << 5; return s; }
+LH2_DEVFUNC float RandomFloat( uint& s ) { return RandomInt( s ) * 2.3283064365387e-10f; }
 
 // math helpers
 
@@ -83,7 +83,7 @@ LH2_DEVFUNC uint PackNormal( float3 N )
 {
 #if 1
 	// more efficient
-	const float f = 65535.0f / fmaxf( sqrtf( 8.0f * N.z + 8.0f), 0.0001f ); // Thanks Robbin Marcus
+	const float f = 65535.0f / fmaxf( sqrtf( 8.0f * N.z + 8.0f ), 0.0001f ); // Thanks Robbin Marcus
 	return (uint)(N.x * f + 32767.0f) + ((uint)(N.y * f + 32767.0f) << 16);
 #else
 	float2 enc = normalize( make_float2( N ) ) * (sqrtf( -N.z * 0.5f + 0.5f ));

@@ -15,7 +15,8 @@
 
 #pragma once
 
-namespace lh2core {
+namespace lh2core
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |

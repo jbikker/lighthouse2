@@ -33,7 +33,8 @@ extern "C" COREDLL_API void DestroyCore()
 	coreInstance = NULL;
 }
 
-namespace lh2core {
+namespace lh2core
+{
 static lh2core::RenderCore* core = 0;
 };
 

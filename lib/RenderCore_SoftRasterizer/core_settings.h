@@ -24,7 +24,12 @@
 // #define NOTEXTURES		// all texture reads will be white
 
 #include "platform.h"
-#include "system.h"			// for vector types
+
+#ifdef _DEBUG
+#pragma comment(lib, "../platform/lib/debug/platform.lib" )
+#else
+#pragma comment(lib, "../platform/lib/release/platform.lib" )
+#endif
 
 using namespace lighthouse2;
 
@@ -34,11 +39,5 @@ using namespace lighthouse2;
 #include "rendercore.h"
 
 using namespace lh2core;
-
-#ifdef _DEBUG
-#pragma comment(lib, "../platform/lib/debug/platform.lib" )
-#else
-#pragma comment(lib, "../platform/lib/release/platform.lib" )
-#endif
 
 // EOF

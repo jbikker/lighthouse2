@@ -20,8 +20,8 @@
 #include "helper_math.h"
 
 // global include files
-#include "../../RenderSystem/common_settings.h"
-#include "../../RenderSystem/common_types.h"
+#include "../../rendersystem/common_settings.h"
+#include "../../rendersystem/common_types.h"
 #include "../core_settings.h"
 
 // global path tracing parameters
@@ -70,15 +70,23 @@ static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint
 	int sx = pixelIdx % params.scrsize.x;
 	int sy = pixelIdx / params.scrsize.x;
 	float r0, r1, r2, r3;
-	if (sampleIdx < 256)
-		r0 = blueNoiseSampler( sx, sy, sampleIdx, 0 ),
-		r1 = blueNoiseSampler( sx, sy, sampleIdx, 1 ),
-		r2 = blueNoiseSampler( sx, sy, sampleIdx, 2 ),
-		r3 = blueNoiseSampler( sx, sy, sampleIdx, 3 );
+	if (params.j0 == -5.0f)
+	{
+		if (sampleIdx < 256)
+			r0 = blueNoiseSampler( sx, sy, sampleIdx, 0 ),
+			r1 = blueNoiseSampler( sx, sy, sampleIdx, 1 ),
+			r2 = blueNoiseSampler( sx, sy, sampleIdx, 2 ),
+			r3 = blueNoiseSampler( sx, sy, sampleIdx, 3 );
+		else
+			r0 = RandomFloat( seed ), r1 = RandomFloat( seed ),
+			r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
+		O = RandomPointOnLens( r2, r3 );
+	}
 	else
-		r0 = RandomFloat( seed ), r1 = RandomFloat( seed ),
-		r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
-	O = RandomPointOnLens( r2, r3 );
+	{
+		r0 = r1 = 0;
+		O = make_float3( params.posLensSize );
+	}
 	const float u = ((float)sx + r0) * (1.0f / params.scrsize.x);
 	const float v = ((float)sy + r1) * (1.0f / params.scrsize.y);
 	const float3 pointOnPixel = params.p1 + u * params.right + v * params.up;

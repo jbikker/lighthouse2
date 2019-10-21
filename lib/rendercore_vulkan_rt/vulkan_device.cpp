@@ -108,7 +108,7 @@ VulkanDevice::VulkanDevice( vk::PhysicalDevice physicalDevice, const std::vector
 	createInfo.setPpEnabledLayerNames( nullptr );
 
 	m_Members->m_VkDevice = m_Members->m_PhysicalDevice.createDevice( createInfo );
-	if ( !m_Members->m_VkDevice ) FATALERROR( "Could not initialize Vulkan device." );
+	FATALERROR_IF( !m_Members->m_VkDevice, "Could not initialize Vulkan device." );
 
 	m_Members->m_GraphicsQueue = m_Members->m_VkDevice.getQueue( m_Members->m_Indices.graphicsIdx.value(), 0 );
 	m_Members->m_ComputeQueue = m_Members->m_VkDevice.getQueue( m_Members->m_Indices.computeIdx.value(), 0 );

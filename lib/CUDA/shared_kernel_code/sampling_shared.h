@@ -137,20 +137,20 @@ LH2_DEVFUNC float4 ReadTexelConsistent( const float4* buffer, const float4* prev
 		const uint n2 = __float_as_uint( pp2.w ), n3 = __float_as_uint( pp3.w );
 		const float dot0 = dot( UnpackNormal2( n0 ), localNormal ), dot1 = dot( UnpackNormal2( n1 ), localNormal );
 		const float dot2 = dot( UnpackNormal2( n2 ), localNormal ), dot3 = dot( UnpackNormal2( n3 ), localNormal );
-#if 0
+	#if 0
 		// suppress but don't kill neighbors
 		const float allowedDist2 = allowedDist * allowedDist; // distances are squared too; faster this way
 		if (posDiff0 > allowedDist2 || dot0 < 0.99f || (n0 & 3) != localSpecularity) w0 = 0;
 		if (posDiff1 > allowedDist2 || dot1 < 0.99f || (n1 & 3) != localSpecularity) w1 = 0;
 		if (posDiff2 > allowedDist2 || dot2 < 0.99f || (n2 & 3) != localSpecularity) w2 = 0;
 		if (posDiff3 > allowedDist2 || dot3 < 0.99f || (n3 & 3) != localSpecularity) w3 = 0;
-#else
+	#else
 		// relax; let the neighborhood clipping worry about the details
 		if (dot0 < 0.95f || (n0 & 3) != localSpecularity) w0 = 0;
 		if (dot1 < 0.95f || (n1 & 3) != localSpecularity) w1 = 0;
 		if (dot2 < 0.95f || (n2 & 3) != localSpecularity) w2 = 0;
 		if (dot3 < 0.95f || (n3 & 3) != localSpecularity) w3 = 0;
-#endif
+	#endif
 	}
 	const float sum = w0 + w1 + w2 + w3;
 	if (sum == 0 /* shouldn't happen */) return make_float4( -1 ); else return (w0 * p0 + w1 * p1 + w2 * p2 + w3 * p3) * (1.0f / sum);
@@ -179,7 +179,7 @@ LH2_DEVFUNC void ReadTexelConsistent2( const float4* buffer, const float4* prevW
 		const uint n2 = __float_as_uint( pp2.w ), n3 = __float_as_uint( pp3.w );
 		const float dot0 = dot( UnpackNormal2( n0 ), localNormal ), dot1 = dot( UnpackNormal2( n1 ), localNormal );
 		const float dot2 = dot( UnpackNormal2( n2 ), localNormal ), dot3 = dot( UnpackNormal2( n3 ), localNormal );
-#if 0
+	#if 0
 		// suppress but don't kill neighbors
 		const float posDiff0 = sqrLength( make_float3( pp0 - localPos ) ), posDiff1 = sqrLength( make_float3( pp1 - localPos ) );
 		const float posDiff2 = sqrLength( make_float3( pp2 - localPos ) ), posDiff3 = sqrLength( make_float3( pp3 - localPos ) );
@@ -187,13 +187,13 @@ LH2_DEVFUNC void ReadTexelConsistent2( const float4* buffer, const float4* prevW
 		if (posDiff1 > allowedDist2 || dot1 < 0.95f || (n1 & 3) != localSpecularity) w1 = 0;
 		if (posDiff2 > allowedDist2 || dot2 < 0.95f || (n2 & 3) != localSpecularity) w2 = 0;
 		if (posDiff3 > allowedDist2 || dot3 < 0.95f || (n3 & 3) != localSpecularity) w3 = 0;
-#else
+	#else
 		// relax; let the neighborhood clipping worry about the details
 		if (dot0 < 0.975f || (n0 & 3) != localSpecularity) w0 = 0;
 		if (dot1 < 0.975f || (n1 & 3) != localSpecularity) w1 = 0;
 		if (dot2 < 0.975f || (n2 & 3) != localSpecularity) w2 = 0;
 		if (dot3 < 0.975f || (n3 & 3) != localSpecularity) w3 = 0;
-#endif
+	#endif
 	}
 	const float sum = w0 + w1 + w2 + w3;
 	if (sum == 0) return;

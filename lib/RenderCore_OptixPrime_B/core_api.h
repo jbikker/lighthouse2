@@ -15,7 +15,8 @@
 
 #pragma once
 
-namespace lh2core {
+namespace lh2core
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  CoreAPI                                                                    |
@@ -58,12 +59,6 @@ public:
 };
 
 } // namespace lh2core
-
-#ifdef COREDLL_EXPORTS
-#define COREDLL_API __declspec(dllexport)
-#else
-#define COREDLL_API __declspec(dllimport)
-#endif
 
 extern "C" COREDLL_API CoreAPI_Base* CreateCore();
 extern "C" COREDLL_API void DestroyCore();

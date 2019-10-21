@@ -142,7 +142,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// russian roulette
 	const float p = pathLength == MAXPATHLENGTH ? 0 : SurvivalProbability( bsdf );
 	if (p < r5) return;
-	throughput *= (max( 0.0f, dot( fN, R )) / (p * newBsdfPdf)) * bsdf;
+	throughput *= (max( 0.0f, dot( fN, R ) ) / (p * newBsdfPdf)) * bsdf;
 
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact

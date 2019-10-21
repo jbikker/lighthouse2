@@ -14,7 +14,6 @@
 */
 
 #include "platform.h"
-#include "system.h"
 #include "rendersystem.h"
 
 static RenderAPI* renderer = 0;
@@ -36,8 +35,8 @@ static string materialFile;
 void PrepareScene()
 {
 	// initialize scene
-	int worldID = renderer->AddMesh( "materials.obj", "data\\mattest\\", 1.0f );
-	materialFile = string( "data\\mattest\\mattest_materials.xml" );
+	int worldID = renderer->AddMesh( "materials.obj", "data/mattest/", 1.0f );
+	materialFile = string( "data/mattest/mattest_materials.xml" );
 	int lightMat = renderer->AddMaterial( make_float3( 10, 10, 10 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 	renderer->AddInstance( worldID );
@@ -52,6 +51,7 @@ void PrepareScene()
 //  +-----------------------------------------------------------------------------+
 bool HandleInput( float frameTime )
 {
+#ifdef _MSC_VER
 	if (!hasFocus) return false;
 	// handle keyboard input
 	float translateSpeed = (GetAsyncKeyState( VK_SHIFT ) ? 15.0f : 5.0f) * frameTime, rotateSpeed = 2.5f * frameTime;
@@ -84,6 +84,9 @@ bool HandleInput( float frameTime )
 	}
 	// let the main loop know if the camera should update
 	return changed;
+#else
+	return false;
+#endif
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -115,12 +118,12 @@ int main()
 	InitGLFW();
 
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7filter.dll" );		// OPTIX7 core, with filtering (SOON)
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_optix7.dll" );			// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_vulkan_rt.dll" );			// Meir's Vulkan / RTX core
-	renderer = RenderAPI::CreateRenderAPI( "rendercore_optixprime_b.dll" );			// OPTIX PRIME, best for pre-RTX CUDA devices
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_primeref.dll" );			// REFERENCE, for image validation
-	// renderer = RenderAPI::CreateRenderAPI( "rendercore_softrasterizer.dll" );	// RASTERIZER, your only option if not on NVidia
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize ui

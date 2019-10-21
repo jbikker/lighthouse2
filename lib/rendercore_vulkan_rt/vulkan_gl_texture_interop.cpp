@@ -35,14 +35,7 @@ lh2core::VulkanGLTextureInterop::VulkanGLTextureInterop( const VulkanDevice &dev
 #endif
 		 glTextureStorageMem2DEXT == nullptr )
 	{
-		char buffer[2048];
-#ifdef WIN32
-		sprintf_s( buffer, "A Vulkan-OpenGL interop requires an OpenGL 4.5 context and the following extensions: GL_EXT_memory_object, GL_EXT_memory_object_fd, GL_EXT_memory_object_win32. At least 1 of these was not found" );
-#else
-		sprintf( buffer, "A Vulkan-OpenGL interop requires an OpenGL 4.5 context and the following extensions: GL_EXT_memory_object, GL_EXT_memory_object_fd, GL_EXT_memory_object_win32. At least 1 of these was not found" );
-#endif
-
-		FATALERROR( buffer );
+		FATALERROR ( "A Vulkan-OpenGL interop requires an OpenGL 4.5 context and the following extensions: GL_EXT_memory_object, GL_EXT_memory_object_fd, GL_EXT_memory_object_win32. At least 1 of these was not found" );
 	}
 
 	m_Width = width;

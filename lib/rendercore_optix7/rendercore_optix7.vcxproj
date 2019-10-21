@@ -55,7 +55,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>COREDLL_EXPORTS;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;../sharedBSDFs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../CUDA/shared_kernel_code;../sharedBSDFs;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -70,6 +70,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <FastMath>true</FastMath>
     </CudaCompile>
     <Lib>
       <AdditionalDependencies>cudart_static.lib;nvrtc.lib</AdditionalDependencies>
@@ -84,7 +85,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>COREDLL_EXPORTS;WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;../sharedBSDFs</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../CUDA;../CUDA/shared_kernel_code;../sharedBSDFs;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -102,6 +103,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <FastMath>true</FastMath>
     </CudaCompile>
     <Lib>
       <AdditionalDependencies>cudart_static.lib;nvrtc.lib</AdditionalDependencies>
@@ -155,9 +157,11 @@
     <CudaCompile Include="kernels\.cuda.cu">
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
-      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">bsdf.cu,finalize.cu,lghts.cu,pathtrace.cu,tools.cu,.cuda.h;bsdfs/lambert.h;bsdfs/microfacet.h</AdditionalDeps>
-      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.cu,finalize.cu,lghts.cu,pathtrace.cu,tools.cu,.cuda.h;bsdfs/lambert.h;bsdfs/microfacet.h</AdditionalDeps>
+      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,pathtrace.h,.cuda.h;lambert.h;disney.h;compatibility.h;sharedbsdf.h</AdditionalDeps>
+      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,pathtrace.h,.cuda.h;lambert.h;disney.h;compatibility.h;sharedbsdf.h</AdditionalDeps>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../CUDA/shared_kernel_code;../sharedBSDFs</Include>
+      <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">../CUDA/shared_kernel_code;../sharedBSDFs</Include>
     </CudaCompile>
     <CudaCompile Include="optix\.optix.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -17,7 +17,8 @@
 
 #include "rendersystem.h"
 
-namespace lighthouse2 {
+namespace lighthouse2
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostScene                                                                  |

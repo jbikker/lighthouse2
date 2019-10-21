@@ -15,20 +15,39 @@
 
 #include "core_settings.h"
 #include <optix_function_table_definition.h>
-#include <optix_stack_size.h>
 
-namespace lh2core {
+namespace lh2core
+{
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
+void prepareFilter( const float4* accumulator, uint4* features, const float4* worldPos, const float4* prevWorldPos,
+	float4* shading, float2* motion, float4* moments, float4* prevMoments, const float4* deltaDepth,
+	const ViewPyramid& prevView, const float j0, const float j1, const float prevj0, const float prevj1,
+	const int w, const int h, const uint spp, const float directClamp, const float indirectClamp, const int flags );
 void shade( const int pathCount, float4* accumulator, const uint stride,
+	uint4* features, float4* worldPos, float4* deltaDepth,
 	float4* pathStates, const float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const int pass,
+	const uint R0, const uint* blueNoise, const uint blueSlot, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
+void applyFilter( const uint4* features, const float4* prevWorldPos, const float4* worldPos, const float4* deltaDepth, const float2* motion, const float4* moments,
+	const float4* A, const float4* B, float4* C, const uint w, const uint h, const int phase, const uint lastPass, const float brightness, const float contrast );
+void TAApass( float4* pixels, float4* prevPixels, float pj0, float pj1, const float4* worldPos, const float4* prevWorldPos, const float2* motion, const uint w, const uint h );
+void unsharpenTAA( const float4* pixels, const uint w, const uint h );
+void finalizeNoTAA( float4* pixels, const uint w, const uint h, const float brightness, const float contrast );
+void finalizeFilterDebug( const uint w, const uint h, const uint4* features, const float4* worldPos, const float4* prevWorldPos,
+	const float4* deltaDepth, const float2* motion, const float4* moments, const float4* shading );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
+
+// abbreviation of cuda calls
+void RenderCore::applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass, const float brightness, const float contrast )
+{
+	::applyFilter( features->DevPtr(), prevWorldPos->DevPtr(), worldPos->DevPtr(), deltaDepth->DevPtr(), motion->DevPtr(), moments->DevPtr(),
+		A->DevPtr(), B ? B->DevPtr() : 0, C->DevPtr(), scrwidth, scrheight, phase, lastPass, brightness, contrast );
+}
 
 // setters / getters
 void SetInstanceDescriptors( CoreInstanceDesc* p );
@@ -56,46 +75,48 @@ using namespace lh2core;
 OptixDeviceContext RenderCore::optixContext = 0;
 struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
-const char *ParseOptixError( OptixResult r )
+char* ParseOptixError( OptixResult r )
 {
-	switch ( r )
+	char* t = new char[256];
+	switch (r)
 	{
-	case 0: return "NO ERROR";
-	case 7001: return "OPTIX_ERROR_INVALID_VALUE";
-	case 7002: return "OPTIX_ERROR_HOST_OUT_OF_MEMORY";
-	case 7003: return "OPTIX_ERROR_INVALID_OPERATION";
-	case 7004: return "OPTIX_ERROR_FILE_IO_ERROR";
-	case 7005: return "OPTIX_ERROR_INVALID_FILE_FORMAT";
-	case 7010: return "OPTIX_ERROR_DISK_CACHE_INVALID_PATH";
-	case 7011: return "OPTIX_ERROR_DISK_CACHE_PERMISSION_ERROR";
-	case 7012: return "OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR";
-	case 7013: return "OPTIX_ERROR_DISK_CACHE_INVALID_DATA";
-	case 7050: return "OPTIX_ERROR_LAUNCH_FAILURE";
-	case 7051: return "OPTIX_ERROR_INVALID_DEVICE_CONTEXT";
-	case 7052: return "OPTIX_ERROR_CUDA_NOT_INITIALIZED";
-	case 7200: return "OPTIX_ERROR_INVALID_PTX";
-	case 7201: return "OPTIX_ERROR_INVALID_LAUNCH_PARAMETER";
-	case 7202: return "OPTIX_ERROR_INVALID_PAYLOAD_ACCESS";
-	case 7203: return "OPTIX_ERROR_INVALID_ATTRIBUTE_ACCESS";
-	case 7204: return "OPTIX_ERROR_INVALID_FUNCTION_USE";
-	case 7205: return "OPTIX_ERROR_INVALID_FUNCTION_ARGUMENTS";
-	case 7250: return "OPTIX_ERROR_PIPELINE_OUT_OF_CONSTANT_MEMORY";
-	case 7251: return "OPTIX_ERROR_PIPELINE_LINK_ERROR";
-	case 7299: return "OPTIX_ERROR_INTERNAL_COMPILER_ERROR";
-	case 7300: return "OPTIX_ERROR_DENOISER_MODEL_NOT_SET";
-	case 7301: return "OPTIX_ERROR_DENOISER_NOT_INITIALIZED";
-	case 7400: return "OPTIX_ERROR_ACCEL_NOT_COMPATIBLE";
-	case 7800: return "OPTIX_ERROR_NOT_SUPPORTED";
-	case 7801: return "OPTIX_ERROR_UNSUPPORTED_ABI_VERSION";
-	case 7802: return "OPTIX_ERROR_FUNCTION_TABLE_SIZE_MISMATCH";
-	case 7803: return "OPTIX_ERROR_INVALID_ENTRY_FUNCTION_OPTIONS";
-	case 7804: return "OPTIX_ERROR_LIBRARY_NOT_FOUND";
-	case 7805: return "OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND";
-	case 7900: return "OPTIX_ERROR_CUDA_ERROR";
-	case 7990: return "OPTIX_ERROR_INTERNAL_ERROR";
-	case 7999: return "OPTIX_ERROR_UNKNOWN";
-	default: return "UNKNOWN ERROR";
+	case 0: strcpy_s( t, 256, "NO ERROR" ); break;
+	case 7001: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_VALUE" ); break;
+	case 7002: strcpy_s( t, 256, "OPTIX_ERROR_HOST_OUT_OF_MEMORY" ); break;
+	case 7003: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_OPERATION" ); break;
+	case 7004: strcpy_s( t, 256, "OPTIX_ERROR_FILE_IO_ERROR" ); break;
+	case 7005: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FILE_FORMAT" ); break;
+	case 7010: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_INVALID_PATH" ); break;
+	case 7011: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_PERMISSION_ERROR" ); break;
+	case 7012: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR" ); break;
+	case 7013: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_INVALID_DATA" ); break;
+	case 7050: strcpy_s( t, 256, "OPTIX_ERROR_LAUNCH_FAILURE" ); break;
+	case 7051: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_DEVICE_CONTEXT" ); break;
+	case 7052: strcpy_s( t, 256, "OPTIX_ERROR_CUDA_NOT_INITIALIZED" ); break;
+	case 7200: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_PTX" ); break;
+	case 7201: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_LAUNCH_PARAMETER" ); break;
+	case 7202: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_PAYLOAD_ACCESS" ); break;
+	case 7203: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_ATTRIBUTE_ACCESS" ); break;
+	case 7204: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FUNCTION_USE" ); break;
+	case 7205: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FUNCTION_ARGUMENTS" ); break;
+	case 7250: strcpy_s( t, 256, "OPTIX_ERROR_PIPELINE_OUT_OF_CONSTANT_MEMORY" ); break;
+	case 7251: strcpy_s( t, 256, "OPTIX_ERROR_PIPELINE_LINK_ERROR" ); break;
+	case 7299: strcpy_s( t, 256, "OPTIX_ERROR_INTERNAL_COMPILER_ERROR" ); break;
+	case 7300: strcpy_s( t, 256, "OPTIX_ERROR_DENOISER_MODEL_NOT_SET" ); break;
+	case 7301: strcpy_s( t, 256, "OPTIX_ERROR_DENOISER_NOT_INITIALIZED" ); break;
+	case 7400: strcpy_s( t, 256, "OPTIX_ERROR_ACCEL_NOT_COMPATIBLE" ); break;
+	case 7800: strcpy_s( t, 256, "OPTIX_ERROR_NOT_SUPPORTED" ); break;
+	case 7801: strcpy_s( t, 256, "OPTIX_ERROR_UNSUPPORTED_ABI_VERSION" ); break;
+	case 7802: strcpy_s( t, 256, "OPTIX_ERROR_FUNCTION_TABLE_SIZE_MISMATCH" ); break;
+	case 7803: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_ENTRY_FUNCTION_OPTIONS" ); break;
+	case 7804: strcpy_s( t, 256, "OPTIX_ERROR_LIBRARY_NOT_FOUND" ); break;
+	case 7805: strcpy_s( t, 256, "OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND" ); break;
+	case 7900: strcpy_s( t, 256, "OPTIX_ERROR_CUDA_ERROR" ); break;
+	case 7990: strcpy_s( t, 256, "OPTIX_ERROR_INTERNAL_ERROR" ); break;
+	case 7999: strcpy_s( t, 256, "OPTIX_ERROR_UNKNOWN" ); break;
+	default: strcpy_s( t, 256, "UNKNOWN ERROR" ); break;
 	};
+	return t;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -129,26 +150,20 @@ void RenderCore::CreateOptixContext( int cc )
 
 	// load and compile PTX
 	string ptx;
-	if (NeedsRecompile( "../../lib/RenderCore_Optix7/optix/", ".optix.turing.cu.ptx", ".optix.cu", "../../RenderSystem/common_settings.h", "../core_settings.h" ))
+	if (NeedsRecompile( "../../lib/RenderCore_Optix7Filter/optix/", ".optix.turing.cu.ptx", ".optix.cu", "../../rendersystem/common_settings.h", "../core_settings.h" ))
 	{
-		CUDATools::compileToPTX( ptx, TextFileRead( "../../lib/RenderCore_Optix7/optix/.optix.cu" ).c_str(), "../../lib/RenderCore_Optix7/optix", cc, 7 );
-		if (cc / 10 == 7) TextFileWrite( ptx, "../../lib/RenderCore_Optix7/optix/.optix.turing.cu.ptx" );
-		else if (cc / 10 == 6) TextFileWrite( ptx, "../../lib/RenderCore_Optix7/optix/.optix.pascal.cu.ptx" );
-		else if (cc / 10 == 5) TextFileWrite( ptx, "../../lib/RenderCore_Optix7/optix/.optix.maxwell.cu.ptx" );
+		CUDATools::compileToPTX( ptx, TextFileRead( "../../lib/RenderCore_Optix7Filter/optix/.optix.cu" ).c_str(), "../../lib/RenderCore_Optix7Filter/optix", cc, 7 );
+		if (cc / 10 == 7) TextFileWrite( ptx, "../../lib/RenderCore_Optix7Filter/optix/.optix.turing.cu.ptx" );
+		else if (cc / 10 == 6) TextFileWrite( ptx, "../../lib/RenderCore_Optix7Filter/optix/.optix.pascal.cu.ptx" );
+		else if (cc / 10 == 5) TextFileWrite( ptx, "../../lib/RenderCore_Optix7Filter/optix/.optix.maxwell.cu.ptx" );
 		printf( "recompiled .optix.cu.\n" );
 	}
 	else
 	{
-		const char *file = NULL;
-		if (cc / 10 == 7) file = "../../lib/RenderCore_Optix7/optix/.optix.turing.cu.ptx";
-		else if (cc / 10 == 6) file = "../../lib/RenderCore_Optix7/optix/.optix.pascal.cu.ptx";
-		else if (cc / 10 == 5) file = "../../lib/RenderCore_Optix7/optix/.optix.maxwell.cu.ptx";
 		FILE* f;
-#ifdef _MSC_VER
-		fopen_s( &f, file, "rb" );
-#else
-		f = fopen( file, "rb" );
-#endif
+		if (cc / 10 == 7) fopen_s( &f, "../../lib/RenderCore_Optix7Filter/optix/.optix.turing.cu.ptx", "rb" );
+		else if (cc / 10 == 6) fopen_s( &f, "../../lib/RenderCore_Optix7Filter/optix/.optix.pascal.cu.ptx", "rb" );
+		else if (cc / 10 == 5) fopen_s( &f, "../../lib/RenderCore_Optix7Filter/optix/.optix.maxwell.cu.ptx", "rb" );
 		int len;
 		fread( &len, 1, 4, f );
 		char* t = new char[len];
@@ -220,7 +235,7 @@ void RenderCore::CreateOptixContext( int cc )
 
 	// create the shader binding table
 	SBTRecord rsbt[5] = {}; // , ms_sbt[2], hg_sbt[2];
-	for( int i = 0; i < 5; i++ ) optixSbtRecordPackHeader( progGroup[i], &rsbt[i] );
+	for (int i = 0; i < 5; i++) optixSbtRecordPackHeader( progGroup[i], &rsbt[i] );
 	sbt.raygenRecord = (CUdeviceptr)(new CoreBuffer<SBTRecord>( 1, ON_DEVICE, &rsbt[0] ))->DevPtr();
 	sbt.missRecordBase = (CUdeviceptr)(new CoreBuffer<SBTRecord>( 2, ON_DEVICE, &rsbt[1] ))->DevPtr();
 	sbt.hitgroupRecordBase = (CUdeviceptr)(new CoreBuffer<SBTRecord>( 2, ON_DEVICE, &rsbt[3] ))->DevPtr();
@@ -270,7 +285,7 @@ void RenderCore::Init()
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// prepare timing events
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
+	for (int i = 0; i < MAXPATHLENGTH; i++)
 	{
 		cudaEventCreate( &shadeStart[i] );
 		cudaEventCreate( &shadeEnd[i] );
@@ -313,10 +328,39 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		delete accumulator;
 		delete hitBuffer;
 		delete pathStateBuffer;
+		delete features;
+		delete motion;
+		delete moments;
+		delete prevMoments;
+		delete prevPixels;
+		delete worldPos;
+		delete prevWorldPos;
+		delete filteredIN;
+		delete filteredOUT;
+		delete deltaDepth;
+		delete debugData;
 		connectionBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3 * MAXPATHLENGTH, ON_DEVICE );
-		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+		accumulator = new CoreBuffer<float4>( maxPixels * 2 /* to split direct / indirect */, ON_DEVICE );
 		hitBuffer = new CoreBuffer<float4>( maxPixels * scrspp, ON_DEVICE );
 		pathStateBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3, ON_DEVICE );
+		features = new CoreBuffer<uint4>( maxPixels, ON_DEVICE );
+		if (features) // these will only be allocated if we actually have a features buffer for filtering
+		{
+			shading = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
+			motion = new CoreBuffer<float2>( maxPixels, ON_DEVICE );
+			moments = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+			prevMoments = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+			prevPixels = new CoreBuffer<float4>( maxPixels * 2 /* too bad; just because we swap it with shading */, ON_DEVICE );
+			worldPos = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+			prevWorldPos = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+			filteredIN = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
+			filteredOUT = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
+			deltaDepth = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
+		#if 1
+			debugData = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+			SetDebugData( debugData->DevPtr() );
+		#endif
+		}
 		params.connectData = connectionBuffer->DevPtr();
 		params.accumulator = accumulator->DevPtr();
 		params.hitData = hitBuffer->DevPtr();
@@ -436,7 +480,7 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 	SyncStorageType( TexelStorage::ARGB32 );
 	SyncStorageType( TexelStorage::ARGB128 );
 	SyncStorageType( TexelStorage::NRM32 );
-	// Notes:
+	// Notes: 
 	// - the three types are copied from the original HostTexture pixel data (to which the
 	//   descriptors point) straight to the GPU. There is no pixel storage on the host
 	//   in the RenderCore.
@@ -587,6 +631,10 @@ void RenderCore::Setting( const char* name, const float value )
 			SetClampValue( value );
 		}
 	}
+	else if (!strcmp( name, "clampDirect" )) vars.filterClampDirect = value;
+	else if (!strcmp( name, "clampIndirect" )) vars.filterClampIndirect = value;
+	else if (!strcmp( name, "filter" )) vars.filterEnabled = (value == 0 ? 0 : 1);
+	else if (!strcmp( name, "TAA" )) vars.TAAEnabled = (value == 0 ? 0 : 1);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -599,7 +647,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	glFinish();
 	Timer timer;
 	// clean accumulator, if requested
-	if (converge == Restart || firstConvergingFrame)
+	if (converge == Restart || (features != 0 && vars.filterEnabled) || firstConvergingFrame)
 	{
 		accumulator->Clear( ON_DEVICE );
 		samplesTaken = 0;
@@ -651,12 +699,24 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
 	// jitter the view for TAA
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
+	const float haltonx[4] = { 0.3f, 0.7f, 0.2f, 0.8f }, haltony[4] = { 0.2f, 0.8f, 0.7f, 0.3f };
+	const float j0 = (vars.TAAEnabled && vars.filterEnabled) ? (haltonx[frameCycle] - 0.0f) : 0.0f;
+	const float j1 = (vars.TAAEnabled && vars.filterEnabled) ? (haltony[frameCycle] - 0.0f) : 0.0f;
+	frameCycle = (frameCycle + 1) & 3;
+	ViewPyramid jitteredView = view;
+	const float3 jitter = (j0 / (float)scrwidth) * right + (j1 / (float)scrheight) * up;
+	jitteredView.p1 += jitter;
+	jitteredView.p2 += jitter;
+	jitteredView.p3 += jitter;
+	if (vars.filterEnabled) jitteredView.aperture = 0;
 	// render an image using OptiX
-	params.posLensSize = make_float4( view.pos.x, view.pos.y, view.pos.z, view.aperture );
+	params.posLensSize = make_float4( jitteredView.pos.x, jitteredView.pos.y, jitteredView.pos.z, jitteredView.aperture );
 	params.right = make_float3( right.x, right.y, right.z );
 	params.up = make_float3( up.x, up.y, up.z );
-	params.p1 = make_float3( view.p1.x, view.p1.y, view.p1.z );
+	params.p1 = make_float3( jitteredView.p1.x, jitteredView.p1.y, jitteredView.p1.z );
 	params.pass = samplesTaken;
+	params.j0 = vars.filterEnabled ? j0 : -5;
+	params.j1 = j1;
 	// loop
 	params.bvhRoot = bvhRoot; // meshes[1]->gasHandle;
 	Counters counters;
@@ -688,10 +748,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
+			(features != 0 && vars.filterEnabled) ? features->DevPtr() : 0,
+			worldPos ? worldPos->DevPtr() : 0, deltaDepth ? deltaDepth->DevPtr() : 0,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
+			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), blueSlot, samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
-			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
+			jitteredView.spreadAngle, jitteredView.p1, jitteredView.p2, jitteredView.p3, jitteredView.pos );
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
@@ -713,7 +775,39 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
-	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
+	// apply filter on gathered data
+	if (features != 0 && vars.filterEnabled)
+	{
+		prepareFilter( accumulator->DevPtr(), features->DevPtr(), worldPos->DevPtr(), prevWorldPos->DevPtr(),
+			shading->DevPtr(), motion->DevPtr(), moments->DevPtr(), prevMoments->DevPtr(), deltaDepth->DevPtr(),
+			prevView, j0, j1, prevj0, prevj1,
+			scrwidth, scrheight, samplesTaken, vars.filterClampDirect, vars.filterClampIndirect, converge == Restart ? 0 : 1 );
+		if (GetAsyncKeyState( VK_F4 ))
+		{
+			finalizeFilterDebug( scrwidth, scrheight, features->DevPtr(), worldPos->DevPtr(), prevWorldPos->DevPtr(),
+				deltaDepth->DevPtr(), motion->DevPtr(), moments->DevPtr(), shading->DevPtr() );
+		}
+		else
+		{
+			applyFilter( 1, shading, filteredIN, filteredOUT );
+			applyFilter( 2, filteredOUT, 0, filteredIN );
+			applyFilter( 3, filteredIN, 0, shading, 1, brightness, contrast );
+			if (vars.TAAEnabled)
+			{
+				TAApass( shading->DevPtr(), prevPixels->DevPtr(), 0, 0, worldPos->DevPtr(), prevWorldPos->DevPtr(), motion->DevPtr(),
+					scrwidth, scrheight );
+				unsharpenTAA( shading->DevPtr(), scrwidth, scrheight );
+			}
+			else finalizeNoTAA( shading->DevPtr(), scrwidth, scrheight, brightness, contrast );
+		}
+		swap( filteredIN, filteredOUT );
+		swap( shading, prevPixels );
+		swap( prevWorldPos, worldPos );
+		swap( moments, prevMoments );
+		blueSlot = (blueSlot + 1) & 255;
+		prevj0 = j0, prevj1 = j1;
+	}
+	else finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
 	renderTarget.UnbindSurface();
 	// finalize statistics
 	cudaStreamSynchronize( 0 );
@@ -723,11 +817,13 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
 	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
-	for( int i = 2; i < MAXPATHLENGTH; i++ ) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
-	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
+	for (int i = 2; i < MAXPATHLENGTH; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
+	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;
 	coreStats.probedDist = counters.probedDist;
+	// store view for next frame
+	prevView = view;
 }
 
 //  +-----------------------------------------------------------------------------+

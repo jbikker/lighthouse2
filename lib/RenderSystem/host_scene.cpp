@@ -71,7 +71,7 @@ void HostScene::SerializeMaterials( const char* xmlFile )
 		if ((materials[i]->flags & HostMaterial::FROM_MTL) == 0) continue;
 		// create a new entry for the material
 		char entryName[128];
-		sprintf_s( entryName, "material_%i", i );
+		snprintf( entryName, sizeof( entryName ), "material_%i", i );
 		XMLNode* materialEntry = doc.NewElement( entryName );
 		root->InsertEndChild( materialEntry );
 		// store material properties
@@ -121,14 +121,14 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 	XMLElement* countElement = root->FirstChildElement( "material_count" );
 	if (!countElement) return;
 	int materialCount;
-	sscanf_s( countElement->GetText(), "%i", &materialCount );
+	scanf( countElement->GetText(), "%i", &materialCount );
 	if (materialCount != materials.size()) return;
 	for (int i = 0; i < materialCount; i++)
 	{
 		// find the entry for the material
 		HostMaterial* m /* for brevity */ = materials[i];
 		char entryName[128];
-		sprintf_s( entryName, "material_%i", i );
+		snprintf( entryName, sizeof( entryName ), "material_%i", i );
 		XMLNode* entry = root->FirstChildElement( entryName );
 		if (!entry) continue;
 		// set the properties
@@ -209,7 +209,7 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 	bool hasTransform = (transform != mat4::Identity());
 	const int nodeBase = (int)nodes.size() + (hasTransform ? 1 : 0);
 	// load gltf file
-	string cleanFileName = LowerCase( dir + string( sceneFile ) );
+	string cleanFileName = dir + string( sceneFile );
 	tinygltf::Model gltfModel;
 	tinygltf::TinyGLTF loader;
 	string err, warn;
@@ -225,7 +225,7 @@ void HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tr
 	}
 	if (!warn.empty()) printf( "Warn: %s\n", warn.c_str() );
 	if (!err.empty()) printf( "Err: %s\n", err.c_str() );
-	if (!ret) FatalError( "could not load glTF file:\n%s", cleanFileName.c_str() );
+	FATALERROR_IF( !ret, "could not load glTF file:\n%s", cleanFileName.c_str() );
 	// convert textures
 	for (size_t s = gltfModel.textures.size(), i = 0; i < s; i++)
 	{
@@ -367,11 +367,11 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 int HostScene::AddInstance( const int meshId, const mat4& transform )
 {
 	HostNode* newNode = new HostNode( meshId, transform );
-	if (nodeListHoles > 0) 
+	if (nodeListHoles > 0)
 	{
 		// we have holes in the nodes vector due to instance deletions; search from the
 		// end of the list to speed up frequent additions / deletions in complex scenes.
-		for( int i = (int)nodes.size() - 1; i >= 0; i-- ) if (!nodes[i])
+		for (int i = (int)nodes.size() - 1; i >= 0; i--) if (!nodes[i])
 		{
 			// overwrite an empty slot, created by deleting an instance
 			nodes[i] = newNode;
@@ -397,7 +397,7 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 void HostScene::RemoveInstance( const int instId )
 {
 	// remove the instance from the scene graph
-	for( int s = (int)scene.size(), i = 0; i < s; i++ ) if (scene[i] == instId)
+	for (int s = (int)scene.size(), i = 0; i < s; i++) if (scene[i] == instId)
 	{
 		scene[i] = scene[s - 1];
 		scene.pop_back();

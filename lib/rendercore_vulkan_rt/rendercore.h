@@ -39,7 +39,7 @@ struct DeviceVars
 //  +-----------------------------------------------------------------------------+
 class RenderCore
 {
-  public:
+public:
 	static RenderCore *instance;
 
 	// methods
@@ -55,9 +55,9 @@ class RenderCore
 	void SetTextures( const CoreTexDesc *tex, const int textureCount );
 	void SetMaterials( CoreMaterial *mat, const CoreMaterialEx *matEx, const int materialCount ); // textures must be in sync when calling this
 	void SetLights( const CoreLightTri *areaLights, const int areaLightCount,
-					const CorePointLight *pointLights, const int pointLightCount,
-					const CoreSpotLight *spotLights, const int spotLightCount,
-					const CoreDirectionalLight *directionalLights, const int directionalLightCount );
+		const CorePointLight *pointLights, const int pointLightCount,
+		const CoreSpotLight *spotLights, const int spotLightCount,
+		const CoreDirectionalLight *directionalLights, const int directionalLightCount );
 	void SetSkyData( const float3 *pixels, const uint width, const uint height );
 	// geometry and instances:
 	// a scene is setup by first passing a number of meshes (geometry), then a number of instances.
@@ -71,7 +71,7 @@ class RenderCore
 	// public data members
 	vk::DispatchLoaderDynamic dynamicDispatcher; // Dynamic dispatcher for extension functions such as NV_RT
 
-  private:
+private:
 	// internal methods
 	void InitRenderer();
 	void CreateInstance();
@@ -144,49 +144,49 @@ class RenderCore
 	VulkanCoreBuffer<CoreSpotLight> *m_SpotLightBuffer = nullptr;
 	VulkanCoreBuffer<CoreDirectionalLight> *m_DirectionalLightBuffer = nullptr;
 	VulkanCoreBuffer<uint> *m_BlueNoiseBuffer = nullptr;
-	VulkanCoreBuffer<float4> *m_CombinedStateBuffer[2] = {nullptr, nullptr};
+	VulkanCoreBuffer<float4> *m_CombinedStateBuffer[2] = { nullptr, nullptr };
 	VulkanCoreBuffer<float4> *m_AccumulationBuffer = nullptr;
 	VulkanCoreBuffer<PotentialContribution> *m_PotentialContributionBuffer = nullptr;
 
 	VulkanImage *m_SkyboxImage = nullptr;
 	VulkanImage *m_OffscreenImage = nullptr; // Off-screen render image
 	int2 m_ProbePos = make_int2( 0 );		 // triangle picking; primary ray for this pixel copies its triid to coreStats.
-  public:
+public:
 	CoreStats coreStats; // rendering statistics
 };
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback( VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-													 VkDebugUtilsMessageTypeFlagsEXT messageType,
-													 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-													 void *pUserData )
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+	void *pUserData )
 {
 	const char *severity = 0, *type = 0;
-	switch ( messageSeverity )
+	switch (messageSeverity)
 	{
-	case ( VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT):
 		return VK_FALSE;
-	case ( VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT):
 		severity = "INFO";
 		break;
-	case ( VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT):
 		severity = "WARNING";
 		break;
-	case ( VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT):
 		severity = "ERROR";
 		break;
 	default:
 		break;
 	}
 
-	switch ( messageType )
+	switch (messageType)
 	{
-	case ( VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT):
 		type = "GENERAL";
 		break;
-	case ( VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT):
 		type = "VALIDATION";
 		break;
-	case ( VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT ):
+	case (VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT):
 		type = "PERFORMANCE";
 		break;
 	default:
@@ -194,11 +194,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback( VkDebugUtilsMessageSeverity
 	}
 
 	char buffer[4096];
-#ifdef WIN32
-	sprintf_s( buffer, "Vulkan Validation Layer: [Severity: %s] [Type: %s] : %s\n", severity, type, pCallbackData->pMessage );
-#else
-	sprintf( buffer, "Vulkan Validation Layer: [Severity: %s] [Type: %s] : %s\n", severity, type, pCallbackData->pMessage );
-#endif
+	snprintf( buffer, sizeof( buffer ), "Vulkan Validation Layer: [Severity: %s] [Type: %s] : %s\n", severity, type, pCallbackData->pMessage );
 	printf( "%s", buffer );
 
 	return VK_FALSE;

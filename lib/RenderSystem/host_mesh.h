@@ -58,7 +58,7 @@ public:
 	void ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride );
 	void BuildFromIndexedData( const vector<int>& tmpIndices, const vector<float3>& tmpVertices,
 		const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<Pose>& tmpPoses,
-		const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights,  const int materialIdx );
+		const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights, const int materialIdx );
 	void BuildMaterialList();
 	void UpdateAlphaFlags();
 	void SetPose( const vector<float>& weights );

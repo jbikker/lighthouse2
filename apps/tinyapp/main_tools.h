@@ -32,6 +32,8 @@ void ReshapeWindowCallback( GLFWwindow* window, int w, int h )
 void KeyEventCallback( GLFWwindow* window, int key, int scancode, int action, int mods )
 {
 	if (key == GLFW_KEY_ESCAPE) running = false;
+	if (action == GLFW_PRESS) keystates[key] = true;
+	else if (action == GLFW_RELEASE) keystates[key] = false;
 }
 void CharEventCallback( GLFWwindow* window, uint code ) { /* nothing here yet */ }
 void WindowFocusCallback( GLFWwindow* window, int focused ) { hasFocus = (focused == GL_TRUE); }
@@ -40,6 +42,10 @@ void MousePosCallback( GLFWwindow* window, double x, double y )
 {
 	// set pixel probe pos for triangle picking
 	if (renderer) renderer->SetProbePos( make_int2( (int)x, (int)y ) );
+}
+void ErrorCallback( int error, const char*description )
+{
+	fprintf( stderr, "GLFW Error: %s\n", description );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -51,6 +57,7 @@ void InitGLFW()
 {
 	// open a window
 	if (!glfwInit()) exit( EXIT_FAILURE );
+	glfwSetErrorCallback( ErrorCallback );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 5 );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
@@ -71,7 +78,7 @@ void InitGLFW()
 	glDisable( GL_CULL_FACE );
 	glDisable( GL_BLEND );
 	// logo
-	GLTexture* logo = new GLTexture( "data//system//logo.png", GL_LINEAR );
+	GLTexture* logo = new GLTexture( "data/system/logo.png", GL_LINEAR );
 	shader = new Shader( "shaders/vignette.vert", "shaders/vignette.frag" );
 	shader->Bind();
 	shader->SetInputTexture( 0, "color", logo );
@@ -91,6 +98,7 @@ void InitGLFW()
 //  +-----------------------------------------------------------------------------+
 void OpenConsole()
 {
+#ifdef _MSC_VER
 	CONSOLE_SCREEN_BUFFER_INFO coninfo;
 	AllocConsole();
 	GetConsoleScreenBufferInfo( GetStdHandle( STD_OUTPUT_HANDLE ), &coninfo );
@@ -102,6 +110,7 @@ void OpenConsole()
 	freopen_s( &file, "CON", "w", stderr );
 	SetWindowPos( GetConsoleWindow(), HWND_TOP, 0, 0, 1280, 800, 0 );
 	glfwShowWindow( window );
+#endif
 }
 
 // EOF

@@ -181,7 +181,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		shadowRayBuffer = new CoreBuffer<Ray4>( maxShadowRays, ON_DEVICE );
 		shadowRayPotential = new CoreBuffer<float4>( maxShadowRays, ON_DEVICE ); // .w holds pixel index
 		shadowHitBuffer = new CoreBuffer<uint>( (maxShadowRays + 31) >> 5 /* one bit per ray */, ON_DEVICE );
-		accumulator = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
+		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
 		for (int i = 0; i < 2; i++)
 		{
 			extensionRayBuffer[i] = new CoreBuffer<Ray4>( maxPixels * spp, ON_DEVICE ),

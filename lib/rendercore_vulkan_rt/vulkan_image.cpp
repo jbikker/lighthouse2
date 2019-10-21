@@ -36,8 +36,7 @@ VulkanImage::VulkanImage( const VulkanDevice &dev, vk::ImageType type, vk::Forma
 	imageCreateInfo.setInitialLayout( vk::ImageLayout::eUndefined );
 
 	m_Image = m_Device->createImage( imageCreateInfo );
-	if ( !m_Image )
-		FATALERROR( "Could not create image." );
+	FATALERROR_IF( !m_Image, "Could not create image." );
 
 	const auto memoryRequirements = m_Device->getImageMemoryRequirements( m_Image );
 	vk::MemoryAllocateInfo memoryAllocateInfo{};
@@ -46,8 +45,7 @@ VulkanImage::VulkanImage( const VulkanDevice &dev, vk::ImageType type, vk::Forma
 	memoryAllocateInfo.setMemoryTypeIndex( m_Device.GetMemoryType( memoryRequirements, memProps ) );
 	m_Memory = m_Device->allocateMemory( memoryAllocateInfo );
 
-	if ( !m_Memory )
-		FATALERROR( "Could not allocate memory for image." );
+	FATALERROR_IF( !m_Memory, "Could not allocate memory for image." );
 
 	m_Device->bindImageMemory( m_Image, m_Memory, 0 );
 }
@@ -145,8 +143,7 @@ bool VulkanImage::CreateImageView( vk::ImageViewType viewType, vk::Format format
 										vk::ComponentSwizzle::eA} );
 
 	m_ImageView = m_Device->createImageView( imageViewCreateInfo );
-	if ( !m_ImageView )
-		FATALERROR( "Could not create image view." );
+	FATALERROR_IF( !m_ImageView, "Could not create image view." );
 	return true;
 }
 
@@ -172,7 +169,7 @@ bool VulkanImage::CreateSampler( vk::Filter magFilter, vk::Filter minFilter, vk:
 	samplerCreateInfo.setUnnormalizedCoordinates( false );
 
 	m_Sampler = m_Device->createSampler( samplerCreateInfo );
-	if ( !m_Sampler ) FATALERROR( "Could not create sampler." );
+	FATALERROR_IF( !m_Sampler , "Could not create sampler." );
 
 	return true;
 }

@@ -15,7 +15,8 @@
 
 #pragma once
 
-namespace lighthouse2 {
+namespace lighthouse2
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostSkyDome                                                                |

@@ -15,7 +15,8 @@
 
 #pragma once
 
-namespace lh2core {
+namespace lh2core
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  CoreMesh                                                                   |
@@ -27,23 +28,25 @@ class RenderCore;
 class CoreMesh
 {
 public:
-	struct MeshBuffers
-	{
-		optix::Buffer positions4;
-		int triangleCount = 0;
-		int vertexCount = 0;
-	};
 	// constructor / destructor
 	CoreMesh() = default;
 	CoreMesh::~CoreMesh();
 	// methods
 	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags = 0 );
 	// data
-	CoreBuffer<CoreTri4>* triangles = 0;		// original triangle data, as received from RenderSystem
-	MeshBuffers buffers;					// OptiX geometry data buffers
-	optix::GeometryTriangles geometryTriangles = 0; // OptiX geometryTriangles descriptor
-	// context, for global access
-	static optix::Program attribProgram;	// Optix triangle attribute program
+	int triangleCount = 0;					// number of triangles in the mesh
+	CoreBuffer<float4>* positions4 = 0;		// vertex data for intersection
+	CoreBuffer<CoreTri4>* triangles = 0;	// original triangle data, as received from RenderSystem, for shading
+	CoreBuffer<uchar>* buildTemp = 0;		// reusable temporary buffer for Optix BVH construction
+	CoreBuffer<uchar>* buildBuffer = 0;		// reusable target buffer for Optix BVH construction
+	// aceleration structure
+	uint32_t inputFlags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT /* handled in CUDA shading code instead */ };
+	OptixBuildInput buildInput;				// acceleration structure build parameters
+	OptixAccelBuildOptions buildOptions;	// acceleration structure build options
+	OptixAccelBufferSizes buildSizes;		// buffer sizes for acceleration structure construction
+	OptixTraversableHandle gasHandle;		// handle to the mesh BVH
+	CUdeviceptr gasData;					// acceleration structure data
+	// global access
 	static RenderCore* renderCore;			// for access to material list, in case of alpha mapped triangles
 };
 
@@ -57,10 +60,9 @@ public:
 	// constructor / destructor
 	CoreInstance() = default;
 	// data
-	int mesh = 0;									// ID of the mesh used for this instance
-	optix::GeometryGroup geometryGroup = 0;			// minimum OptiX scene: GeometryGroup, referencing
-	optix::Transform transform = 0;					// a Transform, which has as a child a
-	optix::GeometryInstance geometryInstance = 0;	// GeometryInstance, which in turn references Geometry.
+	int mesh = 0;							// ID of the mesh used for this instance
+	OptixInstance instance;
+	float transform[12];					// rigid transform of the instance
 };
 
 } // namespace lh2core

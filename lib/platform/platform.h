@@ -20,20 +20,30 @@
 #pragma once
 
 // GLFW
+#define GLFW_USE_CHDIR 0 // Do not change cwd
 #define GLFW_EXPOSE_NATIVE_WGL
 
 // system includes
+// clang-format off
+#ifdef WIN32
+//#define GLFW_DLL		 // Use DLL to let render cores be able to use GLFW as well
 #define NOMINMAX
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include "windows.h"
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#ifdef WIN32
 #include <GLFW/glfw3native.h>
-#include "zlib.h"
-#include <assert.h>
-#include "freeimage.h"
+#endif
+#include <zlib.h>
+#include "emmintrin.h"
+#include <FreeImage.h>
+// clang-format on
 
 // namespaces
 using namespace std;
@@ -41,7 +51,8 @@ using namespace std;
 // include system-wide functionality
 #include "system.h"
 
-namespace lighthouse2 {
+namespace lighthouse2
+{
 
 class Shader
 {
@@ -70,7 +81,7 @@ private:
 } // namespace lighthouse2
 
 // forward declarations of platform-specific helpers
-void _CheckGL( char* f, int l );
+void _CheckGL( const char* f, int l );
 #define CheckGL() { _CheckGL( __FILE__, __LINE__ ); }
 GLuint CreateVBO( const GLfloat* data, const uint size );
 void BindVBO( const uint idx, const uint N, const GLuint id );

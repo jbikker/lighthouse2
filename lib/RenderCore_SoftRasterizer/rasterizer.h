@@ -18,7 +18,8 @@
 
 #pragma once
 
-namespace lh2core {
+namespace lh2core
+{
 
 // -----------------------------------------------------------
 // Surface class
@@ -85,7 +86,7 @@ public:
 	// methods
 	void SetPosition( float3& pos ) { mat4& M = localTransform; M[3] = pos.x, M[7] = pos.y, M[11] = pos.z; }
 	float3 GetPosition() { mat4& M = localTransform; return make_float3( M[3], M[7], M[11] ); }
-	void Render( mat4& transform );
+	void Render( const mat4& transform );
 	virtual int GetType() { return SG_TRANSFORM; }
 	// data members
 	mat4 localTransform;
@@ -104,7 +105,7 @@ public:
 	Mesh( int vcount, int tcount );
 	~Mesh() { delete pos; delete N; delete spos; delete tri; }
 	// methods
-	void Render( mat4& transform );
+	void Render( const mat4& transform );
 	virtual int GetType() { return SG_MESH; }
 	// data members
 	float3* pos = 0;				// object-space vertex positions
@@ -155,7 +156,7 @@ public:
 	// methods
 	void Init();
 	void Reinit( int w, int h, Surface* screen );
-	void Render( mat4& transform );
+	void Render( const mat4& transform );
 	// data members
 	static Scene scene;
 	static float* zbuffer;

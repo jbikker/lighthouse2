@@ -4,7 +4,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,9 +18,17 @@
 namespace lh2core
 {
 
-// from OptiX SDK, putil.h
-#define CHK_PRIME(c){RTPresult r=c;if(r){const char*e;rtpContextGetLastErrorString(RenderCore::context,&e);\
-FatalError( "Error at line %i of %s: %s", __LINE__,__FILE__,e);exit(1);}}
+#define CHK_PRIME( stmt )                                                                 \
+	{                                                                                     \
+		RTPresult r = ( stmt );                                                           \
+		if ( r )                                                                          \
+		{                                                                                 \
+			const char* e;                                                                \
+			rtpContextGetLastErrorString( RenderCore::context, &e );                      \
+			FatalError( #stmt " returned error '%s' at %s:%d\n", e, __FILE__, __LINE__ ); \
+		}                                                                                 \
+	}                                                                                     \
+	while ( 0 )
 
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |

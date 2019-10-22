@@ -20,6 +20,10 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+#ifdef APIENTRY
+#undef APIENTRY // prevents an ugly redeclaration warning on windows
+#endif
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION

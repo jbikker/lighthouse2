@@ -53,6 +53,7 @@ struct CoreStats
 	float traceTimeX;					// time spent tracing subsequent bounces
 	float shadowTraceTime;				// time spent tracing shadow rays
 	float shadeTime;					// time spent in shading code
+	float filterTime = 0;				// time spent in filter code
 	// probe
 	int probedInstid;					// id of the instance at probe position
 	int probedTriid;					// id of triangle at probe position

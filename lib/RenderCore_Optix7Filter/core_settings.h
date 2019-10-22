@@ -73,10 +73,6 @@ char* ParseOptixError( OptixResult r );
 	FatalError( __FILE__, __LINE__, ParseOptixError( r ), log ); \
 	system( "pause" ); exit( 1 ); } } while( 0 )
 
-#define CHK_CUDA( c ) do { cudaError_t r = c; if (r) {					\
-	FatalError( __FILE__, __LINE__, #c);	\
-	system( "pause" ); exit( 1 ); } } while( 0 )
-
 using namespace lighthouse2;
 
 #include "core_mesh.h"

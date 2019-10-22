@@ -35,6 +35,8 @@ void PrepareScene()
 {
 	// initialize scene
 	renderer->AddScene( "scene.gltf", "data/pica/", mat4::Translate( 0, -10.2f, 0 ) );
+	// int meshIdx = renderer->AddMesh( "rungholt.obj", "data/rungholt/", 1.0f );
+	// renderer->AddInstance( meshIdx );
 	// renderer->AddScene( "CesiumMan.glb", "data/", mat4::Translate( 0, -2, -9 ) );
 	// renderer->AddScene( "project_polly.glb", "data/", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
@@ -51,60 +53,20 @@ void PrepareScene()
 bool HandleInput( float frameTime )
 {
 	// handle keyboard input
-	float translateSpeed = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rotateSpeed = 2.5f * frameTime;
+	float tspd = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rspd = 2.5f * frameTime;
 	bool changed = false;
 	Camera *camera = renderer->GetCamera();
-	if (keystates[GLFW_KEY_A])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( -translateSpeed, 0, 0 ) );
-	}
-	if (keystates[GLFW_KEY_D])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( translateSpeed, 0, 0 ) );
-	}
-	if (keystates[GLFW_KEY_W])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, 0, translateSpeed ) );
-	}
-	if (keystates[GLFW_KEY_S])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, 0, -translateSpeed ) );
-	}
-	if (keystates[GLFW_KEY_R])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, translateSpeed, 0 ) );
-	}
-	if (keystates[GLFW_KEY_F])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, -translateSpeed, 0 ) );
-	}
+	if (keystates[GLFW_KEY_A]) { changed = true; camera->TranslateRelative( make_float3( -tspd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_D]) { changed = true; camera->TranslateRelative( make_float3( tspd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_W]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, tspd ) ); }
+	if (keystates[GLFW_KEY_S]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, -tspd ) ); }
+	if (keystates[GLFW_KEY_R]) { changed = true; camera->TranslateRelative( make_float3( 0, tspd, 0 ) ); }
+	if (keystates[GLFW_KEY_F]) { changed = true; camera->TranslateRelative( make_float3( 0, -tspd, 0 ) ); }
 	if (keystates[GLFW_KEY_B]) changed = true; // force restart
-	if (keystates[GLFW_KEY_UP])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( 0, -rotateSpeed, 0 ) );
-	}
-	if (keystates[GLFW_KEY_DOWN])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( 0, rotateSpeed, 0 ) );
-	}
-	if (keystates[GLFW_KEY_LEFT])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( -rotateSpeed, 0, 0 ) );
-	}
-	if (keystates[GLFW_KEY_RIGHT])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( rotateSpeed, 0, 0 ) );
-	}
+	if (keystates[GLFW_KEY_UP]) { changed = true; camera->TranslateTarget( make_float3( 0, -rspd, 0 ) ); }
+	if (keystates[GLFW_KEY_DOWN]) { changed = true; camera->TranslateTarget( make_float3( 0, rspd, 0 ) ); }
+	if (keystates[GLFW_KEY_LEFT]) { changed = true; camera->TranslateTarget( make_float3( -rspd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_RIGHT]) { changed = true; camera->TranslateTarget( make_float3( rspd, 0, 0 ) ); }
 	// let the main loop know if the camera should update
 	return changed;
 }
@@ -174,6 +136,7 @@ int main()
 		ImGui::Text( "Deep rays:    %6.2fms", coreStats.traceTimeX * 1000 );
 		ImGui::Text( "Shadow rays:  %6.2fms", coreStats.shadowTraceTime * 1000 );
 		ImGui::Text( "Shading time: %6.2fms", coreStats.shadeTime * 1000 );
+		ImGui::Text( "Filter time:  %6.2fms", coreStats.filterTime * 1000 );
 		ImGui::Text( "# primary:    %6ik (%6.1fM/s)", coreStats.primaryRayCount / 1000, coreStats.primaryRayCount / (max( 1.0f, coreStats.traceTime0 * 1000000 )) );
 		ImGui::Text( "# secondary:  %6ik (%6.1fM/s)", coreStats.bounce1RayCount / 1000, coreStats.bounce1RayCount / (max( 1.0f, coreStats.traceTime1 * 1000000 )) );
 		ImGui::Text( "# deep rays:  %6ik (%6.1fM/s)", coreStats.deepRayCount / 1000, coreStats.deepRayCount / (max( 1.0f, coreStats.traceTimeX * 1000000 )) );

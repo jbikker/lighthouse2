@@ -294,6 +294,8 @@ void RenderCore::Init()
 	}
 	cudaEventCreate( &shadowStart );
 	cudaEventCreate( &shadowEnd );
+	cudaEventCreate( &filterStart );
+	cudaEventCreate( &filterEnd );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -778,6 +780,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// apply filter on gathered data
 	if (features != 0 && vars.filterEnabled)
 	{
+		cudaEventRecord( filterStart );
 		prepareFilter( accumulator->DevPtr(), features->DevPtr(), worldPos->DevPtr(), prevWorldPos->DevPtr(),
 			shading->DevPtr(), motion->DevPtr(), moments->DevPtr(), prevMoments->DevPtr(), deltaDepth->DevPtr(),
 			prevView, j0, j1, prevj0, prevj1,
@@ -806,6 +809,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		swap( moments, prevMoments );
 		blueSlot = (blueSlot + 1) & 255;
 		prevj0 = j0, prevj1 = j1;
+		cudaEventRecord( filterEnd );
 	}
 	else finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
 	renderTarget.UnbindSurface();
@@ -816,6 +820,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
 	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
 	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	coreStats.filterTime = CUDATools::Elapsed( filterStart, filterEnd );
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
 	for (int i = 2; i < MAXPATHLENGTH; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
 	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );

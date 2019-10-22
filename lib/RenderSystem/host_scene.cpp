@@ -121,7 +121,7 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 	XMLElement* countElement = root->FirstChildElement( "material_count" );
 	if (!countElement) return;
 	int materialCount;
-	scanf( countElement->GetText(), "%i", &materialCount );
+	scanf_s( countElement->GetText(), "%i", &materialCount );
 	if (materialCount != materials.size()) return;
 	for (int i = 0; i < materialCount; i++)
 	{

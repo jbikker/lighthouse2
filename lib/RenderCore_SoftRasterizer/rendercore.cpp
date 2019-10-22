@@ -147,7 +147,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, c
 		if (texID == -1)
 		{
 			float r = mat[i].diffuse_r, g = mat[i].diffuse_g, b = mat[i].diffuse_b;
-			m->diffuse = ((int)(r * 255.0f) << 16) + ((int)(g * 255.0f) << 8) + (int)(b * 255.0f);
+			m->diffuse = ((int)(b * 255.0f) << 16) + ((int)(g * 255.0f) << 8) + (int)(r * 255.0f);
 		}
 		else
 		{
@@ -198,10 +198,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	mat4 transform;
 	const float3 X = normalize( view.p2 - view.p1 ), Y = normalize( view.p1 - view.p3 );
 	const float3 Z = normalize( view.pos - 0.5f * (view.p2 + view.p3) );
-	transform[0] = X.x, transform[1] = X.y, transform[2] = X.z;
-	transform[4] = Y.x, transform[5] = Y.y, transform[6] = Y.z;
-	transform[8] = Z.x, transform[9] = Z.y, transform[10] = Z.z;
-	rasterizer.Render( transform * mat4::Translate( view.pos * -1.0f /* dont' ask */ ) );
+	transform[0] = X.x, transform[4] = X.y, transform[8] = X.z;
+	transform[1] = Y.x, transform[5] = Y.y, transform[9] = Y.z;
+	transform[2] = Z.x, transform[6] = Z.y, transform[10] = Z.z;
+	rasterizer.Render( mat4::Translate( view.pos ) * transform );
 	// copy cpu surface to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, scrwidth, scrheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, renderTarget->pixels );

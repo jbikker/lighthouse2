@@ -138,7 +138,7 @@ private:
 	// timing
 	cudaEvent_t traceStart[MAXPATHLENGTH], traceEnd[MAXPATHLENGTH];
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];
-	cudaEvent_t shadowStart, shadowEnd;
+	cudaEvent_t shadowStart, shadowEnd, filterStart, filterEnd;
 public:
 	CoreStats coreStats;							// rendering statistics
 	static OptixDeviceContext optixContext;			// static, for access from CoreMesh

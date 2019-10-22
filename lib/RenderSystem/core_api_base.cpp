@@ -27,6 +27,9 @@ static destroyCoreFunction destroyCore;
 
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
+#ifdef APIENTRY
+#undef APIENTRY
+#endif
 
 #include <windows.h>
 static HMODULE module;

@@ -12,8 +12,11 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   THIS IS A SHARED FILE:
-   used in RenderCore_OptixPrime and RenderCore_OptixRTX.
+   THIS IS A SHARED FILE: used in 
+   - RenderCore_OptixPrime_b
+   - RenderCore_Optix7
+   - RenderCore_Optix7Filter
+   - RenderCore_PrimeRef
 */
 
 #include "noerrors.h"

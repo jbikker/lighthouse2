@@ -79,6 +79,8 @@ del apps\imguiapp\*.iobj /Q
 del apps\imguiapp\*.ipdb /Q
 del apps\imguiapp\*.pdb /Q
 del apps\imguiapp\*.ilk /Q
+del apps\imguiapp\*.exp /Q
+del apps\imguiapp\*.lib /Q
 rd apps\rtxbvhreveng\x64 /S /Q
 del apps\rtxbvhreveng\data\sky_15.bin
 del apps\rtxbvhreveng\*.exe /Q
@@ -86,7 +88,17 @@ del apps\rtxbvhreveng\*.iobj /Q
 del apps\rtxbvhreveng\*.ipdb /Q
 del apps\rtxbvhreveng\*.pdb /Q
 del apps\rtxbvhreveng\*.ilk /Q
-
+del apps\rtxbvhreveng\*.exp /Q
+del apps\rtxbvhreveng\*.lib /Q
+rd apps\tinyapplua\x64 /S /Q
+del apps\tinyapplua\data\sky_15.bin
+del apps\tinyapplua\*.exe /Q
+del apps\tinyapplua\*.iobj /Q
+del apps\tinyapplua\*.ipdb /Q
+del apps\tinyapplua\*.pdb /Q
+del apps\tinyapplua\*.ilk /Q
+del apps\tinyapplua\*.exp /Q
+del apps\tinyapplua\*.lib /Q
 rem | Clean up other components
 
 rd lib\RenderSystem\lib /S /Q

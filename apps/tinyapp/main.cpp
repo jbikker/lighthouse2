@@ -36,7 +36,7 @@ void PrepareScene()
 	// initialize scene
 	renderer->AddScene( "scene.gltf", "data/pica/" );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
-	renderer->SetNodeTransform( rootNode, mat4::RotateX( PI / 2 ) );
+	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 	int carID = renderer->AddMesh( "legocar.obj", "data/", 10.0f );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
@@ -51,60 +51,20 @@ void PrepareScene()
 bool HandleInput( float frameTime )
 {
 	// handle keyboard input
-	float translateSpeed = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rotateSpeed = 2.5f * frameTime;
+	float spd = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rot = 2.5f * frameTime;
 	bool changed = false;
 	Camera *camera = renderer->GetCamera();
-	if (keystates[GLFW_KEY_A])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( -translateSpeed, 0, 0 ) );
-	}
-	if (keystates[GLFW_KEY_D])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( translateSpeed, 0, 0 ) );
-	}
-	if (keystates[GLFW_KEY_W])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, 0, translateSpeed ) );
-	}
-	if (keystates[GLFW_KEY_S])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, 0, -translateSpeed ) );
-	}
-	if (keystates[GLFW_KEY_R])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, translateSpeed, 0 ) );
-	}
-	if (keystates[GLFW_KEY_F])
-	{
-		changed = true;
-		camera->TranslateRelative( make_float3( 0, -translateSpeed, 0 ) );
-	}
+	if (keystates[GLFW_KEY_A]) { changed = true; camera->TranslateRelative( make_float3( -spd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_D]) { changed = true; camera->TranslateRelative( make_float3( spd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_W]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, spd ) ); }
+	if (keystates[GLFW_KEY_S]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, -spd ) ); }
+	if (keystates[GLFW_KEY_R]) { changed = true; camera->TranslateRelative( make_float3( 0, spd, 0 ) ); }
+	if (keystates[GLFW_KEY_F]) { changed = true; camera->TranslateRelative( make_float3( 0, -spd, 0 ) ); }
 	if (keystates[GLFW_KEY_B]) changed = true; // force restart
-	if (keystates[GLFW_KEY_UP])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( 0, -rotateSpeed, 0 ) );
-	}
-	if (keystates[GLFW_KEY_DOWN])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( 0, rotateSpeed, 0 ) );
-	}
-	if (keystates[GLFW_KEY_LEFT])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( -rotateSpeed, 0, 0 ) );
-	}
-	if (keystates[GLFW_KEY_RIGHT])
-	{
-		changed = true;
-		camera->TranslateTarget( make_float3( rotateSpeed, 0, 0 ) );
-	}
+	if (keystates[GLFW_KEY_UP]) { changed = true; camera->TranslateTarget( make_float3( 0, -rot, 0 ) ); }
+	if (keystates[GLFW_KEY_DOWN]) { changed = true; camera->TranslateTarget( make_float3( 0, rot, 0 ) ); }
+	if (keystates[GLFW_KEY_LEFT]) { changed = true; camera->TranslateTarget( make_float3( -rot, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_RIGHT]) { changed = true; camera->TranslateTarget( make_float3( rot, 0, 0 ) ); }
 	// let the main loop know if the camera should update
 	return changed;
 }

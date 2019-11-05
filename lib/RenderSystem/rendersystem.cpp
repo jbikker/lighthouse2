@@ -164,7 +164,6 @@ void RenderSystem::UpdateSceneGraph()
 		// send instances to core
 		for (int instanceIdx = 0; instanceIdx < instanceCount; instanceIdx++)
 		{
-			// HostInstance* instance = scene->instances[instanceIdx];
 			HostNode* node = HostScene::nodes[HostScene::instances[instanceIdx]];
 			node->instanceID = instanceIdx;
 			int dummy = node->Changed(); // prevent superfluous update in the next frame

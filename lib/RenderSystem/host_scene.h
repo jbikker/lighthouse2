@@ -40,7 +40,7 @@ public:
 	static int FindOrCreateTexture( const string& origin, const uint modFlags = 0 );
 	static int CreateTexture( const string& origin, const uint modFlags = 0 );
 	static int FindOrCreateMaterial( const string& name );
-	static int GetTriangleMaterial( const int nodeid, const int triid );
+	static int GetTriangleMaterial( const int instId, const int triId );
 	static int FindMaterialID( const char* name );
 	static int FindNode( const char* name );
 	static void SetNodeTransform( const int nodeId, const mat4& transform );
@@ -49,10 +49,12 @@ public:
 	static int AnimationCount() { return (int)animations.size(); }
 	// scene construction / maintenance
 	static int AddMesh( const char* objFile, const char* dir, const float scale = 1.0f );
-	static void AddScene( const char* sceneFile, const char* dir, const mat4& transform );
+	static int AddMesh( const int triCount );
+	static void AddTriToMesh( const int meshId, const float3& v0, const float3& v1, const float3& v2, const int matId );
+	static int AddScene( const char* sceneFile, const char* dir, const mat4& transform );
 	static int AddInstance( const int meshId, const mat4& transform );
 	static void RemoveInstance( const int instId );
-	static int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material, const int meshID = -1 );
+	static int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int matId, const int meshID = -1 );
 	static int AddMaterial( const float3 color );
 	static int AddPointLight( const float3 pos, const float3 radiance, bool enabled = true );
 	static int AddSpotLight( const float3 pos, const float3 direction, const float inner, const float outer, const float3 radiance, bool enabled = true );

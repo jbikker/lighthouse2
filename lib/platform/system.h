@@ -28,6 +28,7 @@
 #include <ctime>
 #include <fstream>
 #include <half.hpp>
+#include <ppl.h>
 #include <ratio>
 #include <string>
 #include <thread>
@@ -36,6 +37,7 @@
 using namespace std;
 using namespace half_float;
 
+#include "immintrin.h"
 #include "emmintrin.h"
 #include "common_types.h"
 #include "common_settings.h"
@@ -214,6 +216,7 @@ class Bitmap
 {
 public:
 	Bitmap() = default;
+	Bitmap( const char* f );
 	Bitmap( uint w, uint h ) : pixels( new uint[w * h] ), width( w ), height( h ) {}
 	void Clear() { memset( pixels, 0, width * height * 4 ); }
 	uint* pixels = nullptr;

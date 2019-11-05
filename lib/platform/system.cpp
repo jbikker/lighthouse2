@@ -101,6 +101,28 @@ float4 operator * ( const float4& b, const mat4& a )
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  Bitmap functions.                                                    LH2'19|
+//  +-----------------------------------------------------------------------------+
+Bitmap::Bitmap( const char* f )
+{
+	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
+	fif = FreeImage_GetFileType( f, 0 );
+	if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename( f );
+	FIBITMAP* tmp = FreeImage_Load( fif, f );
+	FIBITMAP* dib = FreeImage_ConvertTo32Bits( tmp );
+	FreeImage_Unload( tmp );
+	width = FreeImage_GetWidth( dib );
+	height = FreeImage_GetHeight( dib );
+	pixels = (uint*)MALLOC64( width * height * sizeof( uint ) );
+	for( uint y = 0; y < height; y++)
+	{
+		unsigned const char *line = FreeImage_GetScanLine( dib, height - 1 - y );
+		memcpy( pixels + y * width, line, width * sizeof( uint ) );
+	}
+	FreeImage_Unload( dib );
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  Helper functions.                                                    LH2'19|
 //  +-----------------------------------------------------------------------------+
 bool FileIsNewer( const char* file1, const char* file2 )

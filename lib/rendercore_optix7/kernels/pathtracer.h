@@ -167,11 +167,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	{
 		float3 lightColor;
 		float r0, r1, pickProb, lightPdf = 0;
-		if (sampleIdx < 256)
+		if (false) // (sampleIdx < 256)
 		{
 			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
-			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 );
-			r1 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 );
+			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength );
+			r1 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 + 4 * pathLength );
 		}
 		else
 		{
@@ -210,11 +210,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
 	float newBsdfPdf, r3, r4;
-	if (sampleIdx < 256)
+	if (false) // sampleIdx < 256)
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
-		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 );
-		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 );
+		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 6 + 4 * pathLength );
+		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 7 + 4 * pathLength );
 	}
 	else
 	{

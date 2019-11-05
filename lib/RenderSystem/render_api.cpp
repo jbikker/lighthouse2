@@ -61,7 +61,17 @@ int RenderAPI::AddMesh( const char* file, const char* dir, const float scale )
 	return renderer->scene->AddMesh( file, dir, scale );
 }
 
-void RenderAPI::AddScene( const char* file, const char* dir, const mat4& transform )
+int RenderAPI::AddMesh( const int triCount )
+{
+	return renderer->scene->AddMesh( triCount );
+}
+
+void RenderAPI::AddTriToMesh( const int meshId, const float3& v0, const float3& v1, const float3& v2, const int matId )
+{
+	return renderer->scene->AddTriToMesh( meshId, v0, v1, v2, matId );
+}
+
+int RenderAPI::AddScene( const char* file, const char* dir, const mat4& transform )
 {
 	return renderer->scene->AddScene( file, dir, transform );
 }
@@ -121,14 +131,14 @@ RenderSettings* RenderAPI::GetSettings()
 	return &renderer->settings;
 }
 
-int RenderAPI::GetTriangleMaterialID( const int triId, const int instId )
+int RenderAPI::GetTriangleMaterialID( const int instId, const int triId )
 {
-	return renderer->scene->GetTriangleMaterial( triId, instId );
+	return renderer->scene->GetTriangleMaterial( instId, triId );
 }
 
-HostMaterial* RenderAPI::GetTriangleMaterial( const int triId, const int instId )
+HostMaterial* RenderAPI::GetTriangleMaterial( const int instId, const int triId )
 {
-	int matId = renderer->scene->GetTriangleMaterial( triId, instId );
+	int matId = renderer->scene->GetTriangleMaterial( instId, triId );
 	return GetMaterial( matId );
 }
 

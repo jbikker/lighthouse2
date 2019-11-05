@@ -77,7 +77,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (PRIMIDX == NOHIT)
 	{
 		float3 contribution = throughput * make_float3( SampleSkydome( D, pathLength ) );
-		FIXNAN_FLOAT3( contribution );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
 		return;
 	}
@@ -102,8 +101,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		if (DdotNL > 0) /* lights are not double sided */
 		{
 			float3 contribution = throughput * shadingData.color;
-			FIXNAN_FLOAT3( contribution );
-			accumulator[pixelIdx] += make_float4( contribution, 0 );
+			if (pathLength == 1) accumulator[pixelIdx] += make_float4( contribution, 0 );
 		}
 		return;
 	}
@@ -124,7 +122,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 		const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, dummy );
 		// calculate potential contribution
 		float3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (pickProb * lightPdf));
-		FIXNAN_FLOAT3( contribution );
 		// add fire-and-forget shadow ray to the connections buffer
 		const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
 		connections[shadowRayIdx].O4 = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 );
@@ -137,16 +134,15 @@ void shadeKernel( float4* accumulator, const uint stride,
 	float newBsdfPdf;
 	const float r3 = RandomFloat( seed ), r4 = RandomFloat( seed ), r5 = RandomFloat( seed );
 	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf );
-	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
+	if (newBsdfPdf < EPSILON) return;
 
 	// russian roulette
 	const float p = pathLength == MAXPATHLENGTH ? 0 : SurvivalProbability( bsdf );
 	if (p < r5) return;
-	throughput *= (max( 0.0f, dot( fN, R ) ) / (p * newBsdfPdf)) * bsdf;
+	throughput *= bsdf * max( 0.0f, dot( fN, R ) ) / (p * newBsdfPdf);
 
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
-	FIXNAN_FLOAT3( throughput );
 	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), 0 );
 	extensionRaysOut[extensionRayIdx].D4 = make_float4( R, 1e34f );
 	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput, __uint_as_float( data ) );

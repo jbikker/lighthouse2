@@ -63,9 +63,13 @@
 #ifndef __OPENCLCC__
 #define FIXNAN_FLOAT3(a)	{if(!isfinite(a.x+a.y+a.z))a=make_float3(0);}
 #define FIXNAN_FLOAT4(a)	{if(!isfinite(a.x+a.y+a.z+a.w))a=make_float4(0);}
+#define REPORTNAN_FLOAT3(a)	{if(!isfinite(a.x+a.y+a.z))printf("getting NaNs here!");}
+#define REPORTNAN_FLOAT4(a)	{if(!isfinite(a.x+a.y+a.z))printf("getting NaNs here!");}
 #else
 #define FIXNAN_FLOAT3(a)	{if(isnan(a.x+a.y+a.z))a=make_float3(0);}
 #define FIXNAN_FLOAT4(a)	{if(isnan(a.x+a.y+a.z+a.w))a=make_float4(0);}
+#define REPORTNAN_FLOAT3(a)	{if(isnan(a.x+a.y+a.z))printf("getting NaNs here!");}
+#define REPORTNAN_FLOAT4(a)	{if(isnan(a.x+a.y+a.z))printf("getting NaNs here!");}
 #endif
 
 // EOF

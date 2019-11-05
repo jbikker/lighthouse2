@@ -774,6 +774,9 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
+	coreStats.probedInstid = counters.probedInstid;
+	coreStats.probedTriid = counters.probedTriid;
+	coreStats.probedDist = counters.probedDist;
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
@@ -824,9 +827,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
 	for (int i = 2; i < MAXPATHLENGTH; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
 	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
-	coreStats.probedInstid = counters.probedInstid;
-	coreStats.probedTriid = counters.probedTriid;
-	coreStats.probedDist = counters.probedDist;
 	// store view for next frame
 	prevView = view;
 }

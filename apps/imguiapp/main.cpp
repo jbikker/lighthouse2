@@ -24,6 +24,12 @@ static Shader* shader = 0;
 static uint scrwidth = 0, scrheight = 0, scrspp = 1;
 static bool camMoved = false, spaceDown = false, hasFocus = true, running = true, animPaused = false;
 static std::bitset<1024> keystates;
+static std::bitset<8> mbstates;
+
+// material editing
+HostMaterial currentMaterial;
+int currentMaterialID = -1;
+static CoreStats coreStats;
 
 #include "main_tools.h"
 
@@ -67,8 +73,38 @@ bool HandleInput( float frameTime )
 	if (keystates[GLFW_KEY_DOWN]) { changed = true; camera->TranslateTarget( make_float3( 0, rspd, 0 ) ); }
 	if (keystates[GLFW_KEY_LEFT]) { changed = true; camera->TranslateTarget( make_float3( -rspd, 0, 0 ) ); }
 	if (keystates[GLFW_KEY_RIGHT]) { changed = true; camera->TranslateTarget( make_float3( rspd, 0, 0 ) ); }
+	if (!keystates[GLFW_KEY_SPACE]) spaceDown = false; else { if (!spaceDown) animPaused = !animPaused, changed = true; spaceDown = true; }
+	// process left button click
+	if (mbstates[GLFW_MOUSE_BUTTON_1] && keystates[GLFW_KEY_LEFT_SHIFT])
+	{
+		int selectedMaterialID = renderer->GetTriangleMaterialID( coreStats.probedInstid, coreStats.probedTriid );
+		if (selectedMaterialID != -1)
+		{
+			currentMaterial = *renderer->GetMaterial( selectedMaterialID );
+			currentMaterialID = selectedMaterialID;
+			currentMaterial.Changed(); // update checksum so we can track changes
+		}
+		// camera->focalDistance = coreStats.probedDist;
+		changed = true;
+	}
 	// let the main loop know if the camera should update
 	return changed;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HandleMaterialChange                                                       |
+//  |  Update a scene material based on AntTweakBar.                        LH2'19|
+//  +-----------------------------------------------------------------------------+
+bool HandleMaterialChange()
+{
+	if (currentMaterial.Changed() && currentMaterialID != -1)
+	{
+		// put it back
+		*renderer->GetMaterial( currentMaterialID ) = currentMaterial;
+		renderer->GetMaterial( currentMaterialID )->MarkAsDirty();
+		return true;
+	}
+	return false;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -82,8 +118,8 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
@@ -104,6 +140,8 @@ int main()
 		camMoved = false;
 		deltaTime = timer.elapsed();
 		if (HandleInput( deltaTime )) camMoved = true;
+		// handle material changes
+		if (HandleMaterialChange()) camMoved = true;
 		// poll events, may affect probepos so needs to happen between HandleInput and Render
 		glfwPollEvents();
 		// update animations
@@ -127,7 +165,7 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGui::Begin( "Render statistics", 0 );
-		CoreStats coreStats = renderer->GetCoreStats();
+		coreStats = renderer->GetCoreStats();
 		SystemStats systemStats = renderer->GetSystemStats();
 		ImGui::Text( "Frame time:   %6.2fms", coreStats.renderTime * 1000 );
 		ImGui::Text( "Scene update: %6.2fms", systemStats.sceneUpdateTime * 1000 );
@@ -141,6 +179,23 @@ int main()
 		ImGui::Text( "# secondary:  %6ik (%6.1fM/s)", coreStats.bounce1RayCount / 1000, coreStats.bounce1RayCount / (max( 1.0f, coreStats.traceTime1 * 1000000 )) );
 		ImGui::Text( "# deep rays:  %6ik (%6.1fM/s)", coreStats.deepRayCount / 1000, coreStats.deepRayCount / (max( 1.0f, coreStats.traceTimeX * 1000000 )) );
 		ImGui::Text( "# shadw rays: %6ik (%6.1fM/s)", coreStats.totalShadowRays / 1000, coreStats.totalShadowRays / (max( 1.0f, coreStats.shadowTraceTime * 1000000 )) );
+		ImGui::End();
+		ImGui::Begin( "Material parameters", 0 );
+		ImGui::Text( "name:    %s", currentMaterial.name.c_str() );
+		ImGui::ColorEdit3( "color", (float*)&currentMaterial.color );
+		ImGui::ColorEdit3( "absorption", (float*)&currentMaterial.absorption );
+		ImGui::SliderFloat( "metallic", &currentMaterial.metallic, 0, 1 );
+		ImGui::SliderFloat( "subsurface", &currentMaterial.subsurface, 0, 1 );
+		ImGui::SliderFloat( "specular", &currentMaterial.specular, 0, 1 );
+		ImGui::SliderFloat( "roughness", &currentMaterial.roughness, 0, 1 );
+		ImGui::SliderFloat( "specularTint", &currentMaterial.specularTint, 0, 1 );
+		ImGui::SliderFloat( "anisotropic", &currentMaterial.anisotropic, 0, 1 );
+		ImGui::SliderFloat( "sheen", &currentMaterial.sheen, 0, 1 );
+		ImGui::SliderFloat( "sheenTint", &currentMaterial.sheenTint, 0, 1 );
+		ImGui::SliderFloat( "clearcoat", &currentMaterial.clearcoat, 0, 1 );
+		ImGui::SliderFloat( "clearcoatGloss", &currentMaterial.clearcoatGloss, 0, 1 );
+		ImGui::SliderFloat( "transmission", &currentMaterial.transmission, 0, 1 );
+		ImGui::SliderFloat( "eta", &currentMaterial.eta, 1, 3 );
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );

@@ -188,7 +188,7 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 				HostNode* jointNode = HostScene::nodes[skin->joints[j]];
 				skin->jointMat[j] = meshTransformInverted * jointNode->combinedTransform * skin->inverseBindMatrices[j];
 			}
-			HostScene::meshes[meshID]->SetPose( skin, meshTransform );
+			HostScene::meshes[meshID]->SetPose( skin );
 		}
 		posInInstanceArray++;
 	}

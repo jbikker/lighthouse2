@@ -37,7 +37,9 @@ public:
 	void DeserializeCamera( const char* camera );
 	void SerializeCamera( const char* camera );
 	int AddMesh( const char* file, const char* dir, const float scale );
-	void AddScene( const char* file, const char* dir, const mat4& transform = mat4::Identity() );
+	int AddMesh( const int triCount );
+	void AddTriToMesh( const int meshId, const float3& v0, const float3& v1, const float3& v2, const int matId );
+	int AddScene( const char* file, const char* dir, const mat4& transform = mat4::Identity() );
 	int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material, const int meshID = -1 );
 	int AddInstance( const int meshId, const mat4& transform = mat4() );
 	void RemoveInstance( const int instId );
@@ -49,8 +51,8 @@ public:
 	void Render( Convergence converge );
 	Camera* GetCamera();
 	RenderSettings* GetSettings();
-	int GetTriangleMaterialID( const int triId, const int instId );
-	HostMaterial* GetTriangleMaterial( const int triId, const int instId );
+	int GetTriangleMaterialID( const int instId, const int triId );
+	HostMaterial* GetTriangleMaterial( const int instId, const int triId );
 	HostMaterial* GetMaterial( const int matId );
 	int FindNode( const char* name );
 	int FindMaterialID( const char* name );

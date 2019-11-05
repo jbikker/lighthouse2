@@ -93,6 +93,7 @@ __host__ void SetCounters( Counters* p ) { cudaMemcpyToSymbol( counters, &p, siz
 // functional blocks
 #include "tools_shared.h"
 #include "sampling_shared.h"
+#define FILTERINGCORE
 #include "material_shared.h"
 #include "lights_shared.h"
 #include "bsdf.h"

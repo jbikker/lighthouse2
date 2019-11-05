@@ -294,18 +294,16 @@ LH2_DEVFUNC float3 GetIndirectFromFloat4( const float4& X )
 
 LH2_DEVFUNC float blueNoiseSampler( const uint* blueNoise, int x, int y, int sampleIndex, int sampleDimension )
 {
-	// wrap arguments
+	// Adapated from E. Heitz. Arguments:
+	// sampleIndex: 0..255
+	// sampleDimension: 0..255
 	x &= 127, y &= 127, sampleIndex &= 255, sampleDimension &= 255;
-
 	// xor index based on optimized ranking
 	int rankedSampleIndex = sampleIndex ^ blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3];
-
 	// fetch value in sequence
 	int value = blueNoise[sampleDimension + rankedSampleIndex * 256];
-
 	// if the dimension is optimized, xor sequence value based on optimized scrambling
 	value ^= blueNoise[(sampleDimension & 7) + (x + y * 128) * 8 + 65536];
-
 	// convert to float and return
 	return (0.5f + value) * (1.0f / 256.0f);
 }

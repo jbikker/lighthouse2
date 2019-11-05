@@ -49,6 +49,7 @@ public:
 	};
 	// constructor / destructor
 	HostMesh() = default;
+	HostMesh( const int triCount );
 	HostMesh( const char* name, const char* dir, const float scale = 1.0f );
 	HostMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride = -1 );
 	~HostMesh();
@@ -62,7 +63,7 @@ public:
 	void BuildMaterialList();
 	void UpdateAlphaFlags();
 	void SetPose( const vector<float>& weights );
-	void SetPose( const HostSkin* skin, const mat4& meshTransform );
+	void SetPose( const HostSkin* skin );
 	// data members
 	string name = "unnamed";					// name for the mesh						
 	int ID = -1;								// unique ID for the mesh: position in mesh array

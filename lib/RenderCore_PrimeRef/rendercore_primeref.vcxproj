@@ -58,6 +58,7 @@
       <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../Optix/include;../CUDA;../CUDA/shared_kernel_code;../sharedBSDFs;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

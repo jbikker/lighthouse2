@@ -225,8 +225,8 @@ void main()
 		{
 			const int x = int(pixelIdx % scrWidth) & 127;
 			const int y = int(pixelIdx / scrWidth) & 127;
-			r0 = blueNoiseSampler( x, y, int(sampleIdx), 4 );
-			r1 = blueNoiseSampler( x, y, int(sampleIdx), 5 );
+			r0 = blueNoiseSampler( x, y, int(sampleIdx), 4 + 4 * pathLength );
+			r1 = blueNoiseSampler( x, y, int(sampleIdx), 5 + 4 * pathLength );
 		}
 		else
 		{
@@ -272,8 +272,8 @@ void main()
 	{
 		const int x = int(pixelIdx % scrWidth) & 127;
 		const int y = int(pixelIdx / scrWidth) & 127;
-		r3 = blueNoiseSampler( x, y, int(sampleIdx), 4 );
-		r4 = blueNoiseSampler( x, y, int(sampleIdx), 5 );
+		r3 = blueNoiseSampler( x, y, int(sampleIdx), 6 + 4 * pathLength );
+		r4 = blueNoiseSampler( x, y, int(sampleIdx), 7 + 4 * pathLength );
 	}
 	else
 	{

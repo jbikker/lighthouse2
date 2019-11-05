@@ -16,7 +16,7 @@ __device__ static float3 SampleBSDF( const ShadingData& shadingData, float3 iN, 
 	if (fabs( ROUGHNESS ) < 0.1f)
 	{
 		// pure specular
-		wi = reflect( wo, -iN );
+		wi = reflect( wo * -1.0f, iN );
 		pdf = 1;
 		APPLYSAFENORMALS;
 		return shadingData.color * (1.0f / abs( dot( iN, wi ) ));

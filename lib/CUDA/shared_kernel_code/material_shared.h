@@ -20,7 +20,7 @@ LH2_DEVFUNC void GetShadingData(
 	const float3 D,							// IN:	incoming ray direction, used for consistent normals
 	const float u, const float v,			//		barycentric coordinates of intersection point
 	const float coneWidth,					//		ray cone width, for texture LOD
-	const CoreTri4& tri,						//		triangle data
+	const CoreTri4& tri,					//		triangle data
 	const int instIdx,						//		instance index, for normal transform
 	ShadingData& retVal,					// OUT:	material properties of the intersection point
 	float3& N, float3& iN, float3& fN,		//		geometric normal, interpolated normal, final normal (normal mapped)
@@ -168,6 +168,12 @@ LH2_DEVFUNC void GetShadingData(
 			(((uint)(FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ).x * 255.0f)) << 24);
 		retVal.parameters.x = blend;
 	}
+#ifdef FILTERINGCORE
+	// prevent r, g and b from becoming zero, for albedo separation
+	retVal.color.x = max( 0.05f, retVal.color.x );
+	retVal.color.y = max( 0.05f, retVal.color.y );
+	retVal.color.z = max( 0.05f, retVal.color.z );
+#endif
 }
 
 // EOF

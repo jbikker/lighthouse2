@@ -78,9 +78,14 @@ tinyobj https://github.com/syoyo/tinyobjloader<br>
 tinyxml2 https://github.com/leethomason/tinyxml2<br>
 zlib https://www.zlib.net
 
-The Lighthouse2 Vulkan core (and sharedBSDF) was developed by Mèir Noordermeer (https://github.com/MeirBon).
+<b>Contributions</b>
 
-A Linux port by Marijn Suijten (https://github.com/MarijnS95) is being incorporated in the main repo.
+* The Lighthouse2 Vulkan core (and sharedBSDF) was developed by Mèir Noordermeer (https://github.com/MeirBon).
+* A Linux port by Marijn Suijten (https://github.com/MarijnS95) is being incorporated in the main repo.
+* Animation code uses low-level optimizations by Alysha Bogaers and Naraenda Prasetya.
+* Reference path tracer corrected by Guowei Lu. 
+
+<b>Previous Work</b>
 
 Lighthouse 2 implements research by (very incomplete):
 

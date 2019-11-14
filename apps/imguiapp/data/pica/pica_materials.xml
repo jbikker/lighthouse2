@@ -10,7 +10,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.11413872</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -130,7 +130,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.2421875</roughness>
+        <roughness>0.838</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -154,7 +154,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -274,7 +274,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -485,20 +485,20 @@
         <origin>data/pica/scene.gltf</origin>
         <id>20</id>
         <flags>129</flags>
-        <color b="0" g="0" r="0"/>
+        <color b="0.99998999" g="0.99998999" r="1"/>
         <absorption b="0" g="0" r="0"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.5</roughness>
+        <roughness>0</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
+        <transmission>1</transmission>
+        <eta>0.63599998</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>

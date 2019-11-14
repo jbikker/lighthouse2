@@ -238,6 +238,7 @@ public:
 	// methods
 	void Bind();
 	void CopyFrom( Bitmap* src );
+	void CopyTo( Bitmap* dst );
 	// public data members
 public:
 	GLuint ID = 0;

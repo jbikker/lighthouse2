@@ -23,6 +23,9 @@ del lib\RenderCore_OptixRTX\optix\*.ptx /S /Q
 rd lib\RenderCore_OptixRTX_B\lib /S /Q
 rd lib\RenderCore_OptixRTX_B\x64 /S /Q
 del lib\RenderCore_OptixRTX_B\optix\*.ptx /S /Q
+rd lib\RenderCore_OptixPrime_BDPT\lib /S /Q
+rd lib\RenderCore_OptixPrime_BDPT\x64 /S /Q
+del lib\RenderCore_OptixPrime_BDPT\optix\*.ptx /S /Q
 rd lib\RenderCore_Optix7\lib /S /Q
 rd lib\RenderCore_Optix7\x64 /S /Q
 del lib\RenderCore_Optix7\optix\*.ptx /S /Q
@@ -61,6 +64,14 @@ del apps\tinyapp\*.iobj /Q
 del apps\tinyapp\*.ipdb /Q
 del apps\tinyapp\*.pdb /Q
 del apps\tinyapp\*.ilk /Q
+rd apps\geneticapp\x64 /S /Q
+del apps\geneticapp\data\textures\*.bin
+del apps\geneticapp\data\sky_15.bin
+del apps\geneticapp\*.exe /Q
+del apps\geneticapp\*.iobj /Q
+del apps\geneticapp\*.ipdb /Q
+del apps\geneticapp\*.pdb /Q
+del apps\geneticapp\*.ilk /Q
 rd apps\app_matui\x64 /S /Q
 del apps\app_matui\data\textures\*.bin
 del apps\app_matui\data\mattest\textures\*.bin

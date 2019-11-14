@@ -15,8 +15,7 @@
 
 #include ".cuda.h"
 
-namespace lh2core
-{
+namespace lh2core {
 
 // path tracing buffers and global variables
 __constant__ CoreInstanceDesc* instanceDescriptors;
@@ -32,7 +31,6 @@ __constant__ uint* nrm32;
 __constant__ float3* skyPixels;
 __constant__ int skywidth;
 __constant__ int skyheight;
-__constant__ PathState* pathStates;
 __constant__ float4* debugData;
 
 // path tracer settings
@@ -56,50 +54,75 @@ __host__ void SetARGB128Pixels( float4* p ) { cudaMemcpyToSymbol( argb128, &p, s
 __host__ void SetNRM32Pixels( uint* p ) { cudaMemcpyToSymbol( nrm32, &p, sizeof( void* ) ); }
 __host__ void SetSkyPixels( float3* p ) { cudaMemcpyToSymbol( skyPixels, &p, sizeof( void* ) ); }
 __host__ void SetSkySize( int w, int h ) { cudaMemcpyToSymbol( skywidth, &w, sizeof( int ) ); cudaMemcpyToSymbol( skyheight, &h, sizeof( int ) ); }
-__host__ void SetPathStates( PathState* p ) { cudaMemcpyToSymbol( pathStates, &p, sizeof( void* ) ); }
 __host__ void SetDebugData( float4* p ) { cudaMemcpyToSymbol( debugData, &p, sizeof( void* ) ); }
 
 // access
 __host__ void SetGeometryEpsilon( float e ) { cudaMemcpyToSymbol( geometryEpsilon, &e, sizeof( float ) ); }
 __host__ void SetClampValue( float c ) { cudaMemcpyToSymbol( clampValue, &c, sizeof( float ) ); }
 
+// BDPT
+/////////////////////////////////////////////////
+/* LH2_DEVFUNC void copyPathState(const BiPathState orgin, BiPathState& target)
+{
+    memcpy(&target, &orgin, sizeof(BiPathState));
+} */
+
+__global__ void InitIndexForConstructionLight_Kernel(int pathCount, uint* construcLightBuffer)
+{
+    int jobIndex = threadIdx.x + blockIdx.x * blockDim.x;
+    if (jobIndex >= pathCount) return;
+
+    construcLightBuffer[jobIndex] = jobIndex;
+}
+__host__ void InitIndexForConstructionLight(int pathCount, uint* construcLightBuffer)
+{ 
+    const dim3 gridDim(NEXTMULTIPLEOF(pathCount, 256) / 256, 1), blockDim(256, 1);
+    InitIndexForConstructionLight_Kernel << <gridDim.x, 256 >> > (pathCount, construcLightBuffer);
+}
+///////////////////////////////////////////////////
 // counters for persistent threads
 static __device__ Counters* counters;
 __global__ void InitCountersForExtend_Kernel( int pathCount )
 {
 	if (threadIdx.x != 0) return;
-	counters->activePaths = pathCount;	// remaining active paths
-	counters->shaded = 0;				// persistent thread atomic for shade kernel
-	counters->generated = 0;			// persistent thread atomic for generate in .optix.cu
-	counters->extensionRays = 0;		// compaction counter for extension rays
-	counters->shadowRays = 0;			// compaction counter for connections
-	counters->connected = 0;
-	counters->totalExtensionRays = pathCount;
-	counters->totalShadowRays = 0;
+
+    counters->constructionLightPos = pathCount;	// remaining active paths
+    counters->constructionEyePos = 0;
+
+    counters->extendEyePath = 0;
+    counters->extendLightPath = 0;
+
+    counters->randomWalkRays = 0;
+    counters->visibilityRays = 0;
 }
 __host__ void InitCountersForExtend( int pathCount ) { InitCountersForExtend_Kernel << <1, 32 >> > (pathCount); }
-__global__ void InitCountersSubsequent_Kernel()
+
+__global__ void InitCountersForPixels_Kernel()
 {
-	if (threadIdx.x != 0) return;
-	counters->totalExtensionRays += counters->extensionRays;
-	counters->activePaths = counters->extensionRays;	// remaining active paths
-	counters->extended = 0;				// persistent thread atomic for genSecond in .optix.cu
-	counters->shaded = 0;				// persistent thread atomic for shade kernel
-	counters->extensionRays = 0;		// compaction counter for extension rays
+    if (threadIdx.x != 0) return;
+
+    counters->contribution_count = 0;
 }
-__host__ void InitCountersSubsequent() { InitCountersSubsequent_Kernel << <1, 32 >> > (); }
+__host__ void InitCountersForPixels() { InitCountersForPixels_Kernel << <1, 32 >> > (); }
+
 __host__ void SetCounters( Counters* p ) { cudaMemcpyToSymbol( counters, &p, sizeof( void* ) ); }
 
 // functional blocks
 #include "tools_shared.h"
 #include "sampling_shared.h"
-#define FILTERINGCORE // in material_shared.h this ensures that albedo exceeds 0; needed for filtering.
 #include "material_shared.h"
 #include "lights_shared.h"
-#include "bsdf.h"
-#include "pathtracer.h"
 #include "finalize_shared.h"
+#include "bsdf.h"
 
+#include "constructionLightPos.h"
+#include "constructionEyePos.h"
+
+#include "extendEyePath.h"
+#include "extendLightPath.h"
+
+#include "connectionPath.h"
+#include "finalizeContribution.h"
 } // namespace lh2core
 
 // EOF

@@ -198,6 +198,13 @@ void GLTexture::CopyFrom( Bitmap* src )
 	CheckGL();
 }
 
+void GLTexture::CopyTo( Bitmap* dst )
+{
+	glBindTexture( GL_TEXTURE_2D, ID );
+	glGetTexImage( GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, dst->pixels );
+	CheckGL();
+}
+
 //  +-----------------------------------------------------------------------------+
 //  |  Shader class implementation.                                         LH2'19|
 //  +-----------------------------------------------------------------------------+

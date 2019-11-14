@@ -120,8 +120,8 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 	gpuMat.transmittance_b = absorption.z;
 	gpuMat.parameters.x = TOUINT4( metallic, subsurface, specular, roughness );
 	gpuMat.parameters.y = TOUINT4( specularTint, anisotropic, sheen, sheenTint );
-	gpuMat.parameters.z = TOUINT4( clearcoat, clearcoatGloss, transmission, eta * 0.5f );
-	gpuMat.parameters.w = TOUINT4( custom0, custom1, custom2, custom3 );
+	gpuMat.parameters.z = TOUINT4( clearcoat, clearcoatGloss, transmission, 0 );
+	gpuMat.parameters.w = *((uint*)&eta);
 	const HostTexture* t0 = map[TEXTURE0].textureID == -1 ? 0 : HostScene::textures[map[TEXTURE0].textureID];
 	const HostTexture* t1 = map[TEXTURE1].textureID == -1 ? 0 : HostScene::textures[map[TEXTURE1].textureID];
 	const HostTexture* t2 = map[TEXTURE2].textureID == -1 ? 0 : HostScene::textures[map[TEXTURE2].textureID];
@@ -183,16 +183,6 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 		gpuMat.smapwidth = s->width, gpuMat.smapheight = s->height,
 		gpuMat.suoffs = map[SPECULARITY].uvoffset.x, gpuMat.svoffs = map[SPECULARITY].uvoffset.y,
 		gpuMat.suscale = map[SPECULARITY].uvscale.x, gpuMat.svscale = map[SPECULARITY].uvscale.y;
-#if 0
-	if (cm) // color mask map
-		gpuMat.cmapwidth = cm->width, gpuMat.cmapheight = cm->height,
-		gpuMat.cuoffs = map[COLORMASK].uvoffset.x, gpuMat.cvoffs = map[COLORMASK].uvoffset.y,
-		gpuMat.cuscale = map[COLORMASK].uvscale.x, gpuMat.cvscale = map[COLORMASK].uvscale.y;
-	if (am) // alpha mask map
-		gpuMat.amapwidth = am->width, gpuMat.amapheight = am->height,
-		gpuMat.auoffs = map[ALPHAMASK].uvoffset.x, gpuMat.avoffs = map[ALPHAMASK].uvoffset.y,
-		gpuMat.auscale = map[ALPHAMASK].uvscale.x, gpuMat.avscale = map[ALPHAMASK].uvscale.y;
-#endif
 }
 
 // EOF

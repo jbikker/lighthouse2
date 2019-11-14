@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="rendercore.cpp" />
+    <ClCompile Include="..\CUDA\shared_host_code\interoptexture.cpp" />
+    <ClCompile Include="core_api.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="core_mesh.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="rendercore.h" />
+    <ClInclude Include="kernels\.cuda.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\bsdfs\lambert.h">
+      <Filter>CUDA\bsdfs</Filter>
+    </ClInclude>
+    <ClInclude Include="core_settings.h" />
+    <ClInclude Include="..\CUDA\shared_host_code\interoptexture.h" />
+    <ClInclude Include="core_api.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="core_mesh.h" />
+    <ClInclude Include="kernels\bsdfs\disney.h">
+      <Filter>CUDA\bsdfs</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\bsdfs\plastic.h">
+      <Filter>CUDA\bsdfs</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CUDA">
+      <UniqueIdentifier>{71471ef2-2812-489b-b7e9-acabda02a120}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API">
+      <UniqueIdentifier>{85ca225a-7b4b-4626-9d4f-c778bf53cb0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CUDA\bsdfs">
+      <UniqueIdentifier>{402a8309-93b0-4477-b6d9-3cbd3a31d06e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernels\.cuda.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\pathtracer.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\bsdf.cu">
+      <Filter>CUDA\bsdfs</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\camera.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\connections.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CUDA\shared_kernel_code\finalize_shared.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CUDA\shared_kernel_code\lights_shared.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CUDA\shared_kernel_code\material_shared.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CUDA\shared_kernel_code\sampling_shared.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CUDA\shared_kernel_code\tools_shared.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\constructionLightPos.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\extendPath.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+    <CudaCompile Include="kernels\connectionPath.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

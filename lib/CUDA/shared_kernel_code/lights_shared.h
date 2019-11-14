@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   THIS IS A SHARED FILE: used in 
+   THIS IS A SHARED FILE: used in
    - RenderCore_OptixPrime_b
    - RenderCore_Optix7
    - RenderCore_Optix7Filter
@@ -257,6 +257,154 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 		const float NdotL = dot( L, N );
 		lightPdf = NdotL < 0 ? 1 : 0;
 		return I - 1000.0f * L;
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  Sample_Le                                                                  |
+//  |  Part of the BDPT core.                                               LH2'19|
+//  +-----------------------------------------------------------------------------+
+LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const float& r3,
+	float3& normal, float3& lightDir, float3& lightColor,
+	float& lightPdf, float& pdfPos, float& pdfDir )
+{
+	const float lightCount = AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
+#ifdef ISLIGHTS
+	// predetermine the barycentrics for any area light we sample
+	float3 bary = RandomBarycentrics( r0 );
+	// importance sampling of lights, pickProb is per-light probability
+	float potential[MAXISLIGHTS];
+	float sum = 0, total = 0;
+	int lights = 0, lightIdx = 0;
+	for (int i = 0; i < AREALIGHTCOUNT; i++)
+	{
+		const CoreLightTri4& light = (const CoreLightTri4&)areaLights[i];
+		const float4 centre4 = light.data0; // holds area light energy in w
+		float c = AREALIGHT_ENERGY;
+		potential[lights++] = c;
+		sum += c;
+	}
+	for (int i = 0; i < POINTLIGHTCOUNT; i++)
+	{
+		const CorePointLight4& light = (const CorePointLight4&)pointLights[i];
+		const float4 position4 = light.data0;
+		float c = POINTLIGHT_ENERGY;
+		potential[lights++] = c;
+		sum += c;
+	}
+	for (int i = 0; i < SPOTLIGHTCOUNT; i++)
+	{
+		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[i];
+		const float4 radiance4 = light.data1;
+		float c = radiance4.x + radiance4.y + radiance4.z;
+		potential[lights++] = c;
+		sum += c;
+	}
+	for (int i = 0; i < DIRECTIONALLIGHTCOUNT; i++)
+	{
+		const CoreDirectionalLight4& light = (const CoreDirectionalLight4&)directionalLights[i];
+		const float4 direction4 = light.data0;
+		float c = DIRLIGHT_ENERGY;
+		potential[lights++] = c;
+		sum += c;
+	}
+	if (sum <= 0) // no potential lights found
+	{
+		lightPdf = 0;
+		return make_float3( 1 /* light direction; don't return 0 or nan, this will be slow */ );
+	}
+	r1 *= sum;
+	for (int i = 0; i < lights; i++)
+	{
+		total += potential[i];
+		if (total >= r1) { lightIdx = i; break; }
+	}
+	lightPdf = potential[lightIdx] / sum;
+#else
+	// uniform random sampling of lights, pickProb is simply 1.0 / lightCount
+	lightPdf = 1.0f / lightCount;
+	int lightIdx = (int)(r0 * lightCount);
+	r0 = (r0 - (float)lightIdx * (1.0f / lightCount)) * lightCount;
+#endif
+	lightIdx = clamp( lightIdx, 0, (int)lightCount - 1 );
+	float3 pos;
+	if (lightIdx < AREALIGHTCOUNT)
+	{
+		const CoreLightTri4& light = (const CoreLightTri4&)areaLights[lightIdx];
+		const float4 V0 = light.data3;			// vertex0
+		const float4 V1 = light.data4;			// vertex1
+		const float4 V2 = light.data5;			// vertex2
+		lightColor = make_float3( light.data2 );	// radiance
+		const float4 LN = light.data1;			// N+area
+		float area = LN.w;
+		pdfPos = 1.0f / area;
+		pos = make_float3( bary.x * V0 + bary.y * V1 + bary.z * V2 );
+		normal = make_float3( LN );
+		float3 dir_loc = DiffuseReflectionCosWeighted( r2, r3 );
+		pdfDir = dir_loc.z * INVPI;
+		float3 u, v;
+		if (fabsf( normal.x ) > 0.99f)
+		{
+			u = normalize( cross( normal, make_float3( 0.0f, 1.0f, 0.0f ) ) );
+		}
+		else
+		{
+			u = normalize( cross( normal, make_float3( 1.0f, 0.0f, 0.0f ) ) );
+		}
+		v = cross( u, normal );
+		lightDir = normalize( dir_loc.x * u + dir_loc.y * v + dir_loc.z * normal );
+		return pos;
+	}
+	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT))
+	{
+		// pick a pointlight
+		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - AREALIGHTCOUNT];
+		const float3 pos = make_float3( light.data0 );			// position
+		lightColor = make_float3( light.data1 );	// radiance
+		normal = lightDir = UniformSampleSphere( r2, r3 );
+		pdfPos = 1.0f;
+		pdfDir = INVPI * 0.25f; // UniformSpherePdf
+		return pos;
+	}
+	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT))
+	{
+		// pick a spotlight
+		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT)];
+		const float4 P = light.data0;			// position + cos_inner
+		const float4 E = light.data1;			// radiance + cos_outer
+		const float4 D = light.data2;			// direction
+		const float3 pos = make_float3( P );
+		lightColor = make_float3( E );
+		float3 dir_loc = UniformSampleCone( r2, r3, E.w );
+		const float3 light_direction = make_float3( D );
+		float3 u, v;
+		if (fabsf( light_direction.x ) > 0.99f)
+		{
+			u = normalize( cross( light_direction, make_float3( 0.0f, 1.0f, 0.0f ) ) );
+		}
+		else
+		{
+			u = normalize( cross( light_direction, make_float3( 1.0f, 0.0f, 0.0f ) ) );
+		}
+		v = cross( u, light_direction );
+		normal = lightDir = normalize( dir_loc.x * u + dir_loc.y * v + dir_loc.z * light_direction );
+		pdfPos = 1.0f;
+		pdfDir = 1.0f / (TWOPI * (1.0f - E.w)); // UniformConePdf
+		return pos;
+	}
+	else
+	{
+		// pick a directional light
+		const CoreDirectionalLight4& light = (const CoreDirectionalLight4&)directionalLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT)];
+		const float3 L = make_float3( light.data0 );	// direction
+		lightColor = make_float3( light.data1 );		// radiance
+#ifdef DIRECTIONAL_LIGHT
+		const float3 pos = SCENE_CENTER - SCENE_RADIUS * L;
+		normal = lightDir = L;
+		pdfPos = 1.0f / SCENE_AREA;
+		pdfDir = 1.0f;
+#endif
+		return pos;
 	}
 }
 

@@ -55,7 +55,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>COREDLL_EXPORTS;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../Optix/include;../CUDA;../CUDA/shared_kernel_code;../sharedBSDFs;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../Optix/include;../CUDA;../CUDA/shared_kernel_code;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -84,7 +84,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>COREDLL_EXPORTS;WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../Optix/include;../CUDA;../CUDA/shared_kernel_code;../sharedBSDFs;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../freeimage/inc;../zlib;../glfw/include;../glad/include;../Optix/include;../CUDA;../CUDA/shared_kernel_code;../half2.1.0;../tinyobjloader;../OptiX7/include;../platform;.;../RenderSystem;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -156,7 +156,7 @@
     <CudaCompile Include="kernels\.cuda.cu">
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
-      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">bsdf.cu,finalize.cu,lghts.cu,pathtrace.cu,tools.cu,.cuda.h;bsdfs/lambert.h;bsdfs/microfacet.h</AdditionalDeps>
+      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,pathtracer.h,.cuda.h</AdditionalDeps>
       <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.cu,finalize.cu,lghts.cu,pathtrace.cu,tools.cu,.cuda.h;bsdfs/lambert.h;bsdfs/microfacet.h</AdditionalDeps>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
       <MaxRegCount Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0</MaxRegCount>

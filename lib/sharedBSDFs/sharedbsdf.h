@@ -38,7 +38,7 @@
 // Note that const references are not supported, compilers optimize the supposed ShadingData copy away
 // ----------------------------------------------------------------
 
-#if 0
+#if 1
 
 // simple reference bsdf: Lambert plus specular reflection
 #include "lambert.h"
@@ -46,6 +46,8 @@
 #else
 
 // Disney's principled BRDF, adapted from https://www.shadertoy.com/view/XdyyDd
+#include "ggxmdf.h"
+// #include "disney2.h"
 #include "disney.h"
 
 #endif

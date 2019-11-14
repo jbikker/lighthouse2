@@ -127,7 +127,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		{
 			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
 			{
-				// only camera rays will be treated special
+				// accept light contribution if previous vertex was specular
 				contribution = shadingData.color;
 			}
 			else
@@ -148,7 +148,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	}
 
 	// detect specular surfaces
-	if (ROUGHNESS < 0.01f) FLAGS |= S_SPECULAR; else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS == 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
 	uint seed = WangHash( pathIdx + R0  /* well-seeded xor32 is all you need */ );
@@ -158,6 +158,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	N *= flip;		// fix geometric normal
 	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
 	fN *= flip;		// fix final normal (includes normal map)
+	if (flip) shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
 
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
@@ -210,7 +211,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
 	float newBsdfPdf, r3, r4;
-	if (false) // sampleIdx < 256)
+	if (sampleIdx < 256)
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
 		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 6 + 4 * pathLength );
@@ -221,8 +222,10 @@ void shadeKernel( float4* accumulator, const uint stride,
 		r3 = RandomFloat( seed );
 		r4 = RandomFloat( seed );
 	}
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf );
+	bool specular = false;
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
+	if (specular) FLAGS |= S_SPECULAR;
 
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact

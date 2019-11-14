@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   THIS IS A SHARED FILE: used in 
+   THIS IS A SHARED FILE: used in
    - RenderCore_OptixPrime_b
    - RenderCore_Optix7
    - RenderCore_Optix7Filter
@@ -29,12 +29,13 @@ struct ShadingData
 	float3 color; int flags;
 	float3 absorption; int matID;
 	uint4 parameters;
-	/* 16 uchars:   x: roughness, metallic, specTrans, specularTint;
-					y: diffTrans, anisotropic, sheen, sheenTint;
-					z: clearcoat, clearcoatGloss, scatterDistance, relativeIOR;
-					w: flatness, ior, dummy1, dummy2. */
+	/* 16 uchars:   x: metallic, subsurface, specular, roughness;
+					y: specTint, anisotropic, sheen, sheenTint;
+					z: clearcoat, clearcoatGloss, transmission, dummy;
+					w: eta (32-bit float). */
 	__device__ int IsSpecular( const int layer ) const { return 0; /* for now. */ }
 	__device__ bool IsEmissive() const { return color.x > 1.0f || color.y > 1.0f || color.z > 1.0f; }
+	__device__ void InvertETA() { parameters.w = __float_as_uint( 1.0f / __uint_as_float( parameters.w ) ); }
 #define METALLIC CHAR2FLT( shadingData.parameters.x, 0 )
 #define SUBSURFACE CHAR2FLT( shadingData.parameters.x, 8 )
 #define SPECULAR CHAR2FLT( shadingData.parameters.x, 16 )
@@ -46,12 +47,8 @@ struct ShadingData
 #define CLEARCOAT CHAR2FLT( shadingData.parameters.z, 0 )
 #define CLEARCOATGLOSS CHAR2FLT( shadingData.parameters.z, 8 )
 #define TRANSMISSION CHAR2FLT( shadingData.parameters.z, 16 )
-#define ETA CHAR2FLT( shadingData.parameters.z, 24 )
-#define CUSTOM0 CHAR2FLT( shadingData.parameters.z, 24 )
-#define CUSTOM1 CHAR2FLT( shadingData.parameters.w, 0 )
-#define CUSTOM2 CHAR2FLT( shadingData.parameters.w, 8 )
-#define CUSTOM3 CHAR2FLT( shadingData.parameters.w, 16 )
-#define CUSTOM4 CHAR2FLT( shadingData.parameters.w, 24 )
+#define DUMMY0 CHAR2FLT( shadingData.parameters.z, 24 )
+#define ETA __uint_as_float( shadingData.parameters.w )
 };
 struct ShadingData4 { float4 data0, data1; uint4 data2; /* for fast 128-bit access */ };
 
@@ -63,26 +60,42 @@ LH2_DEVFUNC float RandomFloat( uint& s ) { return RandomInt( s ) * 2.32830643653
 
 // math helpers
 
+LH2_DEVFUNC float2 min2( const float2& a, const float2& b ) { return make_float2( min( a.x, b.x ), min( a.y, b.y ) ); }
+LH2_DEVFUNC float2 min2( const float2& a, const float b ) { return make_float2( min( a.x, b ), min( a.y, b ) ); }
+LH2_DEVFUNC float2 min2( const float a, const float2& b ) { return make_float2( min( a, b.x ), min( a, b.y ) ); }
+LH2_DEVFUNC float2 max2( const float2& a, const float2& b ) { return make_float2( max( a.x, b.x ), max( a.y, b.y ) ); }
+LH2_DEVFUNC float2 max2( const float2& a, const float b ) { return make_float2( max( a.x, b ), max( a.y, b ) ); }
+LH2_DEVFUNC float2 max2( const float a, const float2& b ) { return make_float2( max( a, b.x ), max( a, b.y ) ); }
 LH2_DEVFUNC float3 min3( const float3& a, const float3& b ) { return make_float3( min( a.x, b.x ), min( a.y, b.y ), min( a.z, b.z ) ); }
 LH2_DEVFUNC float3 min3( const float3& a, const float b ) { return make_float3( min( a.x, b ), min( a.y, b ), min( a.z, b ) ); }
 LH2_DEVFUNC float3 min3( const float a, const float3& b ) { return make_float3( min( a, b.x ), min( a, b.y ), min( a, b.z ) ); }
 LH2_DEVFUNC float3 max3( const float3& a, const float3& b ) { return make_float3( max( a.x, b.x ), max( a.y, b.y ), max( a.z, b.z ) ); }
 LH2_DEVFUNC float3 max3( const float3& a, const float b ) { return make_float3( max( a.x, b ), max( a.y, b ), max( a.z, b ) ); }
 LH2_DEVFUNC float3 max3( const float a, const float3& b ) { return make_float3( max( a, b.x ), max( a, b.y ), max( a, b.z ) ); }
+LH2_DEVFUNC float4 min4( const float4& a, const float4& b ) { return make_float4( min( a.x, b.x ), min( a.y, b.y ), min( a.z, b.z ), min( a.w, b.w ) ); }
+LH2_DEVFUNC float4 min4( const float4& a, const float b ) { return make_float4( min( a.x, b ), min( a.y, b ), min( a.z, b ), min( a.w, b ) ); }
+LH2_DEVFUNC float4 min4( const float a, const float4& b ) { return make_float4( min( a, b.x ), min( a, b.y ), min( a, b.z ), min( a, b.w ) ); }
 LH2_DEVFUNC float4 max4( const float4& a, const float4& b ) { return make_float4( max( a.x, b.x ), max( a.y, b.y ), max( a.z, b.z ), max( a.w, b.w ) ); }
+LH2_DEVFUNC float4 max4( const float4& a, const float b ) { return make_float4( max( a.x, b ), max( a.y, b ), max( a.z, b ), max( a.w, b ) ); }
+LH2_DEVFUNC float4 max4( const float a, const float4& b ) { return make_float4( max( a, b.x ), max( a, b.y ), max( a, b.z ), max( a, b.w ) ); }
 LH2_DEVFUNC float sqrLength( const float3& a ) { return dot( a, a ); }
 LH2_DEVFUNC float sqr( const float x ) { return x * x; }
-LH2_DEVFUNC float oneoverpow2( int p ) { return __uint_as_float( (127 - p) << 23 ); }
-LH2_DEVFUNC float fastexpf( float x )
+LH2_DEVFUNC float oneoverpow2( const int p ) { return __uint_as_float( (127 - p) << 23 ); }
+LH2_DEVFUNC float fastexpf( const float x )
 {	// https://codingforspeed.com/using-faster-exponential-approximation
-	x = 1.0f + x / 256.0f;
-	x *= x; x *= x; x *= x; x *= x;
-	x *= x; x *= x; x *= x; x *= x;
-	return x;
+	float y = 1.0f + x / 256.0f;
+	y *= y; y *= y; y *= y; y *= y;
+	y *= y; y *= y; y *= y; y *= y;
+	return y;
 }
+LH2_DEVFUNC float saturate( const float x ) { return max( 0.0f, min( 1.0f, x ) ); }
+LH2_DEVFUNC float2 saturate( const float2 x ) { return max2( make_float2( 0 ), min2( make_float2( 1 ), x ) ); }
+LH2_DEVFUNC float3 saturate( const float3 x ) { return max3( make_float3( 0 ), min3( make_float3( 1 ), x ) ); }
+LH2_DEVFUNC float4 saturate( const float4 x ) { return max4( make_float4( 0 ), min4( make_float4( 1 ), x ) ); }
+LH2_DEVFUNC float mix( const float a, const float b, const float x ) { return x <= 0 ? a : x >= 1 ? b : lerp(a, b, x); }
 
 // from: https://aras-p.info/texts/CompactNormalStorage.html
-LH2_DEVFUNC uint PackNormal( float3 N )
+LH2_DEVFUNC uint PackNormal( const float3 N )
 {
 #if 1
 	// more efficient
@@ -94,7 +107,7 @@ LH2_DEVFUNC uint PackNormal( float3 N )
 	return (uint)(enc.x * 65535.0f) + ((uint)(enc.y * 65535.0f) << 16);
 #endif
 }
-LH2_DEVFUNC float3 UnpackNormal( uint p )
+LH2_DEVFUNC float3 UnpackNormal( const uint p )
 {
 	float4 nn = make_float4( (float)(p & 65535) * (2.0f / 65535.0f), (float)(p >> 16) * (2.0f / 65535.0f), 0, 0 );
 	nn += make_float4( -1, -1, 1, -1 );
@@ -103,7 +116,7 @@ LH2_DEVFUNC float3 UnpackNormal( uint p )
 	return make_float3( nn ) * 2.0f + make_float3( 0, 0, -1 );
 }
 // alternative method
-LH2_DEVFUNC uint PackNormal2( float3 N )
+LH2_DEVFUNC uint PackNormal2( const float3 N )
 {
 	// simple, and good enough discrimination of normals for filtering.
 	const uint x = clamp( (uint)((N.x + 1) * 511), 0u, 1023u );
@@ -111,7 +124,7 @@ LH2_DEVFUNC uint PackNormal2( float3 N )
 	const uint z = clamp( (uint)((N.z + 1) * 511), 0u, 1023u );
 	return (x << 2u) + (y << 12u) + (z << 22u);
 }
-LH2_DEVFUNC float3 UnpackNormal2( uint pi )
+LH2_DEVFUNC float3 UnpackNormal2( const uint pi )
 {
 	const uint x = (pi >> 2u) & 1023u;
 	const uint y = (pi >> 12u) & 1023u;
@@ -138,7 +151,7 @@ LH2_DEVFUNC float3 YCoCgToRGB( const float3 YCoCg )
 	return make_float3( Y + Co - Cg, Y + Cg, Y - Co - Cg );
 }
 
-LH2_DEVFUNC float Luminance( float3 rgb )
+LH2_DEVFUNC float Luminance( const float3 rgb )
 {
 	return 0.299f * min( rgb.x, 10.0f ) + 0.587f * min( rgb.y, 10.0f ) + 0.114f * min( rgb.z, 10.0f );
 }
@@ -166,7 +179,7 @@ LH2_DEVFUNC float3 RGB32toHDRmin1( const uint c )
 		(float)max( 1u, c & 2047 ) * (1.0f / 2047.0f) );
 }
 
-LH2_DEVFUNC float4 SampleSkydome( float3 D, const int pathLength )
+LH2_DEVFUNC float4 SampleSkydome( const float3 D, const int pathLength )
 {
 	// formulas by Paul Debevec, http://www.pauldebevec.com/Probes
 	uint u = (uint)(skywidth * 0.5f * (1.0f + atan2( D.x, -D.z ) * INVPI));
@@ -227,6 +240,25 @@ LH2_DEVFUNC float3 DiffuseReflectionCosWeighted( const float r0, const float r1 
 	float s, c;
 	__sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, sqrtf( r1 ) );
+}
+
+LH2_DEVFUNC float3 UniformSampleSphere(const float r0, const float r1)
+{
+    const float z = 1.0f - 2.0f * r1; // [-1~1]
+    const float term1 = TWOPI * r0, term2 = sqrtf(1 - z * z);
+    float s, c;
+    __sincosf(term1, &s, &c);
+    return make_float3(c * term2, s * term2, z);
+}
+
+LH2_DEVFUNC float3 UniformSampleCone(const float r0, const float r1, const float cos_outer)
+{
+    float cosTheta = 1.0f - r1 + r1 * cos_outer;
+    float term2 = sqrtf(1 - cosTheta * cosTheta);
+    const float term1 = TWOPI * r0;
+    float s, c;
+    __sincosf(term1, &s, &c);
+    return make_float3(c * term2, s * term2, cosTheta);
 }
 
 // origin offset
@@ -299,7 +331,7 @@ LH2_DEVFUNC float blueNoiseSampler( const uint* blueNoise, int x, int y, int sam
 	// sampleDimension: 0..255
 	x &= 127, y &= 127, sampleIndex &= 255, sampleDimension &= 255;
 	// xor index based on optimized ranking
-	int rankedSampleIndex = sampleIndex ^ blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3];
+	int rankedSampleIndex = (sampleIndex ^ blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3]) & 255;
 	// fetch value in sequence
 	int value = blueNoise[sampleDimension + rankedSampleIndex * 256];
 	// if the dimension is optimized, xor sequence value based on optimized scrambling

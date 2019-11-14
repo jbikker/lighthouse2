@@ -205,9 +205,10 @@ void main()
 		return;
 	}
 
-	if (ROUGHNESS < 0.01f) FLAGS |= S_SPECULAR; // Object was specular
-	else FLAGS &= ~S_SPECULAR; // Object was not specular
+	// detect specular surfaces
+	if (ROUGHNESS == 0.001f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
+	// initialize seed based on pixel index
 	uint seed = WangHash(pathIdx * 16789 + camera.samplesTaken * 1791 + pathLength * 720898027 );
 
 	const float flip = (dot(D, N) > 0) ? -1 : 1;
@@ -284,8 +285,10 @@ void main()
 	r3 = RandomFloat( seed );
 	r4 = RandomFloat( seed );
 #endif
-	const vec3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf );
+	bool specular = false;
+	const vec3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return; // Early out in case we have an invalid bsdf
+	if (specular) FLAGS |= S_SPECULAR;
 
 	const uint extensionRayIdx = atomicAdd( extensionRays, 1 ); // Get compacted index for extension ray
 

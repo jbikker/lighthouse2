@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   THIS IS A SHARED FILE: used in 
+   THIS IS A SHARED FILE: used in
    - RenderCore_OptixPrime_b
    - RenderCore_Optix7
    - RenderCore_Optix7Filter
@@ -58,51 +58,55 @@ __host__ void finalizeRender( const float4* accumulator, const int w, const int 
 LH2_DEVFUNC float WorldDistance( const int2& pixel, const float4& currentWorldPos, const float4* prevWorldPos, const int w, const int h )
 {
 	float4 p = ReadWorldPos( prevWorldPos, pixel, w, h );
-	if ((__float_as_uint( p.w ) & 3) != 0) return 1e21f; // we are always searching for specular pixels
-	return sqrLength( make_float3( currentWorldPos - p ) );
+	float3 localNormal = UnpackNormal2( __float_as_uint( currentWorldPos.w ) );
+	float3 prevNormal = UnpackNormal2( __float_as_uint( p.w ) );
+	if ((__float_as_uint( p.w ) & 3) != 1) return 1e21f; // we are always searching for specular pixels
+	if (dot( localNormal, prevNormal ) < 0.85f) return 1e21f; // normals should at least be somewhat simular
+	return length( make_float3( currentWorldPos - p ) );
 }
-LH2_DEVFUNC int RefineHistoryPos( int2& currentScreenPos, const float4& localPos, float& bestDist, int step, const float4* prevWorldPos, const int w, const int h )
+LH2_DEVFUNC float FineWorldDistance( const float2& pixel, const float4& currentWorldPos, const float4* prevWorldPos, const int w, const int h )
+{
+	const int2 p0 = make_int2( pixel.x, pixel.y );
+	const int2 p1 = make_int2( p0.x + 1, p0.y );
+	const int2 p2 = make_int2( p0.x, p0.y + 1 );
+	const int2 p3 = make_int2( p0.x + 1, p0.y + 1 );
+	const float fx = pixel.x - floor( pixel.x );
+	const float fy = pixel.y - floor( pixel.y );
+	const float w0 = (1 - fx) * (1 - fy), w1 = fx * (1 - fy), w2 = (1 - fx) * fy, w3 = fx * fy;
+	float d0 = WorldDistance( p0, currentWorldPos, prevWorldPos, w, h );
+	float d1 = WorldDistance( p1, currentWorldPos, prevWorldPos, w, h );
+	float d2 = WorldDistance( p2, currentWorldPos, prevWorldPos, w, h );
+	float d3 = WorldDistance( p3, currentWorldPos, prevWorldPos, w, h );
+	float totalWeight = 0;
+	float totalDist = 0;
+	if (d0 < 1e20f) totalDist += d0 * w0, totalWeight += w0;
+	if (d1 < 1e20f) totalDist += d1 * w1, totalWeight += w1;
+	if (d2 < 1e20f) totalDist += d2 * w2, totalWeight += w2;
+	if (d3 < 1e20f) totalDist += d3 * w3, totalWeight += w3;
+	if (totalWeight == 0) return 1e20f; else return totalDist / totalWeight;
+}
+LH2_DEVFUNC int RefineHistoryPos( float2& currentScreenPos, const float2& offset, const float4& localWorldPos, float& bestDist, const float step, const float4* prevWorldPos, const int w, const int h )
 {
 	int bestTap = 0;
-	const int2 pixelPos0 = make_int2( currentScreenPos.x - step, currentScreenPos.y );
-	const int2 pixelPos1 = make_int2( currentScreenPos.x + step, currentScreenPos.y );
-	const int2 pixelPos2 = make_int2( currentScreenPos.x, currentScreenPos.y - step );
-	const int2 pixelPos3 = make_int2( currentScreenPos.x, currentScreenPos.y + step );
+	const float2 pixelPos0 = make_float2( currentScreenPos.x - step, currentScreenPos.y );
+	const float2 pixelPos1 = make_float2( currentScreenPos.x + step, currentScreenPos.y );
+	const float2 pixelPos2 = make_float2( currentScreenPos.x, currentScreenPos.y - step );
+	const float2 pixelPos3 = make_float2( currentScreenPos.x, currentScreenPos.y + step );
 	float d;
-	d = WorldDistance( pixelPos0, localPos, prevWorldPos, w, h );
+	d = FineWorldDistance( pixelPos0 + offset, localWorldPos, prevWorldPos, w, h );
 	if (d < bestDist) bestDist = d, currentScreenPos = pixelPos0, bestTap = 1;
-	d = WorldDistance( pixelPos1, localPos, prevWorldPos, w, h );
+	d = FineWorldDistance( pixelPos1 + offset, localWorldPos, prevWorldPos, w, h );
 	if (d < bestDist) bestDist = d, currentScreenPos = pixelPos1, bestTap = 2;
-	d = WorldDistance( pixelPos2, localPos, prevWorldPos, w, h );
+	d = FineWorldDistance( pixelPos2 + offset, localWorldPos, prevWorldPos, w, h );
 	if (d < bestDist) bestDist = d, currentScreenPos = pixelPos2, bestTap = 3;
-	d = WorldDistance( pixelPos3, localPos, prevWorldPos, w, h );
+	d = FineWorldDistance( pixelPos3 + offset, localWorldPos, prevWorldPos, w, h );
 	if (d < bestDist) bestDist = d, currentScreenPos = pixelPos3, bestTap = 4;
 	return bestTap;
-}
-LH2_DEVFUNC void FinalRefine( int2& currentScreenPos, const float4& currentWorldPos, float& bestDist, const float4* prevWorldPos, const int w, const int h )
-{
-	const int2 pixelPos0 = make_int2( currentScreenPos.x - 1, currentScreenPos.y );
-	const int2 pixelPos1 = make_int2( currentScreenPos.x + 1, currentScreenPos.y );
-	const int2 pixelPos2 = make_int2( currentScreenPos.x, currentScreenPos.y - 1 );
-	const int2 pixelPos3 = make_int2( currentScreenPos.x, currentScreenPos.y + 1 );
-	const int2 pixelPos4 = make_int2( currentScreenPos.x - 1, currentScreenPos.y - 1 );
-	const int2 pixelPos5 = make_int2( currentScreenPos.x + 1, currentScreenPos.y - 1 );
-	const int2 pixelPos6 = make_int2( currentScreenPos.x - 1, currentScreenPos.y + 1 );
-	const int2 pixelPos7 = make_int2( currentScreenPos.x + 1, currentScreenPos.y + 1 );
-	float d;
-	d = WorldDistance( pixelPos0, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos0;
-	d = WorldDistance( pixelPos1, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos1;
-	d = WorldDistance( pixelPos2, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos2;
-	d = WorldDistance( pixelPos3, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos3;
-	d = WorldDistance( pixelPos4, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos4;
-	d = WorldDistance( pixelPos5, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos5;
-	d = WorldDistance( pixelPos6, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos6;
-	d = WorldDistance( pixelPos7, currentWorldPos, prevWorldPos, w, h ); if (d < bestDist) bestDist = d, currentScreenPos = pixelPos7;
 }
 __global__ void prepareFilterKernel( const float4* accumulator, uint4* features, const float4* worldPos, const float4* prevWorldPos,
 	float4* shading, float2* motion, float4* moments, float4* prevMoments, const float4* deltaDepth,
 	const float4 prevPos, const float4 prevE, const float4 prevRight, const float4 prevUp, const float j0, const float j1, const float prevj0, const float prevj1,
-	const int scrwidth, const int scrheight, const float pixelValueScale, const float directClamp, const float indirectClamp, const int flags )
+	const int scrwidth, const int scrheight, const float pixelValueScale, const float directClamp, const float indirectClamp, const int camIsStationary )
 {
 	// get x and y for pixel
 	const int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -111,102 +115,54 @@ __global__ void prepareFilterKernel( const float4* accumulator, uint4* features,
 	const int pixelIdx = x + y * scrwidth;
 	// split direct and indirect light from albedo and clamp
 	const float3 direct = make_float3( accumulator[pixelIdx] ) * pixelValueScale;
-	const float3 albedo = RGB32toHDRmin1( features[pixelIdx].x );
+	const uint4 localFeature = features[pixelIdx];
+	const float4 localWorldPos = worldPos[pixelIdx];
+	const float3 albedo = RGB32toHDRmin1( localFeature.x );
 	const float3 indirect = make_float3( accumulator[pixelIdx + scrwidth * scrheight] ) * pixelValueScale;
 	const float3 reciAlbedo = make_float3( 1.0f / albedo.x, 1.0f / albedo.y, 1.0f / albedo.z );
 	const float3 directLight = min3( direct * reciAlbedo, directClamp );
 	const float3 indirectLight = min3( indirect * reciAlbedo, indirectClamp );
 	shading[pixelIdx] = CombineToFloat4( directLight, indirectLight );
-	// calculate location in screen space of the current pixel in the previous frame
-	const float4 localPos = worldPos[pixelIdx];
-	const float4 D = make_float4( normalize( make_float3( localPos - prevPos ) ), 0 );
-	const float4 S = make_float4( make_float3( prevPos + D * (prevPos.w / dot( prevE, D )) ), 0 );
-	float2 prevPixelPos = make_float2( dot( S, prevRight ) - prevRight.w - j0, dot( S, prevUp ) - prevUp.w - j1 );
 	float lumDirect = Luminance( directLight ), lumDirect2 = lumDirect * lumDirect;
 	float lumIndirect = Luminance( indirectLight ), lumIndirect2 = lumIndirect * lumIndirect;
-	if ((__float_as_uint( localPos.w ) & 3) == 0)
+	// reproject
+	debugData[pixelIdx] = make_float4( x == 50 || y == 50 ? 1 : 0, 0, 0, 1 );
+	float2 prevPixelPos;
+	if (((localFeature.w >> 4) & 3) == 0 /* bit 4 and 5 of feature.w: zero = diffuse, non-zero is specular */)
 	{
-		// zero motion vectors for stationary camera, hack as proposed by Victor
-		if (flags & 1) prevPixelPos = make_float2( x, y ); else
+		// calculate location in screen space of the current pixel in the previous frame
+		const float4 D = make_float4( normalize( make_float3( localWorldPos - prevPos ) ), 0 );
+		const float4 S = make_float4( make_float3( prevPos + D * (prevPos.w / dot( prevE, D )) ), 0 );
+		prevPixelPos = make_float2( dot( S, prevRight ) - prevRight.w - j0, dot( S, prevUp ) - prevUp.w - j1 );
+	}
+	else
+	{
+		prevPixelPos = make_float2( x, y ); // best option when camera doesn't move.
+		if (!camIsStationary)
 		{
-			// for speculars, determine motion vector using diamond search
-		#if 1
-			int2 bestPos = make_int2( x, y );
-			const float4 prevWorldPosA = ReadWorldPos( prevWorldPos, make_int2( x, y ), scrwidth, scrheight );	// current position
-			float bestDist = sqrLength( make_float3( localPos - prevWorldPosA ) );
-		#else
-			int2 bestPos = make_int2( prevPixelPos.x, prevPixelPos.y );
-			const float4 prevWorldPosA = ReadWorldPos( prevWorldPos, bestPos, scrwidth, scrheight );			// reprojected position
-			const float4 prevWorldPosB = ReadWorldPos( prevWorldPos, make_int2( x, y ), scrwidth, scrheight );	// current position
-			float bestDist = sqrLength( make_float3( localPos - prevWorldPosA ) );
-			const float altDist = sqrLength( make_float3( localPos - prevWorldPosB ) );
-			if ((altDist < bestDist || ((__float_as_uint( prevWorldPosA.w ) & 3) != 0) && (__float_as_uint( prevWorldPosB.w ) & 3) == 0))
-			{
-				bestPos = make_int2( x, y );
-				bestDist = altDist;
-			}
-		#endif
-			int iter = 0, stepSize = (1 + 2 + 3 + 4), stepDelta = 4;
+			// perform a diamond search for the world space position of the current pixel in the previous frame
+			float bestDist = length( make_float3( localWorldPos - prevWorldPos[pixelIdx] ) ), stepSize = 5.0f;
+			const float2 offset = make_float2( j0 - prevj0, j1 - prevj1 );
+			int iter = 0;
 			while (1)
 			{
-				const int tap = RefineHistoryPos( bestPos, localPos, bestDist, stepSize, prevWorldPos, scrwidth, scrheight );
-				if (tap == 0) { stepSize -= stepDelta--; if (stepSize == 0) break; }
-				if (++iter == 20) break;
+				const int tap = RefineHistoryPos( prevPixelPos, offset, localWorldPos, bestDist, stepSize, prevWorldPos, scrwidth, scrheight );
+				if (tap == 0) { stepSize *= 0.45f; if (stepSize < 0.05f) break; }
+				if (++iter == 25) break;
 			}
-			// FinalRefine( bestPos, localPos, bestDist, prevWorldPos, scrwidth, scrheight );
-			// sub-pixel refine
-			const int2 p0 = make_int2( bestPos.x - 1, bestPos.y - 1 ); const float d0 = WorldDistance( p0, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p1 = make_int2( bestPos.x, bestPos.y - 1 ); const float d1 = WorldDistance( p1, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p2 = make_int2( bestPos.x + 1, bestPos.y - 1 ); const float d2 = WorldDistance( p2, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p3 = make_int2( bestPos.x + 1, bestPos.y ); const float d3 = WorldDistance( p3, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p4 = make_int2( bestPos.x + 1, bestPos.y + 1 ); const float d4 = WorldDistance( p4, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p5 = make_int2( bestPos.x, bestPos.y + 1 ); const float d5 = WorldDistance( p5, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p6 = make_int2( bestPos.x - 1, bestPos.y + 1 ); const float d6 = WorldDistance( p6, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p7 = make_int2( bestPos.x - 1, bestPos.y ); const float d7 = WorldDistance( p7, localPos, prevWorldPos, scrwidth, scrheight );
-			const int2 p8 = make_int2( bestPos.x, bestPos.y ); const float d8 = bestDist;
-			const float v0 = d0 > 1e20f ? 0 : 1, v1 = d1 > 1e20f ? 0 : 1, v2 = d2 > 1e20f ? 0 : 1;
-			const float v3 = d3 > 1e20f ? 0 : 1, v4 = d4 > 1e20f ? 0 : 1, v5 = d5 > 1e20f ? 0 : 1;
-			const float v6 = d6 > 1e20f ? 0 : 1, v7 = d7 > 1e20f ? 0 : 1;
-			int bestQuad = 0;
-			{
-				const float score0 = (d0 * v0 + d1 * v1 + d7 * v7 + d8) / (v0 + v1 + v7 + 1);    //  0 1 2
-				const float score1 = (d1 * v1 + d2 * v2 + d3 * v3 + d8) / (v1 + v2 + v3 + 1);    //  7 8 3
-				const float score2 = (d3 * v3 + d5 * v5 + d4 * v4 + d8) / (v3 + v5 + v4 + 1);    //  6 5 4
-				const float score3 = (d7 * v7 + d6 * v6 + d5 * v5 + d8) / (v7 + v6 + v5 + 1);
-				if (score1 < score0) bestQuad = 1;
-				if (score2 < score0 && score2 < score1) bestQuad = 2;
-				if (score3 < score0 && score3 < score1 && score3 < score2) bestQuad = 3;
-			}
-			float2 subPixelPos;
-			float4 weight;
-			if (bestQuad == 0)
-				weight = make_float4( v0 * d1 * d7 * d8, v1 * d0 * d7 * d8, v7 * d0 * d1 * d8, d0 * d1 * d7 ),
-				subPixelPos = weight.x * make_float2( p0 ) + weight.y * make_float2( p1 ) + weight.z * make_float2( p7 ) + weight.w * make_float2( p8 );
-			else if (bestQuad == 1)
-				weight = make_float4( v1 * d2 * d8 * d3, v2 * d1 * d8 * d3, v3 * d1 * d2 * d8, d1 * d2 * d3 ),
-				subPixelPos = weight.x * make_float2( p1 ) + weight.y * make_float2( p2 ) + weight.z * make_float2( p3 ) + weight.w * make_float2( p8 );
-			else if (bestQuad == 2)
-				weight = make_float4( v3 * d8 * d5 * d4, d3 * d5 * d4, v5 * d8 * d3 * d4, v4 * d8 * d3 * d5 ),
-				subPixelPos = weight.x * make_float2( p3 ) + weight.y * make_float2( p8 ) + weight.z * make_float2( p5 ) + weight.w * make_float2( p4 );
-			else // if (bestQuad == 3)
-				weight = make_float4( v7 * d8 * d6 * d5, d7 * d6 * d5, v6 * d7 * d8 * d5, v5 * d7 * d8 * d6 ),
-				subPixelPos = weight.x * make_float2( p7 ) + weight.y * make_float2( p8 ) + weight.z * make_float2( p6 ) + weight.w * make_float2( p5 );
-			// overwrite motion vector
-			prevPixelPos = subPixelPos * (1.0f / (weight.x + weight.y + weight.z + weight.w)) + make_float2( prevj0 - j0, prevj1 - j1 );
 		}
 	}
 	// get history luminance moments
-	prevPixelPos += make_float2( 0.5f, 0.5f );
+	prevPixelPos += make_float2( 0.5f );
 	const float px = prevPixelPos.x;
 	const float py = prevPixelPos.y;
-	const uint4 localFeature = features[pixelIdx];
 	if (px >= 0 && px < scrwidth && py >= 0 && py < scrheight)
 	{
 		const float localDdx = deltaDepth[pixelIdx].z;
 		const float localDdy = deltaDepth[pixelIdx].w;
 		const float allowedDist = max( 0.05f, fabs( localDdx ) + fabs( localDdy ) );
 		const float3 localNormal = UnpackNormal2( localFeature.y );
-		const float4 history = ReadTexelConsistent( prevMoments, prevWorldPos, localPos, allowedDist, localNormal, px, py, scrwidth, scrheight );
+		const float4 history = ReadTexelConsistent( prevMoments, prevWorldPos, localWorldPos, allowedDist, localNormal, px, py, scrwidth, scrheight );
 		if (history.x > -1)
 		{
 			lumDirect = 0.2f * lumDirect + 0.8f * history.x;
@@ -226,7 +182,7 @@ __global__ void prepareFilterKernel( const float4* accumulator, uint4* features,
 __host__ void prepareFilter( const float4* accumulator, uint4* features, const float4* worldPos, const float4* prevWorldPos,
 	float4* shading, float2* motion, float4* moments, float4* prevMoments, const float4* deltaDepth,
 	const ViewPyramid& prevView, const float j0, const float j1, const float prevj0, const float prevj1,
-	const int w, const int h, const uint spp, const float directClamp, const float indirectClamp, const int flags )
+	const int w, const int h, const uint spp, const float directClamp, const float indirectClamp, const int camIsStationary )
 {
 	const float pixelValueScale = 1.0f / (float)spp;
 	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
@@ -243,7 +199,7 @@ __host__ void prepareFilter( const float4* accumulator, uint4* features, const f
 		make_float4( direction, 0 ),
 		make_float4( right * lenReci, dot( prevView.p1, right ) * lenReci ),
 		make_float4( up * lenReci, dot( prevView.p1, up ) * lenReci ),
-		j0, j1, prevj0, prevj1, w, h, pixelValueScale, directClamp, indirectClamp, flags);
+		j0, j1, prevj0, prevj1, w, h, pixelValueScale, directClamp, indirectClamp, camIsStationary);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -326,8 +282,23 @@ __global__ void __launch_bounds__( 64 /* max block size */, 6 /* min blocks per 
 	float3 indirectFiltered = indirectLightSum * (1.0f / max( 0.0001f, indirectlightWeightSum ));
 	if (phase == 1)
 	{
+		// obtain best mapping of a pixel in the current frame to a pixel in the previous frame
+		float2 prevPixelPos = motion[pixelIdx];
+	#if 0
+		// motion vector dilation
+		float bestDepth = 1e20f;
+		for( int v = 0; v < 3; v++ ) for( int u = 0; u < 3; u++ )
+		{
+			int uu = x + (u - 1);
+			int vv = y + (v - 1);
+			if (uu >= 0 && vv >= 0 && uu < scrwidth && vv < scrheight)
+			{
+				float depth = __uint_as_float( features[uu + vv * scrwidth].z );
+				if (depth < bestDepth) bestDepth = depth, prevPixelPos = motion[uu + vv * scrwidth];
+			}
+		}
+	#endif
 		// average with filtered value from previous frame
-		const float2 prevPixelPos = motion[pixelIdx];
 		const int px = (int)prevPixelPos.x;
 		const int py = (int)prevPixelPos.y;
 		if (px >= 0 && px < scrwidth && py >= 0 && py < scrheight)
@@ -538,7 +509,7 @@ __global__ void finalizeFilterDebugKernel( const uint scrwidth, const uint scrhe
 	// extract data for a multi-view of the various buffers we have at this point
 	int pixelIdx = x + y * scrwidth;
 	float3 albedo = RGB32toHDR( features[pixelIdx].x );
-	// uint matID = features[pixelIdx].w >> 4;
+	// uint matID = features[pixelIdx].w >> 6;
 	float3 deltaWorldPos = make_float3( worldPos[pixelIdx] - prevWorldPos[pixelIdx] );
 	float3 N = UnpackNormal2( features[pixelIdx].y /* or __float_as_uint( worldPos[pixelIdx].w ) */ );
 	float dist = __uint_as_float( features[pixelIdx].z );
@@ -565,7 +536,7 @@ __global__ void finalizeFilterDebugKernel( const uint scrwidth, const uint scrhe
 }
 __host__ void finalizeFilterDebug( const uint w, const uint h,
 	// data available after gathering frame data in shade (pathtracer.h)
-	const uint4* features,		// x: albedo; y: packed normal; z: dist from cam; w: flags + (matid << 4)
+	const uint4* features,		// x: albedo; y: packed normal; z: dist from cam; w: 4-bit history count, 2-bit specularity flags, (matid << 6)
 	const float4* worldPos,		// xyz: world pos first non-specular vertex; w: packed normal (again)
 	const float4* prevWorldPos, // worldPos data for the previous frame
 	const float4* deltaDepth,	// xy: unused; zw: depth derivatives over x and y

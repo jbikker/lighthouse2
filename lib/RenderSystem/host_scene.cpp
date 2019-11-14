@@ -83,10 +83,12 @@ void HostScene::SerializeMaterials( const char* xmlFile )
 		diffuse->SetAttribute( "b", materials[i]->color.z );
 		diffuse->SetAttribute( "g", materials[i]->color.y );
 		diffuse->SetAttribute( "r", materials[i]->color.x );
+		(XMLElement*)materialEntry->InsertEndChild( diffuse );
 		XMLElement* absorption = doc.NewElement( "absorption" );
 		absorption->SetAttribute( "b", materials[i]->absorption.z );
 		absorption->SetAttribute( "g", materials[i]->absorption.y );
 		absorption->SetAttribute( "r", materials[i]->absorption.x );
+		(XMLElement*)materialEntry->InsertEndChild( absorption );
 		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "metallic" ) ))->SetText( materials[i]->metallic );
 		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "subsurface" ) ))->SetText( materials[i]->subsurface );
 		((XMLElement*)materialEntry->InsertEndChild( doc.NewElement( "specular" ) ))->SetText( materials[i]->specular );
@@ -121,7 +123,8 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 	XMLElement* countElement = root->FirstChildElement( "material_count" );
 	if (!countElement) return;
 	int materialCount;
-	scanf_s( countElement->GetText(), "%i", &materialCount );
+	const char* t = countElement->GetText();
+	sscanf_s( t, "%i", &materialCount );
 	if (materialCount != materials.size()) return;
 	for (int i = 0; i < materialCount; i++)
 	{
@@ -409,7 +412,7 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 	{
 		// we have holes in the nodes vector due to instance deletions; search from the
 		// end of the list to speed up frequent additions / deletions in complex scenes.
-		for (int i = (int)nodes.size() - 1; i >= 0; i--) if (!nodes[i])
+		for (int i = (int)nodes.size() - 1; i >= 0; i--) if (nodes[i] == 0)
 		{
 			// overwrite an empty slot, created by deleting an instance
 			nodes[i] = newNode;

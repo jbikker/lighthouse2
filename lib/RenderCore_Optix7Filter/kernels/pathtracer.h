@@ -40,16 +40,10 @@
 #define FLAGS data
 #define PATHIDX (data >> 8)
 
-//  +-----------------------------------------------------------------------------+
-//  |  storeFilterData                                                            |
-//  |  Store data for filtering.                                            LH2'19|
-//  +-----------------------------------------------------------------------------+
-LH2_DEVFUNC void storeFilterData( const float3 I, const float3& N, const uint albedo, const int matID, const float t, const uint idx, const float roughness, uint4* features, float4* worldPos )
+// helpers for storing filter data
+LH2_DEVFUNC void PackFeatures( uint4& features, const uint albedo, const uint packedNormal, const float t, uint isSpecular, uint matid )
 {
-	const uint roughnessFlags = roughness == 0 ? 0 : 1;
-	const uint packedNormal = PackNormal2( N ) + roughnessFlags;
-	features[idx] = make_uint4( albedo, packedNormal, __float_as_uint( t ), (features[idx].w & 15) + (matID << 4) );
-	worldPos[idx] = make_float4( I, __uint_as_float( packedNormal ) );
+	features = make_uint4( albedo, packedNormal, __float_as_uint( t ), (isSpecular << 4) + (matid << 6) + (features.w & 15) /* leave history count intact */ );
 }
 LH2_DEVFUNC void calculateDepthDerivatives( const int x, const int y, const int w, const int h, const float depth, const CoreTri4& tri, float4* deltaDepth,
 	const float3& p1, const float3& p2 /* actually: p2 - p1 */, const float3& p3 /* actually: p3 - p1 */, const float3& pos )
@@ -100,11 +94,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const uint sampleIdx = pathIdx / (w * h) + pass;
 
 	// initialize filter data
-	bool firstHitStored = ((FLAGS & S_BOUNCED) != 0) || sampleIdx > 0 || features == 0;
-	if (pathLength == 1 && firstHitStored == false)
+	bool firstHitToBeStored = ((FLAGS & S_BOUNCED) == 0) && sampleIdx == 0 && features != 0;
+	if (pathLength == 1 && firstHitToBeStored)
 	{
-		features[pathIdx] = make_uint4( 0, 1 /* init as not specular */, __float_as_uint( 1e34f ), features[pathIdx].w );
-		worldPos[pathIdx] = make_float4( 0, 0, 0, __uint_as_float( 1 /* not specular */ ) );
+		PackFeatures( features[pathIdx], 0, 0, 1e34f, 0, 0 );
+		worldPos[pathIdx] = make_float4( 0, 0, 0, __uint_as_float( 0 ) );
 		deltaDepth[pathIdx] = make_float4( 0 );
 	}
 
@@ -118,9 +112,13 @@ void shadeKernel( float4* accumulator, const uint stride,
 		CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
 		FIXNAN_FLOAT3( contribution );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
-		if (!firstHitStored)
+		if (firstHitToBeStored)
 		{
-			storeFilterData( RAY_O + 50000 * D, D * -1.0f, HDRtoRGB32( contribution ), 0, 50000, pathIdx, (FLAGS & S_VIASPECULAR) ? 0 : 1, features, worldPos );
+			// we only initialized the filter data, but the path ends here: store something reasonable for the filter.
+			const uint isSpecular = FLAGS & S_VIASPECULAR ? 1 : 0;
+			const uint packedNormal = PackNormal2( D * -1.0f ) + isSpecular;
+			PackFeatures( features[pathIdx], HDRtoRGB32( contribution ), packedNormal, HIT_T, isSpecular, 0 );
+			worldPos[pathIdx] = make_float4( RAY_O + 50000 * D, __uint_as_float( packedNormal ) );
 			deltaDepth[pathIdx] = make_float4( 0 );
 		}
 		return;
@@ -147,9 +145,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 			// it ends here, so store something sensible (otherwise alpha doesn't reproject)
 			if (features != 0 && sampleIdx == 0 && ((FLAGS & S_BOUNCED) == 0))
 			{
-				storeFilterData( I, N, 0, 0, HIT_T, pathIdx, (FLAGS & S_VIASPECULAR) ? 0 : 1, features, worldPos );
+				const uint isSpecular = FLAGS & S_VIASPECULAR ? 1 : 0;
+				const uint packedNormal = PackNormal2( N ) + isSpecular;
+				PackFeatures( features[pathIdx], 0, packedNormal, HIT_T, isSpecular, 0 );
+				worldPos[pathIdx] = make_float4( I, __uint_as_float( packedNormal ) );
 			}
-
 		}
 		else
 		{
@@ -191,36 +191,44 @@ void shadeKernel( float4* accumulator, const uint stride,
 			FIXNAN_FLOAT3( contribution );
 			accumulator[pixelIdx] += make_float4( contribution, 0 );
 		}
-		if (!firstHitStored)
+		if (firstHitToBeStored)
 		{
-			storeFilterData( I, iN, HDRtoRGB32( contribution ), shadingData.matID, HIT_T, pathIdx, (FLAGS & S_VIASPECULAR) ? 0 : 1, features, worldPos );
+			// we only initialized the filter data, but the path ends here. Let's finalize the filter data with what we have.
+			const uint isSpecular = FLAGS & S_VIASPECULAR ? 1 : 0;
+			const uint packedNormal = PackNormal2( N ) + isSpecular;
+			PackFeatures( features[pathIdx], HDRtoRGB32( shadingData.color ), packedNormal, HIT_T, isSpecular, shadingData.matID );
+			worldPos[pathIdx] = make_float4( I, __uint_as_float( packedNormal ) );
 			calculateDepthDerivatives( pathIdx % w, pathIdx / w, w, h, HIT_T, instanceTriangles[PRIMIDX], deltaDepth, p1, p2 - p1, p3 - p1, pos );
 		}
 		return;
 	}
 
 	// detect specular surfaces
-	if (ROUGHNESS < 0.01f) FLAGS |= S_SPECULAR; else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS == 0.001f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
 	uint seed = WangHash( pathIdx + R0  /* well-seeded xor32 is all you need */ );
 
 	// store albedo, normal, depth in features buffer
 	const float flip = (dot( D, N ) > 0) ? -1 : 1;
-	if (!firstHitStored)
+	if (firstHitToBeStored)
 	{
-		if (!(FLAGS & S_SPECULAR))
+		if (FLAGS & S_SPECULAR)
+		{
+			// first hit is pure specular; store albedo. Will be modulated by first diffuse hit later.
+			features[pathIdx].x = HDRtoRGB32( shadingData.color );
+		}
+		else
 		{
 			// first hit is diffuse; store normal, albedo, world space coordinate
 			float3 albedo = shadingData.color;
 			if (FLAGS & S_VIASPECULAR) albedo *= RGB32toHDR( features[pathIdx].x );
-			storeFilterData( I, flip ? (fN * -1.0f) : fN, HDRtoRGB32( albedo ), shadingData.matID, HIT_T, pathIdx, (FLAGS & S_VIASPECULAR) ? 0 : ROUGHNESS, features, worldPos );
+			// this is the first diffuse vertex; store the data for the filter
+			const uint isSpecular = FLAGS & S_VIASPECULAR ? 1 : 0;
+			const uint packedNormal = PackNormal2( flip ? (fN * -1.0f) : fN ) + isSpecular;
+			PackFeatures( features[pathIdx], HDRtoRGB32( albedo ), packedNormal, HIT_T, isSpecular, shadingData.matID );
+			worldPos[pathIdx] = make_float4( I, __uint_as_float( packedNormal ) );
 			calculateDepthDerivatives( pathIdx % w, pathIdx / w, w, h, HIT_T, instanceTriangles[PRIMIDX], deltaDepth, p1, p2 - p1, p3 - p1, pos );
-		}
-		else
-		{
-			// first it is pure specular; store albedo, will be modulated by first diffuse hit later
-			features[pathIdx].x = HDRtoRGB32( shadingData.color );
 		}
 	}
 
@@ -228,6 +236,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	N *= flip;		// fix geometric normal
 	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
 	fN *= flip;		// fix final normal (includes normal map)
+	if (flip) shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
 
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
@@ -277,8 +286,14 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// depth cap
 	if (pathLength == MAXPATHLENGTH /* don't fill arrays with rays we won't trace */)
 	{
-		// it ends here, so store something sensible if we didn't do this yet
-		if (features != 0 && sampleIdx == 0) storeFilterData( I, N, 0, 0, HIT_T, pathIdx, (FLAGS & S_VIASPECULAR) ? 0 : 1, features, worldPos );
+		// it ends here, and we didn't finalize the filter data, so store something sensible
+		if (firstHitToBeStored) 
+		{
+			const uint isSpecular = FLAGS & S_VIASPECULAR ? 1 : 0;
+			const uint packedNormal = PackNormal2( N ) + isSpecular;
+			PackFeatures( features[pathIdx], 0, packedNormal, HIT_T, isSpecular, 0 );
+			worldPos[pathIdx] = make_float4( I, __uint_as_float( packedNormal ) );
+		}
 		return;
 	}
 
@@ -296,13 +311,15 @@ void shadeKernel( float4* accumulator, const uint stride,
 		r3 = RandomFloat( seed );
 		r4 = RandomFloat( seed );
 	}
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf );
+	bool specular = false;
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
+	if (specular) FLAGS |= S_SPECULAR;
 
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN );
-	if (!(FLAGS & S_SPECULAR)) FLAGS |= S_BOUNCED; else FLAGS |= S_VIASPECULAR;
+	if (FLAGS & S_SPECULAR) FLAGS |= S_VIASPECULAR; else FLAGS |= S_BOUNCED;
 	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
 	pathStates[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
 	FIXNAN_FLOAT3( throughput );

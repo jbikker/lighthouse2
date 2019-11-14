@@ -39,10 +39,21 @@ Camera::~Camera()
 //  +-----------------------------------------------------------------------------+
 void Camera::CalculateMatrix( float3& x, float3& y, float3& z )
 {
-	y = make_float3( 0, 1, 0 );
-	z = direction; // assumed to be normalized at all times
-	x = normalize( cross( z, y ) );
-	y = cross( x, z );
+	if (fabs( direction.y ) > 0.99f)
+	{
+		// camera is looking straight down; use (1,0,0) as 'up' vector
+		y = make_float3( 1, 0, 0 );
+		z = direction;
+		x = normalize( cross( z, y ) );
+		y = cross( x, z );
+	}
+	else
+	{
+		y = make_float3( 0, 1, 0 );
+		z = direction; // assumed to be normalized at all times
+		x = normalize( cross( z, y ) );
+		y = cross( x, z );
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -95,6 +106,12 @@ ViewPyramid Camera::GetView()
 	view.p2 = C + screenSize * right * focalDistance * aspectRatio + screenSize * focalDistance * up;
 	view.p3 = C - screenSize * right * focalDistance * aspectRatio - screenSize * focalDistance * up;
 	view.aperture = aperture;
+	view.focalDistance = focalDistance;
+	// BDPT
+	float3 unitP1 = C - screenSize * right * aspectRatio + screenSize * up;
+	float3 unitP2 = C + screenSize * right * aspectRatio + screenSize * up;
+	float3 unitP3 = C - screenSize * right * aspectRatio - screenSize * up;
+	view.imagePlane = length(unitP1 - unitP2) * length(unitP1 - unitP3);
 	return view;
 }
 

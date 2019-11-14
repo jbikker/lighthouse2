@@ -25,6 +25,7 @@ static uint scrwidth = 0, scrheight = 0, scrspp = 1;
 static bool camMoved = false, spaceDown = false, hasFocus = true, running = true, animPaused = false;
 static std::bitset<1024> keystates;
 static std::bitset<8> mbstates;
+static string materialFile;
 
 // material editing
 HostMaterial currentMaterial;
@@ -50,6 +51,9 @@ void PrepareScene()
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 	int lightInst = renderer->AddInstance( lightQuad );
+	// load changed materials
+	materialFile = string( "data/pica/pica_materials.xml" );
+	renderer->DeserializeMaterials( materialFile.c_str() );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -118,12 +122,13 @@ int main()
 	InitImGui();
 
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );		// OPTIX7 core, with filtering (static scenes only for now)
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );				// OPTIX7 core, best for RTX devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_BDPT" );	// Peter's OptixPrime / BDPT core
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
@@ -195,7 +200,7 @@ int main()
 		ImGui::SliderFloat( "clearcoat", &currentMaterial.clearcoat, 0, 1 );
 		ImGui::SliderFloat( "clearcoatGloss", &currentMaterial.clearcoatGloss, 0, 1 );
 		ImGui::SliderFloat( "transmission", &currentMaterial.transmission, 0, 1 );
-		ImGui::SliderFloat( "eta", &currentMaterial.eta, 1, 3 );
+		ImGui::SliderFloat( "eta (1/ior)", &currentMaterial.eta, 0.25f, 1.0f );
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
@@ -204,6 +209,8 @@ int main()
 		// terminate
 		if (!running) break;
 	}
+	// save material changes
+	renderer->SerializeMaterials( materialFile.c_str() );
 	// clean up
 	renderer->SerializeCamera( "camera.xml" );
 	renderer->Shutdown();

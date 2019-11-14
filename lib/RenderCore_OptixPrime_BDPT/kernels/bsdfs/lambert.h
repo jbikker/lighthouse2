@@ -96,7 +96,8 @@ __device__ static float3 SampleBSDF( const ShadingData& shadingData,
         }
         else
         {
-            wi = normalize(Tangent2World(DiffuseReflectionCosWeighted(r3, r4), N));
+            float r = (r3 - TRANSMISSION) / (1.0f - TRANSMISSION);
+            wi = normalize(Tangent2World(DiffuseReflectionCosWeighted(r, r4), N));
             pdf = max(0.0f, fabs(dot(wi, N))) * INVPI;
 
             APPLYSAFENORMALS;

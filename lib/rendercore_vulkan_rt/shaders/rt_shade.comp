@@ -206,7 +206,7 @@ void main()
 	}
 
 	// detect specular surfaces
-	if (ROUGHNESS == 0.001f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS == 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
 	uint seed = WangHash(pathIdx * 16789 + camera.samplesTaken * 1791 + pathLength * 720898027 );

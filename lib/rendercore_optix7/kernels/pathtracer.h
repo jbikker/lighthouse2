@@ -168,7 +168,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	{
 		float3 lightColor;
 		float r0, r1, pickProb, lightPdf = 0;
-		if (false) // (sampleIdx < 256)
+		if (sampleIdx < 256)
 		{
 			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
 			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength );

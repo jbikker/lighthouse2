@@ -83,7 +83,7 @@ zlib https://www.zlib.net
 * The Lighthouse2 Vulkan core (and sharedBSDF) was developed by Mèir Noordermeer (https://github.com/MeirBon).
 * A Linux port by Marijn Suijten (https://github.com/MarijnS95) is being incorporated in the main repo.
 * Animation code uses low-level optimizations by Alysha Bogaers and Naraenda Prasetya.
-* Reference path tracer corrected by Guowei Lu. 
+* OptixPrime_BDPT core by Guowei (Peter) Lu (https://github.com/pasu).
 
 <b>Previous Work</b>
 

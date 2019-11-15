@@ -34,7 +34,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.40000001</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -82,7 +82,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -106,7 +106,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.51657772</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -346,7 +346,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.49561739</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -394,7 +394,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.11413872</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -466,7 +466,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -514,7 +514,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.25</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>

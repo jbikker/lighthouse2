@@ -186,7 +186,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
 		{
 			float bsdfPdf;
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
 			if (bsdfPdf > 0)
 			{
 				// calculate potential contribution

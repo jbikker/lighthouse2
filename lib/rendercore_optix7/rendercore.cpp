@@ -313,7 +313,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		delete accumulator;
 		delete hitBuffer;
 		delete pathStateBuffer;
-		connectionBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3 * MAXPATHLENGTH, ON_DEVICE );
+		connectionBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3 * 2, ON_DEVICE );
 		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
 		hitBuffer = new CoreBuffer<float4>( maxPixels * scrspp, ON_DEVICE );
 		pathStateBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3, ON_DEVICE );
@@ -697,12 +697,22 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		counters = counterBuffer->HostPtr()[0];
 		pathCount = counters.extensionRays;
 		if (pathCount == 0) break;
+		// trace shadow rays now if the next loop iteration could overflow the buffer.
+		if (pathCount > connectionBuffer->GetSize() / 3) if (counters.shadowRays > 0)
+		{
+			params.phase = 2;
+			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
+			counterBuffer->HostPtr()[0].shadowRays = 0;
+			counterBuffer->CopyToDevice();
+			printf( "WARNING: connection buffer overflowed.\n" ); // we should not have to do this; handled here to be conservative.
+		}
 	}
 	// connect to light sources
 	cudaEventRecord( shadowStart );
-	params.phase = 2;
 	if (counters.shadowRays > 0)
 	{
+		params.phase = 2;
 		cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 		CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 	}

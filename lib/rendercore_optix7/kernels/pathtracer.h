@@ -196,8 +196,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 				// add fire-and-forget shadow ray to the connections buffer
 				const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
 				connections[shadowRayIdx] = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 ); // O4
-				connections[shadowRayIdx + stride * MAXPATHLENGTH] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
-				connections[shadowRayIdx + stride * 2 * MAXPATHLENGTH] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
+				connections[shadowRayIdx + stride * 2] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
+				connections[shadowRayIdx + stride * 2 * 2] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
 			}
 		}
 	}

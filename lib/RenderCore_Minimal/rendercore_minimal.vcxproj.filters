@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="rendercore.cpp" />
+    <ClCompile Include="core_api.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="rendercore.h" />
+    <ClInclude Include="core_settings.h" />
+    <ClInclude Include="core_api.h">
+      <Filter>API</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="API">
+      <UniqueIdentifier>{85ca225a-7b4b-4626-9d4f-c778bf53cb0c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

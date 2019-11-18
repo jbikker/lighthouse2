@@ -50,7 +50,7 @@
 #define MAXPATHLENGTH	5               // [1,32)
 #define MAX_EYEPATH     (MAXPATHLENGTH)   // eye starts from 0
 #define MAX_LIGHTPATH   (MAXPATHLENGTH)   // light starts from 1
-#define NKK (MAX_LIGHTPATH)
+#define NKK (MAX_LIGHTPATH * 0.85f)
 
 // for directional light
 #define DIRECTIONAL_LIGHT

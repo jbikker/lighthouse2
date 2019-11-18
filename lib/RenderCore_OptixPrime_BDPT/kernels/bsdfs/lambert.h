@@ -39,7 +39,7 @@ __device__ static float3 EvaluateBSDF( const ShadingData& shadingData, const flo
 
 __device__ static float3 SampleBSDF( const ShadingData& shadingData, 
     float3 N, const float3 iN, const float3 T, const float3 wo,
-    const float r3, const float r4, float3& wi, float& pdf, const int type )
+    const float r3, const float r4, float3& wi, float& pdf, bool bS, const int type )
 {
     /*
     float v = dot(N, wo);

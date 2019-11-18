@@ -31,8 +31,8 @@
 // It returns the BSDF itself, and also the sampled direction and probability density for this direction.
 // ----------------------------------------------------------------
 /**/
-#include "bsdfs/lambert.h"
-
+//#include "bsdfs/lambert.h"
+#include <sharedbsdf.h>
 // EOF
 
 // Lambert BSDF

@@ -157,7 +157,10 @@ void extendLightPathKernel( int smcount, BiPathState* pathStateData,
 		r4 = RandomFloat( seed );
 		r5 = RandomFloat( seed );
 	}
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, dir * -1.0f, r4, r5, R, pdf_solidangle, type );
+
+    bool specular = false;
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, dir * -1.0f, r4, r5, R, pdf_solidangle, specular,type);
+    if (specular) FLAGS_L |= S_SPECULAR;
 
 	if (!(pdf_solidangle < EPSILON || isnan( pdf_solidangle )))
 	{

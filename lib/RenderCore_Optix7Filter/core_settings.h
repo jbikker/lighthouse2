@@ -22,20 +22,14 @@
 
 // core-specific settings
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
-#define MAXPATHLENGTH		3
-// #define USE_LAMBERT_BSDF	// override default microfacet model
-// #define USE_MULTISCATTER_BSDF // override default microfacet model
-// #define GGXCONDUCTOR // alternative is the diffuse ggx brdf
-#define SINGLEBOUNCE		// perform only a single diffuse bounce
+#define MAXPATHLENGTH		16
 #define CONSISTENTNORMALS	// consistent normal interpolation; don't use with filtering?
 
 // low-level settings
-#define SCATTERSTEPS 1		// max bounces in microfacet evaluation (multiscatter bsdf)
 #define BLUENOISE			// use blue noise instead of uniform random numbers
 #define TAA					// really basic temporal antialiasing
 #define BILINEAR			// enable bilinear interpolation
 // #define NOTEXTURES		// all texture reads will be white
-#define COMBINEDSHADING		// direct and indirect are stored together for faster access
 
 #define APPLYSAFENORMALS	if (dot( N, wi ) <= 0) pdf = 0;
 #define NOHIT				-1

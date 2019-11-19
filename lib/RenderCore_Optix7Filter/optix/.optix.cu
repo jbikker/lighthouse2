@@ -132,13 +132,13 @@ __device__ void setupSecondaryRay( const uint rayIdx, const uint stride )
 __device__ void generateShadowRay( const uint rayIdx, const uint stride )
 {
 	const float4 O4 = params.connectData[rayIdx]; // O4
-	const float4 D4 = params.connectData[rayIdx + stride * MAXPATHLENGTH]; // D4
+	const float4 D4 = params.connectData[rayIdx + stride * 2]; // D4
 	// launch shadow ray
 	uint u0 = 1;
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, D4.w, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT, 1, 2, 1, u0 );
 	if (u0) return;
-	const float4 E4 = params.connectData[rayIdx + stride * 2 * MAXPATHLENGTH]; // E4
+	const float4 E4 = params.connectData[rayIdx + stride * 2 * 2]; // E4
 	const int pixelIdx = __float_as_int( E4.w );
 	params.accumulator[pixelIdx] += make_float4( E4.x, E4.y, E4.z, 1 );
 }

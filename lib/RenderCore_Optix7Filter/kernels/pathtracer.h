@@ -85,7 +85,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float bsdfPdf = T4.w;
 
 	// derived data
-	uint data = __float_as_uint( O4.w );
+	uint data = __float_as_uint( O4.w ); // prob.density of the last sampled dir, postponed because of MIS
 	const float3 D = make_float3( D4 );
 	float3 throughput = make_float3( T4 );
 	const CoreTri4* instanceTriangles = (const CoreTri4*)instanceDescriptors[INSTANCEIDX].triangles;
@@ -174,7 +174,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		{
 			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
 			{
-				// only camera rays will be treated special
+				// accept light contribution if previous vertex was specular
 				contribution = shadingData.color;
 			}
 			else
@@ -204,7 +204,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	}
 
 	// detect specular surfaces
-	if (ROUGHNESS == 0.001f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS == 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
 	uint seed = WangHash( pathIdx + R0  /* well-seeded xor32 is all you need */ );
@@ -236,7 +236,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	N *= flip;		// fix geometric normal
 	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
 	fN *= flip;		// fix final normal (includes normal map)
-	if (flip) shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
+	if (flip > 0)
+	{
+		shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
+		shadingData.transmittance = make_float3( 0 );
+	}
 
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
@@ -244,7 +248,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// next event estimation: connect eye path to light
 	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
 	{
-		float3 lightColor;
 		float r0, r1, pickProb, lightPdf = 0;
 		if (sampleIdx < 256)
 		{
@@ -257,14 +260,14 @@ void shadeKernel( float4* accumulator, const uint stride,
 			r0 = RandomFloat( seed );
 			r1 = RandomFloat( seed );
 		}
-		float3 L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
+		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
 		const float NdotL = dot( L, fN );
 		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
 		{
 			float bsdfPdf;
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
 			if (bsdfPdf > 0)
 			{
 				// calculate potential contribution
@@ -274,8 +277,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 				// add fire-and-forget shadow ray to the connections buffer
 				const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
 				connections[shadowRayIdx] = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 ); // O4
-				connections[shadowRayIdx + stride * MAXPATHLENGTH] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
-				connections[shadowRayIdx + stride * 2 * MAXPATHLENGTH] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
+				connections[shadowRayIdx + stride * 2] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
+				connections[shadowRayIdx + stride * 2 * 2] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
 			}
 		}
 	}
@@ -319,7 +322,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN );
-	if (FLAGS & S_SPECULAR) FLAGS |= S_VIASPECULAR; else FLAGS |= S_BOUNCED;
+	if (!(FLAGS & S_SPECULAR)) FLAGS |= S_BOUNCED; else FLAGS |= S_VIASPECULAR;
 	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
 	pathStates[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
 	FIXNAN_FLOAT3( throughput );

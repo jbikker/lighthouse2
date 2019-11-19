@@ -117,8 +117,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	N *= flip;		// fix geometric normal
 	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
 	fN *= flip;		// fix final normal (includes normal map)
-	if (flip) shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
-	else shadingData.transmittance = make_float3( 0 );
+	if (flip > 0) 
+	{
+		shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
+		shadingData.transmittance = make_float3( 0 );
+	}
 
 	// next event estimation: connect eye path to light
 	if (!(FLAGS & S_SPECULAR))

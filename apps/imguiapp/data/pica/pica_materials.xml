@@ -178,7 +178,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.40000001</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -486,7 +486,7 @@
         <id>20</id>
         <flags>129</flags>
         <color b="0.99998999" g="0.99998999" r="1"/>
-        <absorption b="0" g="0.7352941" r="0.23788932"/>
+        <absorption b="0.89215684" g="1" r="0.92704719"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>

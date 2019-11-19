@@ -67,7 +67,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float bsdfPdf = T4.w;
 
 	// derived data
-	uint data = __float_as_uint( O4.w );
+	uint data = __float_as_uint( O4.w ); // prob.density of the last sampled dir, postponed because of MIS
 	const float3 D = make_float3( D4 );
 	float3 throughput = make_float3( T4 );
 	const CoreTri4* instanceTriangles = (const CoreTri4*)instanceDescriptors[INSTANCEIDX].triangles;
@@ -158,8 +158,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	N *= flip;		// fix geometric normal
 	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
 	fN *= flip;		// fix final normal (includes normal map)
-	if (flip) shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
-	else shadingData.transmittance = make_float3( 0 );
+	if (flip > 0)
+	{
+		shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
+		shadingData.transmittance = make_float3( 0 );
+	}
 
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
@@ -167,7 +170,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// next event estimation: connect eye path to light
 	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
 	{
-		float3 lightColor;
 		float r0, r1, pickProb, lightPdf = 0;
 		if (sampleIdx < 256)
 		{
@@ -180,7 +182,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 			r0 = RandomFloat( seed );
 			r1 = RandomFloat( seed );
 		}
-		float3 L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
+		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
 		const float NdotL = dot( L, fN );
@@ -249,8 +251,8 @@ __host__ void shade( const int pathCount, float4* accumulator, const uint stride
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 ), blockDim( 128, 1 );
-	shadeKernel<<<gridDim.x, 128>>>( accumulator, stride, pathStates, hits, connections, R0, blueNoise, 
-		pass, probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos, pathCount );
+	shadeKernel << <gridDim.x, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, blueNoise,
+		pass, probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos, pathCount);
 }
 
 // EOF

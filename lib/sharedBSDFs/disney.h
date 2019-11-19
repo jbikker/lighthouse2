@@ -24,7 +24,7 @@ LH2_DEVFUNC bool Refract( const float3 wi, const float3 n, const float eta, REFE
 	const float sin2ThetaI = max( 0.0f, 1.0f - cosThetaI * cosThetaI );
 	const float sin2ThetaT = eta * eta * sin2ThetaI;
 	if (sin2ThetaT >= 1) return false; // TIR
-	float cosThetaT = sqrt( 1.0f - sin2ThetaT );
+	float cosThetaT = sqrtf( 1.0f - sin2ThetaT );
 	wt = eta * (wi * -1.0f) + (eta * cosThetaI - cosThetaT) * float3( n );
 	return true;
 }
@@ -54,14 +54,14 @@ LH2_DEVFUNC float SmithGGX( const float NdotV, const float alphaG )
 {
 	const float a = alphaG * alphaG;
 	const float b = NdotV * NdotV;
-	return 1 / (NdotV + sqrt( a + b - a * b ));
+	return 1 / (NdotV + sqrtf( a + b - a * b ));
 }
 
 LH2_DEVFUNC float Fr( const float VDotN, const float eio )
 {
 	const float SinThetaT2 = sqr( eio ) * (1.0f - VDotN * VDotN);
 	if (SinThetaT2 > 1.0f) return 1.0f; // TIR
-	const float LDotN = sqrt( 1.0f - SinThetaT2 );
+	const float LDotN = sqrtf( 1.0f - SinThetaT2 );
 	// todo: reformulate to remove this division
 	const float eta = 1.0f / eio;
 	const float r1 = (VDotN - eta * LDotN) / (VDotN + eta * LDotN);
@@ -72,7 +72,7 @@ LH2_DEVFUNC float Fr( const float VDotN, const float eio )
 LH2_DEVFUNC float3 SafeNormalize( const float3 a )
 {
 	const float ls = dot( a, a );
-	if (ls > 0.0f) return a * (1.0f / sqrt( ls )); else return make_float3( 0 );
+	if (ls > 0.0f) return a * (1.0f / sqrtf( ls )); else return make_float3( 0 );
 }
 
 LH2_DEVFUNC float BSDFPdf( const ShadingData shadingData, const float3 N, const float3 wo, const float3 wi )
@@ -138,7 +138,7 @@ LH2_DEVFUNC float3 BSDFEval( const ShadingData shadingData, const float3 N, cons
 			{
 				// take sqrt to account for entry/exit of the ray through the medium
 				// this ensures transmitted light corresponds to the diffuse model
-				const float3 s = make_float3( sqrt( shadingData.color.x ), sqrt( shadingData.color.y ), sqrt( shadingData.color.z ) );
+				const float3 s = make_float3( sqrtf( shadingData.color.x ), sqrtf( shadingData.color.y ), sqrtf( shadingData.color.z ) );
 				const float FL = SchlickFresnel( abs( NdotL ) ), FV = SchlickFresnel( NdotV );
 				const float Fd = (1.0f - 0.5f * FL) * (1.0f - 0.5f * FV);
 				brdf = INVPI * s * SUBSURFACE * Fd * (1.0f - METALLIC);
@@ -188,8 +188,8 @@ LH2_DEVFUNC void BSDFSample( const ShadingData shadingData, const float3 T, cons
 			// sample reflection
 			const float r1 = r3 / TRANSMISSION;
 			const float r2 = r4 / F;
-			const float cosThetaHalf = sqrt( (1.0f - r2) / (1.0f + (sqr( ROUGHNESS ) - 1.0f) * r2) );
-			const float sinThetaHalf = sqrt( max( 0.0f, 1.0f - sqr( cosThetaHalf ) ) );
+			const float cosThetaHalf = sqrtf( (1.0f - r2) / (1.0f + (sqr( ROUGHNESS ) - 1.0f) * r2) );
+			const float sinThetaHalf = sqrtf( max( 0.0f, 1.0f - sqr( cosThetaHalf ) ) );
 			const float sinPhiHalf = sin( r1 * TWOPI );
 			const float cosPhiHalf = cos( r1 * TWOPI );
 			float3 halfway = T * (sinThetaHalf * cosPhiHalf) + B * (sinThetaHalf * sinPhiHalf) + N * cosThetaHalf;
@@ -227,8 +227,8 @@ LH2_DEVFUNC void BSDFSample( const ShadingData shadingData, const float3 T, cons
 		{
 			// sample specular
 			const float r2 = (r4 - 0.5f) * 2.0f;
-			const float cosThetaHalf = sqrt( (1.0f - r2) / (1.0f + (sqr( ROUGHNESS ) - 1.0f) * r2) );
-			const float sinThetaHalf = sqrt( max( 0.0f, 1.0f - sqr( cosThetaHalf ) ) );
+			const float cosThetaHalf = sqrtf( (1.0f - r2) / (1.0f + (sqr( ROUGHNESS ) - 1.0f) * r2) );
+			const float sinThetaHalf = sqrtf( max( 0.0f, 1.0f - sqr( cosThetaHalf ) ) );
 			const float sinPhiHalf = sin( r1 * TWOPI );
 			const float cosPhiHalf = cos( r1 * TWOPI );
 			float3 halfway = T * (sinThetaHalf * cosPhiHalf) + B * (sinThetaHalf * sinPhiHalf) + N * cosThetaHalf;

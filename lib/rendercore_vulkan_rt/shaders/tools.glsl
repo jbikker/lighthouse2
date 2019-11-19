@@ -37,25 +37,25 @@
 
 #define APPLYSAFENORMALS if (dot( N, wi ) <= 0) pdf = 0;
 
-void FIXNAN_VEC3(inout vec3 x)
+void FIXNAN_VEC3( inout vec3 x )
 {
-	if (isnan(x.x) || isnan(x.y) || isnan(x.z))
+	if (isnan( x.x ) || isnan( x.y ) || isnan( x.z ))
 	{
-		x = vec3(0.0);
+		x = vec3( 0.0 );
 	}
 }
 
-void FIXNAN_VEC4(inout vec4 x)
+void FIXNAN_VEC4( inout vec4 x )
 {
-	if (isnan(x.x) || isnan(x.y) || isnan(x.z) || isnan(x.w))
+	if (isnan( x.x ) || isnan( x.y ) || isnan( x.z ) || isnan( x.w ))
 	{
-		x = vec4(0.0);
+		x = vec4( 0.0 );
 	}
 }
 
-void CLAMPINTENSITY(inout vec3 contribution, const float clampValue)
+void CLAMPINTENSITY( inout vec3 contribution, const float clampValue )
 {
-	const float v = max(contribution.x, max(contribution.y, contribution.z));
+	const float v = max( contribution.x, max( contribution.y, contribution.z ) );
 	if (v > clampValue)
 	{
 		const float m = clampValue / v;
@@ -77,19 +77,19 @@ uint PackNormal( const vec3 N )
 #if 1
 	// more efficient
 	const float f = 65535.0f / sqrt( 8.0f * N.z + 8.0f );
-	return uint( N.x * f + 32767.0f ) + ( uint( N.y * f + 32767.0f ) << 16 );
+	return uint(N.x * f + 32767.0f) + (uint(N.y * f + 32767.0f) << 16);
 #else
-	vec2 enc = normalize( vec2( N ) ) * ( sqrt( -N.z * 0.5f + 0.5f ) );
+	vec2 enc = normalize( vec2( N ) ) * (sqrt( -N.z * 0.5f + 0.5f ));
 	enc = enc * 0.5f + 0.5f;
-	return uint( enc.x * 65535.0f ) + ( uint( enc.y * 65535.0f ) << 16 );
+	return uint(enc.x * 65535.0f) + (uint(enc.y * 65535.0f) << 16);
 #endif
 }
 
 vec3 UnpackNormal( uint p )
 {
-	vec4 nn = vec4( float( p & 65535 ) * ( 2.0f / 65535.0f ), float( p >> 16 ) * ( 2.0f / 65535.0f ), 0, 0 );
+	vec4 nn = vec4( float( p & 65535 ) * (2.0f / 65535.0f), float( p >> 16 ) * (2.0f / 65535.0f), 0, 0 );
 	nn += vec4( -1, -1, 1, -1 );
-	float l = dot( nn.xyz, -nn.xyz  );
+	float l = dot( nn.xyz, -nn.xyz );
 	nn.z = l, l = sqrt( l ), nn.x *= l, nn.y *= l;
 	return vec3( nn ) * 2.0f + vec3( 0, 0, -1 );
 }
@@ -98,18 +98,18 @@ vec3 UnpackNormal( uint p )
 uint PackNormal2( vec3 N )
 {
 	// simple, and good enough discrimination of normals for filtering.
-	const uint x = clamp( uint( ( N.x + 1 ) * 511 ), 0u, 1023u );
-	const uint y = clamp( uint( ( N.y + 1 ) * 511 ), 0u, 1023u );
-	const uint z = clamp( uint( ( N.z + 1 ) * 511 ), 0u, 1023u );
-	return ( x << 2u ) + ( y << 12u ) + ( z << 22u );
+	const uint x = clamp( uint((N.x + 1) * 511), 0u, 1023u );
+	const uint y = clamp( uint((N.y + 1) * 511), 0u, 1023u );
+	const uint z = clamp( uint((N.z + 1) * 511), 0u, 1023u );
+	return (x << 2u) + (y << 12u) + (z << 22u);
 }
 
 vec3 UnpackNormal2( uint pi )
 {
-	const uint x = ( pi >> 2u ) & 1023u;
-	const uint y = ( pi >> 12u ) & 1023u;
+	const uint x = (pi >> 2u) & 1023u;
+	const uint y = (pi >> 12u) & 1023u;
 	const uint z = pi >> 22u;
-	return vec3( x * ( 1.0f / 511.0f ) - 1, y * ( 1.0f / 511.0f ) - 1, z * ( 1.0f / 511.0f ) - 1 );
+	return vec3( x * (1.0f / 511.0f) - 1, y * (1.0f / 511.0f) - 1, z * (1.0f / 511.0f) - 1 );
 }
 
 // color conversions
@@ -117,16 +117,16 @@ vec3 RGBToYCoCg( const vec3 RGB )
 {
 	const vec3 rgb = min3( vec3( 4 ), RGB ); // clamp helps AA for strong HDR
 	const float Y = dot( rgb, vec3( 1, 2, 1 ) ) * 0.25f;
-	const float Co = dot( rgb, vec3( 2, 0, -2 ) ) * 0.25f + ( 0.5f * 256.0f / 255.0f );
-	const float Cg = dot( rgb, vec3( -1, 2, -1 ) ) * 0.25f + ( 0.5f * 256.0f / 255.0f );
+	const float Co = dot( rgb, vec3( 2, 0, -2 ) ) * 0.25f + (0.5f * 256.0f / 255.0f);
+	const float Cg = dot( rgb, vec3( -1, 2, -1 ) ) * 0.25f + (0.5f * 256.0f / 255.0f);
 	return vec3( Y, Co, Cg );
 }
 
 vec3 YCoCgToRGB( const vec3 YCoCg )
 {
 	const float Y = YCoCg.x;
-	const float Co = YCoCg.y - ( 0.5f * 256.0f / 255.0f );
-	const float Cg = YCoCg.z - ( 0.5f * 256.0f / 255.0f );
+	const float Co = YCoCg.y - (0.5f * 256.0f / 255.0f);
+	const float Cg = YCoCg.z - (0.5f * 256.0f / 255.0f);
 	return vec3( Y + Co - Cg, Y + Cg, Y - Co - Cg );
 }
 
@@ -137,24 +137,24 @@ float Luminance( vec3 rgb )
 
 uint HDRtoRGB32( const vec3 c )
 {
-	const uint r = uint( 1023.0f * min( 1.0f, c.x ) );
-	const uint g = uint( 2047.0f * min( 1.0f, c.y ) );
-	const uint b = uint( 2047.0f * min( 1.0f, c.z ) );
-	return ( r << 22 ) + ( g << 11 ) + b;
+	const uint r = uint(1023.0f * min( 1.0f, c.x ));
+	const uint g = uint(2047.0f * min( 1.0f, c.y ));
+	const uint b = uint(2047.0f * min( 1.0f, c.z ));
+	return (r << 22) + (g << 11) + b;
 }
 vec3 RGB32toHDR( const uint c )
 {
 	return vec3(
-		float( c >> 22 ) * ( 1.0f / 1023.0f ),
-		float( ( c >> 11 ) & 2047 ) * ( 1.0f / 2047.0f ),
-		float( c & 2047 ) * ( 1.0f / 2047.0f ) );
+		float( c >> 22 ) * (1.0f / 1023.0f),
+		float( (c >> 11) & 2047 ) * (1.0f / 2047.0f),
+		float( c & 2047 ) * (1.0f / 2047.0f) );
 }
 vec3 RGB32toHDRmin1( const uint c )
 {
 	return vec3(
-		float( max( 1u, c >> 22 ) * ( 1.0f / 1023.0f ) ),
-		float( max( 1u, ( c >> 11 ) & 2047 ) * ( 1.0f / 2047.0f ) ),
-		float( max( 1u, c & 2047 ) * ( 1.0f / 2047.0f ) ) );
+		float( max( 1u, c >> 22 ) * (1.0f / 1023.0f) ),
+		float( max( 1u, (c >> 11) & 2047 ) * (1.0f / 2047.0f) ),
+		float( max( 1u, c & 2047 ) * (1.0f / 2047.0f) ) );
 }
 
 //vec4 SampleSkydome( vec3 D, const int pathLength )
@@ -173,14 +173,14 @@ float SurvivalProbability( const vec3 diffuse )
 
 float FresnelDielectricExact( const vec3 wo, const vec3 N, float eta )
 {
-	if ( eta <= 1.0f ) return 0.0f;
+	if (eta <= 1.0f) return 0.0f;
 	const float cosThetaI = max( 0.0f, dot( wo, N ) );
-	float scale = 1 / eta, cosThetaTSqr = 1 - ( 1 - cosThetaI * cosThetaI ) * ( scale * scale );
-	if ( cosThetaTSqr <= 0.0f ) return 1.0f;
+	float scale = 1 / eta, cosThetaTSqr = 1 - (1 - cosThetaI * cosThetaI) * (scale * scale);
+	if (cosThetaTSqr <= 0.0f) return 1.0f;
 	float cosThetaT = sqrt( cosThetaTSqr );
-	float Rs = ( cosThetaI - eta * cosThetaT ) / ( cosThetaI + eta * cosThetaT );
-	float Rp = ( eta * cosThetaI - cosThetaT ) / ( eta * cosThetaI + cosThetaT );
-	return 0.5f * ( Rs * Rs + Rp * Rp );
+	float Rs = (cosThetaI - eta * cosThetaT) / (cosThetaI + eta * cosThetaT);
+	float Rp = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
+	return 0.5f * (Rs * Rs + Rp * Rp);
 }
 
 vec3 Tangent2World( const vec3 V, const vec3 N )
@@ -194,18 +194,19 @@ vec3 Tangent2World( const vec3 V, const vec3 N )
 	const vec3 T = vec3( b, signf + N.y * N.y * a, -N.y );
 #else
 	vec3 B, T;
-	if (N.z<0.) {
+	if (N.z < 0.)
+	{
 		const float a = 1.0f / (1.0f - N.z);
 		const float b = N.x * N.y * a;
-		B = vec3(1.0f - N.x * N.x * a, -b, N.x);
-		T = vec3(b, N.y * N.y * a - 1.0f, -N.y);
+		B = vec3( 1.0f - N.x * N.x * a, -b, N.x );
+		T = vec3( b, N.y * N.y * a - 1.0f, -N.y );
 	}
 	else
 	{
 		const float a = 1.0f / (1.0f + N.z);
 		const float b = -N.x * N.y * a;
-		B = vec3(1.0f - N.x * N.x * a, b, -N.x);
-		T = vec3(b, 1.0f - N.y * N.y * a, -N.y);
+		B = vec3( 1.0f - N.x * N.x * a, b, -N.x );
+		T = vec3( b, 1.0f - N.y * N.y * a, -N.y );
 	}
 #endif
 	return V.x * T + V.y * B + V.z * N;
@@ -214,7 +215,7 @@ vec3 Tangent2World( const vec3 V, const vec3 N )
 vec3 World2Tangent( const vec3 V, const vec3 N )
 {
 	float signf = sign( N.z );
-	const float a = -1.0f / ( signf + N.z );
+	const float a = -1.0f / (signf + N.z);
 	const float b = N.x * N.y * a;
 	const vec3 B = vec3( 1.0f + signf * N.x * N.x * a, signf * b, -signf * N.x );
 	const vec3 T = vec3( b, signf + N.y * N.y * a, -N.y );
@@ -233,9 +234,9 @@ vec3 DiffuseReflectionCosWeighted( const float r0, const float r1 )
 {
 	const float term1 = TWOPI * r0;
 	const float  term2 = sqrt( 1.0 - r1 );
-	const float s = sin(term1);
-	const float c = cos(term1);
-	return vec3(c * term2, s * term2, sqrt(r1));
+	const float s = sin( term1 );
+	const float c = cos( term1 );
+	return vec3( c * term2, s * term2, sqrt( r1 ) );
 }
 
 // origin offset
@@ -252,7 +253,7 @@ vec3 SafeOrigin( const vec3 O, const vec3 R, const vec3 N, const float geoEpsilo
 	// negating offset along N only makes sense once we backface cull
 	const float side = 1.0f;
 #endif
-	return O + R * geoEpsilon * ( 1 - v ) + N * side * geoEpsilon * v;
+	return O + R * geoEpsilon * (1 - v) + N * side * geoEpsilon * v;
 }
 
 vec3 ConsistentNormal( const vec3 D, const vec3 iN, const float alpha )
@@ -264,16 +265,16 @@ vec3 ConsistentNormal( const vec3 D, const vec3 iN, const float alpha )
 #else
 #if 1
 	// Eq. 1, exact
-	const float q = ( 1 - sin( alpha ) ) / ( 1 + sin( alpha ) );
+	const float q = (1 - sin( alpha )) / (1 + sin( alpha ));
 #else
 	// Eq. 1 approximation, as in Figure 6 (not the wrong one in Table 8)
 	const float t = PI - 2 * alpha;
-	const float q = ( t * t ) / ( PI * ( PI + ( 2 * PI - 4 ) * alpha ) );
+	const float q = (t * t) / (PI * (PI + (2 * PI - 4) * alpha));
 #endif
 	const float b = dot( D, iN );
-	const float g = 1 + q * ( b - 1 );
-	const float rho = sqrt( q * ( 1 + g ) / ( 1 + b ) );
-	const vec3 Rc = ( g + rho * b ) * iN - ( rho * D );
+	const float g = 1 + q * (b - 1);
+	const float rho = sqrt( q * (1 + g) / (1 + b) );
+	const vec3 Rc = (g + rho * b) * iN - (rho * D);
 	return normalize( D + Rc );
 #endif
 }
@@ -285,25 +286,25 @@ vec4 CombineToVec4( const vec3 A, const vec3 B )
 	// - the input is possitive
 	// - the input can be safely clamped to 31.999
 	// with this in mind, the data is stored as 5:11 unsigned fixed point, which should be plenty.
-	const uint Ar = uint( min( A.x, 31.999f ) * 2048.0f );
-	const uint Ag = uint( min( A.y, 31.999f ) * 2048.0f );
-	const uint Ab = uint( min( A.z, 31.999f ) * 2048.0f );
-	const uint Br = uint( min( B.x, 31.999f ) * 2048.0f );
-	const uint Bg = uint( min( B.y, 31.999f ) * 2048.0f );
-	const uint Bb = uint( min( B.z, 31.999f ) * 2048.0f );
-	return vec4( uintBitsToFloat( ( Ar << 16 ) + Ag ), uintBitsToFloat( Ab ), uintBitsToFloat( ( Br << 16 ) + Bg ), uintBitsToFloat( Bb ) );
+	const uint Ar = uint(min( A.x, 31.999f ) * 2048.0f);
+	const uint Ag = uint(min( A.y, 31.999f ) * 2048.0f);
+	const uint Ab = uint(min( A.z, 31.999f ) * 2048.0f);
+	const uint Br = uint(min( B.x, 31.999f ) * 2048.0f);
+	const uint Bg = uint(min( B.y, 31.999f ) * 2048.0f);
+	const uint Bb = uint(min( B.z, 31.999f ) * 2048.0f);
+	return vec4( uintBitsToFloat( (Ar << 16) + Ag ), uintBitsToFloat( Ab ), uintBitsToFloat( (Br << 16) + Bg ), uintBitsToFloat( Bb ) );
 }
 
 vec3 GetDirectFromFloat4( const vec4 X )
 {
 	const uint v0 = floatBitsToUint( X.x ), v1 = floatBitsToUint( X.y );
-	return vec3( float( v0 >> 16 ) * ( 1.0f / 2048.0f ), float( v0 & 65535 ) * ( 1.0f / 2048.0f ), float( v1 ) * ( 1.0f / 2048.0f ) );
+	return vec3( float( v0 >> 16 ) * (1.0f / 2048.0f), float( v0 & 65535 ) * (1.0f / 2048.0f), float( v1 ) * (1.0f / 2048.0f) );
 }
 
 vec3 GetIndirectFromFloat4( const vec4 X )
 {
 	const uint v2 = floatBitsToUint( X.z ), v3 = floatBitsToUint( X.w );
-	return vec3( float( v2 >> 16 ) * ( 1.0f / 2048.0f ), float( v2 & 65535 ) * ( 1.0f / 2048.0f ), float( v3 ) * ( 1.0f / 2048.0f ) );
+	return vec3( float( v2 >> 16 ) * (1.0f / 2048.0f), float( v2 & 65535 ) * (1.0f / 2048.0f), float( v3 ) * (1.0f / 2048.0f) );
 }
 
 #endif

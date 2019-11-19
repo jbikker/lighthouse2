@@ -102,12 +102,12 @@ struct ShadingData
 {
 	// This structure is filled for an intersection point. It will contain the spatially varying material properties.
 	vec3 color; int flags;
-	vec3 absorption; int matID;
+	vec3 transmittance; int matID;
 	uvec4 parameters;
-	/* 16 uchars:   x: roughness, metallic, specTrans, specularTint;
-					y: diffTrans, anisotropic, sheen, sheenTint;
-					z: clearcoat, clearcoatGloss, scatterDistance, relativeIOR;
-					w: flatness, ior, dummy1, dummy2. */
+	/* 16 uchars:   x: metallic, subsurface, specular, roughness;
+					y: specTint, anisotropic, sheen, sheenTint;
+					z: clearcoat, clearcoatGloss, transmission, dummy;
+					w: eta (32-bit float). */
 #define IS_SPECULAR (0)
 #define IS_EMISSIVE (shadingData.color.x > 1.0f || shadingData.color.y > 1.0f || shadingData.color.z > 1.0f)
 #define METALLIC CHAR2FLT( shadingData.parameters.x, 0 )

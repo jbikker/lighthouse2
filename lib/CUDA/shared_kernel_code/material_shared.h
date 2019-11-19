@@ -41,12 +41,12 @@ LH2_DEVFUNC void GetShadingData(
 	const uint4 baseData = mat.baseData4;
 	// process common data (unconditional)
 	const uint part0 = baseData.x; // diffuse_r, diffuse_g
-	const uint part1 = baseData.y; // diffuse_b, flags
-	const uint part2 = baseData.z; // medium_r, medium_g
-	const float2 base_rg = __half22float2( __halves2half2( __ushort_as_half( part0 & 0xffff ), __ushort_as_half( part0 >> 16 ) ) );
-	const float2 base_b_medium_r = __half22float2( __halves2half2( __ushort_as_half( part1 & 0xffff ), __ushort_as_half( part1 >> 16 ) ) ); // __ushort_as_half( part1 & 0xffff );
-	const float2 medium_gb = __half22float2( __halves2half2( __ushort_as_half( part2 & 0xffff ), __ushort_as_half( part2 >> 16 ) ) );
+	const uint part1 = baseData.y; // diffuse_b, medium_r
+	const uint part2 = baseData.z; // medium_g, medium_b
 	const uint flags = baseData.w;
+	const float2 base_rg = __half22float2( __halves2half2( __ushort_as_half( part0 & 0xffff ), __ushort_as_half( part0 >> 16 ) ) );
+	const float2 base_b_medium_r = __half22float2( __halves2half2( __ushort_as_half( part1 & 0xffff ), __ushort_as_half( part1 >> 16 ) ) );
+	const float2 medium_gb = __half22float2( __halves2half2( __ushort_as_half( part2 & 0xffff ), __ushort_as_half( part2 >> 16 ) ) );
 	ShadingData4& retVal4 = (ShadingData4&)retVal;
 	retVal4.data0 = make_float4( base_rg.x, base_rg.y, base_b_medium_r.x, __uint_as_float( 0 ) );
 	retVal4.data1 = make_float4( base_b_medium_r.y, medium_gb.x, medium_gb.y, __uint_as_float( 0 /* matid? */ ) );

@@ -29,6 +29,10 @@
 #define make_float4 vec4
 
 #define fabs abs
+#define sqrtf sqrt
+#define expf exp
+#define sqr(a) ((a)*(a))
+#define adjoint false
 #endif
 
 #ifndef PI

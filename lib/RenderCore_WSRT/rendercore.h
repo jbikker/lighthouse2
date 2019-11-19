@@ -37,9 +37,11 @@ public:
 	float3 direction;
 };
 
-class Color
+struct Intersection
 {
-
+	float3 intersection;
+	// float3 normal;
+	//Material material;
 };
 
 enum Material {
@@ -62,8 +64,10 @@ public:
 	void Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast );
 	void Shutdown();
 	// internal methods
-	Color Trace(Ray r);
-	tuple<float3, float3, Material> NearestIntersection; // Returns the nearest intersection point, the normal and the material type.
+	float3 Trace(Ray r);
+	bool NearestIntersection(Ray r, Intersection &intersection); // Returns the nearest intersection point, the normal and the material type.
+	bool GeometricTriangleIntersection(Ray r, float3 v0, float3 v1, float3 v2, float &t);
+
 private:
 	// data members
 	Bitmap* screen = 0;								// temporary storage of RenderCore output; will be copied to render target

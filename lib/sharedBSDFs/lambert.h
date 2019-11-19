@@ -71,9 +71,9 @@ LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, float3 iN, const f
 			float ajointCorrection = 1.0f;
 			if (adjoint) ajointCorrection = (eio * eio);
 			float3 beer = make_float3( 1 );
-			beer.x = expf( -shadingData.transmittance.x * distance * 2.0f );
-			beer.y = expf( -shadingData.transmittance.y * distance * 2.0f );
-			beer.z = expf( -shadingData.transmittance.z * distance * 2.0f );
+			// beer.x = expf( -shadingData.transmittance.x * distance * 2.0f );
+			// beer.y = expf( -shadingData.transmittance.y * distance * 2.0f );
+			// beer.z = expf( -shadingData.transmittance.z * distance * 2.0f );
 			return shadingData.color * beer * ajointCorrection * (1 / abs( dot( iN, wi ) ));
 		}
 	}

@@ -45,7 +45,7 @@ LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN,
 }
 
 LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, float3 iN, const float3 N, const float3 T, const float3 wo,
-	const float r3, const float r4, float3& wi, float& pdf, bool& specular )
+	const float distance, const float r3, const float r4, float3& wi, float& pdf, bool& specular )
 {
 	specular = true, pdf = 1; // default
 	float3 bsdf;
@@ -61,8 +61,11 @@ LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, float3 iN, const f
 		else
 		{
 			if (!Refract_L( wo, iN, eio, wi )) return make_float3( 0 );
-			/* if (adjoint) ft *= (eio * eio); */
-			return shadingData.color * (1 / abs( dot( iN, wi ) ));
+			float3 beer = make_float3( 1 );
+			beer.x = expf( -shadingData.transmittance.x * distance * 2.0f );
+			beer.y = expf( -shadingData.transmittance.y * distance * 2.0f );
+			beer.z = expf( -shadingData.transmittance.z * distance * 2.0f );
+			return shadingData.color * beer * (1 / abs( dot( iN, wi ) ));
 		}
 	}
 	else

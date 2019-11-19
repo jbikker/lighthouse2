@@ -110,7 +110,7 @@ void extendEyePathKernel(int smcount, BiPathState* pathStateData,
     }
 
     bool specular = false;
-    const float3 bsdf = SampleBSDF(shadingData, fN, N, T, dir * -1.0f, r4, r5, R, pdf_solidangle, specular,type);
+    const float3 bsdf = SampleBSDF(shadingData, fN, N, T, dir * -1.0f, HIT_T, r4, r5, R, pdf_solidangle, specular,type);
     if (specular) FLAGS |= S_SPECULAR;
 
     if (!(pdf_solidangle < EPSILON || isnan(pdf_solidangle)))

@@ -486,7 +486,7 @@
         <id>20</id>
         <flags>129</flags>
         <color b="0.99998999" g="0.99998999" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="0" g="0.7352941" r="0.23788932"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
@@ -534,7 +534,7 @@
         <id>22</id>
         <flags>129</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1" g="0.81618083" r="0.63235295"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
@@ -545,8 +545,8 @@
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
+        <transmission>1</transmission>
+        <eta>0.653</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>

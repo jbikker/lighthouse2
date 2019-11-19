@@ -46,10 +46,8 @@ public:
 	// internal methods
 private:
 	// data members
-	int scrwidth = 0, scrheight = 0;				// current screen width and height
-	uint* screenPixels = 0;							// screen pixels
+	Bitmap* screen = 0;								// temporary storage of RenderCore output; will be copied to render target
 	int targetTextureID = 0;						// ID of the target OpenGL texture
-	int maxPixels = 0;								// max screen size buffers can accomodate without a realloc
 	vector<Mesh> meshes;							// mesh data storage
 public:
 	CoreStats coreStats;							// rendering statistics

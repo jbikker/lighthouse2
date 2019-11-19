@@ -249,7 +249,7 @@ LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN,
 	return bsdf;
 }
 
-LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, const float3 iN, const float3 N, const float3 T, const float3 wo,
+LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, const float3 iN, const float3 N, const float3 T, const float3 wo, const float distance,
 	const float r3, const float r4, REFERENCE_OF( float3 ) wi, REFERENCE_OF( float ) pdf, REFERENCE_OF( bool ) specular )
 {
 	const float3 B = normalize( cross( T, iN ) );

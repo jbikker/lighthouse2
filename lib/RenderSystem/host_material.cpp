@@ -115,9 +115,9 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
 	gpuMat.diffuse_r = color.x;
 	gpuMat.diffuse_g = color.y;
 	gpuMat.diffuse_b = color.z;
-	gpuMat.transmittance_r = absorption.x;
-	gpuMat.transmittance_g = absorption.y;
-	gpuMat.transmittance_b = absorption.z;
+	gpuMat.transmittance_r = 1 - absorption.x;
+	gpuMat.transmittance_g = 1 - absorption.y;
+	gpuMat.transmittance_b = 1 - absorption.z;
 	gpuMat.parameters.x = TOUINT4( metallic, subsurface, specular, roughness );
 	gpuMat.parameters.y = TOUINT4( specularTint, anisotropic, sheen, sheenTint );
 	gpuMat.parameters.z = TOUINT4( clearcoat, clearcoatGloss, transmission, 0 );

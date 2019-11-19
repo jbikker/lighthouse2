@@ -118,6 +118,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
 	fN *= flip;		// fix final normal (includes normal map)
 	if (flip) shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
+	else shadingData.transmittance = make_float3( 0 );
 
 	// next event estimation: connect eye path to light
 	if (!(FLAGS & S_SPECULAR))
@@ -147,7 +148,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	float newBsdfPdf;
 	bool specular = false;
 	const float r3 = RandomFloat( seed ), r4 = RandomFloat( seed ), r5 = RandomFloat( seed );
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf, specular );
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
 	if (specular) FLAGS |= S_SPECULAR; // SampleBSDF used a specular bounce to calculate R
 

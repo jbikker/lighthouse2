@@ -286,7 +286,7 @@ void main()
 	r4 = RandomFloat( seed );
 #endif
 	bool specular = false;
-	const vec3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, r3, r4, R, newBsdfPdf, specular );
+	const vec3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return; // Early out in case we have an invalid bsdf
 	if (specular) FLAGS |= S_SPECULAR;
 

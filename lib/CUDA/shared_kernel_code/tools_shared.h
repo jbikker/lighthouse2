@@ -27,7 +27,7 @@ struct ShadingData
 {
 	// This structure is filled for an intersection point. It will contain the spatially varying material properties.
 	float3 color; int flags;
-	float3 absorption; int matID;
+	float3 transmittance; int matID;
 	uint4 parameters;
 	/* 16 uchars:   x: metallic, subsurface, specular, roughness;
 					y: specTint, anisotropic, sheen, sheenTint;

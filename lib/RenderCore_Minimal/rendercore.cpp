@@ -33,18 +33,10 @@ void RenderCore::Init()
 void RenderCore::SetTarget( GLTexture* target )
 {
 	// synchronize OpenGL viewport
-	scrwidth = target->width;
-	scrheight = target->height;
 	targetTextureID = target->ID;
-	// see if we need to reallocate our buffers
-	bool reallocate = false;
-	if (scrwidth * scrheight > maxPixels)
-	{
-		maxPixels = scrwidth * scrheight;
-		maxPixels += maxPixels >> 4; // reserve a bit extra to prevent frequent reallocs
-		delete screenPixels;
-		screenPixels = new uint[maxPixels];
-	}
+	if (screen != 0 && target->width == screen->width && target->height == screen->height) return; // nothing changed
+	delete screen;
+	screen = new Bitmap( target->width, target->height );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -72,24 +64,17 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast )
 {
 	// render
-	memset( screenPixels, 0, scrwidth * scrheight * sizeof( uint ) );
-	for( Mesh& mesh : meshes )
+	screen->Clear();
+	for( Mesh& mesh : meshes ) for( int i = 0; i < mesh.vcount; i++ )
 	{
-		for( int i = 0; i < mesh.vcount; i++ )
-		{
-			// convert a vertex position to a screen coordinate
-			int screenx = mesh.vertices[i].x / 80 * (float)scrwidth + scrwidth / 2;
-			int screeny = mesh.vertices[i].z / 80 * (float)scrheight + scrheight / 2;
-			// plot the vertex if it is within the screen boundaries
-			if (screenx >= 0 && screeny >= 0 && screenx <= scrwidth && screeny <= scrheight)
-			{
-				screenPixels[screenx + screeny * scrwidth] = 0xffffff /* white */;
-			}
-		}
+		// convert a vertex position to a screen coordinate
+		int screenx = mesh.vertices[i].x / 80 * (float)screen->width + screen->width / 2;
+		int screeny = mesh.vertices[i].z / 80 * (float)screen->height + screen->height / 2;
+		screen->Plot( screenx, screeny, 0xffffff /* white */ );
 	}
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, scrwidth, scrheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenPixels );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen->pixels );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -98,7 +83,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Shutdown()
 {
-	delete screenPixels;
+	delete screen;
 }
 
 // EOF

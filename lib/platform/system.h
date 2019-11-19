@@ -218,6 +218,8 @@ public:
 	Bitmap() = default;
 	Bitmap( const char* f );
 	Bitmap( uint w, uint h ) : pixels( new uint[w * h] ), width( w ), height( h ) {}
+	~Bitmap() { delete pixels; }
+	void Plot( uint x, uint y, uint c ) { if (x < width && y < height) pixels[x + y * width] = c; }
 	void Clear() { memset( pixels, 0, width * height * 4 ); }
 	uint* pixels = nullptr;
 	uint width = 0, height = 0;

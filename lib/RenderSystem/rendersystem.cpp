@@ -88,9 +88,9 @@ void RenderSystem::SynchronizeMaterials()
 		materialsDirty = true;
 		// if the change is/includes a change of the material alpha flag, mark all
 		// meshes using this material as dirty as well.
-		if (material->AlphaChanged()) for (auto mesh : scene->meshes)
+		if (material->AlphaChanged()) for (auto mesh : scene->meshPool)
 		{
-			for (int s = (int)mesh->materialList.size(), i = 0; i < s; i++) if (mesh->materialList[i] == material->ID)
+			for (int m : mesh->materialList) if (m == material->ID)
 			{
 				mesh->MarkAsDirty();
 				break;
@@ -123,9 +123,9 @@ void RenderSystem::SynchronizeMaterials()
 //  +-----------------------------------------------------------------------------+
 void RenderSystem::SynchronizeMeshes()
 {
-	for (int s = (int)scene->meshes.size(), modelIdx = 0; modelIdx < s; modelIdx++)
+	for (int s = (int)scene->meshPool.size(), modelIdx = 0; modelIdx < s; modelIdx++)
 	{
-		HostMesh* mesh = scene->meshes[modelIdx];
+		HostMesh* mesh = scene->meshPool[modelIdx];
 		if (mesh->Changed())
 		{
 			mesh->UpdateAlphaFlags();
@@ -148,23 +148,22 @@ void RenderSystem::UpdateSceneGraph()
 	Timer timer;
 	int instanceCount = 0;
 	bool instancesChanged = false;
-	for (int s = (int)HostScene::scene.size(), i = 0; i < s; i++)
+	for (int nodeIdx : HostScene::rootNodes)
 	{
-		int nodeIdx = HostScene::scene[i];
-		HostNode* node = HostScene::nodes[nodeIdx];
+		HostNode* node = HostScene::nodePool[nodeIdx];
 		mat4 T;
-		instancesChanged |= node->Update( T /* start with an identity matrix */, instanceCount );
+		instancesChanged |= node->Update( T /* start with an identity matrix */, instances, instanceCount );
 	}
 	stats.sceneUpdateTime = timer.elapsed();
 	// synchronize instances to device if anything changed
-	if (instancesChanged || meshesChanged)
+	if (instancesChanged || meshesChanged || instances.size() != instanceCount)
 	{
 		// resize vector (this is free if the size didn't change)
-		HostScene::instances.resize( instanceCount );
+		instances.resize( instanceCount );
 		// send instances to core
 		for (int instanceIdx = 0; instanceIdx < instanceCount; instanceIdx++)
 		{
-			HostNode* node = HostScene::nodes[HostScene::instances[instanceIdx]];
+			HostNode* node = HostScene::nodePool[instances[instanceIdx]];
 			node->instanceID = instanceIdx;
 			int dummy = node->Changed(); // prevent superfluous update in the next frame
 			core->SetInstance( instanceIdx, node->meshID, node->combinedTransform );
@@ -237,6 +236,23 @@ void RenderSystem::Render( const ViewPyramid& view, Convergence converge )
 	core->Setting( "filter", settings.filterEnabled );
 	core->Setting( "TAA", settings.TAAEnabled );
 	core->Render( view, converge, scene->camera->brightness, scene->camera->contrast );
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderSystem::GetTriangleMaterial                                          |
+//  |  Retrieve the material ID for the specified triangle.                 LH2'19|
+//  +-----------------------------------------------------------------------------+
+int RenderSystem::GetTriangleMaterial( const int coreInstId, const int coreTriId )
+{
+	// see the notes at the top of host_scene.h for the relation between host nodes and core instances.
+	if (coreTriId == -1) return -1; // probed the skydome
+	if (coreInstId > instances.size()) return -1; // should not happen
+	int nodeId = instances[coreInstId]; // lookup the node id for the core instance
+	if (nodeId > scene->nodePool.size()) return -1; // should not happen
+	int meshId = scene->nodePool[nodeId]->meshID; // get the id of the mesh referenced by the node
+	if (meshId == -1) return -1; // should not happen
+	if (coreTriId > scene->meshPool[meshId]->triangles.size()) return -1; // should not happen
+	return scene->meshPool[meshId]->triangles[coreTriId].material;
 }
 
 //  +-----------------------------------------------------------------------------+

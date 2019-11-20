@@ -17,12 +17,11 @@
 
 // static scene data
 HostSkyDome* HostScene::sky = 0;
-vector<int> HostScene::scene;
-vector<HostNode*> HostScene::nodes;
-vector<HostMesh*> HostScene::meshes;
+vector<int> HostScene::rootNodes;
+vector<HostNode*> HostScene::nodePool;
+vector<HostMesh*> HostScene::meshPool;
 vector<HostSkin*> HostScene::skins;
 vector<HostAnimation*> HostScene::animations;
-vector<int> HostScene::instances;
 vector<HostMaterial*> HostScene::materials;
 vector<HostTexture*> HostScene::textures;
 vector<HostAreaLight*> HostScene::areaLights;
@@ -47,7 +46,7 @@ HostScene::HostScene()
 HostScene::~HostScene()
 {
 	// clean up allocated objects
-	for (auto mesh : meshes) delete mesh;
+	for (auto mesh : meshPool) delete mesh;
 	for (auto material : materials) delete material;
 	for (auto texture : textures) delete texture;
 	delete sky;
@@ -191,8 +190,8 @@ void HostScene::Init()
 int HostScene::AddMesh( const char* objFile, const char* dir, const float scale )
 {
 	HostMesh* newMesh = new HostMesh( objFile, dir, scale );
-	newMesh->ID = (int)meshes.size();
-	meshes.push_back( newMesh );
+	newMesh->ID = (int)meshPool.size();
+	meshPool.push_back( newMesh );
 	return newMesh->ID;
 }
 
@@ -205,8 +204,8 @@ int HostScene::AddMesh( const char* objFile, const char* dir, const float scale 
 int HostScene::AddMesh( const int triCount )
 {
 	HostMesh* newMesh = new HostMesh( triCount );
-	newMesh->ID = (int)meshes.size();
-	meshes.push_back( newMesh );
+	newMesh->ID = (int)meshPool.size();
+	meshPool.push_back( newMesh );
 	return newMesh->ID;
 }
 
@@ -216,7 +215,7 @@ int HostScene::AddMesh( const int triCount )
 //  +-----------------------------------------------------------------------------+
 void HostScene::AddTriToMesh( const int meshId, const float3& v0, const float3& v1, const float3& v2, const int matId )
 {
-	HostMesh* m = HostScene::meshes[meshId];
+	HostMesh* m = HostScene::meshPool[meshId];
 	m->vertices.push_back( make_float4( v0, 1 ) );
 	m->vertices.push_back( make_float4( v1, 1 ) );
 	m->vertices.push_back( make_float4( v2, 1 ) );
@@ -242,10 +241,10 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 	// based on https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/base/VulkanglTFModel.hpp
 	const int materialBase = (int)materials.size();
 	const int textureBase = (int)textures.size();
-	const int meshBase = (int)meshes.size();
+	const int meshBase = (int)meshPool.size();
 	const int skinBase = (int)skins.size();
 	bool hasTransform = (transform != mat4::Identity());
-	const int nodeBase = (int)nodes.size() + (hasTransform ? 1 : 0);
+	const int nodeBase = (int)nodePool.size() + (hasTransform ? 1 : 0);
 	const int retVal = nodeBase;
 	// load gltf file
 	string cleanFileName = dir + string( sceneFile );
@@ -299,7 +298,7 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 		tinygltf::Mesh& gltfMesh = gltfModel.meshes[i];
 		HostMesh* newMesh = new HostMesh( gltfMesh, gltfModel, materialBase, gltfModel.materials.size() == 0 ? 0 : -1 );
 		newMesh->ID = (int)i + meshBase;
-		meshes.push_back( newMesh );
+		meshPool.push_back( newMesh );
 	}
 	// convert nodes
 	if (hasTransform)
@@ -308,14 +307,14 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 		HostNode* newNode = new HostNode();
 		newNode->localTransform = transform;
 		newNode->ID = nodeBase - 1;
-		nodes.push_back( newNode );
+		nodePool.push_back( newNode );
 	}
 	for (size_t s = gltfModel.nodes.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Node& gltfNode = gltfModel.nodes[i];
 		HostNode* newNode = new HostNode( gltfNode, nodeBase, meshBase, skinBase );
 		newNode->ID = (int)i + nodeBase;
-		nodes.push_back( newNode );
+		nodePool.push_back( newNode );
 	}
 	// convert animations and skins
 	for (tinygltf::Animation& gltfAnim : gltfModel.animations)
@@ -333,14 +332,14 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 	if (hasTransform)
 	{
 		// add the root nodes to the scene transform node
-		for (size_t i = 0; i < glftScene.nodes.size(); i++) nodes[nodeBase - 1]->childIdx.push_back( glftScene.nodes[i] + nodeBase );
+		for (size_t i = 0; i < glftScene.nodes.size(); i++) nodePool[nodeBase - 1]->childIdx.push_back( glftScene.nodes[i] + nodeBase );
 		// add the root transform to the scene
-		scene.push_back( nodeBase - 1 );
+		rootNodes.push_back( nodeBase - 1 );
 	}
 	else
 	{
 		// add the root nodes to the scene
-		for (size_t i = 0; i < glftScene.nodes.size(); i++) scene.push_back( glftScene.nodes[i] + nodeBase );
+		for (size_t i = 0; i < glftScene.nodes.size(); i++) rootNodes.push_back( glftScene.nodes[i] + nodeBase );
 	}
 	// return index of first created node
 	return retVal;
@@ -354,7 +353,7 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 //  +-----------------------------------------------------------------------------+
 int HostScene::AddQuad( float3 N, const float3 pos, const float width, const float height, const int matId, const int meshID )
 {
-	HostMesh* newMesh = meshID > -1 ? meshes[meshID] : new HostMesh();
+	HostMesh* newMesh = meshID > -1 ? meshPool[meshID] : new HostMesh();
 	N = normalize( N ); // let's not assume the normal is normalized.
 #if 1
 	const float3 tmp = N.x > 0.9f ? make_float3( 0, 1, 0 ) : make_float3( 1, 0, 0 );
@@ -394,9 +393,9 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 	// if the mesh was newly created, add it to scene mesh list
 	if (meshID == -1)
 	{
-		newMesh->ID = (int)meshes.size();
+		newMesh->ID = (int)meshPool.size();
 		newMesh->materialList.push_back( matId );
-		meshes.push_back( newMesh );
+		meshPool.push_back( newMesh );
 	}
 	return newMesh->ID;
 }
@@ -412,12 +411,12 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 	{
 		// we have holes in the nodes vector due to instance deletions; search from the
 		// end of the list to speed up frequent additions / deletions in complex scenes.
-		for (int i = (int)nodes.size() - 1; i >= 0; i--) if (nodes[i] == 0)
+		for (int i = (int)nodePool.size() - 1; i >= 0; i--) if (nodePool[i] == 0)
 		{
 			// overwrite an empty slot, created by deleting an instance
-			nodes[i] = newNode;
+			nodePool[i] = newNode;
 			newNode->ID = i;
-			scene.push_back( i );
+			rootNodes.push_back( i );
 			nodeListHoles--; // plugged one hole.
 			return i;
 		}
@@ -425,28 +424,33 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 	// no empty slots available or found; make sure we don't look for them again.
 	nodeListHoles = 0;
 	// insert the new node at the end of the list
-	newNode->ID = (int)nodes.size();
-	nodes.push_back( newNode );
-	scene.push_back( newNode->ID );
+	newNode->ID = (int)nodePool.size();
+	nodePool.push_back( newNode );
+	rootNodes.push_back( newNode->ID );
 	return newNode->ID;
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostScene::RemoveInstance                                                  |
-//  |  Remove an instance from the scene.                                   LH2'19|
+//  |  HostScene::RemoveNode                                                      |
+//  |  Remove a node from the scene.                                              |
+//  |  This also removes the node from the rootNodes vector. Note that will only  |
+//  |  work correctly if the node is not part of a hierarchy. This assumption is  |
+//  |  valid for nodes that have been created using AddInstance.                  |
+//  |  See the notes at the top of host_scene.h for the relation between host     |
+//  |  nodes and core instances.                                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostScene::RemoveInstance( const int instId )
+void HostScene::RemoveNode( const int nodeId )
 {
 	// remove the instance from the scene graph
-	for (int s = (int)scene.size(), i = 0; i < s; i++) if (scene[i] == instId)
+	for (int s = (int)rootNodes.size(), i = 0; i < s; i++) if (rootNodes[i] == nodeId)
 	{
-		scene[i] = scene[s - 1];
-		scene.pop_back();
+		rootNodes[i] = rootNodes[s - 1];
+		rootNodes.pop_back();
 		break;
 	}
 	// delete the instance
-	HostNode* node = nodes[instId];
-	nodes[instId] = 0; // safe; we only access the nodes vector indirectly.
+	HostNode* node = nodePool[nodeId];
+	nodePool[nodeId] = 0; // safe; we only access the nodes vector indirectly.
 	delete node;
 	nodeListHoles++; // HostScene::AddInstance will fill up holes first.
 }
@@ -491,21 +495,6 @@ int HostScene::FindOrCreateMaterial( const string& name )
 
 //  +-----------------------------------------------------------------------------+
 //  |  HostScene::GetTriangleMaterial                                             |
-//  |  Retrieve the material ID for the specified triangle.                 LH2'19|
-//  +-----------------------------------------------------------------------------+
-int HostScene::GetTriangleMaterial( const int instId, const int triId )
-{
-	if (triId == -1) return -1;
-	if (instId > instances.size()) return -1;
-	int nodeId = instances[instId];
-	if (nodeId > nodes.size()) return -1;
-	int meshId = nodes[nodeId]->meshID;
-	if (triId > meshes[meshId]->triangles.size()) return -1;
-	return meshes[meshId]->triangles[triId].material;
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  HostScene::GetTriangleMaterial                                             |
 //  |  Find the ID of a material with the specified name.                   LH2'19|
 //  +-----------------------------------------------------------------------------+
 int HostScene::FindMaterialID( const char* name )
@@ -520,7 +509,7 @@ int HostScene::FindMaterialID( const char* name )
 //  +-----------------------------------------------------------------------------+
 int HostScene::FindNode( const char* name )
 {
-	for (auto node : nodes) if (node->name.compare( name ) == 0) return node->ID;
+	for (auto node : nodePool) if (node->name.compare( name ) == 0) return node->ID;
 	return -1;
 }
 
@@ -530,8 +519,8 @@ int HostScene::FindNode( const char* name )
 //  +-----------------------------------------------------------------------------+
 void HostScene::SetNodeTransform( const int nodeId, const mat4& transform )
 {
-	if (nodeId < 0 || nodeId >= nodes.size()) return;
-	nodes[nodeId]->localTransform = transform;
+	if (nodeId < 0 || nodeId >= nodePool.size()) return;
+	nodePool[nodeId]->localTransform = transform;
 }
 
 //  +-----------------------------------------------------------------------------+

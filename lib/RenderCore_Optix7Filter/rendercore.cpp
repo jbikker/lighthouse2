@@ -763,13 +763,14 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		if (pathCount == 0) break;
 		// handle shadow buffer overflow
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
-		if ((counters.shadowRays + pathCount) > maxShadowRays) if (counters.shadowRays > 0)
+		if ((pathCount + counters.shadowRays) >= maxShadowRays) if (counters.shadowRays > 0)
 		{
 			params.phase = 2;
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 			counterBuffer->HostPtr()[0].shadowRays = 0;
 			counterBuffer->CopyToDevice();
+			printf( "WARNING: connection buffer overflowed.\n" ); // we should not have to do this; handled here to be conservative.
 		}
 	}
 	// connect to light sources

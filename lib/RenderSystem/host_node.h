@@ -35,7 +35,7 @@ public:
 	~HostNode();
 	// methods
 	void ConvertFromGLTFNode( const tinygltfNode& gltfNode, const int nodeBase, const int meshBase, const int skinBase );
-	bool Update( mat4& T, int& instanceIdx );	// recursively update the transform of this node and its children
+	bool Update( mat4& T, vector<int>& instances, int& instanceIdx );	// recursively update the transform of this node and its children
 	void UpdateTransformFromTRS();		// process T, R, S data to localTransform
 	void PrepareLights();				// detects emissive triangles and creates light triangles for them
 	void UpdateLights();				// when the transform changes, this fixes the light triangles

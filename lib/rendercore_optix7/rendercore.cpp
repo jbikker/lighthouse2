@@ -698,7 +698,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		pathCount = counters.extensionRays;
 		if (pathCount == 0) break;
 		// trace shadow rays now if the next loop iteration could overflow the buffer.
-		if (pathCount > connectionBuffer->GetSize() / 3) if (counters.shadowRays > 0)
+		uint maxShadowRays = connectionBuffer->GetSize() / 3;
+		if ((pathCount + counters.shadowRays) >= maxShadowRays) if (counters.shadowRays > 0)
 		{
 			params.phase = 2;
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );

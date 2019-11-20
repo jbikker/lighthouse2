@@ -174,8 +174,8 @@ void Mesh::Render( const mat4& T )
 Scene::~Scene()
 {
 	delete root;
-	for (uint s = (uint)texList.size(), i = 0; i < s; i++) delete texList[i];
-	for (uint s = (uint)matList.size(), i = 0; i < s; i++) delete matList[i];
+	for (auto tex : texList) delete tex;
+	for (auto mat : matList) delete mat;
 }
 
 // -----------------------------------------------------------

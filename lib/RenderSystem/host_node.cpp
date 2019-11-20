@@ -57,7 +57,7 @@ HostNode::~HostNode()
 	{
 		// this node is an instance and has emissive materials;
 		// remove the relevant area lights.
-		HostMesh* mesh = HostScene::meshes[meshID];
+		HostMesh* mesh = HostScene::meshPool[meshID];
 		for (auto materialIdx : mesh->materialList)
 		{
 			HostMaterial* material = HostScene::materials[materialIdx];
@@ -86,7 +86,7 @@ void HostNode::ConvertFromGLTFNode( const tinygltfNode& gltfNode, const int node
 	// if the mesh has morph targets, the node should have weights for them
 	if (meshID != -1)
 	{
-		const int morphTargets = (int)HostScene::meshes[meshID]->poses.size() - 1;
+		const int morphTargets = (int)HostScene::meshPool[meshID]->poses.size() - 1;
 		if (morphTargets > 0) weights.resize( morphTargets, 0.0f );
 	}
 	// copy child node indices
@@ -141,7 +141,7 @@ void HostNode::UpdateTransformFromTRS()
 //  |  child nodes. If a change is detected, the light triangles are updated      |
 //  |  as well.                                                             LH2'19|
 //  +-----------------------------------------------------------------------------+
-bool HostNode::Update( mat4& T, int& posInInstanceArray )
+bool HostNode::Update( mat4& T, vector<int>& instances, int& posInInstanceArray )
 {
 	// update the combined transform for this node
 	bool thisWasModified = Changed();
@@ -156,8 +156,8 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 	// update the combined transforms of the children
 	for (int s = (int)childIdx.size(), i = 0; i < s; i++)
 	{
-		HostNode* child = HostScene::nodes[childIdx[i]];
-		bool childChanged = child->Update( combinedTransform, posInInstanceArray );
+		HostNode* child = HostScene::nodePool[childIdx[i]];
+		bool childChanged = child->Update( combinedTransform, instances, posInInstanceArray );
 		instancesChanged |= childChanged;
 		treeChanged |= childChanged;
 	}
@@ -166,17 +166,17 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 	{
 		if (morphed)
 		{
-			HostScene::meshes[meshID]->SetPose( weights );
+			HostScene::meshPool[meshID]->SetPose( weights );
 			morphed = false;
 		}
 		if (thisWasModified && hasLTris) UpdateLights();
 		if (instanceID != posInInstanceArray)
 		{
 			instancesChanged = true;
-			if (posInInstanceArray < HostScene::instances.size())
-				HostScene::instances[posInInstanceArray] = ID;
+			if (posInInstanceArray < instances.size())
+				instances[posInInstanceArray] = ID;
 			else
-				HostScene::instances.push_back( ID );
+				instances.push_back( ID );
 		}
 		if (skinID > -1)
 		{
@@ -185,10 +185,10 @@ bool HostNode::Update( mat4& T, int& posInInstanceArray )
 			mat4 meshTransformInverted = meshTransform.Inverted();
 			for (int s = (int)skin->joints.size(), j = 0; j < s; j++)
 			{
-				HostNode* jointNode = HostScene::nodes[skin->joints[j]];
+				HostNode* jointNode = HostScene::nodePool[skin->joints[j]];
 				skin->jointMat[j] = meshTransformInverted * jointNode->combinedTransform * skin->inverseBindMatrices[j];
 			}
-			HostScene::meshes[meshID]->SetPose( skin );
+			HostScene::meshPool[meshID]->SetPose( skin );
 		}
 		posInInstanceArray++;
 	}
@@ -204,7 +204,7 @@ void HostNode::PrepareLights()
 {
 	if (meshID > -1)
 	{
-		HostMesh* mesh = HostScene::meshes[meshID];
+		HostMesh* mesh = HostScene::meshPool[meshID];
 		for (int s = (int)mesh->triangles.size(), i = 0; i < s; i++)
 		{
 			HostTri* tri = &mesh->triangles[i];
@@ -240,7 +240,7 @@ void HostNode::PrepareLights()
 void HostNode::UpdateLights()
 {
 	if (!hasLTris) return;
-	HostMesh* mesh = HostScene::meshes[meshID];
+	HostMesh* mesh = HostScene::meshPool[meshID];
 	for (int s = (int)mesh->triangles.size(), i = 0; i < s; i++)
 	{
 		HostTri* tri = &mesh->triangles[i];

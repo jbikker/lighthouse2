@@ -217,36 +217,36 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	// apply anination key
 	if (target == 0) // translation
 	{
-		HostScene::nodes[nodeIdx]->translation = sampler->SampleVec3( t, k );
-		HostScene::nodes[nodeIdx]->transformed = true;
+		HostScene::nodePool[nodeIdx]->translation = sampler->SampleVec3( t, k );
+		HostScene::nodePool[nodeIdx]->transformed = true;
 	}
 	else if (target == 1) // rotation
 	{
-		HostScene::nodes[nodeIdx]->rotation = sampler->SampleQuat( t, k );
-		HostScene::nodes[nodeIdx]->transformed = true;
+		HostScene::nodePool[nodeIdx]->rotation = sampler->SampleQuat( t, k );
+		HostScene::nodePool[nodeIdx]->transformed = true;
 	}
 	else if (target == 2) // scale
 	{
-		HostScene::nodes[nodeIdx]->scale = sampler->SampleVec3( t, k );
-		HostScene::nodes[nodeIdx]->transformed = true;
+		HostScene::nodePool[nodeIdx]->scale = sampler->SampleVec3( t, k );
+		HostScene::nodePool[nodeIdx]->transformed = true;
 	}
 	else // target == 3, weight
 	{
-		int weightCount = (int)HostScene::nodes[nodeIdx]->weights.size();
+		int weightCount = (int)HostScene::nodePool[nodeIdx]->weights.size();
 		for (int i = 0; i < weightCount; i++)
 		{
-			HostScene::nodes[nodeIdx]->weights[i] = sampler->SampleFloat( t, k, i, weightCount );
+			HostScene::nodePool[nodeIdx]->weights[i] = sampler->SampleFloat( t, k, i, weightCount );
 		#if 0
 			floatKey[i]; else
 			{
 				float key0 = sampler->floatKey[k * weightCount + i];
 				float key1 = sampler->floatKey[(k + 1) * weightCount + i];
 				float interpolatedKey = (1 - f) * key0 + f * key1;
-				HostScene::nodes[nodeIdx]->weights[i] = interpolatedKey;
+				HostScene::nodePool[nodeIdx]->weights[i] = interpolatedKey;
 			}
 		#endif
 		}
-		HostScene::nodes[nodeIdx]->morphed = true;
+		HostScene::nodePool[nodeIdx]->morphed = true;
 	}
 }
 

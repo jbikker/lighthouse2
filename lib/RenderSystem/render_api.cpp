@@ -86,9 +86,9 @@ int RenderAPI::AddInstance( const int meshId, const mat4& transform )
 	return renderer->scene->AddInstance( meshId, transform );
 }
 
-void RenderAPI::RemoveInstance( const int instId )
+void RenderAPI::RemoveNode( const int nodeId )
 {
-	return renderer->scene->RemoveInstance( instId );
+	return renderer->scene->RemoveNode( nodeId );
 }
 
 void RenderAPI::SetNodeTransform( const int nodeId, const mat4& transform )
@@ -131,14 +131,14 @@ RenderSettings* RenderAPI::GetSettings()
 	return &renderer->settings;
 }
 
-int RenderAPI::GetTriangleMaterialID( const int instId, const int triId )
+int RenderAPI::GetTriangleMaterialID( const int coreInstId, const int coreTriId )
 {
-	return renderer->scene->GetTriangleMaterial( instId, triId );
+	return renderer->GetTriangleMaterial( coreInstId, coreTriId );
 }
 
-HostMaterial* RenderAPI::GetTriangleMaterial( const int instId, const int triId )
+HostMaterial* RenderAPI::GetTriangleMaterial( const int coreInstId, const int coreTriId )
 {
-	int matId = renderer->scene->GetTriangleMaterial( instId, triId );
+	int matId = renderer->GetTriangleMaterial( coreInstId, coreTriId );
 	return GetMaterial( matId );
 }
 

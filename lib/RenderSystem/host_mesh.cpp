@@ -203,13 +203,13 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	aabb sceneBounds;
 	int toReserve = 0;
 	timer.reset();
-	for (int s = (int)shapes.size(), i = 0; i < s; i++) toReserve += (int)shapes[i].mesh.indices.size();
+	for (auto& shape : shapes) toReserve += (int)shape.mesh.indices.size();
 	vertices.reserve( toReserve );
-	for (int s = (int)shapes.size(), i = 0; i < s; i++) for (int f = 0; f < shapes[i].mesh.indices.size(); f += 3)
+	for (auto& shape : shapes) for (int f = 0; f < shape.mesh.indices.size(); f += 3)
 	{
-		const uint idx0 = shapes[i].mesh.indices[f + 0].vertex_index;
-		const uint idx1 = shapes[i].mesh.indices[f + 1].vertex_index;
-		const uint idx2 = shapes[i].mesh.indices[f + 2].vertex_index;
+		const uint idx0 = shape.mesh.indices[f + 0].vertex_index;
+		const uint idx1 = shape.mesh.indices[f + 1].vertex_index;
+		const uint idx2 = shape.mesh.indices[f + 2].vertex_index;
 		const float3 v0 = make_float3( attrib.vertices[idx0 * 3 + 0], attrib.vertices[idx0 * 3 + 1], attrib.vertices[idx0 * 3 + 2] );
 		const float3 v1 = make_float3( attrib.vertices[idx1 * 3 + 0], attrib.vertices[idx1 * 3 + 1], attrib.vertices[idx1 * 3 + 2] );
 		const float3 v2 = make_float3( attrib.vertices[idx2 * 3 + 0], attrib.vertices[idx2 * 3 + 1], attrib.vertices[idx2 * 3 + 2] );
@@ -275,15 +275,15 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			}
 			tri.Nx = N.x, tri.Ny = N.y, tri.Nz = N.z;
 			tri.material = shapes[i].mesh.material_ids[f / 3] + matIdxOffset;
-#if 0
+		#if 0
 			const float a = (tri.vertex1 - tri.vertex0).length();
 			const float b = (tri.vertex2 - tri.vertex1).length();
 			const float c = (tri.vertex0 - tri.vertex2).length();
 			const float s = (a + b + c) * 0.5f;
 			tri.area = sqrtf( s * (s - a) * (s - b) * (s - c) ); // Heron's formula
-#else
+		#else
 			tri.area = 0; // we don't actually use it, except for lights, where it is also calculated
-#endif
+		#endif
 			tri.invArea = 0; // todo
 			tri.alpha = make_float3( alphas[nidx0], tri.alpha.y = alphas[nidx1], tri.alpha.z = alphas[nidx2] );
 			// calculate triangle LOD data
@@ -308,9 +308,8 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride )
 {
 	const int targetCount = (int)gltfMesh.weights.size();
-	for (int s = (int)gltfMesh.primitives.size(), j = 0; j < s; j++)
+	for (auto& prim : gltfMesh.primitives)
 	{
-		const Primitive& prim = gltfMesh.primitives[j];
 		// load indices
 		const Accessor& accessor = gltfModel.accessors[prim.indices];
 		const BufferView& view = gltfModel.bufferViews[accessor.bufferView];
@@ -507,7 +506,7 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 		tmpAlphas[i] = acosf( nnv ) * (1 + 0.03632f * (1 - nnv) * (1 - nnv));
 	}
 	// prepare poses
-	if (tmpPoses.size() > 0) for (int s = (int)tmpPoses.size(), i = 0; i < s; i++) poses.push_back( Pose() );
+	if (tmpPoses.size() > 0) for (auto& pose : tmpPoses) poses.push_back( Pose() );
 	// build final mesh structures
 	const size_t newTriangleCount = tmpIndices.size() / 3;
 	size_t triIdx = triangles.size();
@@ -574,17 +573,17 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			weights.push_back( tmpWeights[v2idx] );
 		}
 		// build poses
-		for (int s = (int)tmpPoses.size(), i = 0; i < s; i++)
+		for (auto& pose : tmpPoses)
 		{
-			poses[i].positions.push_back( tmpPoses[i].positions[v0idx] );
-			poses[i].positions.push_back( tmpPoses[i].positions[v1idx] );
-			poses[i].positions.push_back( tmpPoses[i].positions[v2idx] );
-			poses[i].normals.push_back( tmpPoses[i].normals[v0idx] );
-			poses[i].normals.push_back( tmpPoses[i].normals[v1idx] );
-			poses[i].normals.push_back( tmpPoses[i].normals[v2idx] );
-			poses[i].tangents.push_back( tmpPoses[i].tangents[v0idx] );
-			poses[i].tangents.push_back( tmpPoses[i].tangents[v1idx] );
-			poses[i].tangents.push_back( tmpPoses[i].tangents[v2idx] );
+			poses[i].positions.push_back( pose.positions[v0idx] );
+			poses[i].positions.push_back( pose.positions[v1idx] );
+			poses[i].positions.push_back( pose.positions[v2idx] );
+			poses[i].normals.push_back( pose.normals[v0idx] );
+			poses[i].normals.push_back( pose.normals[v1idx] );
+			poses[i].normals.push_back( pose.normals[v2idx] );
+			poses[i].tangents.push_back( pose.tangents[v0idx] );
+			poses[i].tangents.push_back( pose.tangents[v1idx] );
+			poses[i].tangents.push_back( pose.tangents[v2idx] );
 		}
 	}
 }
@@ -675,13 +674,12 @@ void HostMesh::SetPose( const HostSkin* skin )
 	// ensure that we have a backup of the original vertex positions
 	if (original.size() == 0)
 	{
-		for (int s = (int)vertices.size(), i = 0; i < s; i++)
-			original.push_back( vertices[i] );
-		for (int s = (int)triangles.size(), i = 0; i < s; i++)
+		for (auto& vert : vertices) original.push_back( vert );
+		for (auto& tri : triangles)
 		{
-			origNormal.push_back( triangles[i].vN0 );
-			origNormal.push_back( triangles[i].vN1 );
-			origNormal.push_back( triangles[i].vN2 );
+			origNormal.push_back( tri.vN0 );
+			origNormal.push_back( tri.vN1 );
+			origNormal.push_back( tri.vN2 );
 		}
 		vertexNormals.resize( vertices.size() );
 	}
@@ -691,10 +689,10 @@ void HostMesh::SetPose( const HostSkin* skin )
 	// adjust full triangles
 #if USE_PARALLEL_SETPOSE == 1
 	concurrency::parallel_for<int>( 0, (int)triangles.size(), [&]( int t ) {
-#else
+	#else
 	for (int s = (int)triangles.size(), t = 0; t < s; t++)
 	{
-#endif
+	#endif
 		__m128 tri_vtx[3], tri_nrm[3];
 		// adjust vertices of triangle
 		for (int t_v = 0; t_v < 3; t_v++)
@@ -789,10 +787,10 @@ void HostMesh::SetPose( const HostSkin* skin )
 		_mm_store_ps( &triangles[t].vN1.x, tri_nrm[1] );
 		// store to [vN1 (float3), Nz (float)]
 		_mm_store_ps( &triangles[t].vN2.x, tri_nrm[2] );
-#if USE_PARALLEL_SETPOSE == 1
+	#if USE_PARALLEL_SETPOSE == 1
 	} );
 #else
-	}
+}
 #endif
 #else
 	// transform original into vertex vector using skin matrices

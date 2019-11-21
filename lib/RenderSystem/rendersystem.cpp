@@ -88,13 +88,10 @@ void RenderSystem::SynchronizeMaterials()
 		materialsDirty = true;
 		// if the change is/includes a change of the material alpha flag, mark all
 		// meshes using this material as dirty as well.
-		if (material->AlphaChanged()) for (auto mesh : scene->meshPool)
+		if (material->AlphaChanged()) for (auto mesh : scene->meshPool) for (int m : mesh->materialList) if (m == material->ID)
 		{
-			for (int m : mesh->materialList) if (m == material->ID)
-			{
-				mesh->MarkAsDirty();
-				break;
-			}
+			mesh->MarkAsDirty();
+			break;
 		}
 	}
 	if (materialsDirty)
@@ -168,6 +165,7 @@ void RenderSystem::UpdateSceneGraph()
 			int dummy = node->Changed(); // prevent superfluous update in the next frame
 			core->SetInstance( instanceIdx, node->meshID, node->combinedTransform );
 		}
+		core->SetInstance( instanceCount, -1 );
 		// finalize
 		core->UpdateToplevel();
 		meshesChanged = false;
@@ -240,7 +238,9 @@ void RenderSystem::Render( const ViewPyramid& view, Convergence converge )
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderSystem::GetTriangleMaterial                                          |
-//  |  Retrieve the material ID for the specified triangle.                 LH2'19|
+//  |  Retrieve the material ID for the specified triangle. Input is the          |
+//  |  'instance id' and 'core tri id' reported by the core for a mouse click.    |
+//  |                                                                       LH2'19|
 //  +-----------------------------------------------------------------------------+
 int RenderSystem::GetTriangleMaterial( const int coreInstId, const int coreTriId )
 {
@@ -253,6 +253,22 @@ int RenderSystem::GetTriangleMaterial( const int coreInstId, const int coreTriId
 	if (meshId == -1) return -1; // should not happen
 	if (coreTriId > scene->meshPool[meshId]->triangles.size()) return -1; // should not happen
 	return scene->meshPool[meshId]->triangles[coreTriId].material;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderSystem::GetTriangleMaterial                                          |
+//  |  Retrieve the id of the host-side mesh that the specified triangle belongs  |
+//  |  to. Input is the 'instance id' and 'core tri id' reported by the core for  |
+//  |  a mouse click.                                                       LH2'19|
+//  +-----------------------------------------------------------------------------+
+int RenderSystem::GetTriangleMesh( const int coreInstId, const int coreTriId )
+{
+	// see the notes at the top of host_scene.h for the relation between host nodes and core instances.
+	if (coreTriId == -1) return -1; // probed the skydome
+	if (coreInstId > instances.size()) return -1; // should not happen
+	int nodeId = instances[coreInstId]; // lookup the node id for the core instance
+	if (nodeId > scene->nodePool.size()) return -1; // should not happen
+	return scene->nodePool[nodeId]->meshID; // return the id of the mesh referenced by the node
 }
 
 //  +-----------------------------------------------------------------------------+

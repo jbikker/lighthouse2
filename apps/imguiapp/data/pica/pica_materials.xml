@@ -29,9 +29,9 @@
         <origin>data/pica/scene.gltf</origin>
         <id>1</id>
         <flags>129</flags>
-        <color b="0.23951982" g="0.23951982" r="0.23951982"/>
+        <color b="0.99998999" g="0.99998999" r="1"/>
         <absorption b="0" g="0" r="0"/>
-        <metallic>0</metallic>
+        <metallic>1</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
         <roughness>1</roughness>
@@ -128,16 +128,16 @@
         <color b="0.39198321" g="0.39198321" r="0.64356357"/>
         <absorption b="0" g="0" r="0"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
+        <subsurface>0.949</subsurface>
         <specular>0.5</specular>
-        <roughness>0.838</roughness>
+        <roughness>0.75700003</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
+        <transmission>0.368</transmission>
         <eta>1</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
@@ -535,18 +535,18 @@
         <flags>129</flags>
         <color b="1" g="1" r="1"/>
         <absorption b="1" g="0.81618083" r="0.63235295"/>
-        <metallic>0</metallic>
+        <metallic>1</metallic>
         <subsurface>0</subsurface>
-        <specular>0.5</specular>
-        <roughness>0</roughness>
+        <specular>1</specular>
+        <roughness>0.257</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>1</transmission>
-        <eta>0.653</eta>
+        <clearcoatGloss>0</clearcoatGloss>
+        <transmission>0</transmission>
+        <eta>0.796</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>
@@ -561,8 +561,8 @@
         <absorption b="0" g="0" r="0"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
-        <specular>0.5</specular>
-        <roughness>0.16901676</roughness>
+        <specular>0.551</specular>
+        <roughness>0.426</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>

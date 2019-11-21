@@ -108,7 +108,7 @@ public:
 	// SetGeometry: update the geometry for a single mesh.
 	virtual void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 ) = 0;
 	// SetInstance: update the data on a single instance.
-	virtual void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) = 0;
+	virtual void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform = mat4::Identity() ) = 0;
 	// UpdateTopLevel: trigger a top-level BVH update.
 	virtual void UpdateToplevel() = 0;
 };

@@ -48,7 +48,6 @@ public:
 	float3 scale = make_float3( 1 );
 	mat4 matrix;
 	int ID = -1;						// unique ID for the node: position in node array
-	int instanceID = -1;				// for mesh nodes: location in the instance array
 	int meshID = -1;					// id of the mesh this node refers to (if any, -1 otherwise)
 	int skinID = -1;					// id of the skin this node refers to (if any, -1 otherwise)
 	vector<float> weights;				// morph target weights
@@ -58,6 +57,9 @@ public:
 	bool treeChanged = false;			// this node or one of its children got updated
 	vector<int> childIdx;				// child nodes of this node
 	TRACKCHANGES;
+protected:
+	friend class RenderSystem;
+	int instanceID = -1;				// for mesh nodes: location in the instance array. For internal use only.
 };
 
 } // namespace lighthouse2

@@ -218,9 +218,15 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const mat4& matrix )
 {
-	// Note: for first-time setup, meshes are expected to be passed in sequential order.
-	// This will result in new CoreInstance pointers being pushed into the instances vector.
-	// Subsequent instance changes (typically: transforms) will be applied to existing CoreInstances.
+	// A '-1' mesh denotes the end of the instance stream;
+	// adjust the instances vector if we have more.
+	if (meshIdx == -1)
+	{
+		if (instances.size() > instanceIdx) instances.resize( instanceIdx );
+		return;
+	}
+	// For the first frame, instances are added to the instances vector.
+	// For subsequent frames existing slots are overwritten / updated.
 	if (instanceIdx >= instances.size()) instances.push_back( new CoreInstance() );
 	instances[instanceIdx]->mesh = meshIdx;
 	instances[instanceIdx]->transform = matrix;

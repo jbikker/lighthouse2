@@ -20,6 +20,10 @@
 namespace lighthouse2
 {
 
+//  +-----------------------------------------------------------------------------+
+//  |  HostAnimation                                                              |
+//  |  Host-side animation definition.                                      LH2'19|
+//  +-----------------------------------------------------------------------------+
 class HostAnimation
 {
 	class Sampler

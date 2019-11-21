@@ -85,6 +85,7 @@ public:
 	void SetTarget( GLTexture* target, const uint spp );
 	void SetProbePos( int2 pos ) { if (core) core->SetProbePos( pos ); }
 	int GetTriangleMaterial( const int coreInstId, const int coreTriId );
+	int GetTriangleMesh( const int coreInstId, const int coreTriId );
 	void Shutdown();
 	CoreStats GetCoreStats() { return core ? core->GetCoreStats() : CoreStats(); }
 	SystemStats GetSystemStats() { return stats; }

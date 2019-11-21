@@ -14,28 +14,28 @@
 
    the Lighthouse 2 scene database, ingredients:
    1. vector<int> rootNodes
-      This is a list of indices of nodes that should be rendered. Each node 
-	  may be the top of a hierarchy, or it may be a node that directly 
+	  This is a list of indices of nodes that should be rendered. Each node
+	  may be the top of a hierarchy, or it may be a node that directly
 	  references a mesh.
    2. vector<HostNode*> nodes
-      This is a collection of all the nodes in the scene. The nodes may be 
-	  visible or not, and the collection may include nullptrs, in case nodes 
+	  This is a collection of all the nodes in the scene. The nodes may be
+	  visible or not, and the collection may include nullptrs, in case nodes
 	  have been deleted. In that case, 'nodeListHoles' is greater than 0.
    3. vector<HostMesh*> meshes
-      The collection of meshes, i.e. the actual geometry. Each mesh may be 
+	  The collection of meshes, i.e. the actual geometry. Each mesh may be
 	  referenced by 0 or more nodes.
    4. vector<HostSkin*> skins
-      Some node hierarchies use a deformable mesh, for which the HostSkin 
+	  Some node hierarchies use a deformable mesh, for which the HostSkin
 	  contains the relevant data.
 
-   Note that the concept 'instance' does not appear in the above overview. 
+   Note that the concept 'instance' does not appear in the above overview.
    An instance is simply a node that references a mesh.
 
    In rendersystem.cpp the above data is converted to a simpler structure
    for the cores. Cores receive:
    - A collection of meshes, which mirrors HostScene::meshes;
    - A collection of instances. Here, an 'instance' is a core-specific
-     structure, that references a mesh, and stores the flattened transform
+	 structure, that references a mesh, and stores the flattened transform
 	 of the host node. All other nodes are irrelevant to the cores and
 	 merely serve to produce the final matrices for the instances.
 */

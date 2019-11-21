@@ -553,6 +553,15 @@ void RenderCore::SetGeometry( const int meshIdx, const float4 *vertexData, const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const mat4 &matrix )
 {
+	// A '-1' mesh denotes the end of the instance stream;
+	// adjust the instances vector if we have more.
+	if (meshIdx == -1)
+	{
+		if (m_Instances.size() > instanceIdx) m_Instances.resize( instanceIdx );
+		return;
+	}
+	// For the first frame, instances are added to the instances vector.
+	// For subsequent frames existing slots are overwritten / updated.
 	if (instanceIdx >= m_Instances.size())
 	{
 		m_Instances.emplace_back();

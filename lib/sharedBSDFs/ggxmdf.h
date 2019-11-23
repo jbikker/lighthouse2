@@ -216,7 +216,7 @@ LH2_DEVFUNC float GTR1MDF_G( const float3 wi, const float3 wo, const float3 m, c
 	return 1.0f / (1.0f + GTR1MDF_lambda( wo, alpha_x, alpha_y ) + GTR1MDF_lambda( wi, alpha_x, alpha_y ));
 }
 
-LH2_DEVFUNC float GTR1MDF_G1( const float3 v, const float3& m, const float alpha_x, const float alpha_y )
+LH2_DEVFUNC float GTR1MDF_G1( const float3 v, const float3 m, const float alpha_x, const float alpha_y )
 {
 	return 1.0f / (1.0f + GTR1MDF_lambda( v, alpha_x, alpha_y ));
 }

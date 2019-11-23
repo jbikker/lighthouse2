@@ -16,6 +16,22 @@
    used in RenderCore_OptixPrime and RenderCore_OptixRTX.
 */
 
+LH2_DEVFUNC float3 linear_rgb_to_ciexyz( const float3 rgb )
+{
+	return make_float3(
+		max( 0.0f, 0.412453f * rgb.x + 0.357580f * rgb.y + 0.180423f * rgb.z ),
+		max( 0.0f, 0.212671f * rgb.x + 0.715160f * rgb.y + 0.072169f * rgb.z ),
+		max( 0.0f, 0.019334f * rgb.x + 0.119193f * rgb.y + 0.950227f * rgb.z ) );
+}
+
+LH2_DEVFUNC float3 ciexyz_to_linear_rgb( const float3 xyz )
+{
+	return make_float3(
+		max( 0.0f, 3.240479f * xyz.x - 1.537150f * xyz.y - 0.498535f * xyz.z ),
+		max( 0.0f, -0.969256f * xyz.x + 1.875991f * xyz.y + 0.041556f * xyz.z ),
+		max( 0.0f, 0.055648f * xyz.x - 0.204043f * xyz.y + 1.057311f * xyz.z ) );
+}
+
 LH2_DEVFUNC void GetShadingData(
 	const float3 D,							// IN:	incoming ray direction, used for consistent normals
 	const float u, const float v,			//		barycentric coordinates of intersection point
@@ -51,6 +67,8 @@ LH2_DEVFUNC void GetShadingData(
 	retVal4.data0 = make_float4( base_rg.x, base_rg.y, base_b_medium_r.x, __uint_as_float( 0 ) );
 	retVal4.data1 = make_float4( base_b_medium_r.y, medium_gb.x, medium_gb.y, __uint_as_float( 0 /* matid? */ ) );
 	retVal4.data2 = mat.parameters;
+	const float3 tint_xyz = linear_rgb_to_ciexyz( make_float3( base_rg.x, base_rg.y, base_b_medium_r.x ) );
+	retVal4.tint4 = make_float4( tint_xyz.y > 0 ? ciexyz_to_linear_rgb( tint_xyz * (1.0f / tint_xyz.y) ) : make_float3( 1 ), tint_xyz.y );
 	// initialize normals
 	N = iN = fN = TRI_N;
 	T = TRI_T;
@@ -68,13 +86,15 @@ LH2_DEVFUNC void GetShadingData(
 	N = N.x * A + N.y * B + N.z * C, iN = iN.x * A + iN.y * B + iN.z * C;
 	// "Consistent Normal Interpolation", Reshetov et al., 2010
 	const float4 vertexAlpha = tri.alpha4;
+	const bool backSide = dot( D, N ) > 0;
+#ifdef CONSISTENTNORMALS
 #ifdef OPTIXPRIMEBUILD
 	const float alpha = u * vertexAlpha.x + v * vertexAlpha.y + w * vertexAlpha.z;
 #else
 	const float alpha = w * vertexAlpha.x + u * vertexAlpha.y + v * vertexAlpha.z;
 #endif
-	const bool backSide = dot( D, N ) > 0;
 	iN = ConsistentNormal( D * -1.0f, backSide ? (iN * -1.0f) : iN, alpha );
+#endif
 	if (backSide) iN *= -1.0f;
 	fN = iN;
 	// texturing

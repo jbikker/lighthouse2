@@ -27,7 +27,7 @@
 // #define USE_MULTISCATTER_BSDF // override default microfacet model
 // #define GGXCONDUCTOR // alternative is the diffuse ggx brdf
 #define SINGLEBOUNCE		// perform only a single diffuse bounce
-#define CONSISTENTNORMALS	// consistent normal interpolation; don't use with filtering?
+#define CONSISTENTNORMALS	// consistent normal interpolation
 
 // low-level settings
 #define SCATTERSTEPS 1		// max bounces in microfacet evaluation (multiscatter bsdf)

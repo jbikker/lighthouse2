@@ -13,10 +13,21 @@
    limitations under the License.
 */
 
-#include "compatibility.h"
-
 // Lambert BSDF
 // ----------------------------------------------------------------
+
+// A note on the #define below:
+// A BSDF that may produce pure specular bounces needs special handling
+// in pathtracer.h.
+// - Implicit light connections after a specular bounce should contribute
+//   the light directly, skipping MIS;
+// - Assuming NEE is executed unconditionally (as it should on GPUs), the
+//   explicit light path should be scaled by the probability of a diffuse
+//   bounce, i.e. 1 minus the probability of a specular bounce.
+// The Lambert shader has a probability of producing a specular bounce
+// proportional to 1-ROUGHNESS. It also returns 'true' in the specular
+// parameter of SampleBSDF when a specular bounce is produced.
+#define BSDF_HAS_PURE_SPECULARS
 
 LH2_DEVFUNC float Fr_L( float VDotN, float eio )
 {

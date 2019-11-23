@@ -134,8 +134,12 @@ void shadeKernel( float4* accumulator, const uint stride,
 		const float NdotL = dot( L, fN );
 		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
 		{
-			float dummy;
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, dummy );
+			float bsdfPdf;
+		#ifdef BSDF_HAS_PURE_SPECULARS // see note in lambert.h
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
+		#else
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+		#endif
 			// calculate potential contribution
 			float3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (pickProb * lightPdf));
 			// add fire-and-forget shadow ray to the connections buffer

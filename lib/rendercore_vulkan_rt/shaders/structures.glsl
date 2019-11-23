@@ -103,6 +103,7 @@ struct ShadingData
 	// This structure is filled for an intersection point. It will contain the spatially varying material properties.
 	vec3 color; int flags;
 	vec3 transmittance; int matID;
+	vec4 tint;
 	uvec4 parameters;
 	/* 16 uchars:   x: metallic, subsurface, specular, roughness;
 					y: specTint, anisotropic, sheen, sheenTint;
@@ -121,12 +122,10 @@ struct ShadingData
 #define CLEARCOAT CHAR2FLT( shadingData.parameters.z, 0 )
 #define CLEARCOATGLOSS CHAR2FLT( shadingData.parameters.z, 8 )
 #define TRANSMISSION CHAR2FLT( shadingData.parameters.z, 16 )
-#define ETA CHAR2FLT( shadingData.parameters.z, 24 )
-#define CUSTOM0 CHAR2FLT( shadingData.parameters.z, 24 )
-#define CUSTOM1 CHAR2FLT( shadingData.parameters.w, 0 )
-#define CUSTOM2 CHAR2FLT( shadingData.parameters.w, 8 )
-#define CUSTOM3 CHAR2FLT( shadingData.parameters.w, 16 )
-#define CUSTOM4 CHAR2FLT( shadingData.parameters.w, 24 )
+#define TINT vec3( shadingData.tint )
+#define LUMINANCE shadingData.tint.w
+#define DUMMY0 CHAR2FLT( shadingData.parameters.z, 24 )
+#define ETA uintBitsToFloat( shadingData.parameters.w )
 };
 
 struct CoreLightTri4

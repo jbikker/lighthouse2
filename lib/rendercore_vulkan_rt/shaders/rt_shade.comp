@@ -22,7 +22,17 @@
 #include "sampling.glsl"
 
 #include "../bindings.h"
-#include "sharedbsdf.h"
+#include "compatibility.h"
+#if 1
+// simple reference bsdf: Lambert plus specular reflection
+#include "lambert.h"
+#else
+// Disney's principled BRDF, adapted from AppleSeed
+// For Vulkan, this will need some additional work; the current implementation
+// uses templated code.
+#include "ggxmdf.h"
+#include "disney.h"
+#endif
 #include "random.glsl"
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -195,7 +205,6 @@ void main()
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.T4.w, N );
 				const float pickProb = LightPickProb( int(floatBitsToUint(tri.u4.w)), RAY_O, lastN, I /* the N at the previous vertex */ );
 				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
-				contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
 			}
 		}
 
@@ -247,12 +256,16 @@ void main()
 
 		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
 		{
-			float shadowPdf;
-			const vec3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, shadowPdf );
-			if (shadowPdf > 0)
+			float bsdfPdf;
+		#ifdef BSDF_HAS_PURE_SPECULARS // see note in lambert.h
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
+		#else
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+		#endif
+			if (bsdfPdf > 0)
 			{
 				// calculate potential contribution
-				vec3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (shadowPdf + lightPdf * pickProb));
+				vec3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (bsdfPdf + lightPdf * pickProb));
 
 				CLAMPINTENSITY(contribution, clampValue);
 				FIXNAN_VEC3( contribution );

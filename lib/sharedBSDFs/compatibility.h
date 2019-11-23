@@ -11,10 +11,12 @@
 #define LH2_KERNEL __global__
 #endif
 #define REFERENCE_OF(x) x&
+#define CONSTREF_OF(x) const x&
 #else
 #define LH2_DEVFUNC
 #define LH2_KERNEL
 #define REFERENCE_OF(x) inout x
+#define CONSTREF_OF(x) in x
 #define float2 vec2
 #define float3 vec3
 #define float4 vec4
@@ -31,6 +33,10 @@
 #define fabs abs
 #define sqrtf sqrt
 #define expf exp
+#define sinf sin
+#define cosf cos
+#define logf log
+#define powf pow
 #define sqr(a) ((a)*(a))
 #define adjoint false
 #endif

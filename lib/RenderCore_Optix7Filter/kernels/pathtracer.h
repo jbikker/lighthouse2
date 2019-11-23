@@ -185,7 +185,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
 				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
 				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
-				contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf));
 			}
 			CLAMPINTENSITY;
 			FIXNAN_FLOAT3( contribution );
@@ -267,7 +266,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
 		{
 			float bsdfPdf;
+		#ifdef BSDF_HAS_PURE_SPECULARS // see note in lambert.h
 			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
+		#else
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+		#endif
 			if (bsdfPdf > 0)
 			{
 				// calculate potential contribution

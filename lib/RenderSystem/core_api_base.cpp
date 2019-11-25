@@ -27,6 +27,7 @@ static destroyCoreFunction destroyCore;
 
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
+#define VC_EXTRALEAN
 #ifdef APIENTRY
 #undef APIENTRY
 #endif

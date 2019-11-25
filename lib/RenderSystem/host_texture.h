@@ -52,7 +52,7 @@ public:
 	// constructor / destructor / conversion
 	HostTexture() = default;
 	HostTexture( const char* fileName, const uint modFlags = 0 );
-	CoreTexDesc ConvertToCoreTexDesc();
+	CoreTexDesc ConvertToCoreTexDesc() const;
 	// methods
 	bool Equals( const string& o, const uint m );
 	void Load( const char* fileName, const uint modFlags, bool normalMap = false );
@@ -61,7 +61,7 @@ public:
 	uint* GetLDRPixels() { return (uint*)idata; }
 	float4* GetHDRPixels() { return fdata; }
 	// internal methods
-	int PixelsNeeded( const int width, const int height, const int MIPlevels );
+	int PixelsNeeded( const int width, const int height, const int MIPlevels ) const;
 	void ConstructMIPmaps();
 	// public properties
 public:

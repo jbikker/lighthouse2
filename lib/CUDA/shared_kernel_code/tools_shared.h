@@ -297,9 +297,6 @@ LH2_DEVFUNC float3 ConsistentNormal( const float3& D, const float3& iN, const fl
 {
 	// part of the implementation of "Consistent Normal Interpolation", Reshetov et al., 2010
 	// calculates a safe normal given an incoming direction, phong normal and alpha
-#ifndef CONSISTENTNORMALS
-	return iN;
-#else
 #if 0
 	// Eq. 1, exact
 	const float q = (1 - sinf( alpha )) / (1 + sinf( alpha ));
@@ -310,7 +307,6 @@ LH2_DEVFUNC float3 ConsistentNormal( const float3& D, const float3& iN, const fl
 	const float b = dot( D, iN ), g = 1 + q * (b - 1), rho = sqrtf( q * (1 + g) / (1 + b) );
 	const float3 Rc = (g + rho * b) * iN - (rho * D);
 	return normalize( D + Rc );
-#endif
 }
 
 LH2_DEVFUNC float4 CombineToFloat4( const float3& A, const float3& B )

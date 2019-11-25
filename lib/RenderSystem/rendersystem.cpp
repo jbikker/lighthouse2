@@ -126,6 +126,7 @@ void RenderSystem::SynchronizeMeshes()
 		if (mesh->Changed())
 		{
 			mesh->UpdateAlphaFlags();
+			mesh->MarkAsNotDirty(); // otherwise UpdateAlphaFlags will trigger a second update.
 			core->SetGeometry( modelIdx, mesh->vertices.data(), (int)mesh->vertices.size(), (int)mesh->triangles.size(), (CoreTri*)mesh->triangles.data(), mesh->alphaFlags.data() );
 			meshesChanged = true; // trigger scene graph update
 		}

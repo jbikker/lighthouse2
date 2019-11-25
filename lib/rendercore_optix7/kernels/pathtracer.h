@@ -172,7 +172,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
 	{
 		float r0, r1, pickProb, lightPdf = 0;
-		if (sampleIdx < 256)
+		if (sampleIdx < 2)
 		{
 			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
 			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength );

@@ -39,7 +39,7 @@ HostTexture::HostTexture( const char* fileName, const uint modFlags )
 //  |  The GPUTexture structure will be used by RenderCore to build and maintain  |
 //  |  these continuous arrays however.                                     LH2'19|
 //  +-----------------------------------------------------------------------------+
-CoreTexDesc HostTexture::ConvertToCoreTexDesc()
+CoreTexDesc HostTexture::ConvertToCoreTexDesc() const
 {
 	CoreTexDesc gpuTex;
 	assert( (fdata != 0) | (idata != 0) );
@@ -93,7 +93,7 @@ bool HostTexture::Equals( const string& o, const uint m )
 //  |  Helper function that determines the number of pixels that should be        |
 //  |  allocated for the given width, height and MIP level count.           LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostTexture::PixelsNeeded( const int width, const int height, const int MIPlevels /* >= 1; includes base layer */ )
+int HostTexture::PixelsNeeded( const int width, const int height, const int MIPlevels /* >= 1; includes base layer */ ) const
 {
 	int w = width, h = height, needed = 0;
 	for (int i = 0; i < MIPlevels; i++) needed += w * h, w >>= 1, h >>= 1;

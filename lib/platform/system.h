@@ -187,6 +187,7 @@ __inline uint64_t calccrc64( unsigned char* pbData, int len )
 crc64 = CLEARCRC64; uint64_t newcrc = calccrc64( (uchar*)this, sizeof( *this ) ); \
 bool changed = newcrc != currentcrc; crc64 = newcrc; return changed; } \
 void MarkAsDirty() { dirty++; } \
+void MarkAsNotDirty() { Changed(); } \
 private: uint64_t crc64 = CLEARCRC64; uint dirty = 0; \
 
 // rng

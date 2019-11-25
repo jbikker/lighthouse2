@@ -108,7 +108,7 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 //  +-----------------------------------------------------------------------------+
 #define TOCHAR(a) ((uint)((a)*255.0f))
 #define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
-void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx )
+void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx ) const
 {
 	// base properties
 	memset( &gpuMat, 0, sizeof( CoreMaterial ) );

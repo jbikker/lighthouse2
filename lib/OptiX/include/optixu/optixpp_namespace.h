@@ -34,6 +34,9 @@
 #  ifndef WIN32_LEAN_AND_MEAN
 #    define WIN32_LEAN_AND_MEAN
 #  endif
+#  ifndef VC_EXTRALEAN
+#    define VC_EXTRALEAN
+#  endif
 #  include <windows.h>
 #endif
 #include "../optix_gl_interop.h"

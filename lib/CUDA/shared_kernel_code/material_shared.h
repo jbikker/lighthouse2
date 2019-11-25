@@ -93,9 +93,8 @@ LH2_DEVFUNC void GetShadingData(
 #else
 	const float alpha = w * vertexAlpha.x + u * vertexAlpha.y + v * vertexAlpha.z;
 #endif
-	iN = ConsistentNormal( D * -1.0f, backSide ? (iN * -1.0f) : iN, alpha );
+	iN = (backSide ? -1.0f : 1.0f) * ConsistentNormal( D * -1.0f, backSide ? (iN * -1.0f) : iN, alpha );
 #endif
-	if (backSide) iN *= -1.0f;
 	fN = iN;
 	// texturing
 	float tu, tv;

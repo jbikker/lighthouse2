@@ -37,7 +37,7 @@ public:
 	// methods
 	void ConvertFrom( const tinyobjMaterial& );
 	void ConvertFrom( const tinygltfMaterial&, const tinygltfModel&, const int textureBase );
-	void ConvertTo( CoreMaterial&, CoreMaterialEx& );
+	void ConvertTo( CoreMaterial&, CoreMaterialEx& ) const;
 	// data members
 	enum
 	{

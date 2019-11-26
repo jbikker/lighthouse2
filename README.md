@@ -10,7 +10,7 @@ A software rasterizer is also included, mostly as an example of a minimal API im
 
 Quick pointers / Important advice:
 
-* Building Lighthouse 2: CUDA 10.1 currently does *not* properly support vs2019; use vs2017 for now.
+* Building Lighthouse 2: CUDA 10 currently does *not* properly support vs2019; use vs2017 for now.
 * Lighthouse 2 wiki: https://github.com/jbikker/lighthouse2/wiki (early stages)
 * Trouble shooting page on the wiki: https://github.com/jbikker/lighthouse2/wiki/TroubleShooting
 * Lighthouse 2 forum: https://ompf2.com/viewforum.php?f=18
@@ -67,8 +67,7 @@ For more information on Lighthouse 2 please visit: http://jacco.ompf2.com.
 Lighthouse 2 was developed at the Utrecht University, The Netherlands.
 
 Lighthouse 2 uses the following libraries:<br>
-AntTweakBar http://anttweakbar.sourceforge.net/doc<br>
-Autodesk FBX SDK https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2019-0<br>
+Dear ImGui https://github.com/ocornut/imgui<br>
 FreeImage http://freeimage.sourceforge.net<br>
 Glad https://glad.dav1d.de<br>
 GLFW https://www.glfw.org<br>

@@ -60,7 +60,7 @@ void PrepareScene()
 #endif
 #if 1
 	// overhead light, use regular PT
-	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
+	int lightMat = renderer->AddMaterial( make_float3( 50, 50, 45 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 #else
 	// difficult light; use BDPT
@@ -107,7 +107,8 @@ bool HandleInput( float frameTime )
 			currentMaterialID = selectedMaterialID;
 			currentMaterial.Changed(); // update checksum so we can track changes
 		}
-		// camera->focalDistance = coreStats.probedDist;
+		camera->focalDistance = coreStats.probedDist;
+		camera->aperture = 0.02f;
 		changed = true;
 	}
 	// let the main loop know if the camera should update

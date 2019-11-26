@@ -136,7 +136,6 @@ LH2_DEVFUNC float evaluate_mf( CONSTREF_OF( ShadingData ) shadingData, const flo
 LH2_DEVFUNC float evaluate_diffuse( CONSTREF_OF( ShadingData ) shadingData, const float3 iN, const float3 wow, const float3 wiw, REFERENCE_OF( float3 ) value )
 {
 	// this code is mostly ported from the GLSL implementation in Disney's BRDF explorer.
-	// const float3 n( local_geometry.m_shading_basis.get_normal() );
 	const float3 n = iN;
 	const float3 h( normalize( wiw + wow ) );
 	// using the absolute values of cos_on and cos_in creates discontinuities
@@ -206,12 +205,15 @@ LH2_DEVFUNC float3 SampleBSDF( CONSTREF_OF( ShadingData ) shadingData, float3 iN
 #endif
 )
 {
+	// detect backside hits
+	float flip = (dot( wow, N ) < 0) ? -1 : 1;
+	iN *= flip;
 	// use the pure specular dielectric path from the Lambert shader for now
 	if (r0 < TRANSMISSION)
 	{
 		// specular
 		specular = true, pdf = 1;
-		const float eio = 1 / ETA, F = Fr_L( dot( iN, wow ), eio );
+		const float eio = flip < 0 ? (1.0f / ETA) : ETA, F = Fr_L( dot( iN, wow ), eio );
 		float3 beer = make_float3( 1 );
 		beer.x = expf( -shadingData.transmittance.x * distance * 2.0f );
 		beer.y = expf( -shadingData.transmittance.y * distance * 2.0f );
@@ -219,7 +221,7 @@ LH2_DEVFUNC float3 SampleBSDF( CONSTREF_OF( ShadingData ) shadingData, float3 iN
 		if (r1 < F)
 		{
 			wiw = reflect( wow * -1.0f, iN );
-			if (dot( N, wiw ) <= 0) pdf = 0; // APPLYSAFENORMALS, but we use wiw here
+			if (dot( N * flip, wiw ) <= 0) pdf = 0; // APPLYSAFENORMALS
 			return shadingData.color * beer * (1 / abs( dot( iN, wiw ) ));
 		}
 		else
@@ -264,14 +266,14 @@ LH2_DEVFUNC float3 SampleBSDF( CONSTREF_OF( ShadingData ) shadingData, float3 iN
 		const float r2 = (r3 - cdf.y) / (cdf.z - cdf.y); // reuse r3 after normalization
 		float alpha_x, alpha_y;
 		microfacet_alpha_from_roughness( ROUGHNESS, ANISOTROPIC, alpha_x, alpha_y );
-		sample_mf<GGXMDF, false>( shadingData, r2, r1, alpha_x, alpha_y, iN, T, B, N, wow, wiw, component_pdf, value );
+		sample_mf<GGXMDF, false>( shadingData, r2, r1, alpha_x, alpha_y, iN, T, B, N * flip, wow, wiw, component_pdf, value );
 		probability = SPECWEIGHT * component_pdf, SPECWEIGHT = 0;
 	}
 	else
 	{
 		const float r2 = (r3 - cdf.z) / (1 - cdf.z); // reuse r3 after normalization
 		const float alpha = clearcoat_roughness( shadingData );
-		sample_mf<GTR1MDF, false>( shadingData, r2, r1, alpha, alpha, iN, T, B, N, wow, wiw, component_pdf, value );
+		sample_mf<GTR1MDF, false>( shadingData, r2, r1, alpha, alpha, iN, T, B, N * flip, wow, wiw, component_pdf, value );
 		probability = COATWEIGHT * component_pdf, COATWEIGHT = 0;
 	}
 	if (DIFFWEIGHT > 0) probability += DIFFWEIGHT * evaluate_diffuse( shadingData, iN, wow, wiw, contrib ), value += contrib;
@@ -295,7 +297,7 @@ LH2_DEVFUNC float3 SampleBSDF( CONSTREF_OF( ShadingData ) shadingData, float3 iN
 
 LH2_DEVFUNC float3 EvaluateBSDF( CONSTREF_OF( ShadingData ) shadingData, const float3 iN, const float3 iT, const float3 wow, const float3 wiw, REFERENCE_OF( float ) pdf )
 {
-	if (TRANSMISSION > 0.999f)
+	if (TRANSMISSION > 0.999f || ROUGHNESS <=0.001f)
 	{
 		// no transport via explicit connections for specular vertices
 		pdf = 0;

@@ -153,21 +153,14 @@ void shadeKernel( float4* accumulator, const uint stride,
 	}
 
 	// detect specular surfaces
-	if (ROUGHNESS == 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS <= 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
-	uint seed = WangHash( pathIdx + R0 /* well-seeded xor32 is all you need */ );
+	uint seed = WangHash( pathIdx * 17 + R0 /* well-seeded xor32 is all you need */ );
 
 	// normal alignment for backfacing polygons
-	const float flip = (dot( D, N ) > 0) ? -1 : 1;
-	N *= flip;		// fix geometric normal
-	iN *= flip;		// fix interpolated normal (consistent normal interpolation)
-	fN *= flip;		// fix final normal (includes normal map)
-	if (flip > 0)
-	{
-		shadingData.InvertETA(); // leaving medium; eta ==> 1 / eta
-		shadingData.transmittance = make_float3( 0 );
-	}
+	const float faceDir = (dot( D, N ) > 0) ? -1 : 1;
+	if (faceDir == 1) shadingData.transmittance = make_float3( 0 );
 
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
@@ -176,7 +169,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
 	{
 		float r0, r1, pickProb, lightPdf = 0;
-		if (sampleIdx < 256)
+		if (sampleIdx < 2)
 		{
 			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
 			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength );
@@ -187,17 +180,17 @@ void shadeKernel( float4* accumulator, const uint stride,
 			r0 = RandomFloat( seed );
 			r1 = RandomFloat( seed );
 		}
-		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
+		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN * faceDir, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
-		const float NdotL = dot( L, fN );
-		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
+		const float NdotL = dot( L, fN * faceDir );
+		if (NdotL > 0 && lightPdf > 0)
 		{
 			float bsdfPdf;
 		#ifdef BSDF_HAS_PURE_SPECULARS // see note in lambert.h
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN /* * faceDir */, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
 		#else
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN /* * faceDir */, T, D * -1.0f, L, bsdfPdf );
 		#endif
 			if (bsdfPdf > 0)
 			{
@@ -207,7 +200,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 				CLAMPINTENSITY;
 				// add fire-and-forget shadow ray to the connections buffer
 				const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
-				connections[shadowRayIdx].O4 = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 );
+				connections[shadowRayIdx].O4 = make_float4( SafeOrigin( I, L, N * faceDir, geometryEpsilon ), 0 );
 				connections[shadowRayIdx].D4 = make_float4( L, dist - 2 * geometryEpsilon );
 				potentials[shadowRayIdx] = make_float4( contribution, __int_as_float( pixelIdx ) );
 			}
@@ -242,13 +235,13 @@ void shadeKernel( float4* accumulator, const uint stride,
 	
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
-	const uint packedNormal = PackNormal( fN );
+	const uint packedNormal = PackNormal( fN * faceDir );
 	if (!(FLAGS & S_SPECULAR)) FLAGS |= FLAGS & S_BOUNCED ? S_BOUNCEDTWICE : S_BOUNCED; else FLAGS |= S_VIASPECULAR;
-	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), 0 );
+	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N * faceDir, geometryEpsilon ), 0 );
 	extensionRaysOut[extensionRayIdx].D4 = make_float4( R, 1e34f );
 	FIXNAN_FLOAT3( throughput );
-	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), __uint_as_float( data ) );
-	pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( newBsdfPdf, packedNormal, 0, 0 );
+	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput * bsdf * abs( dot( fN * faceDir, R ) ), __uint_as_float( data ) );
+	pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( newBsdfPdf,  __uint_as_float( packedNormal ), 0, 0 );
 }
 
 //  +-----------------------------------------------------------------------------+

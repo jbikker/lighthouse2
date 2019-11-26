@@ -486,11 +486,11 @@
         <id>20</id>
         <flags>129</flags>
         <color b="0.99998999" g="0.99998999" r="1"/>
-        <absorption b="0.99998999" g="0.99998999" r="1"/>
+        <absorption b="0" g="0.77941179" r="0.04428472"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.5</roughness>
+        <roughness>0</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -534,19 +534,19 @@
         <id>22</id>
         <flags>129</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="1" g="0.58333337" r="0.59753335"/>
-        <metallic>0</metallic>
+        <absorption b="1" g="0.85709339" r="0.84803921"/>
+        <metallic>1</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0</roughness>
+        <roughness>0.331</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>1</transmission>
-        <eta>0.70200002</eta>
+        <transmission>0</transmission>
+        <eta>0.66399997</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>
@@ -564,7 +564,7 @@
         <specular>0.5</specular>
         <roughness>0.16901676</roughness>
         <specularTint>0</specularTint>
-        <anisotropic>1</anisotropic>
+        <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>

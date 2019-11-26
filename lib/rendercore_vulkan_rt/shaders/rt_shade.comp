@@ -215,20 +215,14 @@ void main()
 	}
 
 	// detect specular surfaces
-	if (ROUGHNESS == 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
+	if (ROUGHNESS <= 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// initialize seed based on pixel index
 	uint seed = WangHash(pathIdx * 16789 + camera.samplesTaken * 1791 + pathLength * 720898027 );
 
-	const float flip = (dot(D, N) > 0) ? -1 : 1;
-	N *= flip;  // Fix geometric normal
-	iN *= flip; // Fix interpolated normal (consistent normal interpolation)
-	fN *= flip; // Fix final normal (includes normal map)
-	if (flip > 0) 
-	{
-		shadingData.parameters.w = floatBitsToUint( 1.0f / uintBitsToFloat( shadingData.parameters.w ) ); // leaving medium; eta ==> 1 / eta
-		shadingData.transmittance = vec3( 0 );
-	}
+	// normal alignment for backfacing polygons
+	const float faceDir = (dot( D, N ) > 0) ? -1 : 1;
+	if (faceDir == 1) shadingData.transmittance = vec3( 0 );
 
 	throughput *= 1.0f / bsdfPdf; // Applly postponed bsdf pdf
 
@@ -236,7 +230,7 @@ void main()
 	{
 		vec3 lightColor;
 		float r0, r1, pickProb, lightPdf = 0;
-		if (sampleIdx < 256)
+		if (sampleIdx < 2)
 		{
 			const uint x = (pixelIdx % scrWidth) & 127;
 			const uint y = (pixelIdx / scrWidth) & 127;
@@ -249,23 +243,22 @@ void main()
 			r1 = RandomFloat( seed );
 		}
 
-		vec3 L = RandomPointOnLight( r0, r1, I, fN, pickProb, lightPdf, lightColor ) - I;
+		vec3 L = RandomPointOnLight( r0, r1, I, fN * faceDir, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
-		const float NdotL = dot( L, fN );
-
-		if (NdotL > 0 && dot( fN, L ) > 0 && lightPdf > 0)
+		const float NdotL = dot( L, fN * faceDir );
+		if (NdotL > 0 && lightPdf > 0)
 		{
 			float bsdfPdf;
 		#ifdef BSDF_HAS_PURE_SPECULARS // see note in lambert.h
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN /* * faceDir */, T, D * -1.0f, L, bsdfPdf ) * ROUGHNESS;
 		#else
-			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN, T, D * -1.0f, L, bsdfPdf );
+			const float3 sampledBSDF = EvaluateBSDF( shadingData, fN /* * faceDir */, T, D * -1.0f, L, bsdfPdf );
 		#endif
 			if (bsdfPdf > 0)
 			{
 				// calculate potential contribution
-				vec3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (bsdfPdf + lightPdf * pickProb));
+				vec3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (pickProb * lightPdf + bsdfPdf));
 
 				CLAMPINTENSITY(contribution, clampValue);
 				FIXNAN_VEC3( contribution );
@@ -273,7 +266,7 @@ void main()
 				// Add fire-and-forget shadow ray to the connections buffer
 				const uint shadowRayIdx = atomicAdd( shadowRays, 1 ); // compaction
 
-				potentialContributions[shadowRayIdx].Origin = vec4( SafeOrigin( I, L, N, geometryEpsilon ), 0 ); // O4
+				potentialContributions[shadowRayIdx].Origin = vec4( SafeOrigin( I, L, N * faceDir, geometryEpsilon ), 0 ); // O4
 				potentialContributions[shadowRayIdx].Direction = vec4( L, dist - 2.0 * geometryEpsilon ); // D4
 				potentialContributions[shadowRayIdx].Emission_pixelIdx = vec4( contribution, uintBitsToFloat( pixelIdx ) ); // E4
 			}
@@ -314,10 +307,10 @@ void main()
 	else FLAGS |= S_VIASPECULAR;
 
 
-	origins[nextBufferIndex].data[extensionRayIdx] = vec4( SafeOrigin( I, R, N, geometryEpsilon ), uintBitsToFloat( FLAGS ) );
-	directions[nextBufferIndex].data[extensionRayIdx] = vec4( R, uintBitsToFloat( PackNormal( fN ) /* Pack normal for MIS */) );
+	origins[nextBufferIndex].data[extensionRayIdx] = vec4( SafeOrigin( I, R, N * faceDir, geometryEpsilon ), uintBitsToFloat( FLAGS ) );
+	directions[nextBufferIndex].data[extensionRayIdx] = vec4( R, uintBitsToFloat( PackNormal( fN * faceDir ) /* Pack normal for MIS */) );
 	FIXNAN_VEC3(throughput);
-	throughputs[nextBufferIndex].data[extensionRayIdx] = vec4( throughput * bsdf * abs( dot( fN, R ) ), newBsdfPdf );
+	throughputs[nextBufferIndex].data[extensionRayIdx] = vec4( throughput * bsdf * abs( dot( fN * faceDir, R ) ), newBsdfPdf );
 }
 
 //  +-----------------------------------------------------------------------------+

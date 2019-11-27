@@ -112,7 +112,7 @@ void HostMesh::LoadGeometry( const char* file, const char* dir, const float scal
 {
 	// process supplied file name
 	mat4 transform = mat4::Scale( scale ); // may include scale, translation, axis exchange
-	string cleanFileName = LowerCase( dir + string( file ) ); // so we don't have to check for e.g. .OBJ
+	string cleanFileName = LowerCase( string( dir ) + (dir[strlen( dir ) - 1] == '/' ? "" : "/") + string( file ) ); // so we don't have to check for e.g. .OBJ
 	string extension = GetFilePathExtension( cleanFileName );
 	if (extension.compare( "obj" ) == 0)
 	{
@@ -135,10 +135,10 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	vector<tinyobj::shape_t> shapes;
 	vector<tinyobj::material_t> materials;
 	map<string, GLuint> textures;
-	string err;
+	string err, warn;
 	Timer timer;
 	timer.reset();
-	tinyobj::LoadObj( &attrib, &shapes, &materials, &err, fileName.c_str(), directory );
+	tinyobj::LoadObj( &attrib, &shapes, &materials, &err, &warn, fileName.c_str(), directory );
 	FATALERROR_IF( err.size() > 0, "tinyobj failed to load %s: %s", fileName.c_str(), err.c_str() );
 	printf( "loaded mesh in %5.3fs\n", timer.elapsed() );
 	// material offset: if we loaded an object before this one, material indices should not start at 0.

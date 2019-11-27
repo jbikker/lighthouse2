@@ -247,7 +247,7 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 	const int nodeBase = (int)nodePool.size() + (hasTransform ? 1 : 0);
 	const int retVal = nodeBase;
 	// load gltf file
-	string cleanFileName = dir + string( sceneFile );
+	string cleanFileName = string( dir ) + (dir[strlen( dir ) - 1] == '/' ? "" : "/" ) + string( sceneFile );
 	tinygltf::Model gltfModel;
 	tinygltf::TinyGLTF loader;
 	string err, warn;

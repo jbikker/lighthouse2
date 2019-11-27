@@ -33,7 +33,7 @@ const surfaceReference* renderTargetRef();
 void InitCountersForExtend( int pathCount );
 void InitCountersForPixels();
 //void InitContributions();
-void finalizeRender(const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast);
+void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 // setters / getters
 void SetInstanceDescriptors( CoreInstanceDesc* p );
 void SetMaterialList( CoreMaterial* p );
@@ -487,7 +487,7 @@ void RenderCore::Setting( const char* name, const float value )
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 {
 	// wait for OpenGL
 	glFinish();
@@ -676,7 +676,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 
     samplesTaken++;
     renderTarget.BindSurface();
-    finalizeRender(accumulatorOnePass->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast);
+    finalizeRender(accumulatorOnePass->DevPtr(), scrwidth, scrheight, samplesTaken);
     renderTarget.UnbindSurface();
 
     coreStats.renderTime = timer.elapsed();

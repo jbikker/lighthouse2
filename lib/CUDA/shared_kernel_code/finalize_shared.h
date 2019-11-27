@@ -23,29 +23,25 @@
 
 //  +-----------------------------------------------------------------------------+
 //  |  finalizeRenderKernel                                                       |
-//  |  Presenting the accumulator; including brightness, contrast and gamma       |
-//  |  correction.                                                          LH2'19|
+//  |  Presenting the accumulator. Gamma, brightness and contrast will be done    |
+//  |  in postprocessing.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-__global__ void finalizeRenderKernel( const float4* accumulator, const int scrwidth, const int scrheight, const float pixelValueScale, const float brightness, const float contrastFactor )
+__global__ void finalizeRenderKernel( const float4* accumulator, const int scrwidth, const int scrheight, const float pixelValueScale )
 {
 	// get x and y for pixel
 	const int x = threadIdx.x + blockIdx.x * blockDim.x;
 	const int y = threadIdx.y + blockIdx.y * blockDim.y;
 	if ((x >= scrwidth) || (y >= scrheight)) return;
-	// plot scaled pixel, gamma corrected
+	// plot scaled pixel
 	float4 value = accumulator[x + y * scrwidth] * pixelValueScale;
-	float r = sqrtf( max( 0.0f, (value.x - 0.5f) * contrastFactor + 0.5f + brightness ) );
-	float g = sqrtf( max( 0.0f, (value.y - 0.5f) * contrastFactor + 0.5f + brightness ) );
-	float b = sqrtf( max( 0.0f, (value.z - 0.5f) * contrastFactor + 0.5f + brightness ) );
-	surf2Dwrite<float4>( make_float4( r, g, b, value.w ), renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
+	surf2Dwrite<float4>( value, renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
 }
-__host__ void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast )
+__host__ void finalizeRender( const float4* accumulator, const int w, const int h, const int spp )
 {
 	const float pixelValueScale = 1.0f / (float)spp;
 	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
 	// https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment
-	const float contrastFactor = (259.0f * (contrast * 256.0f + 255.0f)) / (255.0f * (259.0f - 256.0f * contrast));
-	finalizeRenderKernel << < gridDim, blockDim >> > (accumulator, w, h, pixelValueScale, brightness, contrastFactor);
+	finalizeRenderKernel << < gridDim, blockDim >> > (accumulator, w, h, pixelValueScale);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -209,8 +205,7 @@ __host__ void prepareFilter( const float4* accumulator, uint4* features, const f
 __global__ void __launch_bounds__( 64 /* max block size */, 6 /* min blocks per sm */ ) applyFilterKernel(
 	const uint4* features, const float4* prevWorldPos, const float4* worldPos, const float4* deltaDepth, const float2* motion, const float4* moments,
 	const float4* A, const float4* B, float4* C,
-	const uint scrwidth, const uint scrheight, const int phase, const uint lastPass,
-	const float brightness, const float contrastFactor )
+	const uint scrwidth, const uint scrheight, const int phase, const uint lastPass )
 {
 	// float4 knob: { 10.0f, 5.0f, 7.5f, 0.5f }
 	// get x and y for pixel
@@ -352,10 +347,10 @@ __global__ void __launch_bounds__( 64 /* max block size */, 6 /* min blocks per 
 	{
 		const float3 albedo = RGB32toHDR( localFeature.x );
 		const float3 combined = (directFiltered + indirectFiltered) * albedo;
-		// do brightness, contrast and gamma here, input for TAA
-		const float r = sqrtf( max( 0.0f, (combined.x - 0.5f) * contrastFactor + 0.5f + brightness ) );
-		const float g = sqrtf( max( 0.0f, (combined.y - 0.5f) * contrastFactor + 0.5f + brightness ) );
-		const float b = sqrtf( max( 0.0f, (combined.z - 0.5f) * contrastFactor + 0.5f + brightness ) );
+		// we need gamma for the filter; brightness, contrast will be done in postproc
+		const float r = sqrtf( combined.x );
+		const float g = sqrtf( combined.y );
+		const float b = sqrtf( combined.z );
 		C[pixelIdx] = make_float4( r, g, b, 1 );
 	}
 	else
@@ -367,13 +362,10 @@ __global__ void __launch_bounds__( 64 /* max block size */, 6 /* min blocks per 
 }
 __host__ void applyFilter(
 	const uint4* features, const float4* prevWorldPos, const float4* worldPos, const float4* deltaDepth, const float2* motion, const float4* moments,
-	const float4* A, const float4* B, float4* C, const uint w, const uint h, const int phase, const uint lastPass,
-	const float brightness, const float contrast )
+	const float4* A, const float4* B, float4* C, const uint w, const uint h, const int phase, const uint lastPass )
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 2 ) / 2 ), blockDim( 32, 2 );
-	// https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment
-	const float contrastFactor = (259.0f * (contrast * 256.0f + 255.0f)) / (255.0f * (259.0f - 256.0f * contrast));
-	applyFilterKernel << < gridDim, blockDim >> > (features, prevWorldPos, worldPos, deltaDepth, motion, moments, A, B, C, w, h, phase, lastPass, brightness, contrastFactor);
+	applyFilterKernel << < gridDim, blockDim >> > (features, prevWorldPos, worldPos, deltaDepth, motion, moments, A, B, C, w, h, phase, lastPass);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -462,7 +454,10 @@ __global__ void unsharpenTAAKernel( const float4* pixels, const uint scrwidth, c
 #else
 	const float4 pixel = pixels[x + y * scrwidth];
 #endif
-	surf2Dwrite<float4>( make_float4( make_float3( pixel ), 0 ), renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
+	// SVGF needs gamma corrected pixels for TAA, but we also apply gamma in the postproc, after
+	// tonemapping. So, the gamma corrected data is uncorrected here, so we can correct it again later...
+	float3 squared = make_float3( pixel.x * pixel.x, pixel.y * pixel.y, pixel.z * pixel.z );
+	surf2Dwrite<float4>( make_float4( squared, 0 ), renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
 }
 __host__ void unsharpenTAA( const float4* pixels, const uint w, const uint h )
 {
@@ -474,24 +469,19 @@ __host__ void unsharpenTAA( const float4* pixels, const uint w, const uint h )
 //  |  finalizeNoTAAKernel                                                        |
 //  |  Finish the frame without TAA.                                        LH2'19|
 //  +-----------------------------------------------------------------------------+
-__global__ void finalizeNoTAAKernel( float4* pixels, const uint scrwidth, const uint scrheight, const float brightness, const float contrastFactor )
+__global__ void finalizeNoTAAKernel( float4* pixels, const uint scrwidth, const uint scrheight )
 {
 	// get x and y for pixel
 	const uint x = threadIdx.x + blockIdx.x * blockDim.x;
 	const uint y = threadIdx.y + blockIdx.y * blockDim.y;
 	if (x == 0 || y == 0 || x >= (scrwidth - 1) || y >= (scrheight - 1)) return;
 	float4 pixel = pixels[x + y * scrwidth];
-	const float r = sqrtf( max( 0.0f, (pixel.x - 0.5f) * contrastFactor + 0.5f + brightness ) );
-	const float g = sqrtf( max( 0.0f, (pixel.y - 0.5f) * contrastFactor + 0.5f + brightness ) );
-	const float b = sqrtf( max( 0.0f, (pixel.z - 0.5f) * contrastFactor + 0.5f + brightness ) );
-	surf2Dwrite<float4>( make_float4( r, g, b, 0 ), renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
+	surf2Dwrite<float4>( make_float4( sqrtf( pixel.x ), sqrtf( pixel.y ), sqrtf( pixel.z ), 0 ), renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
 }
-__host__ void finalizeNoTAA( float4* pixels, const uint w, const uint h, const float brightness, const float contrast )
+__host__ void finalizeNoTAA( float4* pixels, const uint w, const uint h )
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
-	// https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment
-	const float contrastFactor = (259.0f * (contrast * 256.0f + 255.0f)) / (255.0f * (259.0f - 256.0f * contrast));
-	finalizeNoTAAKernel << < gridDim, blockDim >> > (pixels, w, h, brightness, contrastFactor);
+	finalizeNoTAAKernel << < gridDim, blockDim >> > (pixels, w, h);
 }
 
 //  +-----------------------------------------------------------------------------+

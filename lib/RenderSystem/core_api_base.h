@@ -91,7 +91,7 @@ public:
 	// Setting: modify a render setting
 	virtual void Setting( const char* name, float value ) = 0;
 	// Render: produce one frame. Convergence can be 'Converge' or 'Restart'.
-	virtual void Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast ) = 0;
+	virtual void Render( const ViewPyramid& view, const Convergence converge ) = 0;
 	// Shutdown: destroy the RenderCore and free all resources.
 	virtual void Shutdown() = 0;
 	// SetTextures: update the texture data in the RenderCore using the supplied data.

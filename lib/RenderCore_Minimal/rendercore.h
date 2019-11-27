@@ -41,7 +41,7 @@ public:
 	void Init();
 	void SetTarget( GLTexture* target );
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 );
-	void Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast );
+	void Render( const ViewPyramid& view, const Convergence converge );
 	void Shutdown();
 	// internal methods
 private:

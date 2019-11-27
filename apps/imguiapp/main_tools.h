@@ -105,7 +105,7 @@ void InitGLFW()
 	glDisable( GL_BLEND );
 	// logo
 	GLTexture* logo = new GLTexture( "data//system//logo.png", GL_LINEAR );
-	shader = new Shader( "shaders/vignette.vert", "shaders/vignette.frag" );
+	shader = new Shader( "shaders/tonemap.vert", "shaders/tonemap.frag" );
 	shader->Bind();
 	shader->SetInputTexture( 0, "color", logo );
 	float hscale = ((float)SCRHEIGHT / SCRWIDTH) * ((float)logo->width / logo->height);

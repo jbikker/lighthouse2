@@ -157,7 +157,7 @@
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
       <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,pathtracer.h,.cuda.h</AdditionalDeps>
-      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.cu,finalize.cu,lghts.cu,pathtrace.cu,tools.cu,.cuda.h;bsdfs/lambert.h;bsdfs/microfacet.h</AdditionalDeps>
+      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.h,camera.h,connections.h,finalize_shared.h,lights_shared.h,pathtracer.h,tools_shared.h,sampling_shared.h;.cuda.h</AdditionalDeps>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
       <MaxRegCount Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0</MaxRegCount>
     </CudaCompile>

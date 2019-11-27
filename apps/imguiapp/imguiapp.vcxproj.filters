@@ -66,10 +66,10 @@
     <None Include="shaders\dof.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\vignette.frag">
+    <None Include="shaders\tonemap.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="shaders\vignette.vert">
+    <None Include="shaders\tonemap.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

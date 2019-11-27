@@ -21,7 +21,7 @@ namespace lh2core
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
+void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 void prepareFilter( const float4* accumulator, uint4* features, const float4* worldPos, const float4* prevWorldPos,
 	float4* shading, float2* motion, float4* moments, float4* prevMoments, const float4* deltaDepth,
 	const ViewPyramid& prevView, const float j0, const float j1, const float prevj0, const float prevj1,
@@ -33,20 +33,20 @@ void shade( const int pathCount, float4* accumulator, const uint stride,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
 void applyFilter( const uint4* features, const float4* prevWorldPos, const float4* worldPos, const float4* deltaDepth, const float2* motion, const float4* moments,
-	const float4* A, const float4* B, float4* C, const uint w, const uint h, const int phase, const uint lastPass, const float brightness, const float contrast );
+	const float4* A, const float4* B, float4* C, const uint w, const uint h, const int phase, const uint lastPass );
 void TAApass( float4* pixels, float4* prevPixels, float pj0, float pj1, const float4* worldPos, const float4* prevWorldPos, const float2* motion, const uint w, const uint h );
 void unsharpenTAA( const float4* pixels, const uint w, const uint h );
-void finalizeNoTAA( float4* pixels, const uint w, const uint h, const float brightness, const float contrast );
+void finalizeNoTAA( float4* pixels, const uint w, const uint h );
 void finalizeFilterDebug( const uint w, const uint h, const uint4* features, const float4* worldPos, const float4* prevWorldPos,
 	const float4* deltaDepth, const float2* motion, const float4* moments, const float4* shading );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
 
 // abbreviation of cuda calls
-void RenderCore::applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass, const float brightness, const float contrast )
+void RenderCore::applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass )
 {
 	::applyFilter( features->DevPtr(), prevWorldPos->DevPtr(), worldPos->DevPtr(), deltaDepth->DevPtr(), motion->DevPtr(), moments->DevPtr(),
-		A->DevPtr(), B ? B->DevPtr() : 0, C->DevPtr(), scrwidth, scrheight, phase, lastPass, brightness, contrast );
+		A->DevPtr(), B ? B->DevPtr() : 0, C->DevPtr(), scrwidth, scrheight, phase, lastPass );
 }
 
 // setters / getters
@@ -649,7 +649,7 @@ void RenderCore::Setting( const char* name, const float value )
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 {
 	// wait for OpenGL
 	glFinish();
@@ -730,6 +730,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	Counters counters;
 	coreStats.deepRayCount = 0;
 	uint pathCount = scrwidth * scrheight * scrspp;
+	int actualPathLength = 0;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// generate / extend
@@ -766,6 +767,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
 		pathCount = counters.extensionRays;
+		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		if (pathCount == 0) break;
 		// handle shadow buffer overflow
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
@@ -814,14 +816,14 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		{
 			applyFilter( 1, shading, filteredIN, filteredOUT );
 			applyFilter( 2, filteredOUT, 0, filteredIN );
-			applyFilter( 3, filteredIN, 0, shading, 1, brightness, contrast );
+			applyFilter( 3, filteredIN, 0, shading, 1 );
 			if (vars.TAAEnabled)
 			{
 				TAApass( shading->DevPtr(), prevPixels->DevPtr(), 0, 0, worldPos->DevPtr(), prevWorldPos->DevPtr(), motion->DevPtr(),
 					scrwidth, scrheight );
 				unsharpenTAA( shading->DevPtr(), scrwidth, scrheight );
 			}
-			else finalizeNoTAA( shading->DevPtr(), scrwidth, scrheight, brightness, contrast );
+			else finalizeNoTAA( shading->DevPtr(), scrwidth, scrheight );
 		}
 		swap( filteredIN, filteredOUT );
 		swap( shading, prevPixels );
@@ -831,7 +833,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		prevj0 = j0, prevj1 = j1;
 		cudaEventRecord( filterEnd );
 	}
-	else finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
+	else finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
 	// finalize statistics
 	cudaStreamSynchronize( 0 );
@@ -842,8 +844,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
 	coreStats.filterTime = CUDATools::Elapsed( filterStart, filterEnd );
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
-	for (int i = 2; i < MAXPATHLENGTH; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
-	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
+	for (int i = 2; i < actualPathLength; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
+	for (int i = 0; i < actualPathLength; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	// store view for next frame
 	prevView = view;
 }

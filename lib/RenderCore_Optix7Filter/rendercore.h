@@ -42,7 +42,7 @@ class RenderCore
 public:
 	// methods
 	void Init();
-	void Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast );
+	void Render( const ViewPyramid& view, const Convergence converge );
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
@@ -71,7 +71,7 @@ private:
 	void SyncStorageType( const TexelStorage storage );
 	void CreateOptixContext( int cc );
 	// cuda call abbreviation
-	void applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass = 0, const float brightness = 0, const float contrast = 0 );
+	void applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass = 0 );
 	// data members
 	int scrwidth = 0, scrheight = 0;				// current screen width and height
 	int scrspp = 1;									// samples to be taken per screen pixel

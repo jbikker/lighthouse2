@@ -29,14 +29,11 @@ lh2core::VulkanCamera::VulkanCamera( const ViewPyramid &view, int samplesTaken, 
 	phase = renderPhase;
 }
 
-lh2core::VulkanFinalizeParams::VulkanFinalizeParams( const int w, const int h, int samplespp, const float brightness, const float contrast )
+lh2core::VulkanFinalizeParams::VulkanFinalizeParams( const int w, const int h, int samplespp )
 {
 	this->scrwidth = w;
 	this->scrheight = h;
 
 	this->spp = samplespp;
 	this->pixelValueScale = 1.0f / float( this->spp );
-
-	this->brightness = brightness;
-	this->contrastFactor = ( 259.0f * ( contrast * 256.0f + 255.0f ) ) / ( 255.0f * ( 259.0f - 256.0f * contrast ) );
 }

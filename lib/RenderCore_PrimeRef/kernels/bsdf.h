@@ -40,6 +40,12 @@ LH2_DEVFUNC bool Refract_L( const float3& wi, const float3& n, const float eta, 
 LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN, const float3 T,
 	const float3 wo, const float3 wi, float& pdf )
 {
+	if (TRANSMISSION > 0.999f || ROUGHNESS <=0.001f)
+	{
+		// no transport via explicit connections for specular vertices
+		pdf = 0;
+		return make_float3( 0 );
+	}
 	pdf = fabs( dot( wi, iN ) ) * INVPI;
 	return shadingData.color * INVPI * ROUGHNESS;
 }
@@ -47,24 +53,26 @@ LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN,
 LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, float3 iN, const float3 N, const float3 T, const float3 wo,
 	const float distance, const float r3, const float r4, float3& wi, float& pdf, bool& specular )
 {
+	float flip = (dot( wo, N ) < 0) ? -1 : 1;
+	iN *= flip;
 	specular = true, pdf = 1; // default
 	float3 bsdf;
 	if (r4 < TRANSMISSION)
 	{
 		// specular
-		const float eio = 1 / ETA, F = Fr_L( dot( iN, wo ), eio );
+		const float eio = flip < 0 ? (1.0f / ETA) : ETA, F = Fr_L( dot( iN, wo ), eio );
+		float3 beer = make_float3( 1 );
+		beer.x = expf( -shadingData.transmittance.x * distance * 2.0f );
+		beer.y = expf( -shadingData.transmittance.y * distance * 2.0f );
+		beer.z = expf( -shadingData.transmittance.z * distance * 2.0f );
 		if (r3 < F)
 		{
 			wi = reflect( wo * -1.0f, iN );
-			bsdf = shadingData.color * (1 / abs( dot( iN, wi ) ));
+			bsdf = shadingData.color * beer * (1 / abs( dot( iN, wi ) ));
 		}
 		else
 		{
 			if (!Refract_L( wo, iN, eio, wi )) return make_float3( 0 );
-			float3 beer = make_float3( 1 );
-			beer.x = expf( -shadingData.transmittance.x * distance * 2.0f );
-			beer.y = expf( -shadingData.transmittance.y * distance * 2.0f );
-			beer.z = expf( -shadingData.transmittance.z * distance * 2.0f );
 			return shadingData.color * beer * (1 / abs( dot( iN, wi ) ));
 		}
 	}
@@ -88,7 +96,7 @@ LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, float3 iN, const f
 			bsdf = shadingData.color * INVPI;
 		}
 	}
-	APPLYSAFENORMALS;
+	if (dot( N * flip, wi ) <= 0) pdf = 0; // APPLYSAFENORMALS;
 	return bsdf;
 }
 

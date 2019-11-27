@@ -72,16 +72,14 @@ struct VulkanCamera
 struct VulkanFinalizeParams
 {
 	VulkanFinalizeParams() = default;
-	VulkanFinalizeParams( const int w, const int h, int samplespp, const float brightness, const float contrast );
+	VulkanFinalizeParams( const int w, const int h, int samplespp );
 
 	uint scrwidth;
 	uint scrheight;
 	uint spp;
 	uint idummy = 0;
 	float pixelValueScale;
-	float brightness;
-	float contrastFactor;
-	float dummy = 0.0f;
+	float fdummy0 = 0.0f, fdummy1 = 0.0f, fdummy2 = 0.0f;
 };
 
 using UniformCamera = UniformObject<VulkanCamera>;

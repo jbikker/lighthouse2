@@ -912,7 +912,7 @@ void RenderCore::Setting( const char *name, const float value )
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid &view, const Convergence converge, const float brightness, const float contrast )
+void RenderCore::Render( const ViewPyramid &view, const Convergence converge )
 {
 	VulkanCamera &camera = m_UniformCamera->GetData()[0];
 	Counters &c = m_Counters->GetHostBuffer()[0];
@@ -1101,7 +1101,7 @@ void RenderCore::Render( const ViewPyramid &view, const Convergence converge, co
 
 	// Initialize params for finalize stage
 	VulkanFinalizeParams &params = m_UniformFinalizeParams->GetData()[0];
-	params = VulkanFinalizeParams( m_ScrWidth, m_ScrHeight, m_SamplesTaken, brightness, contrast );
+	params = VulkanFinalizeParams( m_ScrWidth, m_ScrHeight, m_SamplesTaken );
 	m_UniformFinalizeParams->CopyToDevice();
 
 	cmdBuffer.Begin();

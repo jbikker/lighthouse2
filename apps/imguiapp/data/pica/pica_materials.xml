@@ -10,7 +10,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.11413872</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -82,7 +82,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -130,7 +130,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.2421875</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -274,7 +274,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
@@ -489,16 +489,16 @@
         <absorption b="0" g="0.77941179" r="0.04428472"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <specular>0</specular>
         <roughness>0</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
+        <clearcoatGloss>0</clearcoatGloss>
         <transmission>1</transmission>
-        <eta>0.653</eta>
+        <eta>0.64700001</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>
@@ -537,16 +537,16 @@
         <absorption b="1" g="0.85709339" r="0.84803921"/>
         <metallic>1</metallic>
         <subsurface>0</subsurface>
-        <specular>0.5</specular>
-        <roughness>0.331</roughness>
+        <specular>0</specular>
+        <roughness>0</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>0.66399997</eta>
+        <transmission>1</transmission>
+        <eta>0.48199999</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>
@@ -562,7 +562,7 @@
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
-        <roughness>0.16901676</roughness>
+        <roughness>1</roughness>
         <specularTint>0</specularTint>
         <anisotropic>0</anisotropic>
         <sheen>0</sheen>

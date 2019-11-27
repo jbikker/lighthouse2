@@ -150,8 +150,8 @@
     <None Include="shaders\coc.vert" />
     <None Include="shaders\dof.frag" />
     <None Include="shaders\dof.vert" />
-    <None Include="shaders\vignette.frag" />
-    <None Include="shaders\vignette.vert" />
+    <None Include="shaders\tonemap.frag" />
+    <None Include="shaders\tonemap.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

@@ -234,7 +234,7 @@ void RenderSystem::Render( const ViewPyramid& view, Convergence converge )
 	core->Setting( "clampIndirect", settings.filterIndirectClamp );
 	core->Setting( "filter", settings.filterEnabled );
 	core->Setting( "TAA", settings.TAAEnabled );
-	core->Render( view, converge, scene->camera->brightness, scene->camera->contrast );
+	core->Render( view, converge );
 }
 
 //  +-----------------------------------------------------------------------------+

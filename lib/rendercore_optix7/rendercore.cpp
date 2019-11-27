@@ -21,7 +21,7 @@ namespace lh2core {
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
+void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, const float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
@@ -599,7 +599,7 @@ void RenderCore::Setting( const char* name, const float value )
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 {
 	// wait for OpenGL
 	glFinish();
@@ -668,6 +668,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	Counters counters;
 	coreStats.deepRayCount = 0;
 	uint pathCount = scrwidth * scrheight * scrspp;
+	int actualPathLength = 0;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// generate / extend
@@ -702,6 +703,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
 		pathCount = counters.extensionRays;
+		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		if (pathCount == 0) break;
 		// trace shadow rays now if the next loop iteration could overflow the buffer.
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
@@ -730,7 +732,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
-	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
+	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
 	// finalize statistics
 	cudaStreamSynchronize( 0 );
@@ -740,8 +742,8 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
 	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
-	for( int i = 2; i < MAXPATHLENGTH; i++ ) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
-	for( int i = 0; i < MAXPATHLENGTH; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
+	for( int i = 2; i < actualPathLength; i++ ) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
+	for( int i = 0; i < actualPathLength; i++ ) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;
 	coreStats.probedDist = counters.probedDist;

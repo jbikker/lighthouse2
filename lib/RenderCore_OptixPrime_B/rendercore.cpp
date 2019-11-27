@@ -23,11 +23,12 @@
 
 #include "core_settings.h"
 
-namespace lh2core {
+namespace lh2core
+{
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void finalizeRender( const float4* accumulator, const int w, const int h, const int spp, const float brightness, const float contrast );
+void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	const Ray4* extensionRays, const float4* extensionData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays, float4* connectionT4,
@@ -440,7 +441,7 @@ void RenderCore::Setting( const char* name, const float value )
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 {
 	// wait for OpenGL
 	glFinish();
@@ -495,9 +496,11 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	RTPquery query;
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &query ) );
 	uint pathCount = scrwidth * scrheight * scrspp;
+	int actualPathLength = 0;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// extend
+		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		Timer t;
 		CHK_PRIME( rtpBufferDescSetRange( extensionRaysDesc[inBuffer], 0, pathCount ) );
 		CHK_PRIME( rtpBufferDescSetRange( extensionHitsDesc, 0, pathCount ) );
@@ -574,12 +577,12 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, co
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
-	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken, brightness, contrast );
+	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
 	// finalize statistics
 	coreStats.renderTime = timer.elapsed();
 	coreStats.shadeTime = 0;
-	for (int i = 0; i < MAXPATHLENGTH; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
+	for (int i = 0; i < actualPathLength; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;

@@ -57,10 +57,10 @@ void CoreAPI::SetTarget( GLTexture* target, const uint spp )
 	core->SetTarget( target /* ignore spp parameter */ );
 }
 
-void CoreAPI::Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast )
+void CoreAPI::Render( const ViewPyramid& view, const Convergence converge )
 {
 	// forward the render request to the Render method in rendercore.cpp
-	core->Render( view, converge, brightness, contrast );
+	core->Render( view, converge );
 }
 
 void CoreAPI::Shutdown()

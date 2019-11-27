@@ -50,7 +50,7 @@ class RenderCore
 public:
 	// methods
 	void Init();
-	void Render( const ViewPyramid& view, const Convergence converge, const float brightness, const float contrast );
+	void Render( const ViewPyramid& view, const Convergence converge );
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();

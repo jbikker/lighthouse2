@@ -236,7 +236,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N * faceDir, geometryEpsilon ), __uint_as_float( FLAGS ) );
 	pathStates[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
 	FIXNAN_FLOAT3( throughput );
-	pathStates[extensionRayIdx + stride * 2] = make_float4( throughput * bsdf * abs( dot( fN * faceDir, R ) ), newBsdfPdf );
+	pathStates[extensionRayIdx + stride * 2] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), newBsdfPdf );
 }
 
 //  +-----------------------------------------------------------------------------+

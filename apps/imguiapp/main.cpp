@@ -41,15 +41,12 @@ static CoreStats coreStats;
 void PrepareScene()
 {
 	// initialize scene
-#if 0
-	// radio
-	materialFile = string( "data/receiver/red_materials.xml" );
-	renderer->AddScene( "scene.gltf", "data/receiver/", mat4::Scale( 0.2f ) * mat4::Translate( 0, 0, 0 ) );
+#if 1
+	// mushrooms
+	materialFile = string( "data/mushrooms/mush_materials.xml" );
+	renderer->AddScene( "scene.gltf", "data/mushrooms/", mat4::Scale( 2 ) * mat4::Translate( 0, 0, 0 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
-	int floorMat = renderer->AddMaterial( make_float3( 0.5f, 0.5f, 0.6f ) );
-	int floorQuad = renderer->AddQuad( make_float3( 0, 1, 0 ), make_float3( 0, -1.5f, 0 ), 40, 40, floorMat );
-	renderer->AddInstance( floorQuad );
 	animPaused = true;
 #else
 	// classic scene
@@ -107,8 +104,7 @@ bool HandleInput( float frameTime )
 			currentMaterialID = selectedMaterialID;
 			currentMaterial.Changed(); // update checksum so we can track changes
 		}
-		// camera->focalDistance = coreStats.probedDist;
-		camera->aperture = 0.0f;
+		camera->focalDistance = coreStats.probedDist;
 		changed = true;
 	}
 	// let the main loop know if the camera should update
@@ -163,7 +159,7 @@ int main()
 	while (!glfwWindowShouldClose( window ))
 	{
 		// detect camera changes
-		camMoved = false;
+		camMoved = renderer->GetCamera()->Changed();
 		deltaTime = timer.elapsed();
 		if (HandleInput( deltaTime )) camMoved = true;
 		// handle material changes
@@ -184,6 +180,10 @@ int main()
 		shader->Bind();
 		shader->SetInputTexture( 0, "color", renderTarget );
 		shader->SetInputMatrix( "view", mat4::Identity() );
+		shader->SetFloat( "contrast", renderer->GetCamera()->contrast );
+		shader->SetFloat( "brightness", renderer->GetCamera()->brightness );
+		shader->SetFloat( "gamma", renderer->GetCamera()->gamma );
+		shader->SetInt( "method", renderer->GetCamera()->tonemapper );
 		DrawQuad();
 		shader->Unbind();
 		// gui
@@ -205,6 +205,18 @@ int main()
 		ImGui::Text( "# secondary:  %6ik (%6.1fM/s)", coreStats.bounce1RayCount / 1000, coreStats.bounce1RayCount / (max( 1.0f, coreStats.traceTime1 * 1000000 )) );
 		ImGui::Text( "# deep rays:  %6ik (%6.1fM/s)", coreStats.deepRayCount / 1000, coreStats.deepRayCount / (max( 1.0f, coreStats.traceTimeX * 1000000 )) );
 		ImGui::Text( "# shadw rays: %6ik (%6.1fM/s)", coreStats.totalShadowRays / 1000, coreStats.totalShadowRays / (max( 1.0f, coreStats.shadowTraceTime * 1000000 )) );
+		ImGui::End();
+		ImGui::Begin( "Camera parameters", 0 );
+		float3 camPos = renderer->GetCamera()->position;
+		float3 camDir = renderer->GetCamera()->direction;
+		ImGui::Text( "position: %5.2f, %5.2f, %5.2f", camPos.x, camPos.y, camPos.z );
+		ImGui::Text( "viewdir:  %5.2f, %5.2f, %5.2f", camDir.x, camDir.y, camDir.z );
+		ImGui::SliderFloat( "FOV", &renderer->GetCamera()->FOV, 10, 90 );
+		ImGui::SliderFloat( "aperture", &renderer->GetCamera()->aperture, 0, 0.025f );
+		ImGui::Combo( "tonemap", &renderer->GetCamera()->tonemapper, "clamp\0reinhard\0reinhard ext\0reinhard lum\0reinhard jodie\0uncharted2\0\0" );
+		ImGui::SliderFloat( "brightness", &renderer->GetCamera()->brightness, 0, 0.5f );
+		ImGui::SliderFloat( "contrast", &renderer->GetCamera()->contrast, 0, 0.5f );
+		ImGui::SliderFloat( "gamma", &renderer->GetCamera()->gamma, 1, 2.5f );
 		ImGui::End();
 		ImGui::Begin( "Material parameters", 0 );
 		ImGui::Text( "name:    %s", currentMaterial.name.c_str() );

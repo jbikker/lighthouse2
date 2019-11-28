@@ -137,9 +137,11 @@ void Camera::Serialize( const char* xmlFileName )
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "FOV" ) ))->SetText( FOV );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "brightness" ) ))->SetText( brightness );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "contrast" ) ))->SetText( contrast );
+	((XMLElement*)root->InsertEndChild( doc.NewElement( "gamma" ) ))->SetText( gamma );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "aperture" ) ))->SetText( aperture );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "focalDistance" ) ))->SetText( focalDistance );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "clampValue" ) ))->SetText( clampValue );
+	((XMLElement*)root->InsertEndChild( doc.NewElement( "tonemapper" ) ))->SetText( tonemapper );
 	doc.SaveFile( xmlFileName ? xmlFileName : xmlFile.c_str() );
 }
 
@@ -165,12 +167,14 @@ void Camera::Deserialize( const char* xmlFileName )
 	element->QueryFloatAttribute( "x", &direction.x );
 	element->QueryFloatAttribute( "y", &direction.y );
 	element->QueryFloatAttribute( "z", &direction.z );
-	root->FirstChildElement( "FOV" )->QueryFloatText( &FOV );
-	root->FirstChildElement( "brightness" )->QueryFloatText( &brightness );
-	root->FirstChildElement( "contrast" )->QueryFloatText( &contrast );
-	root->FirstChildElement( "aperture" )->QueryFloatText( &aperture );
-	root->FirstChildElement( "focalDistance" )->QueryFloatText( &focalDistance );
-	root->FirstChildElement( "clampValue" )->QueryFloatText( &clampValue );
+	if (element = root->FirstChildElement( "FOV" )) element->QueryFloatText( &FOV );
+	if (element = root->FirstChildElement( "brightness" )) element->QueryFloatText( &brightness );
+	if (element = root->FirstChildElement( "contrast" )) element->QueryFloatText( &contrast );
+	if (element = root->FirstChildElement( "gamma" )) element->QueryFloatText( &gamma );
+	if (element = root->FirstChildElement( "aperture" )) element->QueryFloatText( &aperture );
+	if (element = root->FirstChildElement( "focalDistance" )) element->QueryFloatText( &focalDistance );
+	if (element = root->FirstChildElement( "clampValue" )) element->QueryFloatText( &clampValue );
+	if (element = root->FirstChildElement( "tonemapper" )) element->QueryIntText( &tonemapper );
 }
 
 // EOF

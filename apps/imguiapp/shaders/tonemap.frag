@@ -4,6 +4,7 @@ uniform sampler2D color;
 uniform float contrast = 0;
 uniform float brightness = 0;
 uniform float gamma = 2.2f;
+uniform int method = 4;
 
 in vec2 uv;
 out vec3 pixel;
@@ -61,13 +62,15 @@ vec3 uncharted2_filmic( vec3 v )
 
 vec3 tonemap( vec3 v )
 {
-	// return clamp( v, 0.0f, 1.0f );
-	// return reinhard( v );
-	// return reinhard_extended( v, 6.0f );
-	return reinhard_extended_luminance( v, 1.5f );
-	// return reinhard_jodie( v );
-	// return uncharted2_filmic( v );
-	// return const_luminance_reinhard( v );
+	switch (method)
+	{
+	case 0: return clamp( v, 0.0f, 1.0f );
+	case 1: return reinhard( v );
+	case 2: return reinhard_extended( v, 6.0f );
+	case 3: return reinhard_extended_luminance( v, 1.5f );
+	case 4: return reinhard_jodie( v );
+	case 5: default: return uncharted2_filmic( v );
+	}
 }
 
 vec3 gamma_correct( vec3 v )

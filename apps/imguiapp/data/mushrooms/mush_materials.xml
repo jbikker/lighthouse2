@@ -1,0 +1,27 @@
+<materials>
+    <material_count>2</material_count>
+    <material_0>
+        <name>Mushroom</name>
+        <origin>data/mushrooms/scene.gltf</origin>
+        <id>0</id>
+        <flags>129</flags>
+        <color b="1" g="1" r="1"/>
+        <absorption b="0" g="0" r="0"/>
+        <metallic>0</metallic>
+        <subsurface>0.801</subsurface>
+        <specular>0</specular>
+        <roughness>1</roughness>
+        <specularTint>0</specularTint>
+        <anisotropic>0</anisotropic>
+        <sheen>0</sheen>
+        <sheenTint>0</sheenTint>
+        <clearcoat>0</clearcoat>
+        <clearcoatGloss>0</clearcoatGloss>
+        <transmission>0</transmission>
+        <eta>1</eta>
+        <custom0>0</custom0>
+        <custom1>0</custom1>
+        <custom2>0</custom2>
+        <custom3>0</custom3>
+    </material_0>
+</materials>

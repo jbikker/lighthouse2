@@ -36,10 +36,12 @@ public:
 	float aperture = EPSILON;						// aperture size
 	float brightness = 0.0f;						// combined with contrast:
 	float contrast = 0.0f;							// pragmatic representation of exposure
+	float gamma = 2.2f;								// monitor gamma
 	float FOV = 40;									// field of view, in degrees
+	int tonemapper = 4;								// see tonemap.frag for options
 	float aspectRatio = 1.0f;						// image plane aspect ratio
 	float clampValue = 10.0f;						// firefly clamping
-	int2 pixelCount = make_int2( 1, 1 );				// actual pixel count; needed for pixel spread angle
+	int2 pixelCount = make_int2( 1, 1 );			// actual pixel count; needed for pixel spread angle
 	// methods
 	void LookAt( const float3 O, const float3 T );	// position the camera at O, looking at T
 	void TranslateRelative( float3 T );				// move camera relative to orientation

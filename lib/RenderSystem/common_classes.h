@@ -202,6 +202,21 @@ struct CoreMaterial
 	/* read if bit 17 set */ short m0mapwidth, m0mapheight; half m0uscale, m0vscale, m0uoffs, m0voffs; uint m0mapaddr;
 	/* read if bit 18 set */ short m1mapwidth, m1mapheight; half m1uscale, m1vscale, m1uoffs, m1voffs; uint m1mapaddr;
 #endif
+#ifndef __CLORCUDA__
+	#define CHAR2FLT(a,s) (((float)(((a)>>s)&255))*(1.0f/255.0f))
+	float metallic() { return CHAR2FLT( parameters.x, 0 ); }
+	float subsurface() { return CHAR2FLT( parameters.x, 8 ); }
+	float specular() { return CHAR2FLT( parameters.x, 16 ); }
+	float roughness() { return (max( 0.001f, CHAR2FLT( parameters.x, 24 ) )); }
+	float spectint() { return CHAR2FLT( parameters.y, 0 ); }
+	float anisotropic() { return CHAR2FLT( parameters.y, 8 ); }
+	float sheen() { return CHAR2FLT( parameters.y, 16 ); }
+	float sheentint() { return CHAR2FLT( parameters.y, 24 ); }
+	float clearcoat() { return CHAR2FLT( parameters.z, 0 ); }
+	float clearcoatgloss() { return CHAR2FLT( parameters.z, 8 ); }
+	float transmission() { return CHAR2FLT( parameters.z, 16 ); }
+	float eta() { return *(uint*)&parameters.w; }
+#endif
 };
 // texture layers in HostMaterial and CoreMaterialEx
 #define TEXTURE0		0

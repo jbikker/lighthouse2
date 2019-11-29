@@ -5,6 +5,7 @@ uniform float contrast = 0;
 uniform float brightness = 0;
 uniform float gamma = 2.2f;
 uniform int method = 4;
+uniform float vignetting = 0.35f;
 
 in vec2 uv;
 out vec3 pixel;
@@ -89,10 +90,38 @@ vec3 adjust( vec3 v )
 	return vec3( r, g, b );
 }
 
+float vignette( vec2 uv )
+{
+	// based on Keijiro Takahashi's Kino Vignette: https://github.com/keijiro/KinoVignette, via https://www.shadertoy.com/view/4lSXDm
+	vec2 coord = (uv - 0.5f) * 2.0f;
+    float rf = sqrt( dot( coord, coord ) ) * vignetting;
+    float rf2_1 = rf * rf + 1.0f;
+    return 1.0f / (rf2_1 * rf2_1);
+}
+
+vec3 chromatic( vec2 uv )
+{
+	// chromatic abberation inspired by knifa (lsKSDz), via https://www.shadertoy.com/view/XlSBRW
+	vec2 d = abs( (uv - 0.5f) * 2.0f);    
+	d.x = pow( d.x, 1.5f );
+	d.y *= 0.1f;
+	float dScale = 0.01;
+	vec4 r, g, b;
+	r = g = b = vec4( 0.0 );
+	for (int i = 0; i < 2; ++i )
+	{
+		float rnd = i * 0.03f;
+		r += texture( color, uv + d * rnd * dScale );
+		g += texture( color, uv );
+		b += texture( color, uv - d * rnd * dScale );
+	}
+	return 0.5f * vec3( r.r, g.g, b.b );
+}
+
 void main()
 {
 	// retrieve input pixel
-	pixel = gamma_correct( tonemap( adjust( texture( color, uv ).rgb ) ) );
+	pixel = gamma_correct( tonemap( adjust( vignette( uv ) * chromatic( uv ) ) ) );
 }
 
 // EOF

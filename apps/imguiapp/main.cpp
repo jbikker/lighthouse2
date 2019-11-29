@@ -41,10 +41,10 @@ static CoreStats coreStats;
 void PrepareScene()
 {
 	// initialize scene
-#if 1
+#if 0
 	// mushrooms
-	materialFile = string( "data/mushrooms/mush_materials.xml" );
-	renderer->AddScene( "scene.gltf", "data/mushrooms/", mat4::Scale( 2 ) * mat4::Translate( 0, 0, 0 ) );
+	materialFile = string( "data/woodville/wood_materials.xml" );
+	renderer->AddScene( "PUP_Woodville.gltf", "data/woodville/", mat4::Scale( 2 ) * mat4::Translate( 0, 0, 0 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 	animPaused = true;

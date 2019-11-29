@@ -54,18 +54,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\coc.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\coc.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\dof.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="shaders\dof.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="shaders\tonemap.frag">
       <Filter>shaders</Filter>
     </None>

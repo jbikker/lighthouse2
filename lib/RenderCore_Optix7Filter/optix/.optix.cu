@@ -32,20 +32,18 @@ __device__ __inline__ uint WangHash( uint s ) { s = (s ^ 61) ^ (s >> 16), s *= 9
 __device__ __inline__ uint RandomInt( uint& s ) { s ^= s << 13, s ^= s >> 17, s ^= s << 5; return s; }
 __device__ __inline__ float RandomFloat( uint& s ) { return RandomInt( s ) * 2.3283064365387e-10f; }
 
-static __inline __device__ float blueNoiseSampler( int x, int y, int sampleIdx, int sampleDimension )
+static __inline __device__ float blueNoiseSampler( int x, int y, int sampleIndex, int sampleDimension )
 {
-	// wrap arguments
-	x &= 127, y &= 127, sampleIdx &= 255, sampleDimension &= 255;
-
+	// Adapated from E. Heitz. Arguments:
+	// sampleIndex: 0..255
+	// sampleDimension: 0..255
+	x &= 127, y &= 127, sampleIndex &= 255, sampleDimension &= 255;
 	// xor index based on optimized ranking
-	int rankedSampleIndex = sampleIdx ^ params.blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3];
-
+	int rankedSampleIndex = (sampleIndex ^ params.blueNoise[sampleDimension + (x + y * 128) * 8 + 65536 * 3]) & 255;
 	// fetch value in sequence
 	int value = params.blueNoise[sampleDimension + rankedSampleIndex * 256];
-
 	// if the dimension is optimized, xor sequence value based on optimized scrambling
 	value ^= params.blueNoise[(sampleDimension & 7) + (x + y * 128) * 8 + 65536];
-
 	// convert to float and return
 	return (0.5f + value) * (1.0f / 256.0f);
 }
@@ -87,10 +85,24 @@ static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint
 		r0 = r1 = 0;
 		O = make_float3( params.posLensSize );
 	}
-	const float u = ((float)sx + r0) * (1.0f / params.scrsize.x);
-	const float v = ((float)sy + r1) * (1.0f / params.scrsize.y);
-	const float3 pointOnPixel = params.p1 + u * params.right + v * params.up;
-	D = normalize( pointOnPixel - O );
+	float3 posOnPixel;
+	if (params.distortion == 0)
+	{
+		const float u = ((float)sx + r0) * (1.0f / params.scrsize.x);
+		const float v = ((float)sy + r1) * (1.0f / params.scrsize.y);
+		posOnPixel = params.p1 + u * params.right + v * params.up;
+	}
+	else
+	{
+		const float tx = sx / (float)params.scrsize.x - 0.5f, ty = sy / (float)params.scrsize.y - 0.5f;
+		const float rr = tx * tx + ty * ty;
+		const float rq = sqrtf( rr ) * (1.0f + params.distortion * rr + params.distortion * rr * rr);
+		const float theta = atan2f( tx, ty );
+		const float bx = (sinf( theta ) * rq + 0.5f) * params.scrsize.x;
+		const float by = (cosf( theta ) * rq + 0.5f) * params.scrsize.y;
+		posOnPixel = params.p1 + (bx + r0) * (params.right / (float)params.scrsize.x) + (by + r1) * (params.up / (float)params.scrsize.y);
+	}
+	D = normalize( posOnPixel - O );
 }
 
 #if __CUDA_ARCH__ >= 700

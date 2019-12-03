@@ -485,8 +485,8 @@
         <origin>data/pica/scene.gltf</origin>
         <id>20</id>
         <flags>129</flags>
-        <color b="0" g="0" r="0"/>
-        <absorption b="0" g="0" r="0"/>
+        <color b="0.99998999" g="0.99998999" r="1"/>
+        <absorption b="0.29411763" g="1" r="0.33613425"/>
         <metallic>0</metallic>
         <subsurface>0</subsurface>
         <specular>0.5</specular>
@@ -497,8 +497,8 @@
         <sheenTint>0</sheenTint>
         <clearcoat>0</clearcoat>
         <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
+        <transmission>1</transmission>
+        <eta>0.64200002</eta>
         <custom0>0</custom0>
         <custom1>0</custom1>
         <custom2>0</custom2>

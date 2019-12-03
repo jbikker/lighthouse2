@@ -28,7 +28,7 @@ LH2_DEVFUNC float3 ciexyz_to_linear_rgb( const float3 xyz )
 {
 	return make_float3(
 		max( 0.0f, 3.240479f * xyz.x - 1.537150f * xyz.y - 0.498535f * xyz.z ),
-		max( 0.0f, -0.969256f * xyz.x + 1.875991f * xyz.y + 0.041556f * xyz.z ),
+		max( 0.0f, -0.969256f * xyz.x + 1.875992f * xyz.y + 0.041556f * xyz.z ),
 		max( 0.0f, 0.055648f * xyz.x - 0.204043f * xyz.y + 1.057311f * xyz.z ) );
 }
 

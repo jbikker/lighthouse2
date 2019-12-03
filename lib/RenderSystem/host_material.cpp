@@ -135,7 +135,7 @@ void HostMaterial::ConvertTo( CoreMaterial& gpuMat, CoreMaterialEx& gpuMatEx ) c
 	bool hdr = false;
 	if (t0) if (t0->flags & HostTexture::HDR) hdr = true;
 	gpuMat.flags =
-		(eta > 0 ? (1 << 0) : 0) +							// is dielectric
+		(eta < 1 ? (1 << 0) : 0) +							// is dielectric
 		(hdr ? (1 << 1) : 0) +								// diffuse map is hdr
 		(t0 ? (1 << 2) : 0) +								// has diffuse map
 		(nm0 ? (1 << 3) : 0) +								// has normal map

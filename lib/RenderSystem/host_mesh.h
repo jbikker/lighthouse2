@@ -78,6 +78,7 @@ public:
 	vector<float4> weights;						// skinning: joint weights
 	vector<Pose> poses;							// morph target data
 	bool isAnimated;							// true when this mesh has animation data
+	bool excludeFromNavmesh = false;			// prevents mesh from influencing navmesh generation (e.g. curtains)
 	TRACKCHANGES;								// add Changed(), MarkAsDirty() methods, see system.h
 	// Note: design decision:
 	// Vertices and indices can be deduced from the list of HostTris, obviously. However, efficient intersection

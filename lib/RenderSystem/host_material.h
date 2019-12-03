@@ -80,8 +80,10 @@ public:
 	{
 		// A change to the alpha flag should trigger a change to any mesh using this flag as
 		// well. This method allows us to track this.
+		const bool dirty = IsDirty();
 		const bool changed = (flags & HASALPHA) != (prevFlags & HASALPHA);
 		prevFlags = flags;
+		if (!dirty) MarkAsNotDirty(); // checking if alpha changed should not make the object dirty.
 		return changed;
 	}
 private:

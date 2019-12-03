@@ -40,7 +40,7 @@ __global__  __launch_bounds__( 256 /* max block size */, 1 /* min blocks per sm 
 void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 	const uint R0, const uint* blueNoise, const int pass,
 	const float3 pos, const float3 right, const float3 up, const float aperture,
-	const float3 p1, const int4 screenParams, const int jobCount )
+	const float3 p1, const float distortion, const int4 screenParams, const int jobCount )
 {
 	int jobIndex = threadIdx.x + blockIdx.x * blockDim.x;
 	if (jobIndex >= jobCount) return;
@@ -68,7 +68,22 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 		r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
 		r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
 	}
-	posOnPixel = p1 + ((float)x + r0) * (right / (float)scrhsize) + ((float)y + r1) * (up / (float)scrvsize);
+	// barrel distortion; HelenXR, https://www.shadertoy.com/view/4sXcDN
+	// const float distortion = 0.05f; // < 0: pincushion; > 0: barrel distortion
+	if (distortion == 0)
+	{
+		posOnPixel = p1 + ((float)x + r0) * (right / (float)scrhsize) + ((float)y + r1) * (up / (float)scrvsize);
+	}
+	else
+	{
+		const float sx = x / (float)scrhsize - 0.5f, sy = y / (float)scrvsize - 0.5f;
+		const float rr = sx * sx + sy * sy;
+		const float rq = sqrtf( rr ) * (1.0f + distortion * rr + distortion * rr * rr);
+		const float theta = atan2f( sx, sy );
+		const float bx = (sinf( theta ) * rq + 0.5f) * scrhsize;
+		const float by = (cosf( theta ) * rq + 0.5f) * scrvsize;
+		posOnPixel = p1 + (bx + r0) * (right / (float)scrhsize) + (by + r1) * (up / (float)scrvsize);
+	}
 	posOnLens = RandomPointOnLens( r2, r3, pos, aperture, right, up );
 	const float3 rayDir = normalize( posOnPixel - posOnLens );
 	// initialize path state
@@ -85,14 +100,14 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 __host__ void generateEyeRays( int smcount, Ray4* rayBuffer, float4* pathStateData,
 	const uint R0, const uint* blueNoise, const int pass,
 	const float aperture, const float3 camPos, const float3 right, const float3 up, const float3 p1,
-	const int4 screenParams )
+	const float distortion, const int4 screenParams )
 {
 	const int scrwidth = screenParams.x & 0xffff;
 	const int scrheight = screenParams.x >> 16;
 	const int scrspp = screenParams.y & 255;
 	const int pathCount = scrwidth * scrheight * scrspp;
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 256 ) / 256, 1 ), blockDim( 256, 1 );
-	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, pass, camPos, right, up, aperture, p1, screenParams, pathCount);
+	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, pass, camPos, right, up, aperture, p1, distortion, screenParams, pathCount);
 }
 
 // EOF

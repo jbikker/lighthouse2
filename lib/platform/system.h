@@ -186,6 +186,7 @@ __inline uint64_t calccrc64( unsigned char* pbData, int len )
 #define TRACKCHANGES public: bool Changed() { uint64_t currentcrc = crc64; \
 crc64 = CLEARCRC64; uint64_t newcrc = calccrc64( (uchar*)this, sizeof( *this ) ); \
 bool changed = newcrc != currentcrc; crc64 = newcrc; return changed; } \
+bool IsDirty() { uint64_t t = crc64; bool c = Changed(); crc64 = t; return c; } \
 void MarkAsDirty() { dirty++; } \
 void MarkAsNotDirty() { Changed(); } \
 private: uint64_t crc64 = CLEARCRC64; uint dirty = 0; \
@@ -203,6 +204,7 @@ void OpenConsole();
 bool FileIsNewer( const char* file1, const char* file2 );
 bool NeedsRecompile( const char* path, const char* target, const char* s1, const char* s2 = 0, const char* s3 = 0, const char* s4 = 0 );
 bool FileExists( const char* f );
+bool RemoveFile( const char* f);
 string TextFileRead( const char* _File );
 void TextFileWrite( const string& text, const char* _File );
 string LowerCase( string s );

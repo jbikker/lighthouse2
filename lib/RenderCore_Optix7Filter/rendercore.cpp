@@ -719,6 +719,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 	if (vars.filterEnabled) jitteredView.aperture = 0;
 	// render an image using OptiX
 	params.posLensSize = make_float4( jitteredView.pos.x, jitteredView.pos.y, jitteredView.pos.z, jitteredView.aperture );
+	params.distortion = 0 /* jitteredView.distortion */; // TODO: hard to make barrel distortion work with reprojection.
 	params.right = make_float3( right.x, right.y, right.z );
 	params.up = make_float3( up.x, up.y, up.z );
 	params.p1 = make_float3( jitteredView.p1.x, jitteredView.p1.y, jitteredView.p1.z );

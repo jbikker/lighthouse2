@@ -659,6 +659,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	// render an image using OptiX
 	params.posLensSize = make_float4( view.pos.x, view.pos.y, view.pos.z, view.aperture );
+	params.distortion = view.distortion;
 	params.right = make_float3( right.x, right.y, right.z );
 	params.up = make_float3( up.x, up.y, up.z );
 	params.p1 = make_float3( view.p1.x, view.p1.y, view.p1.z );

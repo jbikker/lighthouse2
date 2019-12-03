@@ -573,7 +573,7 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			weights.push_back( tmpWeights[v2idx] );
 		}
 		// build poses
-		for ( int s = (int)tmpPoses.size(), i = 0; i < s; i++ )
+		for (int s = (int)tmpPoses.size(), i = 0; i < s; i++)
 		{
 			auto& pose = tmpPoses[i];
 			poses[i].positions.push_back( pose.positions[v0idx] );
@@ -691,10 +691,10 @@ void HostMesh::SetPose( const HostSkin* skin )
 #if USE_PARALLEL_SETPOSE == 1
 #if 0
 	// use avx2 instruction
-	#define FMADD256(a,b,c) _mm256_fmadd_ps( (a),(b),(c) )
+#define FMADD256(a,b,c) _mm256_fmadd_ps( (a),(b),(c) )
 #else
 	// avx fallback (negligible impact on performance)
-	#define FMADD256(a,b,c) _mm256_add_ps( _mm256_mul_ps( (a), (b) ), (c) )
+#define FMADD256(a,b,c) _mm256_add_ps( _mm256_mul_ps( (a), (b) ), (c) )
 #endif
 	concurrency::parallel_for<int>( 0, (int)triangles.size(), [&]( int t ) {
 	#else
@@ -798,7 +798,7 @@ void HostMesh::SetPose( const HostSkin* skin )
 	#if USE_PARALLEL_SETPOSE == 1
 	} );
 #else
-}
+	}
 #endif
 #else
 	// transform original into vertex vector using skin matrices

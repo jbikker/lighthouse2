@@ -128,6 +128,7 @@ struct Params
 	float4 posLensSize;
 	float3 right, up, p1;
 	float geometryEpsilon;
+	float distortion;
 	int3 scrsize;
 	int pass, phase;
 	float j0, j1;

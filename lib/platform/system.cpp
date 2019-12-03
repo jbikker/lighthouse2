@@ -151,6 +151,12 @@ bool FileExists( const char* f )
 	return s.good();
 }
 
+bool RemoveFile( const char* f )
+{
+	if (!FileExists(f)) return false;
+	return !remove(f);
+}
+
 uint FileSize( string filename )
 {
 	std::ifstream s( filename );

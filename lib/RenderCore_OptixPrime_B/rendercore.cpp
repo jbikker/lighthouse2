@@ -59,7 +59,7 @@ void SetCounters( Counters* p );
 void generateEyeRays( int pathCount, Ray4* rayBuffer, float4* extensionRayExBuffer,
 	const uint R0, const uint* blueNoise, const int pass /* multiple of SPP */,
 	const float lensSize, const float3 camPos, const float3 right, const float3 up, const float3 p1,
-	const int4 screenParams );
+	const float distortion, const int4 screenParams );
 
 } // namespace lh2core
 
@@ -491,7 +491,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
 	generateEyeRays( SMcount, extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
 		RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken,
-		view.aperture, view.pos, right, up, view.p1, GetScreenParams() );
+		view.aperture, view.pos, right, up, view.p1, view.distortion, GetScreenParams() );
 	// start wavefront loop
 	RTPquery query;
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &query ) );

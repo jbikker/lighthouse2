@@ -58,14 +58,10 @@ class CoreTri
 public:
 #ifndef __CUDACC__
 	// on the host, instantiated classes should be initialized
-	CoreTri() { memset( this, 0, sizeof( CoreTri ) ); }
+	CoreTri() { memset( this, 0, sizeof( CoreTri ) ); ltriIdx = -1; }
 #endif
 	float u0, u1, u2;		// 12
-#ifndef __CUDACC__
-	int ltriIdx = -1;
-#else
 	int ltriIdx;			// 4, set only for emissive triangles, used for MIS
-#endif
 	float v0, v1, v2;		// 12
 	uint material;			// 4
 	float3 vN0;				// 12
@@ -403,6 +399,7 @@ struct ViewPyramid
 	float spreadAngle;
 	float imagePlane;
 	float focalDistance;
+	float distortion;
 #else
 	float3 pos = make_float3( 0 );
 	float3 p1 = make_float3( -1, -1, -1 );
@@ -412,6 +409,7 @@ struct ViewPyramid
 	float spreadAngle = 0.01f; // spread angle of center pixel
 	float imagePlane = 0.01f;
 	float focalDistance = 0.01f;
+	float distortion = 0.05f; // subtle barrel distortion
 #endif
 };
 

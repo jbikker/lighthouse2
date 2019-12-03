@@ -1,0 +1,38 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="fps_printer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="main_tools.h" />
+    <ClInclude Include="main_ui.h" />
+    <ClInclude Include="edit_ui.h" />
+    <ClInclude Include="debug_ui.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{f5265d6b-8f7b-4052-8581-1cdbc67d409e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\coc.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\coc.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\dof.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\dof.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\vignette.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\vignette.vert">
+      <Filter>shaders</Filter>
+    </None>
+  </ItemGroup>
+</Project>

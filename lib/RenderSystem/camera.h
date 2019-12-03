@@ -34,6 +34,7 @@ public:
 	float3 direction = make_float3( 0, 0, 1 );		// camera target
 	float focalDistance = 5.0f;						// distance of the focal plane
 	float aperture = EPSILON;						// aperture size
+	float distortion = 0.05f;						// barrel distortion
 	float brightness = 0.0f;						// combined with contrast:
 	float contrast = 0.0f;							// pragmatic representation of exposure
 	float gamma = 2.2f;								// monitor gamma
@@ -46,12 +47,13 @@ public:
 	void LookAt( const float3 O, const float3 T );	// position the camera at O, looking at T
 	void TranslateRelative( float3 T );				// move camera relative to orientation
 	void TranslateTarget( float3 T );				// move camera target; used for rotating camera
-	ViewPyramid GetView();							// calculate a view based on the setup
+	ViewPyramid GetView() const;					// calculate a view based on the setup
+	void WorldToScreenPos( const float3* W, float2* S, int count ) const;	// convert world pos to screen pos
 	void Serialize( const char* xmlFile = 0 );		// save the camera to an xml file
 	void Deserialize( const char* xmlFile );		// load the camera from an xml file
 	// private methods
 private:
-	void CalculateMatrix( float3& x, float3& y, float3& z );
+	void CalculateMatrix( float3& x, float3& y, float3& z ) const;
 	// private data
 private:
 	string xmlFile = "camera.dat";					// file the camera was loaded from, used for dtor

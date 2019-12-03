@@ -37,7 +37,7 @@ Camera::~Camera()
 //  |  Camera::CalculateMatrix                                                    |
 //  |  Helper function; constructs camera matrix.                           LH2'19|
 //  +-----------------------------------------------------------------------------+
-void Camera::CalculateMatrix( float3& x, float3& y, float3& z )
+void Camera::CalculateMatrix( float3& x, float3& y, float3& z ) const
 {
 	if (fabs( direction.y ) > 0.99f)
 	{
@@ -93,7 +93,7 @@ void Camera::TranslateTarget( float3 T )
 //  |  Camera::GetView                                                            |
 //  |  Create a ViewPyramid for rendering in the RenderCore layer.          LH2'19|
 //  +-----------------------------------------------------------------------------+
-ViewPyramid Camera::GetView()
+ViewPyramid Camera::GetView() const
 {
 	ViewPyramid view;
 	float3 right, up, forward;
@@ -107,12 +107,44 @@ ViewPyramid Camera::GetView()
 	view.p3 = C - screenSize * right * focalDistance * aspectRatio - screenSize * focalDistance * up;
 	view.aperture = aperture;
 	view.focalDistance = focalDistance;
+	view.distortion = distortion;
 	// BDPT
 	float3 unitP1 = C - screenSize * right * aspectRatio + screenSize * up;
 	float3 unitP2 = C + screenSize * right * aspectRatio + screenSize * up;
 	float3 unitP3 = C - screenSize * right * aspectRatio - screenSize * up;
-	view.imagePlane = length(unitP1 - unitP2) * length(unitP1 - unitP3);
+	view.imagePlane = length( unitP1 - unitP2 ) * length( unitP1 - unitP3 );
 	return view;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  Camera::WorldToScreenPos                                                   |
+//  |  Converts an array of world positions to screen positions.                  |
+//  |  Helper function for Joram's navmesh code.                            LH2'19|
+//  +-----------------------------------------------------------------------------+
+void Camera::WorldToScreenPos( const float3* W, float2* S, int count ) const
+{
+	// calculate camera axis
+	ViewPyramid p = GetView();
+	float3 p1p2 = p.p2 - p.p1, p3p1 = p.p1 - p.p3;		// screen edges
+	float3 f = ((p.p3 - p.pos) + (p.p2 - p.pos)) / 2;	// focal point
+	float3 x = normalize( p1p2 );						// camera unit axis
+	float3 y = normalize( p3p1 );						// camera unit axis
+	float3 z = normalize( f );							// camera unit axis
+	float invflen = 1 / length( f );					// the inversed focal distance
+	float invxscrlen = 1 / (length( p1p2 ) * .5f);		// half the screen width inversed
+	float invyscrlen = 1 / (length( p3p1 ) * .5f);		// half the screen height inversed
+
+	// transform coordinates
+	float3 dir;
+	for (int i = 0; i < count; i++)
+	{
+		dir = W[i] - p.pos;								// vector from camera to pos
+		dir = { dot( dir, x ), dot( dir, y ), dot( dir, z ) }; // make dir relative to camera
+		if (dir.z < 0) dir *= {1000.0f, 1000.0f, 0.0f};	// prevent looking backwards (TODO: improve)
+		dir *= (1 / (dir.z * invflen));					// trim dir to hit the screen
+		dir.x *= invxscrlen; dir.y *= invyscrlen;		// convert to screen scale
+		S[i] = make_float2( dir );
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -139,6 +171,7 @@ void Camera::Serialize( const char* xmlFileName )
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "contrast" ) ))->SetText( contrast );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "gamma" ) ))->SetText( gamma );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "aperture" ) ))->SetText( aperture );
+	((XMLElement*)root->InsertEndChild( doc.NewElement( "distortion" ) ))->SetText( distortion );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "focalDistance" ) ))->SetText( focalDistance );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "clampValue" ) ))->SetText( clampValue );
 	((XMLElement*)root->InsertEndChild( doc.NewElement( "tonemapper" ) ))->SetText( tonemapper );
@@ -172,6 +205,7 @@ void Camera::Deserialize( const char* xmlFileName )
 	if (element = root->FirstChildElement( "contrast" )) element->QueryFloatText( &contrast );
 	if (element = root->FirstChildElement( "gamma" )) element->QueryFloatText( &gamma );
 	if (element = root->FirstChildElement( "aperture" )) element->QueryFloatText( &aperture );
+	if (element = root->FirstChildElement( "distortion" )) element->QueryFloatText( &distortion );
 	if (element = root->FirstChildElement( "focalDistance" )) element->QueryFloatText( &focalDistance );
 	if (element = root->FirstChildElement( "clampValue" )) element->QueryFloatText( &clampValue );
 	if (element = root->FirstChildElement( "tonemapper" )) element->QueryIntText( &tonemapper );

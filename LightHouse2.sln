@@ -90,6 +90,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ai_debugger", "apps\ai_debu
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pathfinding", "lib\PathFinding\PathFinding.vcxproj", "{85133521-444D-4EEF-9FC6-435847A9CC16}"
+	ProjectSection(ProjectDependencies) = postProject
+		{07290C5A-6E60-4C28-BEA7-FFFEA042E5CA} = {07290C5A-6E60-4C28-BEA7-FFFEA042E5CA}
+		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

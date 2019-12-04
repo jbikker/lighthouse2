@@ -26,9 +26,9 @@ __constant__ CorePointLight* pointLights;
 __constant__ CoreSpotLight* spotLights;
 __constant__ CoreDirectionalLight* directionalLights;
 __constant__ int4 lightCounts; // area, point, spot, directional
-__constant__ uint* argb32;
+__constant__ uchar4* argb32;
 __constant__ float4* argb128;
-__constant__ uint* nrm32;
+__constant__ uchar4* nrm32;
 __constant__ float3* skyPixels;
 __constant__ int skywidth;
 __constant__ int skyheight;

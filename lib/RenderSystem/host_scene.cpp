@@ -187,9 +187,9 @@ void HostScene::Init()
 //  |  Create a mesh specified by a file name and data dir, apply a scale, add    |
 //  |  the mesh to the list of meshes and return the mesh ID.               LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddMesh( const char* objFile, const char* dir, const float scale )
+int HostScene::AddMesh( const char* objFile, const char* dir, const float scale, const bool flatShaded )
 {
-	HostMesh* newMesh = new HostMesh( objFile, dir, scale );
+	HostMesh* newMesh = new HostMesh( objFile, dir, scale, flatShaded );
 	newMesh->ID = (int)meshPool.size();
 	meshPool.push_back( newMesh );
 	return newMesh->ID;

@@ -172,9 +172,9 @@ LH2_DEVFUNC float3 RandomBarycentrics( const float r0 )
 LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, const float3& N, float& pickProb, float& lightPdf, float3& lightColor )
 {
 	const float lightCount = AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
-#ifdef ISLIGHTS
 	// predetermine the barycentrics for any area light we sample
 	float3 bary = RandomBarycentrics( r0 );
+#ifdef ISLIGHTS
 	// importance sampling of lights, pickProb is per-light probability
 	float potential[MAXISLIGHTS];
 	float sum = 0, total = 0;
@@ -269,9 +269,9 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 	float& lightPdf, float& pdfPos, float& pdfDir )
 {
 	const float lightCount = AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
-#ifdef ISLIGHTS
 	// predetermine the barycentrics for any area light we sample
 	float3 bary = RandomBarycentrics( r0 );
+#ifdef ISLIGHTS
 	// importance sampling of lights, pickProb is per-light probability
 	float potential[MAXISLIGHTS];
 	float sum = 0, total = 0;

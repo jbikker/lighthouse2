@@ -81,9 +81,9 @@ void BindVBO( const uint idx, const uint N, const GLuint id )
 void CheckShader( GLuint shader, const char* vshader, const char* fshader )
 {
 	char buffer[1024];
-	memset( buffer, 0, 1024 );
+	memset( buffer, 0, sizeof( buffer ) );
 	GLsizei length = 0;
-	glGetShaderInfoLog( shader, 1024, &length, buffer );
+	glGetShaderInfoLog( shader, sizeof( buffer ), &length, buffer );
 	CheckGL();
 	FATALERROR_IF( length > 0 && strstr( buffer, "ERROR" ), "Shader compile error:\n%s", buffer );
 }
@@ -91,9 +91,9 @@ void CheckShader( GLuint shader, const char* vshader, const char* fshader )
 void CheckProgram( GLuint id, const char* vshader, const char* fshader )
 {
 	char buffer[1024];
-	memset( buffer, 0, 1024 );
+	memset( buffer, 0, sizeof( buffer ) );
 	GLsizei length = 0;
-	glGetProgramInfoLog( id, 1024, &length, buffer );
+	glGetProgramInfoLog( id, sizeof( buffer ), &length, buffer );
 	CheckGL();
 	FATALERROR_IF( length > 0, "Shader link error:\n%s", buffer );
 }

@@ -284,8 +284,45 @@ void NavMeshShader::RemovePolysFromScene()
 //  +-----------------------------------------------------------------------------+
 void NavMeshShader::AddVertsToScene()
 {
+	mat4 scale = mat4::Scale(m_vertWidth);
 	for (std::vector<Vert>::iterator i = m_verts.begin(); i != m_verts.end(); i++)
-		i->instID = m_renderer->AddInstance(m_vertMeshID, mat4::Translate(*i->pos) * mat4::Scale(m_vertWidth));
+	{
+		// Checking if vert is part of an unidirectional OMC
+		bool addArrowCone = false;
+		if (isOffMeshVert(i->idx)) for (auto p = m_polys.rbegin(); p != m_polys.rend(); p++)
+			if (p->ref == i->polys[0] && !p->poly && p->omc)
+				{
+					if (!(p->omc->flags & DT_OFFMESH_CON_BIDIR)) addArrowCone = true;
+					scale = mat4::Scale(p->omc->rad); // Retrieve OMC end-point radius
+					break;
+				}
+
+		// If part of an unidirectional OMC, find the edge
+		if (addArrowCone) for (auto e = m_edges.begin(); e != m_edges.end(); e++)
+		{
+			if (e->v1 == i->idx) // i is the start of an OMC
+			{
+				addArrowCone = false;
+				break;
+			}
+			if (e->v2 == i->idx) // i is the end of an OMC
+			{
+				// calculate the edge angle to find the arrow cone transform
+				float3 v1 = *m_verts[e->v1].pos, v2 = *m_verts[e->v2].pos;
+				float3 v1v2 = normalize(v2 - v1);
+				mat4 sca = mat4::Scale(make_float3(m_arrowWidth, m_arrowHeight, m_arrowWidth));
+				mat4 rot = mat4::Rotate(normalize(cross({ 0, 1, 0 }, v1v2)), -acosf(v1v2.y));
+				mat4 tra = mat4::Translate(v2 - v1v2 * m_arrowHeight * .5f);
+				i->instID = m_renderer->AddInstance(m_arrowMeshID, tra * rot * sca);
+				addArrowCone = true;
+				break;
+			}
+		}
+
+		// add a normal vertex
+		if (!addArrowCone && !i->polys.empty())
+			i->instID = m_renderer->AddInstance(m_vertMeshID, mat4::Translate(*i->pos) * scale);
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -312,8 +349,8 @@ void NavMeshShader::AddEdgesToScene()
 	{
 		float3 v1 = *m_verts[i->v1].pos, v2 = *m_verts[i->v2].pos;
 		float3 v1v2 = v2 - v1; float len = length(v1v2); v1v2 /= len;
-		mat4 sca = mat4::Scale(make_float3(m_edgeWidth, len, m_edgeWidth));
-		mat4 rot = mat4::Rotate(cross({ 0, 1, 0 }, v1v2), -acosf(v1v2.y));
+		mat4 sca = mat4::Scale(make_float3(m_edgeWidth, len - m_vertWidth, m_edgeWidth));
+		mat4 rot = mat4::Rotate(normalize(cross({ 0, 1, 0 }, v1v2)), -acosf(v1v2.y));
 		mat4 tra = mat4::Translate((v1 + v2) / 2);
 		i->instID = m_renderer->AddInstance(m_edgeMeshID, tra * rot * sca);
 	}
@@ -870,7 +907,6 @@ void NavMeshShader::Clean()
 	m_verts.clear();
 	m_edges.clear();
 	m_polys.clear();
-	m_OMCs.clear();
 
 	m_path = 0;
 	m_pathStart = m_pathEnd = 0;

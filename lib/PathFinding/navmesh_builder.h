@@ -19,7 +19,7 @@
 
 #include "rendersystem.h"	   // HostScene, HostMesh, HostTri, float3, int3, FileExists
 #include "navmesh_common.h"    // NavMeshStatus, NavMeshConfig
-#include "navmesh_navigator.h" // NavMeshNavigator, SerializeNavMesh, DeserializeNavMesh
+#include "navmesh_navigator.h" // NavMeshNavigator
 
 namespace lighthouse2 {
 

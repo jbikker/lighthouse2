@@ -30,7 +30,7 @@ class CoreMesh
 public:
 	// constructor / destructor
 	CoreMesh() = default;
-	CoreMesh::~CoreMesh();
+	~CoreMesh();
 	// methods
 	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags = 0 );
 	// data

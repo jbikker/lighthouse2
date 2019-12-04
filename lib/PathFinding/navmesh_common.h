@@ -23,6 +23,9 @@ namespace lighthouse2 {
 #define DETOUR_MAX_POLYGON_AREA_TYPES 64
 #define PF_NAVMESH_FILE_EXTENTION ".navmesh"
 #define PF_NAVMESH_CONFIG_FILE_EXTENTION ".navmesh.config"
+#define PF_NAVMESH_PMESH_FILE_EXTENTION ".navmesh.pmesh"
+#define PF_NAVMESH_DMESH_FILE_EXTENTION ".navmesh.dmesh"
+#define PF_NAVMESH_OMC_FILE_EXTENTION ".navmesh.omc"
 
 //  +-----------------------------------------------------------------------------+
 //  |  NavMeshErrorCode                                                           |
@@ -247,10 +250,7 @@ struct NavMeshConfig
 	void SetID(const char* ID) { m_id = ID; };
 	void AddFlag(const char* label) { m_flags.AddFlag(label); };
 	void AddAreaType(const char* label, float defaultTraversalCost = 0.0f) { m_areas.AddArea(label, defaultTraversalCost); };
-
 	void ScaleSettings(float scale);
-	void Save(const char* filename) const;
-	NavMeshStatus Load(const char* filename);
 };
 
 } // namespace Lighthouse2

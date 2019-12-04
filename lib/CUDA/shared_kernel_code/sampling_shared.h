@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-   THIS IS A SHARED FILE: used in 
+   THIS IS A SHARED FILE: used in
    - RenderCore_OptixPrime_b
    - RenderCore_Optix7
    - RenderCore_Optix7Filter
@@ -26,10 +26,10 @@ LH2_DEVFUNC float mitchellNetravali( const float v )
 	else if (x < 2) return 1.0f / 6.0f * ((-B - 6 * C) * x3 + (6 * B + 30 * C) * x2 + (-12 * B - 48 * C) * x + (8 * B + 24 * C)); else return 0.0f;
 }
 
-LH2_DEVFUNC float4 __uchar4_to_float4( const uint v4 )
+LH2_DEVFUNC float4 __uchar4_to_float4( const uchar4 v4 )
 {
 	const float r = 1.0f / 256.0f;
-	return make_float4( (float)(v4 & 255) * r, (float)((v4 >> 8) & 255) * r, (float)((v4 >> 16) & 255) * r, (float)(v4 >> 24) * r );
+	return make_float4( v4.x * r, v4.y * r, v4.z * r, v4.w * r );
 }
 
 LH2_DEVFUNC float4 FetchTexel( const float2 texCoord, const int o, const int w, const int h,
@@ -203,5 +203,68 @@ LH2_DEVFUNC void ReadTexelConsistent2( const float4* buffer, const float4* prevW
 	direct = make_float3( w0 * pd0 + w1 * pd1 + w2 * pd2 + w3 * pd3 ) * (1.0f / sum);
 	indirect = make_float3( w0 * pi0 + w1 * pi1 + w2 * pi2 + w3 * pi3 ) * (1.0f / sum);
 }
+
+#if 0
+
+template <typename T>
+__device__ T CoreTexture<T>::Evaluate( float2 uv ) const
+{
+	switch ( type )
+	{
+	case Constant:
+		return constant;
+	case Imagemap:
+		if ( imagemap.trilinear )
+			return FetchTexelTrilinear(
+				0, uv,
+				imagemap.textureOffset,
+				imagemap.width,
+				imagemap.height );
+		else
+			return FetchTexel(
+				uv,
+				imagemap.textureOffset,
+				imagemap.width,
+				imagemap.height );
+	}
+	return T{};
+}
+
+template <>
+__device__ float CoreTexture<float>::Evaluate( float2 uv ) const
+{
+	switch ( type )
+	{
+	case Constant:
+		return constant;
+	}
+	return 0.f;
+}
+
+template <>
+__device__ float3 CoreTexture<float3>::Evaluate( float2 uv ) const
+{
+	switch ( type )
+	{
+	case Constant:
+		return constant;
+	case Imagemap:
+		return make_float3(
+			imagemap.trilinear
+				? FetchTexelTrilinear(
+					  0, uv,
+					  imagemap.textureOffset,
+					  imagemap.width,
+					  imagemap.height )
+				: FetchTexel(
+					  uv,
+					  imagemap.textureOffset,
+					  imagemap.width,
+					  imagemap.height ) );
+	}
+	return make_float3( 0.f );
+}
+
+#endif
 
 // EOF

@@ -57,7 +57,7 @@
 
 #define SCENE_CENTER (make_float3(0.0f))
 #define SCENE_RADIUS  100.0f
-#define SCENE_AREA (PI * SCENE_RADIUS * SCENE_RADIUS)  
+#define SCENE_AREA (PI * SCENE_RADIUS * SCENE_RADIUS)
 
 #define RadiusFactor 0.01f
 
@@ -85,7 +85,7 @@
 #include "FreeImage.h"		// for loading blue noise
 #include "shared_host_code/cudatools.h"
 #include "shared_host_code/interoptexture.h"
-#include "optix_prime/optix_prime.h"
+#include <optix_prime/optix_prime.h>
 
 #include <optixu/optixpp_namespace.h>
 using namespace optix;
@@ -122,7 +122,7 @@ struct BiPathState
     float4 data5; // eye_beta eye_p
     float4 data6; // eye_pos eye_pdf_solid
     float4 data7; // eye_dir queryId
-    
+
     float4 light_intersection;
     float4 eye_intersection;
 
@@ -144,7 +144,7 @@ struct Counters
 
     uint visibilityRays;
     uint randomWalkRays;
-	
+
 	int probedInstid;
 	int probedTriid;
 	float probedDist;

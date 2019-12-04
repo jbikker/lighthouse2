@@ -64,7 +64,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// gather data by reading sets of four floats for optimal throughput
 	const float4 O4 = pathStates[jobIndex];				// ray origin xyz, w can be ignored
 	const float4 D4 = pathStates[jobIndex + stride];	// ray direction xyz
-	float4 T4 = pathLength == 1 ? make_float4( 1 ) /* faster */ : pathStates[jobIndex + stride * 2]; // path thoughput rgb 
+	float4 T4 = pathLength == 1 ? make_float4( 1 ) /* faster */ : pathStates[jobIndex + stride * 2]; // path thoughput rgb
 	const float4 hitData = hits[jobIndex];
 	const float bsdfPdf = T4.w;
 

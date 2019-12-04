@@ -75,48 +75,46 @@ using namespace lh2core;
 OptixDeviceContext RenderCore::optixContext = 0;
 struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
-char* ParseOptixError( OptixResult r )
+const char* ParseOptixError( OptixResult r )
 {
-	char* t = new char[256];
 	switch (r)
 	{
-	case 0: strcpy_s( t, 256, "NO ERROR" ); break;
-	case 7001: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_VALUE" ); break;
-	case 7002: strcpy_s( t, 256, "OPTIX_ERROR_HOST_OUT_OF_MEMORY" ); break;
-	case 7003: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_OPERATION" ); break;
-	case 7004: strcpy_s( t, 256, "OPTIX_ERROR_FILE_IO_ERROR" ); break;
-	case 7005: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FILE_FORMAT" ); break;
-	case 7010: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_INVALID_PATH" ); break;
-	case 7011: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_PERMISSION_ERROR" ); break;
-	case 7012: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR" ); break;
-	case 7013: strcpy_s( t, 256, "OPTIX_ERROR_DISK_CACHE_INVALID_DATA" ); break;
-	case 7050: strcpy_s( t, 256, "OPTIX_ERROR_LAUNCH_FAILURE" ); break;
-	case 7051: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_DEVICE_CONTEXT" ); break;
-	case 7052: strcpy_s( t, 256, "OPTIX_ERROR_CUDA_NOT_INITIALIZED" ); break;
-	case 7200: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_PTX" ); break;
-	case 7201: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_LAUNCH_PARAMETER" ); break;
-	case 7202: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_PAYLOAD_ACCESS" ); break;
-	case 7203: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_ATTRIBUTE_ACCESS" ); break;
-	case 7204: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FUNCTION_USE" ); break;
-	case 7205: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_FUNCTION_ARGUMENTS" ); break;
-	case 7250: strcpy_s( t, 256, "OPTIX_ERROR_PIPELINE_OUT_OF_CONSTANT_MEMORY" ); break;
-	case 7251: strcpy_s( t, 256, "OPTIX_ERROR_PIPELINE_LINK_ERROR" ); break;
-	case 7299: strcpy_s( t, 256, "OPTIX_ERROR_INTERNAL_COMPILER_ERROR" ); break;
-	case 7300: strcpy_s( t, 256, "OPTIX_ERROR_DENOISER_MODEL_NOT_SET" ); break;
-	case 7301: strcpy_s( t, 256, "OPTIX_ERROR_DENOISER_NOT_INITIALIZED" ); break;
-	case 7400: strcpy_s( t, 256, "OPTIX_ERROR_ACCEL_NOT_COMPATIBLE" ); break;
-	case 7800: strcpy_s( t, 256, "OPTIX_ERROR_NOT_SUPPORTED" ); break;
-	case 7801: strcpy_s( t, 256, "OPTIX_ERROR_UNSUPPORTED_ABI_VERSION" ); break;
-	case 7802: strcpy_s( t, 256, "OPTIX_ERROR_FUNCTION_TABLE_SIZE_MISMATCH" ); break;
-	case 7803: strcpy_s( t, 256, "OPTIX_ERROR_INVALID_ENTRY_FUNCTION_OPTIONS" ); break;
-	case 7804: strcpy_s( t, 256, "OPTIX_ERROR_LIBRARY_NOT_FOUND" ); break;
-	case 7805: strcpy_s( t, 256, "OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND" ); break;
-	case 7900: strcpy_s( t, 256, "OPTIX_ERROR_CUDA_ERROR" ); break;
-	case 7990: strcpy_s( t, 256, "OPTIX_ERROR_INTERNAL_ERROR" ); break;
-	case 7999: strcpy_s( t, 256, "OPTIX_ERROR_UNKNOWN" ); break;
-	default: strcpy_s( t, 256, "UNKNOWN ERROR" ); break;
+	case OPTIX_SUCCESS: return "NO ERROR";
+	case OPTIX_ERROR_INVALID_VALUE: return "OPTIX_ERROR_INVALID_VALUE";
+	case OPTIX_ERROR_HOST_OUT_OF_MEMORY: return "OPTIX_ERROR_HOST_OUT_OF_MEMORY";
+	case OPTIX_ERROR_INVALID_OPERATION: return "OPTIX_ERROR_INVALID_OPERATION";
+	case OPTIX_ERROR_FILE_IO_ERROR: return "OPTIX_ERROR_FILE_IO_ERROR";
+	case OPTIX_ERROR_INVALID_FILE_FORMAT: return "OPTIX_ERROR_INVALID_FILE_FORMAT";
+	case OPTIX_ERROR_DISK_CACHE_INVALID_PATH: return "OPTIX_ERROR_DISK_CACHE_INVALID_PATH";
+	case OPTIX_ERROR_DISK_CACHE_PERMISSION_ERROR: return "OPTIX_ERROR_DISK_CACHE_PERMISSION_ERROR";
+	case OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR: return "OPTIX_ERROR_DISK_CACHE_DATABASE_ERROR";
+	case OPTIX_ERROR_DISK_CACHE_INVALID_DATA: return "OPTIX_ERROR_DISK_CACHE_INVALID_DATA";
+	case OPTIX_ERROR_LAUNCH_FAILURE: return "OPTIX_ERROR_LAUNCH_FAILURE";
+	case OPTIX_ERROR_INVALID_DEVICE_CONTEXT: return "OPTIX_ERROR_INVALID_DEVICE_CONTEXT";
+	case OPTIX_ERROR_CUDA_NOT_INITIALIZED: return "OPTIX_ERROR_CUDA_NOT_INITIALIZED";
+	case OPTIX_ERROR_INVALID_PTX: return "OPTIX_ERROR_INVALID_PTX";
+	case OPTIX_ERROR_INVALID_LAUNCH_PARAMETER: return "OPTIX_ERROR_INVALID_LAUNCH_PARAMETER";
+	case OPTIX_ERROR_INVALID_PAYLOAD_ACCESS: return "OPTIX_ERROR_INVALID_PAYLOAD_ACCESS";
+	case OPTIX_ERROR_INVALID_ATTRIBUTE_ACCESS: return "OPTIX_ERROR_INVALID_ATTRIBUTE_ACCESS";
+	case OPTIX_ERROR_INVALID_FUNCTION_USE: return "OPTIX_ERROR_INVALID_FUNCTION_USE";
+	case OPTIX_ERROR_INVALID_FUNCTION_ARGUMENTS: return "OPTIX_ERROR_INVALID_FUNCTION_ARGUMENTS";
+	case OPTIX_ERROR_PIPELINE_OUT_OF_CONSTANT_MEMORY: return "OPTIX_ERROR_PIPELINE_OUT_OF_CONSTANT_MEMORY";
+	case OPTIX_ERROR_PIPELINE_LINK_ERROR: return "OPTIX_ERROR_PIPELINE_LINK_ERROR";
+	case OPTIX_ERROR_INTERNAL_COMPILER_ERROR: return "OPTIX_ERROR_INTERNAL_COMPILER_ERROR";
+	case OPTIX_ERROR_DENOISER_MODEL_NOT_SET: return "OPTIX_ERROR_DENOISER_MODEL_NOT_SET";
+	case OPTIX_ERROR_DENOISER_NOT_INITIALIZED: return "OPTIX_ERROR_DENOISER_NOT_INITIALIZED";
+	case OPTIX_ERROR_ACCEL_NOT_COMPATIBLE: return "OPTIX_ERROR_ACCEL_NOT_COMPATIBLE";
+	case OPTIX_ERROR_NOT_SUPPORTED: return "OPTIX_ERROR_NOT_SUPPORTED";
+	case OPTIX_ERROR_UNSUPPORTED_ABI_VERSION: return "OPTIX_ERROR_UNSUPPORTED_ABI_VERSION";
+	case OPTIX_ERROR_FUNCTION_TABLE_SIZE_MISMATCH: return "OPTIX_ERROR_FUNCTION_TABLE_SIZE_MISMATCH";
+	case OPTIX_ERROR_INVALID_ENTRY_FUNCTION_OPTIONS: return "OPTIX_ERROR_INVALID_ENTRY_FUNCTION_OPTIONS";
+	case OPTIX_ERROR_LIBRARY_NOT_FOUND: return "OPTIX_ERROR_LIBRARY_NOT_FOUND";
+	case OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND: return "OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND";
+	case OPTIX_ERROR_CUDA_ERROR: return "OPTIX_ERROR_CUDA_ERROR";
+	case OPTIX_ERROR_INTERNAL_ERROR: return "OPTIX_ERROR_INTERNAL_ERROR";
+	case OPTIX_ERROR_UNKNOWN: return "OPTIX_ERROR_UNKNOWN";
+	default: return "UNKNOWN ERROR";
 	};
-	return t;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -488,7 +486,7 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 	SyncStorageType( TexelStorage::ARGB32 );
 	SyncStorageType( TexelStorage::ARGB128 );
 	SyncStorageType( TexelStorage::NRM32 );
-	// Notes: 
+	// Notes:
 	// - the three types are copied from the original HostTexture pixel data (to which the
 	//   descriptors point) straight to the GPU. There is no pixel storage on the host
 	//   in the RenderCore.
@@ -808,12 +806,15 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 			shading->DevPtr(), motion->DevPtr(), moments->DevPtr(), prevMoments->DevPtr(), deltaDepth->DevPtr(),
 			prevView, j0, j1, prevj0, prevj1,
 			scrwidth, scrheight, samplesTaken, vars.filterClampDirect, vars.filterClampIndirect, converge == Restart ? 0 : 1 );
+#ifdef _MSC_VER
+		// TODO: Cross-compatible way of passing key input FROM APP down to RenderCore
 		if (GetAsyncKeyState( VK_F4 ))
 		{
 			finalizeFilterDebug( scrwidth, scrheight, features->DevPtr(), worldPos->DevPtr(), prevWorldPos->DevPtr(),
 				deltaDepth->DevPtr(), motion->DevPtr(), moments->DevPtr(), shading->DevPtr() );
 		}
 		else
+#endif
 		{
 			applyFilter( 1, shading, filteredIN, filteredOUT );
 			applyFilter( 2, filteredOUT, 0, filteredIN );

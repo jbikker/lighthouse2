@@ -193,9 +193,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback( VkDebugUtilsMessageSeverity
 		break;
 	}
 
-	char buffer[4096];
-	snprintf( buffer, sizeof( buffer ), "Vulkan Validation Layer: [Severity: %s] [Type: %s] : %s\n", severity, type, pCallbackData->pMessage );
-	printf( "%s", buffer );
+	printf( "Vulkan Validation Layer: [Severity: %s] [Type: %s] : %s\n", severity, type, pCallbackData->pMessage );
 
 	return VK_FALSE;
 }

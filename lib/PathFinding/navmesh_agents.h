@@ -71,14 +71,16 @@ protected:
 	float m_targetReached = 1.0f; // distance at which to switch to the next target
 
 	NavMeshNavigator* m_navmesh;
-	int m_maxPathCount;
+	dtQueryFilter m_filter;							// traversal costs and polygon restrictions
+	std::vector<NavMeshNavigator::PathNode> m_path; // should NEVER reallocate, invalidates pointers
+	float3* m_pathEnd = 0;							// final target, also indicates if it should move at all
+	int m_maxPathCount;				// maximum number of path nodes the agent can hold
 	int m_pathCount; // number of calculated targets in path array
 	int m_targetIdx; // path array index of current target
-	std::vector<NavMeshNavigator::PathNode> m_path; // should NEVER reallocate, invalidates pointers
-	float3* m_pathEnd = 0; // final target, also indicates if it should move at all
-	bool m_alive = true, m_pathEndOwner = false;
+	bool m_alive = true;			// whether this agent exists
+	bool m_pathEndOwner = false;	// whether m_pathEnd is owned by this instance or given
+	bool m_onOMC = false;			// whether the Agent is currently traversing an OMC
 	bool m_reachable = false; // whether a path to the given end target seems possible at this point
-	dtQueryFilter m_filter; // traversal costs and polygon restrictions
 
 	inline float3 SteeringSeek() const { return m_moveDir * m_maxLinVel; };
 	inline float3 SteeringArrival() const { return m_moveDir * m_maxLinVel * (m_nextTarDist / m_arrival); };

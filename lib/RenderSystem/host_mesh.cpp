@@ -75,9 +75,9 @@ HostMesh::HostMesh( const int triCount )
 	vertices.resize( triCount * 3 );
 }
 
-HostMesh::HostMesh( const char* file, const char* dir, const float scale )
+HostMesh::HostMesh( const char* file, const char* dir, const float scale, const bool flatShaded )
 {
-	LoadGeometry( file, dir, scale );
+	LoadGeometry( file, dir, scale, flatShaded );
 }
 
 HostMesh::HostMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride )
@@ -108,7 +108,7 @@ HostMesh::~HostMesh()
 //  |  HostMesh::LoadGeometry                                                     |
 //  |  Load geometry data from disk.                                        LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMesh::LoadGeometry( const char* file, const char* dir, const float scale )
+void HostMesh::LoadGeometry( const char* file, const char* dir, const float scale, const bool flatShaded )
 {
 	// process supplied file name
 	mat4 transform = mat4::Scale( scale ); // may include scale, translation, axis exchange
@@ -116,7 +116,7 @@ void HostMesh::LoadGeometry( const char* file, const char* dir, const float scal
 	string extension = GetFilePathExtension( cleanFileName );
 	if (extension.compare( "obj" ) == 0)
 	{
-		LoadGeometryFromOBJ( cleanFileName.c_str(), dir, transform );
+		LoadGeometryFromOBJ( cleanFileName.c_str(), dir, transform, flatShaded );
 	}
 	else
 	{
@@ -128,7 +128,7 @@ void HostMesh::LoadGeometry( const char* file, const char* dir, const float scal
 //  |  HostMesh::LoadGeometryFromObj                                              |
 //  |  Load an obj file using tinyobj.                                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform )
+void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform, const bool flatShaded )
 {
 	// load obj file
 	tinyobj::attrib_t attrib;
@@ -171,6 +171,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	for (uint s = (uint)shapes.size(), i = 0; i < s; i++)
 	{
 		vector<tinyobj::index_t>& indices = shapes[i].mesh.indices;
+		if (flatShaded) for (uint s = (uint)indices.size(), f = 0; f < s; f++ ) alphas[indices[f].normal_index] = 1; else 
 		for (uint s = (uint)indices.size(), f = 0; f < s; f += 3)
 		{
 			const int idx0 = indices[f + 0].vertex_index, nidx0 = indices[f + 0].normal_index;
@@ -179,9 +180,9 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			const float3 vert0 = make_float3( attrib.vertices[idx0 * 3 + 0], attrib.vertices[idx0 * 3 + 1], attrib.vertices[idx0 * 3 + 2] );
 			const float3 vert1 = make_float3( attrib.vertices[idx1 * 3 + 0], attrib.vertices[idx1 * 3 + 1], attrib.vertices[idx1 * 3 + 2] );
 			const float3 vert2 = make_float3( attrib.vertices[idx2 * 3 + 0], attrib.vertices[idx2 * 3 + 1], attrib.vertices[idx2 * 3 + 2] );
-			const float3 vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
-			const float3 vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
-			const float3 vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
+			float3 vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
+			float3 vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
+			float3 vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
 			float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
 			if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
 			// loop over vertices
@@ -249,6 +250,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			const float3 e2 = tri.vertex2 - tri.vertex0;
 			float3 N = normalize( cross( e1, e2 ) );
 			if (dot( N, tri.vN0 ) < 0) N *= -1.0f; // flip face normal if not consistent with vertex normal
+			if (flatShaded) tri.vN0 = tri.vN1 = tri.vN2 = N;
 			if (tidx0 > -1)
 			{
 				tri.u0 = attrib.texcoords[tidx0 * 2 + 0], tri.v0 = attrib.texcoords[tidx0 * 2 + 1];

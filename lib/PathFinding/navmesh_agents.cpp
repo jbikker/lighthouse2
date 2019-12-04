@@ -39,17 +39,34 @@ bool Agent::UpdateMovement(float deltaTime)
 	// Check distance to target
 	m_moveDir = m_path[m_targetIdx].pos - m_rb->m_pos;
 	m_nextTarDist = length(m_moveDir);
-	if (m_nextTarDist < m_targetReached) // target reached
+	const dtPoly* poly = m_navmesh->GetPoly(m_path[m_targetIdx].poly);
+
+	// When OMC radius reached, teleport to OMC start
+	if (!m_onOMC && poly &&
+		poly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION &&
+		m_nextTarDist <= m_navmesh->GetOMC(m_path[m_targetIdx].poly)->rad)
 	{
-		if (m_targetIdx < m_pathCount - 1)
+		m_rb->m_pos = m_path[m_targetIdx].pos;
+		m_nextTarDist = 0;
+	}
+
+	// When current target reached
+	if (m_nextTarDist < m_targetReached)
+	{
+		// if agent was traversing an OMC, it just finished doing so
+		if (m_onOMC) m_onOMC = false;
+		// if not, but the reached poly is an OMC, it is now traversing the OMC
+		else if (poly &&  poly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
+			m_onOMC = true;
+
+		if (m_targetIdx < m_pathCount - 1) // if there's another target
 		{
 			m_targetIdx++; // next path target
 			m_moveDir = m_path[m_targetIdx].pos - m_rb->m_pos;
 			m_nextTarDist = length(m_moveDir);
 		}
-		else
+		else // if there are no targets left
 		{
-			// out of targets
 			for (int i = 0; i < m_pathCount-1; i++) m_path[i] = m_path[m_pathCount-1]; // set all path nodes to target
 			if (length(m_path[m_pathCount - 1].pos - *m_pathEnd) < m_targetReached)
 			{
@@ -81,7 +98,8 @@ bool Agent::UpdateMovement(float deltaTime)
 bool Agent::UpdateNavigation(float deltaTime)
 {
 	if (!m_pathEnd) return false;
-	if (m_navmesh->FindPathConstSize(m_rb->m_pos, *m_pathEnd, m_path.data(), m_pathCount, m_reachable, m_maxPathCount, &m_filter).Success())
+	float3 tmpPos = (m_onOMC ? m_path[m_targetIdx].pos : m_rb->m_pos); // can't turn back on an OMC
+	if (m_navmesh->FindPathConstSize(tmpPos, *m_pathEnd, m_path.data(), m_pathCount, m_reachable, m_maxPathCount, &m_filter).Success())
 		m_targetIdx = 0;
 	for (int i = m_pathCount; i < m_maxPathCount; i++) m_path[i] = m_path[m_pathCount-1];
 	return true;

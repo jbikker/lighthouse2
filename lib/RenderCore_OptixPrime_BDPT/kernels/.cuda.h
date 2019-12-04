@@ -22,7 +22,7 @@ typedef unsigned char uchar;
 typedef unsigned __int64 uint64;
 
 // platform specific
-#include "..\CUDA\helper_math.h"
+#include "../CUDA/helper_math.h"
 #ifdef __CUDACC__
 #include "cuda_fp16.h"
 #else
@@ -49,11 +49,11 @@ typedef unsigned __int64 uint64;
 // final pixel buffer for output
 surface<void, cudaSurfaceType2D> renderTarget;
 namespace lh2core {
-__host__ const surfaceReference* renderTargetRef() 
-{ 
-	const surfaceReference* s; 
-	cudaGetSurfaceReference( &s, &renderTarget ); 
-	return s; 
+__host__ const surfaceReference* renderTargetRef()
+{
+	const surfaceReference* s;
+	cudaGetSurfaceReference( &s, &renderTarget );
+	return s;
 }
 } // namespace lh2core
 

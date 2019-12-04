@@ -56,9 +56,9 @@ void RenderAPI::SerializeCamera( const char* xmlFile )
 	renderer->scene->camera->Serialize( xmlFile );
 }
 
-int RenderAPI::AddMesh( const char* file, const char* dir, const float scale )
+int RenderAPI::AddMesh( const char* file, const char* dir, const float scale, bool flatShaded )
 {
-	return renderer->scene->AddMesh( file, dir, scale );
+	return renderer->scene->AddMesh( file, dir, scale, flatShaded );
 }
 
 int RenderAPI::AddMesh( const int triCount )

@@ -16,15 +16,13 @@
 #include <stdio.h> // fopen_s, sprintf_s, fclose, fwrite
 
 #include "rendersystem.h" // FileExists
+#include "navmesh_io.h"   // DeserializeConfigurations
 
 #include "navmesh_navigator.h"
 
 namespace lighthouse2 {
 
-#define NAVMESHIO_ERROR(X, ...) return NavMeshError(0, X, "ERROR NavMeshIO: ", __VA_ARGS__)
 #define DETOUR_ERROR(X, ...) return NavMeshError(0, X, "ERROR NavMeshNavigator: ", __VA_ARGS__)
-#define DETOUR_LOG(...) NavMeshError(0, NavMeshStatus::SUCCESS, "", __VA_ARGS__)
-
 #define POLYPATH_SIZE 128 // size of the intermediate non-smoothed path of dtPolyRefs in 'FindPathConstSize'
 
 //  +-----------------------------------------------------------------------------+
@@ -51,8 +49,8 @@ NavMeshStatus NavMeshNavigator::FindPathConstSize(float3 start, float3 end, Path
 	// When start & end are on the same poly
 	if (startRef == endRef)
 	{
-		path[0] = PathNode{ start, GetPoly(startRef) };
-		path[1] = PathNode{ end, GetPoly(endRef) };
+		path[0] = PathNode{ start, startRef };
+		path[1] = PathNode{ end, endRef };
 		count = 2;
 		reachable = true;
 		return NavMeshStatus::SUCCESS;
@@ -87,7 +85,7 @@ NavMeshStatus NavMeshNavigator::FindPathConstSize(float3 start, float3 end, Path
 	// Converting to PathNodes
 	for (int i = 0; i < count; i++)
 	{
-		path[i] = PathNode{ straightPath[i], GetPoly(spPolys[i]) };
+		path[i] = PathNode{ straightPath[i], spPolys[i] };
 	}
 
 	free(polyPath);
@@ -124,14 +122,14 @@ NavMeshStatus NavMeshNavigator::FindPathConstSize_Legacy(float3 start, float3 en
 	maxCount--;
 	status = FindClosestPointOnPoly(startRef, start, firstPos);
 	if (status.Failed()) return status;
-	path[0] = PathNode{ firstPos, GetPoly(startRef) };
+	path[0] = PathNode{ firstPos, startRef };
 
 	// When start & end are on the same poly
 	if (startRef == endRef)
 	{
 		status = FindClosestPointOnPoly(endRef, end, endPos);
 		if (status.Failed()) return status;
-		path[1] = PathNode{ endPos, GetPoly(endRef) };
+		path[1] = PathNode{ endPos, endRef };
 		count = 2;
 		reachable = true;
 		return NavMeshStatus::SUCCESS;
@@ -153,7 +151,7 @@ NavMeshStatus NavMeshNavigator::FindPathConstSize_Legacy(float3 start, float3 en
 	{
 		status = FindClosestPointOnPoly(polyPath[i], iterPos, iterPos);
 		if (status.Failed()) { free(polyPath); return status; }
-		path[i + 1] = PathNode{ iterPos, GetPoly(polyPath[i]) };
+		path[i + 1] = PathNode{ iterPos, polyPath[i] };
 	}
 
 	// Finding the closest valid point to the target
@@ -162,7 +160,7 @@ NavMeshStatus NavMeshNavigator::FindPathConstSize_Legacy(float3 start, float3 en
 	{
 		status = FindClosestPointOnPoly(endRef, end, endPos);
 		if (status.Failed()) { free(polyPath); return status; }
-		path[count + 1] = PathNode{ endPos, GetPoly(endRef) };
+		path[count + 1] = PathNode{ endPos, endRef };
 		count++;
 		reachable = true;
 	}
@@ -170,7 +168,7 @@ NavMeshStatus NavMeshNavigator::FindPathConstSize_Legacy(float3 start, float3 en
 	{
 		status = FindClosestPointOnPoly(polyPath[count - 1], end, endPos);
 		if (status.Failed()) { free(polyPath); return status; }
-		path[count + 1] = PathNode{ endPos, GetPoly(polyPath[count - 1]) };
+		path[count + 1] = PathNode{ endPos, polyPath[count - 1] };
 		count++;
 		reachable = false;
 	}
@@ -293,147 +291,24 @@ int NavMeshNavigator::CreateNavMeshQuery()
 	return NavMeshStatus::SUCCESS;
 }
 
-
-
-// Definitions required for NavMesh serialization
-static const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T'; //'MSET';
-static const int NAVMESHSET_VERSION = 1;
-struct NavMeshSetHeader { int magic, version, numTiles; dtNavMeshParams params; };
-struct NavMeshTileHeader { dtTileRef tileRef; int dataSize; };
-
 //  +-----------------------------------------------------------------------------+
-//  |  Serialize                                                                  |
-//  |  Writes the navmesh to storage for future use.                        LH2'19|
+//  |  NavMeshNavigator::Load                                                     |
+//  |  Loads a navmesh from storage and initializes the query.              LH2'19|
 //  +-----------------------------------------------------------------------------+
-NavMeshStatus SerializeNavMesh(const char* dir, const char* ID, const dtNavMesh* navMesh)
+NavMeshStatus NavMeshNavigator::Load(const char* dir, const char* ID)
 {
-
-	// Opening navmesh file for writing
-	Timer timer;
-	std::string filename = std::string(dir) + ID + PF_NAVMESH_FILE_EXTENTION;
-	DETOUR_LOG("Saving NavMesh '%s'... ", filename.c_str());
-	if (!navMesh) NAVMESHIO_ERROR(NavMeshStatus::INPUT | NavMeshStatus::DT, "Can't serialize '%s', dtNavMesh is nullptr\n", ID);
-	FILE* fp;
-	fopen_s(&fp, filename.c_str(), "wb");
-	if (!fp) NAVMESHIO_ERROR(NavMeshStatus::IO, "Filename '%s' can't be opened\n", filename.c_str());
-
-	// Store header.
-	NavMeshSetHeader header;
-	header.magic = NAVMESHSET_MAGIC;
-	header.version = NAVMESHSET_VERSION;
-	header.numTiles = 0;
-	for (int i = 0; i < navMesh->getMaxTiles(); ++i)
-	{
-		const dtMeshTile* tile = navMesh->getTile(i);
-		if (!tile || !tile->header || !tile->dataSize) continue;
-		header.numTiles++;
-	}
-	memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
-	fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
-
-	// Store tiles.
-	for (int i = 0; i < navMesh->getMaxTiles(); ++i)
-	{
-		const dtMeshTile* tile = navMesh->getTile(i);
-		if (!tile || !tile->header || !tile->dataSize) continue;
-
-		NavMeshTileHeader tileHeader;
-		tileHeader.tileRef = navMesh->getTileRef(tile);
-		tileHeader.dataSize = tile->dataSize;
-		fwrite(&tileHeader, sizeof(tileHeader), 1, fp);
-
-		fwrite(tile->data, tile->dataSize, 1, fp);
-	}
-	fclose(fp);
-
-	DETOUR_LOG("%.3fms\n", timer.elapsed());
-	return NavMeshStatus::SUCCESS;
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  DeserializeNavMesh                                                         |
-//  |  Loads a serialized NavMesh from storage and checks for errors.       LH2'19|
-//  +-----------------------------------------------------------------------------+
-NavMeshStatus DeserializeNavMesh(const char* dir, const char* ID, dtNavMesh*& navmesh)
-{
-
-	// Opening file
-	Timer timer;
-	std::string filename = std::string(dir) + ID + PF_NAVMESH_FILE_EXTENTION;
-	DETOUR_LOG("Loading NavMesh '%s'... ", filename.c_str());
-	if (!FileExists(filename.c_str()))
-		NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' does not exist\n", filename.c_str());
-	FILE* fp;
-	fopen_s(&fp, filename.c_str(), "rb");
-	if (!fp)
-		NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' could not be opened\n", filename.c_str());
-
-	// Reading header
-	NavMeshSetHeader header;
-	size_t readLen = fread(&header, sizeof(NavMeshSetHeader), 1, fp);
-	if (readLen != 1)
-	{
-		fclose(fp);
-		NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' is corrupted\n", filename.c_str());
-	}
-	if (header.magic != NAVMESHSET_MAGIC)
-	{
-		fclose(fp);
-		NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' is corrupted\n", filename.c_str());
-	}
-	if (header.version != NAVMESHSET_VERSION)
-	{
-		fclose(fp);
-		NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' has the wrong navmesh set version\n", filename.c_str());
-	}
-
-	// Initializing navmesh with header info
-	navmesh = dtAllocNavMesh();
-	if (!navmesh)
-	{
-		fclose(fp);
-		NAVMESHIO_ERROR(NavMeshStatus::DT | NavMeshStatus::MEM, "NavMesh for '%s' could not be allocated\n", ID);
-	}
-	dtStatus status = navmesh->init(&header.params);
-	if (dtStatusFailed(status))
-	{
-		fclose(fp);
-		dtFreeNavMesh(navmesh);
-		NAVMESHIO_ERROR(NavMeshStatus::DT | NavMeshStatus::INIT, "NavMesh for '%s' failed to initialize\n", ID);
-	}
-
-	// Reading tiles
-	for (int i = 0; i < header.numTiles; ++i)
-	{
-		// Reading tile header
-		NavMeshTileHeader tileHeader;
-		readLen = fread(&tileHeader, sizeof(tileHeader), 1, fp);
-		if (readLen != 1)
-		{
-			fclose(fp);
-			dtFreeNavMesh(navmesh);
-			NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' is corrupted\n", filename.c_str());
-		}
-		if (!tileHeader.tileRef || !tileHeader.dataSize) break;
-
-		// Reading tile data
-		unsigned char* data = (unsigned char*)dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM);
-		if (!data) break;
-		memset(data, 0, tileHeader.dataSize);
-		readLen = fread(data, tileHeader.dataSize, 1, fp);
-		if (readLen != 1)
-		{
-			dtFree(data);
-			dtFreeNavMesh(navmesh);
-			fclose(fp);
-			NAVMESHIO_ERROR(NavMeshStatus::IO, "NavMesh file '%s' is corrupted\n", filename.c_str());
-		}
-		navmesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA, tileHeader.tileRef, 0);
-	}
-	fclose(fp);
-
-	DETOUR_LOG("%.3fms\n", timer.elapsed());
-	return NavMeshStatus::SUCCESS;
+	if (m_navmesh) Clean();
+	std::string configfile = std::string(dir) + ID + PF_NAVMESH_CONFIG_FILE_EXTENTION;
+	NavMeshConfig config;
+	NavMeshStatus status = DeserializeConfigurations(configfile.c_str(), config);
+	if (status.Failed()) return status;
+	m_flags = config.m_flags;
+	m_areas = config.m_areas;
+	status = DeserializeNavMesh(dir, ID, m_navmesh);
+	if (status.Failed()) return status;
+	m_owner = true;
+	status = CreateNavMeshQuery();
+	return status;
 }
 
 } // namespace Lighthouse2

@@ -41,6 +41,7 @@
 
 #define NAVMESH_VERTEX_MESH_FILE "vertex.obj"
 #define NAVMESH_EDGE_MESH_FILE "edge.obj"
+#define NAVMESH_ARROW_MESH_FILE "arrowcone.obj"
 #define NAVMESH_AGENT_MESH_FILE "agent.obj"
 
 namespace lighthouse2 {
@@ -58,9 +59,11 @@ public:
 		// Initialize meshes
 		m_vertMeshID = m_renderer->AddMesh(NAVMESH_VERTEX_MESH_FILE, m_dir, 1.0f);
 		m_edgeMeshID = m_renderer->AddMesh(NAVMESH_EDGE_MESH_FILE, m_dir, 1.0f);
+		m_arrowMeshID = m_renderer->AddMesh(NAVMESH_ARROW_MESH_FILE, m_dir, 1.0f);
 		m_agentMeshID = m_renderer->AddMesh(NAVMESH_AGENT_MESH_FILE, m_dir, 1.0f);
 		HostScene::meshPool[m_vertMeshID]->name = "navmesh_vertex";
 		HostScene::meshPool[m_edgeMeshID]->name = "navmesh_edge";
+		HostScene::meshPool[m_arrowMeshID]->name = "navmesh_arrowcone";
 		HostScene::meshPool[m_agentMeshID]->name = "navmesh_agent";
 	};
 	~NavMeshShader() {};
@@ -99,10 +102,10 @@ public:
 	// Internal Representation
 	void UpdateMesh(NavMeshNavigator* navmesh);
 	void Clean();
-	struct Poly { union { const dtPoly* poly = 0; const dtOffMeshConnection* omc; }; dtPolyRef ref = 0; std::vector<int> triIDs; };
+	struct Poly { const dtPoly* poly = 0; dtPolyRef ref = 0; std::vector<int> triIDs; const dtOffMeshConnection* omc = 0; };
 	struct Vert { float3* pos = 0; int idx = -1, instID = -1; std::vector<dtPolyRef> polys; };
-	struct Edge { int v1 = -1, v2 = -1, idx = -1, instID = -1; dtPolyRef poly1 = 0, poly2 = 0; };
-	struct OMC { const dtOffMeshConnection* omc = 0; int v1InstID = -1, v2InstID = -1, edgeInstID = -1; };
+	struct Edge { int v1 = -1, v2 = -1, idx = -1, instID = -1; dtPolyRef poly1 = 0, poly2 = 0; int arrowInstID = -1; };
+	//struct OMC { const dtOffMeshConnection* omc = 0; int v1InstID = -1, v2InstID = -1, edgeInstID = -1; };
 	bool isNormalVert(int idx) const { for (auto i : m_vertOffsets) { if (idx >= i.x && idx < i.y) return true; } return false; };
 	bool isDetailVert(int idx) const { for (auto i : m_vertOffsets) { if (idx >= i.y && idx < i.z) return true; } return false; };
 	bool isOffMeshVert(int idx) const { if (isNormalVert(idx)) { return false; } if (isDetailVert(idx)) { return false; } return true; };
@@ -117,7 +120,7 @@ public:
 	Agent* SelectAgent(int instanceID);
 	bool isAgent(int meshID) const { return meshID == m_agentMeshID; };
 	bool isPoly(int meshID) const { return meshID == m_polyMeshID; };
-	bool isVert(int meshID) const { return meshID == m_vertMeshID; };
+	bool isVert(int meshID) const { return (meshID == m_vertMeshID || meshID == m_arrowMeshID); };
 	bool isEdge(int meshID) const { return meshID == m_edgeMeshID; };
 
 	// Editing
@@ -152,10 +155,11 @@ private:
 
 	// HostScene Management
 	int m_polyMeshID = -1, m_polyInstID = -1;
-	int m_vertMeshID = -1, m_edgeMeshID = -1, m_agentMeshID = -1;
+	int m_vertMeshID = -1, m_edgeMeshID = -1, m_agentMeshID = -1, m_arrowMeshID = -1;
 	std::string m_meshFileName;
 	const std::string m_matFileName = "navmesh.mtl";
 	const float m_vertWidth = .3f, m_edgeWidth = .1f; // in world coordinates
+	const float m_arrowWidth = .4f, m_arrowHeight = .7f; // in world coordinates
 	void SaveAsMesh(NavMeshNavigator* navmesh);
 
 	// Agents & Paths
@@ -169,7 +173,6 @@ private:
 	std::vector<Vert> m_verts; // (verts, detailVerts, offMeshVerts) * nTiles
 	std::vector<Edge> m_edges; // (edges, offMeshEdges) * nTiles
 	std::vector<Poly> m_polys; // (polys, offMeshConnections) * nTiles
-	std::vector<OMC> m_OMCs;
 	std::vector<Vert> m_tmpVerts; // used for navmesh pruning and adding OMCs
 	std::vector<Edge> m_tmpEdges; // used for navmesh pruning and adding OMCs
 	std::vector<int3> m_vertOffsets; // idx offset of (poly verts, detail verts, omc verts) per tile

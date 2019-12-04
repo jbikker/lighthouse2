@@ -50,19 +50,20 @@ static const int maxAgentPathSize = 8;
 void PrepareScene()
 {
 	// the Recast test scene
-	int meshID = renderer->AddMesh( "nav_test.obj", "data\\", 1.0f );
+	string materialFile = string( "data/nav_test_materials.xml" );
+	int meshID = renderer->AddMesh( "nav_test.obj", "data/", 1.0f, true );
 	HostScene::meshPool[meshID]->name = "Input Mesh";
 	int instID = renderer->AddInstance( meshID, mat4::Identity() );
 	int instID2 = renderer->AddInstance( meshID, mat4::Translate( 0, 0, 50 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 	int lightMat = renderer->AddMaterial( make_float3( 100, 100, 80 ) );
-	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
+	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 66.0f, 0 ), 16, 16, lightMat );
 	renderer->AddInstance( lightQuad );
 	renderer->AddDirectionalLight( make_float3( -1 ), make_float3( 255 ) );
 
 	// Navmesh builder
-	navMeshBuilder = new NavMeshBuilder( "data\\ai\\" );
+	navMeshBuilder = new NavMeshBuilder( "data/ai/" );
 	NavMeshConfig* config = navMeshBuilder->GetConfig();
 	config->SetCellSize( .3f, .2f );
 	config->SetAgentInfo( 10.0f, 10, 2, 2 );
@@ -81,6 +82,9 @@ void PrepareScene()
 
 	rigidBodies = new PhysicsPlaceholder( maxAgents );
 	navMeshAgents = new NavMeshAgents( maxAgents, maxAgentPathSize, agentUpdateInterval );
+
+	renderer->DeserializeMaterials( materialFile.c_str() );
+	renderer->SerializeMaterials( materialFile.c_str() ); // so we can edit the materials in the xml file
 }
 
 //  +-----------------------------------------------------------------------------+

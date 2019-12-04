@@ -641,7 +641,7 @@ void RefreshSettingsBar()
 	TwAddVarRO( settingsBar, "Inst ID", TW_TYPE_INT32, &probeInstID, "group='probing'" );
 	TwAddVarRO( settingsBar, "Tri ID", TW_TYPE_INT32, &probeTriID, "group='probing'" );
 	TwAddVarRO( settingsBar, "Pos", float3Type, &probePos, "group='probing'" );
-	TwSetParam( settingsBar, "probing", "opened", TW_PARAM_INT32, 1, &closed );
+	TwSetParam(settingsBar, "probing", "opened", TW_PARAM_INT32, 1, &opened);
 
 	// FPS counter
 	TwAddSeparator( settingsBar, "fpsseparator", "" );

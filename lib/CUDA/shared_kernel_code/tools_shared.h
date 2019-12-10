@@ -219,7 +219,7 @@ LH2_DEVFUNC float3 Tangent2World( const float3& V, const float3& N )
 	return V.x * T + V.y * B + V.z * N;
 }
 
-LH2_DEVFUNC float3 Tangent2World( const float3& V, const float3& N,  const float3& T, const float3& B )
+LH2_DEVFUNC float3 Tangent2World( const float3& V, const float3& N, const float3& T, const float3& B )
 {
 	return V.x * T + V.y * B + V.z * N;
 }

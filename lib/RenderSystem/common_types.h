@@ -22,6 +22,20 @@ typedef unsigned char uchar;
 typedef unsigned int uint;
 typedef unsigned short ushort;
 
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#define CHECK_RESULT __attribute__ ((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define CHECK_RESULT _Check_return_
+#else
+#define CHECK_RESULT
+#endif
+
+#ifdef __CUDACC__
+#define LH2_HOST_DEVICE_FUNCTION __host__ __device__
+#else
+#define LH2_HOST_DEVICE_FUNCTION
+#endif
+
 #ifndef __CUDACC__
 
 #ifdef _MSC_VER
@@ -38,14 +52,6 @@ typedef int BOOL; // for freeimage.h
 #pragma warning (disable : 4244 )
 
 #include <math.h>
-
-#if defined(__GNUC__) && (__GNUC__ >= 4)
-#define CHECK_RESULT __attribute__ ((warn_unused_result))
-#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
-#define CHECK_RESULT _Check_return_
-#else
-#define CHECK_RESULT
-#endif
 
 #ifndef CUDABUILD
 
@@ -389,7 +395,62 @@ inline float4 smoothstep( float4 a, float4 b, float4 x )
 	return (y*y*(make_float4( 3.0f ) - (make_float4( 2.0f )*y)));
 }
 
-#endif
+#endif // CUDABUILD
+
+class aabb
+{
+public:
+	aabb() = default;
+	aabb( __m128 a, __m128 b ) { bmin4 = a, bmax4 = b; bmin[3] = bmax[3] = 0; }
+	aabb( float3 a, float3 b ) { bmin[0] = a.x, bmin[1] = a.y, bmin[2] = a.z, bmin[3] = 0, bmax[0] = b.x, bmax[1] = b.y, bmax[2] = b.z, bmax[3] = 0; }
+	__inline void Reset() { bmin4 = _mm_set_ps1( 1e34f ), bmax4 = _mm_set_ps1( -1e34f ); }
+	bool Contains( const __m128& p ) const
+	{
+		union { __m128 va4; float va[4]; };
+		union { __m128 vb4; float vb[4]; };
+		va4 = _mm_sub_ps( p, bmin4 ), vb4 = _mm_sub_ps( bmax4, p );
+		return ((va[0] >= 0) && (va[1] >= 0) && (va[2] >= 0) &&
+			(vb[0] >= 0) && (vb[1] >= 0) && (vb[2] >= 0));
+	}
+	__inline void Grow( const aabb& bb ) { bmin4 = _mm_min_ps( bmin4, bb.bmin4 ); bmax4 = _mm_max_ps( bmax4, bb.bmax4 ); }
+	__inline void Grow( const __m128& p ) { bmin4 = _mm_min_ps( bmin4, p ); bmax4 = _mm_max_ps( bmax4, p ); }
+	__inline void Grow( const __m128 min4, const __m128 max4 ) { bmin4 = _mm_min_ps( bmin4, min4 ); bmax4 = _mm_max_ps( bmax4, max4 ); }
+	__inline void Grow( const float3& p ) { __m128 p4 = _mm_setr_ps( p.x, p.y, p.z, 0 ); Grow( p4 ); }
+	aabb Union( const aabb& bb ) const { aabb r; r.bmin4 = _mm_min_ps( bmin4, bb.bmin4 ), r.bmax4 = _mm_max_ps( bmax4, bb.bmax4 ); return r; }
+	static aabb Union( const aabb& a, const aabb& b ) { aabb r; r.bmin4 = _mm_min_ps( a.bmin4, b.bmin4 ), r.bmax4 = _mm_max_ps( a.bmax4, b.bmax4 ); return r; }
+	aabb Intersection( const aabb& bb ) const { aabb r; r.bmin4 = _mm_max_ps( bmin4, bb.bmin4 ), r.bmax4 = _mm_min_ps( bmax4, bb.bmax4 ); return r; }
+	__inline float Extend( const int axis ) const { return bmax[axis] - bmin[axis]; }
+	__inline float Minimum( const int axis ) const { return bmin[axis]; }
+	__inline float Maximum( const int axis ) const { return bmax[axis]; }
+	float Area() const
+	{
+		union { __m128 e4; float e[4]; };
+		e4 = _mm_sub_ps( bmax4, bmin4 );
+		return max( 0.0f, e[0] * e[1] + e[0] * e[2] + e[1] * e[2] );
+	}
+	int LongestAxis() const
+	{
+		int a = 0;
+		if (Extend( 1 ) > Extend( 0 )) a = 1;
+		if (Extend( 2 ) > Extend( a )) a = 2;
+		return a;
+	}
+	// data members
+	union
+	{
+		struct
+		{
+			union { __m128 bmin4; float bmin[4]; struct { float3 bmin3; }; };
+			union { __m128 bmax4; float bmax[4]; struct { float3 bmax3; }; };
+		};
+		__m128 bounds[2] = { _mm_set_ps( 1e34f, 1e34f, 1e34f, 0 ), _mm_set_ps( -1e34f, -1e34f, -1e34f, 0 ) };
+	};
+	__inline void SetBounds( const __m128 min4, const __m128 max4 ) { bmin4 = min4; bmax4 = max4; }
+	__inline __m128 Center() const { return _mm_mul_ps( _mm_add_ps( bmin4, bmax4 ), _mm_set_ps1( 0.5f ) ); }
+	__inline float Center( uint axis ) const { return (bmin[axis] + bmax[axis]) * 0.5f; }
+};
+
+#endif // __CUDACC__
 
 // matrix class
 class mat4
@@ -410,7 +471,7 @@ public:
 		for (int i = 0; i < 16; i++) if (m.cell[i] != cell[i]) return false; return true;
 	}
 	float3 GetTranslation() { return make_float3( cell[3], cell[7], cell[11] ); }
-	static mat4 Identity() { mat4 r; return r; }
+	constexpr static mat4 Identity() { return mat4{}; }
 	static mat4 ZeroMatrix() { mat4 r; memset( r.cell, 0, 64 ); return r; }
 	static mat4 RotateX( const float a ) { mat4 r; r.cell[5] = cosf( a ); r.cell[6] = -sinf( a ); r.cell[9] = sinf( a ); r.cell[10] = cosf( a ); return r; };
 	static mat4 RotateY( const float a ) { mat4 r; r.cell[0] = cosf( a ); r.cell[2] = sinf( a ); r.cell[8] = -sinf( a ); r.cell[10] = cosf( a ); return r; };
@@ -440,6 +501,44 @@ public:
 		M[1] = y.x, M[5] = y.y, M[9] = y.z;
 		M[2] = z.x, M[6] = z.y, M[10] = z.z;
 		return M;
+	}
+	static mat4 LookAt( const float3& pos, const float3& look, const float3& up )
+	{
+		// PBRT's lookat
+		mat4 cameraToWorld;
+		// initialize fourth column of viewing matrix
+		cameraToWorld( 0, 3 ) = pos.x;
+		cameraToWorld( 1, 3 ) = pos.y;
+		cameraToWorld( 2, 3 ) = pos.z;
+		cameraToWorld( 3, 3 ) = 1;
+
+		// initialize first three columns of viewing matrix
+		float3 dir = normalize( look - pos );
+		float3 right = cross( normalize( up ), dir );
+		if (dot( right, right ) == 0)
+		{
+			printf(
+				"\"up\" vector (%f, %f, %f) and viewing direction (%f, %f, %f) "
+				"passed to LookAt are pointing in the same direction.  Using "
+				"the identity transformation.\n",
+				up.x, up.y, up.z, dir.x, dir.y, dir.z );
+			return mat4();
+		}
+		right = normalize( right );
+		float3 newUp = cross( dir, right );
+		cameraToWorld( 0, 0 ) = right.x;
+		cameraToWorld( 1, 0 ) = right.y;
+		cameraToWorld( 2, 0 ) = right.z;
+		cameraToWorld( 3, 0 ) = 0.;
+		cameraToWorld( 0, 1 ) = newUp.x;
+		cameraToWorld( 1, 1 ) = newUp.y;
+		cameraToWorld( 2, 1 ) = newUp.z;
+		cameraToWorld( 3, 1 ) = 0.;
+		cameraToWorld( 0, 2 ) = dir.x;
+		cameraToWorld( 1, 2 ) = dir.y;
+		cameraToWorld( 2, 2 ) = dir.z;
+		cameraToWorld( 3, 2 ) = 0.;
+		return cameraToWorld.Inverted();
 	}
 	static mat4 Translate( const float x, const float y, const float z ) { mat4 r; r.cell[3] = x; r.cell[7] = y; r.cell[11] = z; return r; };
 	static mat4 Translate( const float3 P ) { mat4 r; r.cell[3] = P.x; r.cell[7] = P.y; r.cell[11] = P.z; return r; };
@@ -498,59 +597,28 @@ public:
 		}
 		return retVal;
 	}
-};
+	/**
+	 * Transform vector (not a point!) which disregards translation
+	 */
+	inline LH2_HOST_DEVICE_FUNCTION float3 TransformVector( const float3& v ) const
+	{
+		return make_float3( cell[0] * v.x + cell[1] * v.y + cell[2] * v.z,
+			cell[4] * v.x + cell[5] * v.y + cell[6] * v.z,
+			cell[8] * v.x + cell[9] * v.y + cell[10] * v.z );
+	}
 
-class aabb
-{
-public:
-	aabb() = default;
-	aabb( __m128 a, __m128 b ) { bmin4 = a, bmax4 = b; bmin[3] = bmax[3] = 0; }
-	aabb( float3 a, float3 b ) { bmin[0] = a.x, bmin[1] = a.y, bmin[2] = a.z, bmin[3] = 0, bmax[0] = b.x, bmax[1] = b.y, bmax[2] = b.z, bmax[3] = 0; }
-	__inline void Reset() { bmin4 = _mm_set_ps1( 1e34f ), bmax4 = _mm_set_ps1( -1e34f ); }
-	bool Contains( const __m128& p ) const
+	inline LH2_HOST_DEVICE_FUNCTION float3 TransformPoint( const float3& v ) const
 	{
-		union { __m128 va4; float va[4]; };
-		union { __m128 vb4; float vb[4]; };
-		va4 = _mm_sub_ps( p, bmin4 ), vb4 = _mm_sub_ps( bmax4, p );
-		return ((va[0] >= 0) && (va[1] >= 0) && (va[2] >= 0) &&
-			(vb[0] >= 0) && (vb[1] >= 0) && (vb[2] >= 0));
+		const float3 res = make_float3(
+			cell[0] * v.x + cell[1] * v.y + cell[2] * v.z + cell[3],
+			cell[4] * v.x + cell[5] * v.y + cell[6] * v.z + cell[7],
+			cell[8] * v.x + cell[9] * v.y + cell[10] * v.z + cell[11] );
+		const float w = cell[12] * v.x + cell[13] * v.y + cell[14] * v.z + cell[15];
+
+		if (w == 1)
+			return res;
+		return res * (1.f / w);
 	}
-	__inline void Grow( const aabb& bb ) { bmin4 = _mm_min_ps( bmin4, bb.bmin4 ); bmax4 = _mm_max_ps( bmax4, bb.bmax4 ); }
-	__inline void Grow( const __m128& p ) { bmin4 = _mm_min_ps( bmin4, p ); bmax4 = _mm_max_ps( bmax4, p ); }
-	__inline void Grow( const __m128 min4, const __m128 max4 ) { bmin4 = _mm_min_ps( bmin4, min4 ); bmax4 = _mm_max_ps( bmax4, max4 ); }
-	__inline void Grow( const float3& p ) { __m128 p4 = _mm_setr_ps( p.x, p.y, p.z, 0 ); Grow( p4 ); }
-	aabb Union( const aabb& bb ) const { aabb r; r.bmin4 = _mm_min_ps( bmin4, bb.bmin4 ), r.bmax4 = _mm_max_ps( bmax4, bb.bmax4 ); return r; }
-	static aabb Union( const aabb& a, const aabb& b ) { aabb r; r.bmin4 = _mm_min_ps( a.bmin4, b.bmin4 ), r.bmax4 = _mm_max_ps( a.bmax4, b.bmax4 ); return r; }
-	aabb Intersection( const aabb& bb ) const { aabb r; r.bmin4 = _mm_max_ps( bmin4, bb.bmin4 ), r.bmax4 = _mm_min_ps( bmax4, bb.bmax4 ); return r; }
-	__inline float Extend( const int axis ) const { return bmax[axis] - bmin[axis]; }
-	__inline float Minimum( const int axis ) const { return bmin[axis]; }
-	__inline float Maximum( const int axis ) const { return bmax[axis]; }
-	float Area() const
-	{
-		union { __m128 e4; float e[4]; };
-		e4 = _mm_sub_ps( bmax4, bmin4 );
-		return max( 0.0f, e[0] * e[1] + e[0] * e[2] + e[1] * e[2] );
-	}
-	int LongestAxis() const
-	{
-		int a = 0;
-		if (Extend( 1 ) > Extend( 0 )) a = 1;
-		if (Extend( 2 ) > Extend( a )) a = 2;
-		return a;
-	}
-	// data members
-	union
-	{
-		struct
-		{
-			union { __m128 bmin4; float bmin[4]; struct { float3 bmin3; }; };
-			union { __m128 bmax4; float bmax[4]; struct { float3 bmax3; }; };
-		};
-		__m128 bounds[2] = { _mm_set_ps( 1e34f, 1e34f, 1e34f, 0 ), _mm_set_ps( -1e34f, -1e34f, -1e34f, 0 ) };
-	};
-	__inline void SetBounds( const __m128 min4, const __m128 max4 ) { bmin4 = min4; bmax4 = max4; }
-	__inline __m128 Center() const { return _mm_mul_ps( _mm_add_ps( bmin4, bmax4 ), _mm_set_ps1( 0.5f ) ); }
-	__inline float Center( uint axis ) const { return (bmin[axis] + bmax[axis]) * 0.5f; }
 };
 
 mat4 operator * ( const mat4& a, const mat4& b );
@@ -697,7 +765,5 @@ public:
 	quat scale( float s ) const { return quat( w * s, x * s, y * s, z * s ); }
 	float w = 1, x = 0, y = 0, z = 0;
 };
-
-#endif
 
 // EOF

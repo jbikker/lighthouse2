@@ -23,7 +23,8 @@
 #pragma once
 
 #ifndef __OPENCLCC__
-namespace lighthouse2 {
+namespace lighthouse2
+{
 #endif
 #ifdef __OPENCLCC__
 #define __CLORCUDA__
@@ -124,15 +125,15 @@ void UpdateArea( struct CoreTri* tri )
 //  +-----------------------------------------------------------------------------+
 struct CoreTri4
 {
-	float4 u4;				// w: light tri idx			tdata0
-	float4 v4;				// w: material				tdata1
-	float4 vN0;				// w: Nx					tdata2
-	float4 vN1;				// w: Ny					tdata3
-	float4 vN2;				// w: Nz					tdata4
-	float4 T4;				// w: area					tdata5
-	float4 B4;				// w: invArea				tdata6
+	float4 u4;				// w: light tri idx		tdata0
+	float4 v4;				// w: material			tdata1
+	float4 vN0;				// w: Nx				tdata2
+	float4 vN1;				// w: Ny				tdata3
+	float4 vN2;				// w: Nz				tdata4
+	float4 T4;				// w: area				tdata5
+	float4 B4;				// w: invArea			tdata6
 	float4 alpha4;			// w: triLOD
-	float4 vertex[3];		// 48						tdata7, tdata8, tdata9
+	float4 vertex[3];		// 48					tdata7, tdata8, tdata9
 #define TRI_U0			tdata0.x
 #define TRI_U1			tdata0.y
 #define TRI_U2			tdata0.z
@@ -163,80 +164,84 @@ struct float4x4 { float4 A, B, C, D; };
 #ifndef __OPENCLCC__ // OpenCL host and GPU instance descriptor structure is different and is defined inside OpenCL's core settings.
 struct CoreInstanceDesc
 {
-	CoreTri4* triangles;					// device pointer to model triangle array
-	int dummy1, dummy2;					// padding; 80 byte object
-	float4x4 invTransform;				// inverse transform for the instance
+	CoreTri4* triangles;						// device pointer to model triangle array
+	int dummy1, dummy2;							// padding; 80 byte object
+	float4x4 invTransform;						// inverse transform for the instance
 };
 #endif
 
 //  +-----------------------------------------------------------------------------+
-//  |  CoreMaterial - see HostMaterial for host-side version.CoreTri4             |
-//  |  Material layout optimized for rendering, created from a HostMaterial.      |
-//  |  The structure is heavily optimized to require exactly a quadfloat worth    |
-//  |  of data for each feature / data layer.                               LH2'19|
+//  |  CoreMaterial - keep this in sync with the HostMaterial class, as these     |
+//  |  will be copied into CoreMaterials before being passed to the cores.  LH2'19|
 //  +-----------------------------------------------------------------------------+
-struct CoreMaterial
+class CoreMaterial
 {
-	// data to be read unconditionally
-	half diffuse_r, diffuse_g, diffuse_b, transmittance_r, transmittance_g, transmittance_b; uint flags;
-	uint4 parameters; // 16 Disney principled BRDF parameters, 0.8 fixed point
-	// texture / normal map descriptors; exactly 128-bit each
-	/* read if bit  2 set */ short texwidth0, texheight0; half uscale0, vscale0, uoffs0, voffs0; uint texaddr0;
-	/* read if bit 11 set */ short texwidth1, texheight1; half uscale1, vscale1, uoffs1, voffs1; uint texaddr1;
-	/* read if bit 12 set */ short texwidth2, texheight2; half uscale2, vscale2, uoffs2, voffs2; uint texaddr2;
-	/* read if bit  3 set */ short nmapwidth0, nmapheight0; half nuscale0, nvscale0, nuoffs0, nvoffs0; uint nmapaddr0;
-	/* read if bit  9 set */ short nmapwidth1, nmapheight1; half nuscale1, nvscale1, nuoffs1, nvoffs1; uint nmapaddr1;
-	/* read if bit 10 set */ short nmapwidth2, nmapheight2; half nuscale2, nvscale2, nuoffs2, nvoffs2; uint nmapaddr2;
-	/* read if bit  4 set */ short smapwidth, smapheight; half suscale, svscale, suoffs, svoffs; uint smapaddr;
-	/* read if bit  5 set */ short rmapwidth, rmapheight; half ruscale, rvscale, ruoffs, rvoffs; uint rmapaddr;
-#if 1
-	// WUT
-	/* read if bit 17 set */ short cmapwidth, cmapheight; half cuscale, cvscale, cuoffs, cvoffs; uint cmapaddr;
-	/* read if bit 18 set */ short amapwidth, amapheight; half auscale, avscale, auoffs, avoffs; uint amapaddr;
-#else
-	// TODO: to match CoreMaterial4
-	/* read if bit 17 set */ short m0mapwidth, m0mapheight; half m0uscale, m0vscale, m0uoffs, m0voffs; uint m0mapaddr;
-	/* read if bit 18 set */ short m1mapwidth, m1mapheight; half m1uscale, m1vscale, m1uoffs, m1voffs; uint m1mapaddr;
-#endif
-#ifndef __CLORCUDA__
-	#define CHAR2FLT(a,s) (((float)(((a)>>s)&255))*(1.0f/255.0f))
-	float metallic() { return CHAR2FLT( parameters.x, 0 ); }
-	float subsurface() { return CHAR2FLT( parameters.x, 8 ); }
-	float specular() { return CHAR2FLT( parameters.x, 16 ); }
-	float roughness() { return (max( 0.001f, CHAR2FLT( parameters.x, 24 ) )); }
-	float spectint() { return CHAR2FLT( parameters.y, 0 ); }
-	float anisotropic() { return CHAR2FLT( parameters.y, 8 ); }
-	float sheen() { return CHAR2FLT( parameters.y, 16 ); }
-	float sheentint() { return CHAR2FLT( parameters.y, 24 ); }
-	float clearcoat() { return CHAR2FLT( parameters.z, 0 ); }
-	float clearcoatgloss() { return CHAR2FLT( parameters.z, 8 ); }
-	float transmission() { return CHAR2FLT( parameters.z, 16 ); }
-	float eta() { return *(uint*)&parameters.w; }
-#endif
+public:
+	struct Vec3Value
+	{
+		float3 value;							// default value if map is absent; 1e-32 means: not set
+		int textureID;							// texture ID; 'value'field is used if -1
+		float scale;							// map values will be scaled by this
+		float2 uvscale, uvoffset;				// uv coordinate scale and offset
+	};
+	struct ScalarValue
+	{
+		float value;							// default value if map is absent; 1e32 means: not set
+		int textureID;							// texture ID; -1 denotes empty slot
+		int component;							// 0 = x, 1 = y, 2 = z, 3 = w
+		float scale;							// map values will be scaled by this
+		float2 uvscale, uvoffset;				// uv coordinate scale and offset
+	};
+
+	// START OF HOSTMATERIAL DATA COPY
+
+	// material properties
+	Vec3Value color;							// universal material property: base color
+	Vec3Value detailColor;						// universal material property: detail texture
+	Vec3Value normals;							// universal material property: normal map
+	Vec3Value detailNormals;					// universal material property: detail normal map			
+	uint flags;									// material flags: 1 = SMOOTH, 2 = HASALPHA
+
+	// Disney BRDF properties
+	// Data for the Disney Principled BRDF.
+	Vec3Value absorption;
+	ScalarValue metallic;
+	ScalarValue subsurface;
+	ScalarValue specular;
+	ScalarValue roughness;
+	ScalarValue specularTint;
+	ScalarValue anisotropic;
+	ScalarValue sheen;
+	ScalarValue sheenTint;
+	ScalarValue clearcoat;
+	ScalarValue clearcoatGloss;
+	ScalarValue transmission;
+	ScalarValue eta;
+
+	// lambert bsdf properties
+	// Data for a basic Lambertian BRDF, augmented with pure specular reflection and
+	// refraction. Assumptions:
+	// diffuse component = 1 - (reflectionm + refraction); 
+	// (reflection + refraction) < 1;
+	// ior is the index of refraction of the medium below the shading point.
+	// Vec3Value absorption;					// shared with disney brdf
+	ScalarValue reflection;
+	ScalarValue refraction;
+	ScalarValue ior;
+
+	// additional bxdf properties
+	// Add data for new BxDFs here. Add '//' to values that are shared with previously
+	// specified material parameter sets.
+	// ...
+
+	// END OF DATA THAT WILL BE COPIED TO COREMATERIAL
 };
-// texture layers in HostMaterial and CoreMaterialEx
-#define TEXTURE0		0
-#define TEXTURE1		1
-#define TEXTURE2		2
-#define NORMALMAP0		3
-#define NORMALMAP1		4
-#define NORMALMAP2		5
-#define SPECULARITY		6
-#define ROUGHNESS0		7
-#define ROUGHNESS1		8
-#define COLORMASK		9
-#define ALPHAMASK		10
-struct CoreMaterialEx
-{
-	// This structure contains the texture IDs used by the HostMaterial this CoreMaterial is based on.
-	// These are needed by the RenderCore to set the texaddr fields for the material.
-	int texture[11];
-};
+
 enum TexelStorage
 {
-	ARGB32 = 0,							// regular texture data, RenderCore::texel32data
-	ARGB128,							// hdr texture data, RenderCore::texel128data
-	NRM32								// int32 encoded normal map data, RenderCore::normal32data
+	ARGB32 = 0,									// regular texture data, RenderCore::texel32data
+	ARGB128,									// hdr texture data, RenderCore::texel128data
+	NRM32										// int32 encoded normal map data, RenderCore::normal32data
 };
 struct CoreTexDesc
 {
@@ -245,56 +250,22 @@ struct CoreTexDesc
 	union { float4* fdata; uchar4* idata; }; // points to the texel data in the original texture
 #ifdef __CLORCUDA__
 	// skip initial values in device code
-	uint pixelCount;					// width and height are irrelevant; already stored with material
-	uint firstPixel;					// start in continuous storage of the texture
-	uint MIPlevels;						// number of MIP levels
+	uint pixelCount;							// width and height are irrelevant; already stored with material
+	uint firstPixel;							// start in continuous storage of the texture
+	uint MIPlevels;								// number of MIP levels
 #ifdef __CUDACC__
 	TexelStorage storage;
 #else
 	enum TexelStorage storage;
 #endif
 #else
-	uint pixelCount = 0;				// width and height are irrelevant; already stored with material
-	uint firstPixel = 0;				// start in continuous storage of the texture
-	uint MIPlevels = 1;					// number of MIP levels
+	uint width = 0, height = 0;					// width and height of the texture
+	uint flags = 0;								// texture flags
+	uint pixelCount = 0;						// width * height
+	uint firstPixel = 0;						// start in continuous storage of the texture
+	uint MIPlevels = 1;							// number of MIP levels
 	TexelStorage storage = ARGB32;
 #endif
-};
-
-//  +-----------------------------------------------------------------------------+
-//  |  CoreMaterial4                                                              |
-//  |  Set of quadfloats with the same size as a single CoreMaterial.       LH2'19|
-//  +-----------------------------------------------------------------------------+
-struct CoreMaterial4
-{
-	uint4 baseData4;
-	uint4 parameters;
-	uint4 t0data4;
-	uint4 t1data4;
-	uint4 t2data4;
-	uint4 n0data4;
-	uint4 n1data4;
-	uint4 n2data4;
-	uint4 sdata4;
-	uint4 rdata4;
-	uint4 m0data4;
-	uint4 m1data4;
-	// float4 dielec4;
-	// float4 spec4;
-	// flag query macros
-#define MAT_ISDIELECTRIC			(flags & (1 << 0))
-#define MAT_DIFFUSEMAPISHDR			(flags & (1 << 1))
-#define MAT_HASDIFFUSEMAP			(flags & (1 << 2))
-#define MAT_HASNORMALMAP			(flags & (1 << 3))
-#define MAT_HASSPECULARITYMAP		(flags & (1 << 4))
-#define MAT_HASROUGHNESSMAP			(flags & (1 << 5))
-#define MAT_ISANISOTROPIC			(flags & (1 << 6))
-#define MAT_HAS2NDNORMALMAP			(flags & (1 << 7))
-#define MAT_HAS3RDNORMALMAP			(flags & (1 << 8))
-#define MAT_HAS2NDDIFFUSEMAP		(flags & (1 << 9))
-#define MAT_HAS3RDDIFFUSEMAP		(flags & (1 << 10))
-#define MAT_HASSMOOTHNORMALS		(flags & (1 << 11))
-#define MAT_HASALPHA				(flags & (1 << 12))
 };
 
 //  +-----------------------------------------------------------------------------+
@@ -304,20 +275,20 @@ struct CoreMaterial4
 struct CoreLightTri
 {
 #ifndef __OPENCLCC__
-	float3 centre; float energy;		// data0 / centre4
-	float3 N; float area;				// data1 / N4
-	float3 radiance; int dummy2;		// data2
-	float3 vertex0; int triIdx;			// data3
-	float3 vertex1; int instIdx;		// data4
-	float3 vertex2; int dummy1;			// data5
+	float3 centre; float energy;				// data0 / centre4
+	float3 N; float area;						// data1 / N4
+	float3 radiance; int dummy2;				// data2
+	float3 vertex0; int triIdx;					// data3
+	float3 vertex1; int instIdx;				// data4
+	float3 vertex2; int dummy1;					// data5
 #else
 	// OpenCL float3 has 4-byte padding
-	float4 centre;						// w: float energy;		// data0 / centre4
-	float4 N;							// w: float area;		// data1 / N4
-	float4 radiance;					// w: int dummy2;		// data2
-	float4 vertex0;						// w: int triIdx;		// data3
-	float4 vertex1;						// w: int instIdx;		// data4
-	float4 vertex2;						// w: int dummy1;		// data5
+	float4 centre;								// w: float energy;		// data0 / centre4
+	float4 N;									// w: float area;		// data1 / N4
+	float4 radiance;							// w: int dummy2;		// data2
+	float4 vertex0;								// w: int triIdx;		// data3
+	float4 vertex1;								// w: int instIdx;		// data4
+	float4 vertex2;								// w: int dummy1;		// data5
 #endif
 	// float4 access helper
 #define AREALIGHT_ENERGY centre4.w
@@ -331,12 +302,12 @@ struct CoreLightTri4 { float4 data0, data1, data2, data3, data4, data5; };
 struct CorePointLight
 {
 #ifndef __OPENCLCC__
-	float3 position; float energy;		// data0 / position4
-	float3 radiance; int dummy;			// data1
+	float3 position; float energy;				// data0 / position4
+	float3 radiance; int dummy;					// data1
 #else
 	// OpenCL float3 has 4-byte padding
-	float4 position;					// w: float energy;		// data0 / position4
-	float4 radiance;					// w: int dummy;		// data1
+	float4 position;							// w: float energy;		// data0 / position4
+	float4 radiance;							// w: int dummy;		// data1
 #endif
 	// float4 access helper
 #define POINTLIGHT_ENERGY position4.w
@@ -350,14 +321,14 @@ struct CorePointLight4 { float4 data0, data1; };
 struct CoreSpotLight
 {
 #ifndef __OPENCLCC__
-	float3 position; float cosInner;	// data0 / position4
-	float3 radiance; float cosOuter;	// data1 / radiance4
-	float3 direction; int dummy;		// data2 / direction4
+	float3 position; float cosInner;			// data0 / position4
+	float3 radiance; float cosOuter;			// data1 / radiance4
+	float3 direction; int dummy;				// data2 / direction4
 #else
 	// OpenCL float3 has 4-byte padding
-	float4 position;					// w: float cosInner;	// data0 / position4
-	float4 radiance;					// w: float cosOuter;	// data1 / radiance4
-	float4 direction;					// w: int dummy;		// data2 / direction4
+	float4 position;							// w: float cosInner;	// data0 / position4
+	float4 radiance;							// w: float cosOuter;	// data1 / radiance4
+	float4 direction;							// w: int dummy;		// data2 / direction4
 #endif
 	// float4 access helpers
 #define SPOTLIGHT_INNER	position4.w
@@ -372,12 +343,12 @@ struct CoreSpotLight4 { float4 data0, data1, data2; };
 struct CoreDirectionalLight
 {
 #ifndef __OPENCLCC__
-	float3 direction; float energy;		// data0 / direction4
-	float3 radiance; int dummy;			// data1
+	float3 direction; float energy;				// data0 / direction4
+	float3 radiance; int dummy;					// data1
 #else
 	// OpenCL float3 has 4-byte padding
-	float4 direction;					// w: float energy;		// data0 / direction4
-	float4 radiance;					// w: int dummy;		// data1
+	float4 direction;							// w: float energy;		// data0 / direction4
+	float4 radiance;							// w: int dummy;		// data1
 #endif
 	// float4 access helper
 #define DIRLIGHT_ENERGY direction4.w

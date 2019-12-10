@@ -54,12 +54,10 @@ public:
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
-	void KeyDown( const uint key ) {}
-	void KeyUp( const uint key ) {}
 	// passing data. Note: RenderCore always copies what it needs; the passed data thus remains the
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
-	void SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount ); // textures must be in sync when calling this
+	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
 	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
@@ -74,10 +72,18 @@ public:
 	void UpdateToplevel();
 	int4 GetScreenParams();
 	void SetProbePos( const int2 pos );
-	CoreMaterial& GetCoreMaterial( int materialIdx ) { return materialBuffer->HostPtr()[materialIdx]; }
 	// internal methods
 private:
 	void SyncStorageType( const TexelStorage storage );
+	// helpers
+	template <class T> CUDAMaterial::Map Map( T v )
+	{
+		CUDAMaterial::Map m;
+		CoreTexDesc& t = texDescs[v.textureID];
+		m.width = t.width, m.height = t.height, m.uscale = v.uvscale.x, m.vscale = v.uvscale.y;
+		m.uoffs = v.uvoffset.x, m.voffs = v.uvoffset.y, m.addr = t.firstPixel;
+		return m;
+	}
 	// data members
 	int scrwidth = 0, scrheight = 0;				// current screen width and height
 	int scrspp = 1;									// samples to be taken per screen pixel
@@ -89,8 +95,8 @@ private:
 	vector<CoreInstance*> instances;					// list of instances: model id plus transform
 	bool instancesDirty = true;						// we need to sync the instance array to the device
 	InteropTexture renderTarget;					// CUDA will render to this texture
-	CoreBuffer<CoreMaterial>* materialBuffer = 0;	// material array
-	CoreMaterial* hostMaterialBuffer = 0;			// core-managed host-side copy of the materials for alpha tris
+	CoreBuffer<CUDAMaterial>* materialBuffer = 0;	// material array
+	CUDAMaterial* hostMaterialBuffer = 0;			// core-managed copy of the materials
 	CoreBuffer<CoreLightTri>* areaLightBuffer;		// area lights
 	CoreBuffer<CorePointLight>* pointLightBuffer;	// point lights
 	CoreBuffer<CoreSpotLight>* spotLightBuffer;		// spot lights

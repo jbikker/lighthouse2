@@ -48,12 +48,10 @@ public:
 	void Setting( const char *name, const float value );
 	void SetTarget( GLTexture *target, const uint spp );
 	void Shutdown();
-	void KeyDown( const uint key ) {}
-	void KeyUp( const uint key ) {}
 	// passing data. Note: RenderCore always copies what it needs; the passed data thus remains the
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc *tex, const int textureCount );
-	void SetMaterials( CoreMaterial *mat, const CoreMaterialEx *matEx, const int materialCount ); // textures must be in sync when calling this
+	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
 	void SetLights( const CoreLightTri *areaLights, const int areaLightCount,
 		const CorePointLight *pointLights, const int pointLightCount,
 		const CoreSpotLight *spotLights, const int spotLightCount,
@@ -67,6 +65,16 @@ public:
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4 &transform );
 	void UpdateToplevel();
 	void SetProbePos( const int2 pos );
+
+	// helpers
+	template <class T> VulkanMaterial::Map Map( T v )
+	{
+		VulkanMaterial::Map m;
+		CoreTexDesc& t = m_TexDescs[v.textureID];
+		m.width = t.width, m.height = t.height, m.uscale = v.uvscale.x, m.vscale = v.uvscale.y;
+		m.uoffs = v.uvoffset.x, m.voffs = v.uvoffset.y, m.addr = t.firstPixel;
+		return m;
+	}
 
 	// public data members
 	vk::DispatchLoaderDynamic dynamicDispatcher; // Dynamic dispatcher for extension functions such as NV_RT
@@ -138,7 +146,7 @@ private:
 	VulkanCoreBuffer<uint> *m_NRM32Buffer = nullptr;
 	VulkanCoreBuffer<uint32_t> *m_InstanceMeshMappingBuffer = nullptr;
 	VulkanCoreBuffer<Counters> *m_Counters = nullptr;
-	VulkanCoreBuffer<CoreMaterial> *m_Materials = nullptr;
+	VulkanCoreBuffer<VulkanMaterial> *m_Materials = nullptr;
 	VulkanCoreBuffer<CoreLightTri> *m_AreaLightBuffer = nullptr;
 	VulkanCoreBuffer<CorePointLight> *m_PointLightBuffer = nullptr;
 	VulkanCoreBuffer<CoreSpotLight> *m_SpotLightBuffer = nullptr;

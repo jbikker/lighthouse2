@@ -150,7 +150,7 @@ public:
 		CHK_NVRTC( nvrtcCreateProgram( &prog, cuSource, 0, 0, NULL, NULL ) );
 		// gather NVRTC options
 		vector<const char*> options;
-	#if 0
+	#if 1
 		// @Marijn: this doesn't work. Optix is used in several versions, distributed with LH2.
 		// TODO: Throw FatalError if no path is defined for the requested OptiX version!
 		if (optixVer > 6)
@@ -158,7 +158,7 @@ public:
 		#ifdef OPTIX_INCLUDE_PATH
 			options.push_back( "-I" OPTIX_INCLUDE_PATH );
 		#else
-			FATALERROR( "No include path defined for OptiX %d!", optixVer );
+			options.push_back( "-I../../lib/OptiX7/include" );
 		#endif
 		}
 		else
@@ -166,7 +166,7 @@ public:
 		#ifdef OPTIX_6_INCLUDE_PATH
 			options.push_back( "-I" OPTIX_6_INCLUDE_PATH );
 		#else
-			FATALERROR( "No include path defined for OptiX %d!", optixVer );
+			options.push_back( "-I../../lib/OptiX/include" );
 		#endif
 		}
 	#else

@@ -53,7 +53,7 @@ LH2_DEVFUNC void GetShadingData(
 	const float4 tdata4 = tri.vN2;
 	const float4 tdata5 = tri.T4;
 	// fetch initial set of data from material
-	const CoreMaterial4& mat = (const CoreMaterial4&)materials[TRI_MATERIAL];
+	const CUDAMaterial4& mat = (const CUDAMaterial4&)materials[TRI_MATERIAL];
 	const uint4 baseData = mat.baseData4;
 	// process common data (unconditional)
 	const uint part0 = baseData.x; // diffuse_r, diffuse_g
@@ -98,8 +98,7 @@ LH2_DEVFUNC void GetShadingData(
 	fN = iN;
 	// texturing
 	float tu, tv;
-	if (MAT_HASDIFFUSEMAP || MAT_HAS2NDDIFFUSEMAP || MAT_HAS3RDDIFFUSEMAP || MAT_HASSPECULARITYMAP ||
-		MAT_HASNORMALMAP || MAT_HAS2NDNORMALMAP || MAT_HAS3RDNORMALMAP || MAT_HASROUGHNESSMAP)
+	if (MAT_HASDIFFUSEMAP || MAT_HAS2NDDIFFUSEMAP || MAT_HASSPECULARITYMAP || MAT_HASNORMALMAP || MAT_HAS2NDNORMALMAP || MAT_HASROUGHNESSMAP)
 	{
 		const float4 tdata0 = tri.u4;
 		const float w = 1 - (u + v);
@@ -133,13 +132,6 @@ LH2_DEVFUNC void GetShadingData(
 			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
 			retVal.color += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
 		}
-		if (MAT_HAS3RDDIFFUSEMAP)
-		{
-			const uint4 data = mat.t2data4;
-			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			retVal.color += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
-		}
 	}
 	// normal mapping
 	if (MAT_HASNORMALMAP)
@@ -163,16 +155,6 @@ LH2_DEVFUNC void GetShadingData(
 			float3 normalLayer1 = (make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16, NRM32 ) ) - make_float3( 0.5f )) * 2.0f;
 			normalLayer1.x *= n1scale, normalLayer1.y *= n1scale;
 			shadingNormal += normalLayer1;
-		}
-		if (MAT_HAS3RDNORMALMAP)
-		{
-			const uint4 data = mat.n2data4;
-			const float n2scale = copysignf( -0.0001f + 0.0001f * __expf( 0.1f * ((float)(part3 >> 24) - 128.0f) ), (float)(part3 >> 24) - 128.0f );
-			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			float3 normalLayer2 = (make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16, NRM32 ) ) - make_float3( 0.5f )) * 2.0f;
-			normalLayer2.x *= n2scale, normalLayer2.y *= n2scale;
-			shadingNormal += normalLayer2;
 		}
 		shadingNormal = normalize( shadingNormal );
 		fN = normalize( shadingNormal.x * T + shadingNormal.y * B + shadingNormal.z * iN );

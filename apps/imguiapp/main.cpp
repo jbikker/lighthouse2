@@ -140,7 +140,7 @@ int main()
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );		// OPTIX7 core, with filtering (static scenes only for now)
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );			// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core
@@ -221,20 +221,20 @@ int main()
 		ImGui::End();
 		ImGui::Begin( "Material parameters", 0 );
 		ImGui::Text( "name:    %s", currentMaterial.name.c_str() );
-		ImGui::ColorEdit3( "color", (float*)&currentMaterial.color );
-		ImGui::ColorEdit3( "absorption", (float*)&currentMaterial.absorption );
-		ImGui::SliderFloat( "metallic", &currentMaterial.metallic, 0, 1 );
-		ImGui::SliderFloat( "subsurface", &currentMaterial.subsurface, 0, 1 );
-		ImGui::SliderFloat( "specular", &currentMaterial.specular, 0, 1 );
-		ImGui::SliderFloat( "roughness", &currentMaterial.roughness, 0, 1 );
-		ImGui::SliderFloat( "specularTint", &currentMaterial.specularTint, 0, 1 );
-		ImGui::SliderFloat( "anisotropic", &currentMaterial.anisotropic, 0, 1 );
-		ImGui::SliderFloat( "sheen", &currentMaterial.sheen, 0, 1 );
-		ImGui::SliderFloat( "sheenTint", &currentMaterial.sheenTint, 0, 1 );
-		ImGui::SliderFloat( "clearcoat", &currentMaterial.clearcoat, 0, 1 );
-		ImGui::SliderFloat( "clearcoatGloss", &currentMaterial.clearcoatGloss, 0, 1 );
-		ImGui::SliderFloat( "transmission", &currentMaterial.transmission, 0, 1 );
-		ImGui::SliderFloat( "eta (1/ior)", &currentMaterial.eta, 0.25f, 1.0f );
+		ImGui::ColorEdit3( "color", (float*)&currentMaterial.color() );
+		ImGui::ColorEdit3( "absorption", (float*)&currentMaterial.absorption() );
+		ImGui::SliderFloat( "metallic", &currentMaterial.metallic(), 0, 1 );
+		ImGui::SliderFloat( "subsurface", &currentMaterial.subsurface(), 0, 1 );
+		ImGui::SliderFloat( "specular", &currentMaterial.specular(), 0, 1 );
+		ImGui::SliderFloat( "roughness", &currentMaterial.roughness(), 0, 1 );
+		ImGui::SliderFloat( "specularTint", &currentMaterial.specularTint(), 0, 1 );
+		ImGui::SliderFloat( "anisotropic", &currentMaterial.anisotropic(), 0, 1 );
+		ImGui::SliderFloat( "sheen", &currentMaterial.sheen(), 0, 1 );
+		ImGui::SliderFloat( "sheenTint", &currentMaterial.sheenTint(), 0, 1 );
+		ImGui::SliderFloat( "clearcoat", &currentMaterial.clearcoat(), 0, 1 );
+		ImGui::SliderFloat( "clearcoatGloss", &currentMaterial.clearcoatGloss(), 0, 1 );
+		ImGui::SliderFloat( "transmission", &currentMaterial.transmission(), 0, 1 );
+		ImGui::SliderFloat( "eta (1/ior)", &currentMaterial.eta(), 0.25f, 1.0f );
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );

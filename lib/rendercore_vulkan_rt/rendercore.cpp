@@ -378,7 +378,7 @@ void RenderCore::CreateBuffers()
 	shadeDescriptorSet->Bind( cCOUNTERS, { m_Counters->GetDescriptorBufferInfo() } );
 	shadeDescriptorSet->Bind( fUNIFORM_CONSTANTS, { m_UniformFinalizeParams->GetDescriptorBufferInfo() } );
 
-	m_Materials = new VulkanCoreBuffer<CoreMaterial>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
+	m_Materials = new VulkanCoreBuffer<VulkanMaterial>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 	m_InstanceMeshMappingBuffer = new VulkanCoreBuffer<uint32_t>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal,
 		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst, ON_HOST | ON_DEVICE );
 
@@ -777,35 +777,54 @@ void RenderCore::SetTextures( const CoreTexDesc *tex, const int textures )
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetMaterials( CoreMaterial *mat, const CoreMaterialEx *matEx, const int materialCount )
+#define TOCHAR(a) ((uint)((a)*255.0f))
+#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
+void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
+	// Notes:
+	// Call this after the textures have been set; CoreMaterials store the offset of each texture
+	// in the continuous arrays; this data is valid only when textures are in sync.
 	delete m_Materials;
-	std::vector<CoreMaterial> materialData( materialCount );
+	std::vector<VulkanMaterial> materialData( materialCount );
 	materialData.resize( materialCount );
-	memcpy( materialData.data(), mat, materialCount * sizeof( CoreMaterial ) );
-
 	const std::vector<CoreTexDesc> &texDescs = m_TexDescs;
-
 	for (int i = 0; i < materialCount; i++)
 	{
-		CoreMaterial &mat = materialData.at( i );
-		const CoreMaterialEx &ids = matEx[i];
-		if (ids.texture[0] != -1)
-			mat.texaddr0 = texDescs[ids.texture[0]].firstPixel;
-		if (ids.texture[1] != -1) mat.texaddr1 = texDescs[ids.texture[1]].firstPixel;
-		if (ids.texture[2] != -1) mat.texaddr2 = texDescs[ids.texture[2]].firstPixel;
-		if (ids.texture[3] != -1) mat.nmapaddr0 = texDescs[ids.texture[3]].firstPixel;
-		if (ids.texture[4] != -1) mat.nmapaddr1 = texDescs[ids.texture[4]].firstPixel;
-		if (ids.texture[5] != -1) mat.nmapaddr2 = texDescs[ids.texture[5]].firstPixel;
-		if (ids.texture[6] != -1) mat.smapaddr = texDescs[ids.texture[6]].firstPixel;
-		if (ids.texture[7] != -1) mat.rmapaddr = texDescs[ids.texture[7]].firstPixel;
-		//if ( ids.texture[8] != -1 ) mat.texaddr0 = texDescs[ids.texture[8]].firstPixel; // second roughness map is not used
-		if (ids.texture[9] != -1) mat.cmapaddr = texDescs[ids.texture[9]].firstPixel;
-		if (ids.texture[10] != -1) mat.amapaddr = texDescs[ids.texture[10]].firstPixel;
+		// perform conversion to internal material format
+		CoreMaterial& m = mat[i];
+		VulkanMaterial& gpuMat = materialData[i];
+		memset( &gpuMat, 0, sizeof( VulkanMaterial ) );
+		gpuMat.diffuse_r = m.color.value.x,
+		gpuMat.diffuse_g = m.color.value.y;
+		gpuMat.diffuse_b = m.color.value.z;
+		gpuMat.transmittance_r = 1 - m.absorption.value.x;
+		gpuMat.transmittance_g = 1 - m.absorption.value.y;
+		gpuMat.transmittance_b = 1 - m.absorption.value.z;
+		gpuMat.parameters.x = TOUINT4( m.metallic.value, m.subsurface.value, m.specular.value, m.roughness.value );
+		gpuMat.parameters.y = TOUINT4( m.specularTint.value, m.anisotropic.value, m.sheen.value, m.sheenTint.value );
+		gpuMat.parameters.z = TOUINT4( m.clearcoat.value, m.clearcoatGloss.value, m.transmission.value, 0 );
+		gpuMat.parameters.w = *((uint*)&m.eta);
+		if (m.color.textureID != -1) gpuMat.tex0 = Map<CoreMaterial::Vec3Value>( m.color );
+		if (m.detailColor.textureID != -1) gpuMat.tex1 = Map<CoreMaterial::Vec3Value>( m.detailColor );
+		if (m.normals.textureID != -1) gpuMat.nmap0 = Map<CoreMaterial::Vec3Value>( m.normals );
+		if (m.detailNormals.textureID != -1) gpuMat.nmap1 = Map<CoreMaterial::Vec3Value>( m.detailNormals );
+		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness );
+		if (m.specular.textureID != -1) gpuMat.smap = Map<CoreMaterial::ScalarValue>( m.specular );
+		bool hdr = false;
+		if (m.color.textureID != 1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
+		gpuMat.flags =
+			(m.eta.value < 1 ? ISDIELECTRIC : 0) + (hdr ? DIFFUSEMAPISHDR : 0) +
+			(m.color.textureID != -1 ? HASDIFFUSEMAP : 0) +
+			(m.normals.textureID != -1 ? HASNORMALMAP : 0) +
+			(m.specular.textureID != -1 ? HASSPECULARITYMAP : 0) +
+			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
+			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
+			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
 
-	m_Materials = new VulkanCoreBuffer<CoreMaterial>( m_Device, materialCount, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
-	m_Materials->CopyToDevice( materialData.data(), materialCount * sizeof( CoreMaterial ) );
+	m_Materials = new VulkanCoreBuffer<VulkanMaterial>( m_Device, materialCount, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
+	m_Materials->CopyToDevice( materialData.data(), materialCount * sizeof( VulkanMaterial ) );
 
 	shadeDescriptorSet->Bind( cMATERIALS, { m_Materials->GetDescriptorBufferInfo() } );
 }

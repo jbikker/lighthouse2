@@ -49,11 +49,11 @@ void RenderSystem::SetTarget( GLTexture* target, const uint spp )
 //  +-----------------------------------------------------------------------------+
 void RenderSystem::SynchronizeSky()
 {
-	if (scene->sky->Changed())
+	if (scene->sky && scene->sky->Changed())
 	{
 		// send sky data to core
 		HostSkyDome* sky = scene->sky;
-		core->SetSkyData( sky->pixels, sky->width, sky->height );
+		core->SetSkyData( sky->pixels, sky->width, sky->height, sky->worldToLight );
 	}
 }
 
@@ -101,16 +101,13 @@ void RenderSystem::SynchronizeMaterials()
 	{
 		// send material data to core
 		vector<CoreMaterial> gpuMaterial;
-		vector<CoreMaterialEx> gpuMaterialEx;
 		for (auto material : scene->materials)
 		{
 			CoreMaterial m;
-			CoreMaterialEx e;
-			material->ConvertTo( m, e );
+			memcpy( &m, material, sizeof( CoreMaterial ) );
 			gpuMaterial.push_back( m );
-			gpuMaterialEx.push_back( e );
 		}
-		core->SetMaterials( gpuMaterial.data(), gpuMaterialEx.data(), (int)gpuMaterial.size() );
+		core->SetMaterials( gpuMaterial.data(), (int)gpuMaterial.size() );
 	}
 }
 

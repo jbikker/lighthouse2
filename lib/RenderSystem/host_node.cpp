@@ -22,7 +22,7 @@ static HostTri TransformedHostTri( HostTri* tri, mat4 T )
 	transformedTri.vertex0 = make_float3( make_float4( transformedTri.vertex0, 1 ) * T );
 	transformedTri.vertex1 = make_float3( make_float4( transformedTri.vertex1, 1 ) * T );
 	transformedTri.vertex2 = make_float3( make_float4( transformedTri.vertex2, 1 ) * T );
-	float4 N = make_float4( transformedTri.Nx, transformedTri.Ny, transformedTri.Nz, 0 ) * T;
+	const float4 N = normalize( make_float4( transformedTri.Nx, transformedTri.Ny, transformedTri.Nz, 0 ) * T );
 	transformedTri.Nx = N.x;
 	transformedTri.Ny = N.y;
 	transformedTri.Nz = N.z;
@@ -61,7 +61,7 @@ HostNode::~HostNode()
 		for (auto materialIdx : mesh->materialList)
 		{
 			HostMaterial* material = HostScene::materials[materialIdx];
-			if (material->color.x > 1 || material->color.y > 1 || material->color.z > 1)
+			if (material->IsEmissive())
 			{
 				// mesh contains an emissive material; remove related area lights
 				vector<HostAreaLight*>& lightList = HostScene::areaLights;
@@ -209,7 +209,7 @@ void HostNode::PrepareLights()
 		{
 			HostTri* tri = &mesh->triangles[i];
 			HostMaterial* mat = HostScene::materials[tri->material];
-			if (mat->color.x > 1 || mat->color.y > 1 || mat->color.z > 1)
+			if (mat->IsEmissive())
 			{
 				tri->UpdateArea();
 				HostTri transformedTri = TransformedHostTri( tri, localTransform );

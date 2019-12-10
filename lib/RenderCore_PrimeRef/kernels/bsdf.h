@@ -40,7 +40,7 @@ LH2_DEVFUNC bool Refract_L( const float3& wi, const float3& n, const float eta, 
 LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN, const float3 T,
 	const float3 wo, const float3 wi, float& pdf )
 {
-	if (TRANSMISSION > 0.999f || ROUGHNESS <=0.001f)
+	if (TRANSMISSION > 0.999f || ROUGHNESS <= 0.001f)
 	{
 		// no transport via explicit connections for specular vertices
 		pdf = 0;

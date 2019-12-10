@@ -47,7 +47,8 @@ public:
 	{
 		LINEARIZED = 1,
 		FLIPPED = 2,
-		INVERTED = 4
+		INVERTED = 4,
+		GAMMACORRECTION = 8,
 	};
 	// constructor / destructor / conversion
 	HostTexture() = default;
@@ -56,7 +57,9 @@ public:
 	// methods
 	bool Equals( const string& o, const uint m );
 	void Load( const char* fileName, const uint modFlags, bool normalMap = false );
-	void sRGBtoLinear( uchar* pixels, const uint size, const uint stride );
+	static void sRGBtoLinear( uchar* pixels, const uint size, const uint stride );
+	static float InverseGammaCorrect( float value );
+	static float4 InverseGammaCorrect( const float4& value );
 	void BumpToNormalMap( float heightScale );
 	uint* GetLDRPixels() { return (uint*)idata; }
 	float4* GetHDRPixels() { return fdata; }

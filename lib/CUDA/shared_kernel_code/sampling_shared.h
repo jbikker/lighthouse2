@@ -209,12 +209,12 @@ LH2_DEVFUNC void ReadTexelConsistent2( const float4* buffer, const float4* prevW
 template <typename T>
 __device__ T CoreTexture<T>::Evaluate( float2 uv ) const
 {
-	switch ( type )
+	switch (type)
 	{
 	case Constant:
 		return constant;
 	case Imagemap:
-		if ( imagemap.trilinear )
+		if (imagemap.trilinear)
 			return FetchTexelTrilinear(
 				0, uv,
 				imagemap.textureOffset,
@@ -233,7 +233,7 @@ __device__ T CoreTexture<T>::Evaluate( float2 uv ) const
 template <>
 __device__ float CoreTexture<float>::Evaluate( float2 uv ) const
 {
-	switch ( type )
+	switch (type)
 	{
 	case Constant:
 		return constant;
@@ -244,23 +244,23 @@ __device__ float CoreTexture<float>::Evaluate( float2 uv ) const
 template <>
 __device__ float3 CoreTexture<float3>::Evaluate( float2 uv ) const
 {
-	switch ( type )
+	switch (type)
 	{
 	case Constant:
 		return constant;
 	case Imagemap:
 		return make_float3(
 			imagemap.trilinear
-				? FetchTexelTrilinear(
-					  0, uv,
-					  imagemap.textureOffset,
-					  imagemap.width,
-					  imagemap.height )
-				: FetchTexel(
-					  uv,
-					  imagemap.textureOffset,
-					  imagemap.width,
-					  imagemap.height ) );
+			? FetchTexelTrilinear(
+				0, uv,
+				imagemap.textureOffset,
+				imagemap.width,
+				imagemap.height )
+			: FetchTexel(
+				uv,
+				imagemap.textureOffset,
+				imagemap.width,
+				imagemap.height ) );
 	}
 	return make_float3( 0.f );
 }

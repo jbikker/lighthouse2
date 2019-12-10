@@ -4,7 +4,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -46,12 +46,10 @@ public:
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
-	void KeyDown( const uint key ) {}
-	void KeyUp( const uint key ) {}
 	// passing data. Note: RenderCore always copies what it needs; the passed data thus remains the
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
-	void SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount ); // textures must be in sync when calling this
+	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
 	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
@@ -66,25 +64,33 @@ public:
 	void UpdateToplevel();
 	int4 GetScreenParams();
 	void SetProbePos( const int2 pos );
-	CoreMaterial& GetCoreMaterial( int materialIdx ) { return materialBuffer->HostPtr()[materialIdx]; }
 	// internal methods
 private:
 	void SyncStorageType( const TexelStorage storage );
+	// helpers
+	template <class T> CUDAMaterial::Map Map( T v )
+	{
+		CUDAMaterial::Map m;
+		CoreTexDesc& t = texDescs[v.textureID];
+		m.width = t.width, m.height = t.height, m.uscale = v.uvscale.x, m.vscale = v.uvscale.y;
+		m.uoffs = v.uvoffset.x, m.voffs = v.uvoffset.y, m.addr = t.firstPixel;
+		return m;
+	}
 	// data members
 	int scrwidth = 0, scrheight = 0;				// current screen width and height
-    int scrspp = 1;									// samples to be taken per screen pixel
+	int scrspp = 1;									// samples to be taken per screen pixel
 	int skywidth = 0, skyheight = 0;				// size of the skydome texture
 	int maxPixels = 0;								// max screen size buffers can accomodate without a realloc
-	int currentSPP = 0;	
-    int samplesTaken = 0;// spp count which will be accomodated without a realloc
-    uint maxVisNum = 1600 * 900 * VIS_BUFFERSIZE;
+	int currentSPP = 0;
+	int samplesTaken = 0;// spp count which will be accomodated without a realloc
+	uint maxVisNum = 1600 * 900 * VIS_BUFFERSIZE;
 	int2 probePos = make_int2( 0 );					// triangle picking; primary ray for this pixel copies its triid to coreStats.probedTriid
 	vector<CoreMesh*> meshes;						// list of meshes, to be referenced by the instances
 	vector<CoreInstance*> instances;					// list of instances: model id plus transform
 	bool instancesDirty = true;						// we need to sync the instance array to the device
 	InteropTexture renderTarget;					// CUDA will render to this texture
-	CoreBuffer<CoreMaterial>* materialBuffer = 0;	// material array
-	CoreMaterial* hostMaterialBuffer = 0;			// core-managed host-side copy of the materials for alpha tris
+	CoreBuffer<CUDAMaterial>* materialBuffer = 0;	// material array
+	CUDAMaterial* hostMaterialBuffer = 0;			// core-managed copy of the materials
 	CoreBuffer<CoreLightTri>* areaLightBuffer;		// area lights
 	CoreBuffer<CorePointLight>* pointLightBuffer;	// point lights
 	CoreBuffer<CoreSpotLight>* spotLightBuffer;		// spot lights
@@ -93,33 +99,33 @@ private:
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
 	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
 	RTPmodel* topLevel = 0;							// the top-level node; combines all instances and is the entry point for ray queries
-    CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
-    CoreBuffer<uint>* texel32Buffer = 0;			// texel buffer 0: regular ARGB32 texture data
+	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
+	CoreBuffer<uint>* texel32Buffer = 0;			// texel buffer 0: regular ARGB32 texture data
 
-    CoreBuffer<float4>* accumulatorOnePass = 0;
+	CoreBuffer<float4>* accumulatorOnePass = 0;
 	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
 
-    // BDPT
-    ///////////////////////////
-    CoreBuffer<float4>* contributions = 0;
+	// BDPT
+	///////////////////////////
+	CoreBuffer<float4>* contributions = 0;
 
-    CoreBuffer<uint>* constructEyeBuffer = 0;
+	CoreBuffer<uint>* constructEyeBuffer = 0;
 
-    CoreBuffer<uint>* eyePathBuffer = 0;
+	CoreBuffer<uint>* eyePathBuffer = 0;
 
-    CoreBuffer<BiPathState>* pathDataBuffer = 0;	// additional path state data
-    //CoreBuffer<BiPathState>* pathDataBufferExt = 0;
-    CoreBuffer<Ray4>* visibilityRayBuffer = 0;         // buffer for visibility of connection
-    CoreBuffer<uint>* visibilityHitBuffer = 0; // buffer for OptiX intersection results
-    RTPbufferdesc visibilityRaysDesc;				// buffer descriptor for extension rays
-    RTPbufferdesc visibilityHitsDesc;				// buffer descriptor for extension ray hits
+	CoreBuffer<BiPathState>* pathDataBuffer = 0;	// additional path state data
+	//CoreBuffer<BiPathState>* pathDataBufferExt = 0;
+	CoreBuffer<Ray4>* visibilityRayBuffer = 0;         // buffer for visibility of connection
+	CoreBuffer<uint>* visibilityHitBuffer = 0; // buffer for OptiX intersection results
+	RTPbufferdesc visibilityRaysDesc;				// buffer descriptor for extension rays
+	RTPbufferdesc visibilityHitsDesc;				// buffer descriptor for extension ray hits
 
-    CoreBuffer<Ray4>* randomWalkRayBuffer = 0;         // buffer for visibility of connection
-    CoreBuffer<Intersection>* randomWalkHitBuffer = 0; // buffer for OptiX intersection results
-    RTPbufferdesc randomWalkRaysDesc;				// buffer descriptor for extension rays
-    RTPbufferdesc randomWalkHitsDesc;				// buffer descriptor for extension ray hits
+	CoreBuffer<Ray4>* randomWalkRayBuffer = 0;         // buffer for visibility of connection
+	CoreBuffer<Intersection>* randomWalkHitBuffer = 0; // buffer for OptiX intersection results
+	RTPbufferdesc randomWalkRaysDesc;				// buffer descriptor for extension rays
+	RTPbufferdesc randomWalkHitsDesc;				// buffer descriptor for extension ray hits
 
-    ///////////////////////////////
+	///////////////////////////////
 	CoreTexDesc* texDescs = 0;						// array of texture descriptors
 	int textureCount = 0;							// size of texture descriptor array
 	int SMcount = 0;								// multiprocessor count, used for persistent threads

@@ -230,9 +230,9 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (specular) FLAGS |= S_SPECULAR;
 
 	// russian roulette (TODO: greatly increases variance.)
-	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0))  ? 1 : SurvivalProbability( bsdf );
+	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0)) ? 1 : SurvivalProbability( bsdf );
 	if (p < RandomFloat( seed )) return; else throughput *= 1 / p;
-	
+
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN * faceDir );
@@ -241,7 +241,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	extensionRaysOut[extensionRayIdx].D4 = make_float4( R, 1e34f );
 	FIXNAN_FLOAT3( throughput );
 	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput * bsdf * abs( dot( fN * faceDir, R ) ), __uint_as_float( data ) );
-	pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( newBsdfPdf,  __uint_as_float( packedNormal ), 0, 0 );
+	pathStateDataOut[extensionRayIdx * 2 + 1] = make_float4( newBsdfPdf, __uint_as_float( packedNormal ), 0, 0 );
 }
 
 //  +-----------------------------------------------------------------------------+

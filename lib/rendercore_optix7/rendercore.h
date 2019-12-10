@@ -15,7 +15,8 @@
 
 #pragma once
 
-namespace lh2core {
+namespace lh2core
+{
 
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |
@@ -41,12 +42,10 @@ public:
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
-	void KeyDown( const uint key ) {}
-	void KeyUp( const uint key ) {}
 	// passing data. Note: RenderCore always copies what it needs; the passed data thus remains the
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
-	void SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount ); // textures must be in sync when calling this
+	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
 	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
@@ -60,11 +59,19 @@ public:
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform );
 	void UpdateToplevel();
 	void SetProbePos( const int2 pos );
-	CoreMaterial& GetCoreMaterial( int materialIdx ) { return materialBuffer->HostPtr()[materialIdx]; }
 	// internal methods
 private:
 	void SyncStorageType( const TexelStorage storage );
 	void CreateOptixContext( int cc );
+	// helpers
+	template <class T> CUDAMaterial::Map Map( T v )
+	{
+		CUDAMaterial::Map m;
+		CoreTexDesc& t = texDescs[v.textureID];
+		m.width = t.width, m.height = t.height, m.uscale = v.uvscale.x, m.vscale = v.uvscale.y;
+		m.uoffs = v.uvoffset.x, m.voffs = v.uvoffset.y, m.addr = t.firstPixel;
+		return m;
+	}
 	// data members
 	int scrwidth = 0, scrheight = 0;				// current screen width and height
 	int scrspp = 1;									// samples to be taken per screen pixel
@@ -76,8 +83,8 @@ private:
 	vector<CoreInstance*> instances;					// list of instances: model id plus transform
 	bool instancesDirty = true;						// we need to sync the instance array to the device
 	InteropTexture renderTarget;					// CUDA will render to this texture
-	CoreBuffer<CoreMaterial>* materialBuffer = 0;	// material array
-	CoreMaterial* hostMaterialBuffer = 0;			// core-managed host-side copy of the materials for alpha tris
+	CoreBuffer<CUDAMaterial>* materialBuffer = 0;	// material array
+	CUDAMaterial* hostMaterialBuffer = 0;			// core-managed copy of the materials
 	CoreBuffer<CoreLightTri>* areaLightBuffer;		// area lights
 	CoreBuffer<CorePointLight>* pointLightBuffer;	// point lights
 	CoreBuffer<CoreSpotLight>* spotLightBuffer;		// spot lights
@@ -86,11 +93,7 @@ private:
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
 	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
 	CoreBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
-#ifdef USE_OPTIX_PERSISTENT_THREADS
-	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
-#else
-	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
-#endif
+	CoreBuffer<Counters>* counterBuffer = 0;		// counters for wavefront path tracing
 	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
 	CoreBuffer<uint>* texel32Buffer = 0;			// texel buffer 0: regular ARGB32 texture data
 	CoreBuffer<float4>* hitBuffer = 0;				// intersection results

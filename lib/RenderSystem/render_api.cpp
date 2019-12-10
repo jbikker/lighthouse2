@@ -131,14 +131,14 @@ RenderSettings* RenderAPI::GetSettings()
 	return &renderer->settings;
 }
 
-int RenderAPI::GetTriangleNode(const int coreInstId, const int coreTriId)
+int RenderAPI::GetTriangleNode( const int coreInstId, const int coreTriId )
 {
-	return renderer->GetTriangleNode(coreInstId, coreTriId);
+	return renderer->GetTriangleNode( coreInstId, coreTriId );
 }
 
-int RenderAPI::GetTriangleMesh(const int coreInstId, const int coreTriId)
+int RenderAPI::GetTriangleMesh( const int coreInstId, const int coreTriId )
 {
-	return renderer->GetTriangleMesh(coreInstId, coreTriId);
+	return renderer->GetTriangleMesh( coreInstId, coreTriId );
 }
 
 int RenderAPI::GetTriangleMaterialID( const int coreInstId, const int coreTriId )

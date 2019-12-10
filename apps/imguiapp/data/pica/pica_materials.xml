@@ -4,672 +4,560 @@
         <name>Plastic_Wall_Only</name>
         <origin>data/pica/scene.gltf</origin>
         <id>0</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.65924126" g="0.60714811" r="0.45760569"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.11413872</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_0>
     <material_1>
         <name>Plastic_Grey_Dark</name>
         <origin>data/pica/scene.gltf</origin>
         <id>1</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.23951982" g="0.23951982" r="0.23951982"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.40000001</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_1>
     <material_2>
         <name>Plastic_Red_Matte</name>
         <origin>data/pica/scene.gltf</origin>
         <id>2</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.0011638093" g="0.0011638093" r="0.69125926"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_2>
     <material_3>
         <name>Plastic_Blue</name>
         <origin>data/pica/scene.gltf</origin>
         <id>3</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.40197778" g="0.34191442" r="0.16513219"/>
-        <absorption b="0" g="0" r="0"/>
-        <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
-        <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
+        <metallic>0.62</metallic>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
+        <roughness>0.62</roughness>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_3>
     <material_4>
         <name>Plastic_MediumGrey_Glossy</name>
         <origin>data/pica/scene.gltf</origin>
         <id>4</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.6204586" g="0.53565419" r="0.37812391"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.51657772</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_4>
     <material_5>
         <name>Plastic_Brown_Satin</name>
         <origin>data/pica/scene.gltf</origin>
         <id>5</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.39198321" g="0.39198321" r="0.64356357"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.2421875</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_5>
     <material_6>
         <name>Plastic_Orange_Satin</name>
         <origin>data/pica/scene.gltf</origin>
         <id>6</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.064803265" g="0.3277781" r="0.8307699"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_6>
     <material_7>
         <name>Plastic_Brown_Dark</name>
         <origin>data/pica/scene.gltf</origin>
         <id>7</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.064803265" g="0.18782078" r="0.29177064"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.40000001</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_7>
     <material_8>
         <name>Plastic_Tape_Glossy</name>
         <origin>data/pica/scene.gltf</origin>
         <id>8</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.22113985" g="0.22113985" r="0.39218956"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.047065549</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_8>
     <material_9>
         <name>Paper_StickyNote_01</name>
         <origin>data/pica/scene.gltf</origin>
         <id>9</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_9>
     <material_10>
         <name>Decal_Note_01</name>
         <origin>data/pica/scene.gltf</origin>
         <id>10</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_10>
     <material_11>
         <name>Plastic_White_Matte</name>
         <origin>data/pica/scene.gltf</origin>
         <id>11</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.58408147" g="0.58408147" r="0.6204586"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_11>
     <material_12>
         <name>Decal_First_Aid_Kit</name>
         <origin>data/pica/scene.gltf</origin>
         <id>12</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_12>
     <material_13>
         <name>Plastic_Dark_Matte</name>
         <origin>data/pica/scene.gltf</origin>
         <id>13</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.044397864" g="0.044397864" r="0.044397864"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_13>
     <material_14>
         <name>Metal_Aluminium</name>
         <origin>data/pica/scene.gltf</origin>
         <id>14</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>1</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.49561739</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_14>
     <material_15>
         <name>Plastic_Pink_Details</name>
         <origin>data/pica/scene.gltf</origin>
         <id>15</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.63586128" g="0.63586128" r="0.63586128"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.14462653</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_15>
     <material_16>
         <name>Plastic_Decals</name>
         <origin>data/pica/scene.gltf</origin>
         <id>16</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.042386863" g="0.36084425" r="0.53292084"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.11413872</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_16>
     <material_17>
         <name>Decal_Caution</name>
         <origin>data/pica/scene.gltf</origin>
         <id>17</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_17>
     <material_18>
         <name>Plastic_Blue_Satin</name>
         <origin>data/pica/scene.gltf</origin>
         <id>18</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_18>
     <material_19>
         <name>Decal_Keyboard_01</name>
         <origin>data/pica/scene.gltf</origin>
         <id>19</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_19>
     <material_20>
         <name>Glass_Dark_01</name>
         <origin>data/pica/scene.gltf</origin>
         <id>20</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.99998999" g="0.99998999" r="1"/>
-        <absorption b="0.29411763" g="1" r="0.33613425"/>
+        <absorption b="0.36274505" g="1" r="0.36274505"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
         <transmission>1</transmission>
-        <eta>0.64200002</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <eta>0.65799999</eta>
     </material_20>
     <material_21>
         <name>Plastic_Blue_ExtraLight</name>
         <origin>data/pica/scene.gltf</origin>
         <id>21</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>1</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.25</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_21>
     <material_22>
         <name>Metal_Blue</name>
         <origin>data/pica/scene.gltf</origin>
         <id>22</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>1</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_22>
     <material_23>
         <name>Plastic_Red_Transparent</name>
         <origin>data/pica/scene.gltf</origin>
         <id>23</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.0033541063" g="0.0033541063" r="0.33108273"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.16901676</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_23>
     <material_24>
         <name>Wax_Pastel_Label_02</name>
         <origin>data/pica/scene.gltf</origin>
         <id>24</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="1" g="1" r="1"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_24>
     <material_25>
         <name>Wax_Pastel_Yellow_01</name>
         <origin>data/pica/scene.gltf</origin>
         <id>25</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.02187464" g="0.32667902" r="0.47883195"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_25>
     <material_26>
         <name>Wax_Pastel_Blue_01</name>
         <origin>data/pica/scene.gltf</origin>
         <id>26</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.042351641" g="0.48215222" r="0.73253298"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.60000002</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_26>
     <material_27>
         <name>Coated_Black_Glossy</name>
         <origin>data/pica/scene.gltf</origin>
         <id>27</id>
-        <flags>129</flags>
+        <flags>5</flags>
         <color b="0.0078125" g="0.0078125" r="0.0078125"/>
-        <absorption b="0" g="0" r="0"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
         <metallic>0</metallic>
-        <subsurface>0</subsurface>
-        <specular>0.5</specular>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
         <roughness>0.15682165</roughness>
-        <specularTint>0</specularTint>
-        <anisotropic>0</anisotropic>
-        <sheen>0</sheen>
-        <sheenTint>0</sheenTint>
-        <clearcoat>0</clearcoat>
-        <clearcoatGloss>1</clearcoatGloss>
-        <transmission>0</transmission>
-        <eta>1</eta>
-        <custom0>0</custom0>
-        <custom1>0</custom1>
-        <custom2>0</custom2>
-        <custom3>0</custom3>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
     </material_27>
 </materials>

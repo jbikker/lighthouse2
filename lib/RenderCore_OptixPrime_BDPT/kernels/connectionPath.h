@@ -99,33 +99,33 @@ void connectionPathKernel( int smcount, BiPathState* pathStateData,
 		light_hit = primIdx;
 	}
 
-    if (eye_hit == -1 && type < EXTEND_LIGHTPATH)
-    {
-        if (!(eye_pdf < EPSILON || isnan(eye_pdf)))
-        {
-            float3 hit_dir = make_float3(pathStateData[jobIndex].data7);
-            float3 background = make_float3(SampleSkydome(hit_dir, s + 1));
+	if (eye_hit == -1 && type < EXTEND_LIGHTPATH)
+	{
+		if (!(eye_pdf < EPSILON || isnan( eye_pdf )))
+		{
+			float3 hit_dir = make_float3( pathStateData[jobIndex].data7 );
+			float3 background = make_float3( SampleSkydome( hit_dir, s + 1 ) );
 
-            // hit miss : beta 
-            float3 throughput = make_float3(pathStateData[jobIndex].data5);
+			// hit miss : beta 
+			float3 throughput = make_float3( pathStateData[jobIndex].data5 );
 
-            float3 contribution = throughput * background;
+			float3 contribution = throughput * background;
 
-            CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
-            FIXNAN_FLOAT3(contribution);
+			CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
+			FIXNAN_FLOAT3( contribution );
 
-            float dE = pathStateData[jobIndex].data4.w;
-            misWeight = 1.0f  / (dE * (1.0f / (SCENE_AREA)) + NKK);
-            
-            if (type == NEW_PATH)
-            {
-                misWeight = 1.0f;
-            }
-            
+			float dE = pathStateData[jobIndex].data4.w;
+			misWeight = 1.0f / (dE * (1.0f / (SCENE_AREA)) + NKK);
 
-            accumulatorOnePass[contribIdx] += make_float4((contribution * misWeight), 0.0f);
-        }
-    }
+			if (type == NEW_PATH)
+			{
+				misWeight = 1.0f;
+			}
+
+
+			accumulatorOnePass[contribIdx] += make_float4( (contribution * misWeight), 0.0f );
+		}
+	}
 
 	if (eye_hit != -1 && s + t < MAX_EYEPATH)
 	{

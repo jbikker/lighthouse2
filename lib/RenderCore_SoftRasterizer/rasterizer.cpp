@@ -93,7 +93,7 @@ void Mesh::Render( const mat4& T )
 		float* zbuffer = Rasterizer::zbuffer, f;
 		const float tw = mat->texture ? (float)mat->texture->width : 1;
 		const float th = mat->texture ? (float)mat->texture->height : 1;
-		const int umask = (int)tw - 1, vmask = (int)th - 1;
+		const int umask = (int)tw, vmask = (int)th;
 		// cull triangle
 		float3 Nt = make_float3( make_float4( N[i], 0 ) * T );
 		if (dot( tpos[tri[i * 3 + 0]], Nt ) > 0) continue;
@@ -161,8 +161,8 @@ void Mesh::Render( const mat4& T )
 			{
 				if (z0 >= zbuf[x]) continue;
 				const float z = 1.0f / z0;
-				const int u = (int)(u0 * z * tw) & umask, v = (int)(v0 * z * th) & vmask;
-				dest[x] = ScaleColor( src[u + v * (umask + 1)], shade ), zbuf[x] = z0;
+				const uint u = (uint)(u0 * z * tw) % umask, v = (uint)(v0 * z * th) % vmask;
+				dest[x] = ScaleColor( src[u + v * umask], shade ), zbuf[x] = z0;
 			}
 		}
 	}

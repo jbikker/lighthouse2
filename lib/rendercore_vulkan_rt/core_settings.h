@@ -271,6 +271,52 @@ struct Counters // 14 counters
 	uint4 lightCounts;
 };
 
+// internal material representation
+struct VulkanMaterial
+{
+	struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; };
+	// data to be read unconditionally
+	half diffuse_r, diffuse_g, diffuse_b, transmittance_r, transmittance_g, transmittance_b; uint flags;
+	uint4 parameters; // 16 Disney principled BRDF parameters, 0.8 fixed point
+	// texture / normal map descriptors; exactly 128-bit each
+	Map tex0, tex1, nmap0, nmap1, smap, rmap;
+};
+
+struct VulkanMaterial4
+{
+	uint4 baseData4;
+	uint4 parameters;
+	uint4 t0data4;
+	uint4 t1data4;
+	uint4 n0data4;
+	uint4 n1data4;
+	uint4 sdata4;
+	uint4 rdata4;
+	// flag query macros
+#define ISDIELECTRIC				(1 << 0)
+#define DIFFUSEMAPISHDR				(1 << 1)
+#define HASDIFFUSEMAP				(1 << 2)
+#define HASNORMALMAP				(1 << 3)
+#define HASSPECULARITYMAP			(1 << 4)
+#define HASROUGHNESSMAP				(1 << 5)
+#define ISANISOTROPIC				(1 << 6)
+#define HAS2NDNORMALMAP				(1 << 7)
+#define HAS2NDDIFFUSEMAP			(1 << 9)
+#define HASSMOOTHNORMALS			(1 << 11)
+#define HASALPHA					(1 << 12)
+#define MAT_ISDIELECTRIC			(flags & ISDIELECTRIC)
+#define MAT_DIFFUSEMAPISHDR			(flags & DIFFUSEMAPISHDR)
+#define MAT_HASDIFFUSEMAP			(flags & HASDIFFUSEMAP)
+#define MAT_HASNORMALMAP			(flags & HASNORMALMAP)
+#define MAT_HASSPECULARITYMAP		(flags & HASSPECULARITYMAP)
+#define MAT_HASROUGHNESSMAP			(flags & HASROUGHNESSMAP)
+#define MAT_ISANISOTROPIC			(flags & ISANISOTROPIC)
+#define MAT_HAS2NDNORMALMAP			(flags & HAS2NDNORMALMAP)
+#define MAT_HAS2NDDIFFUSEMAP		(flags & HAS2NDDIFFUSEMAP)
+#define MAT_HASSMOOTHNORMALS		(flags & HASSMOOTHNORMALS)
+#define MAT_HASALPHA				(flags & HASALPHA)
+};
+
 #include "rendercore.h"
 
 // clang-format on

@@ -27,10 +27,6 @@ struct DeviceVars
 	// impossible values to trigger an update in the first frame
 	float clampValue = -1.0f;
 	float geometryEpsilon = 1e34f;
-	float filterClampDirect = 2.5f;
-	float filterClampIndirect = 15.0f;
-	uint filterEnabled = 1;
-	uint TAAEnabled = 1;
 };
 
 //  +-----------------------------------------------------------------------------+
@@ -46,12 +42,10 @@ public:
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
-	void KeyDown( const uint key ) {}
-	void KeyUp( const uint key ) {}
 	// passing data. Note: RenderCore always copies what it needs; the passed data thus remains the
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
-	void SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount ); // textures must be in sync when calling this
+	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
 	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,

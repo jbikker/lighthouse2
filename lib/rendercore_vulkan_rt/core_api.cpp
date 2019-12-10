@@ -33,8 +33,7 @@ extern "C" COREDLL_API void DestroyCore()
 	coreInstance = nullptr;
 }
 
-namespace lh2core
-{
+namespace lh2core {
 static lh2core::RenderCore *core = 0;
 };
 
@@ -84,9 +83,9 @@ void CoreAPI::SetTextures( const CoreTexDesc *tex, const int textureCount )
 	core->SetTextures( tex, textureCount );
 }
 
-void CoreAPI::SetMaterials( CoreMaterial *mat, const CoreMaterialEx *matEx, const int materialCount )
+void CoreAPI::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
-	core->SetMaterials( mat, matEx, materialCount );
+	core->SetMaterials( mat, materialCount );
 }
 
 void CoreAPI::SetLights( const CoreLightTri *areaLights, const int areaLightCount,
@@ -100,7 +99,7 @@ void CoreAPI::SetLights( const CoreLightTri *areaLights, const int areaLightCoun
 		directionalLights, directionalLightCount );
 }
 
-void CoreAPI::SetSkyData( const float3 *pixels, const uint width, const uint height )
+void CoreAPI::SetSkyData( const float3 *pixels, const uint width, const uint height, const mat4& worldToLight /* TODO */ )
 {
 	core->SetSkyData( pixels, width, height );
 }

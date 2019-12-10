@@ -171,26 +171,26 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	for (uint s = (uint)shapes.size(), i = 0; i < s; i++)
 	{
 		vector<tinyobj::index_t>& indices = shapes[i].mesh.indices;
-		if (flatShaded) for (uint s = (uint)indices.size(), f = 0; f < s; f++ ) alphas[indices[f].normal_index] = 1; else 
-		for (uint s = (uint)indices.size(), f = 0; f < s; f += 3)
-		{
-			const int idx0 = indices[f + 0].vertex_index, nidx0 = indices[f + 0].normal_index;
-			const int idx1 = indices[f + 1].vertex_index, nidx1 = indices[f + 1].normal_index;
-			const int idx2 = indices[f + 2].vertex_index, nidx2 = indices[f + 2].normal_index;
-			const float3 vert0 = make_float3( attrib.vertices[idx0 * 3 + 0], attrib.vertices[idx0 * 3 + 1], attrib.vertices[idx0 * 3 + 2] );
-			const float3 vert1 = make_float3( attrib.vertices[idx1 * 3 + 0], attrib.vertices[idx1 * 3 + 1], attrib.vertices[idx1 * 3 + 2] );
-			const float3 vert2 = make_float3( attrib.vertices[idx2 * 3 + 0], attrib.vertices[idx2 * 3 + 1], attrib.vertices[idx2 * 3 + 2] );
-			float3 vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
-			float3 vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
-			float3 vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
-			float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
-			if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
-			// loop over vertices
-			// Note: we clamp at approx. 45 degree angles; beyond this the approach fails.
-			alphas[nidx0] = min( alphas[nidx0], max( 0.7f, dot( vN0, N ) ) );
-			alphas[nidx1] = min( alphas[nidx1], max( 0.7f, dot( vN1, N ) ) );
-			alphas[nidx2] = min( alphas[nidx2], max( 0.7f, dot( vN2, N ) ) );
-		}
+		if (flatShaded) for (uint s = (uint)indices.size(), f = 0; f < s; f++) alphas[indices[f].normal_index] = 1; else
+			for (uint s = (uint)indices.size(), f = 0; f < s; f += 3)
+			{
+				const int idx0 = indices[f + 0].vertex_index, nidx0 = indices[f + 0].normal_index;
+				const int idx1 = indices[f + 1].vertex_index, nidx1 = indices[f + 1].normal_index;
+				const int idx2 = indices[f + 2].vertex_index, nidx2 = indices[f + 2].normal_index;
+				const float3 vert0 = make_float3( attrib.vertices[idx0 * 3 + 0], attrib.vertices[idx0 * 3 + 1], attrib.vertices[idx0 * 3 + 2] );
+				const float3 vert1 = make_float3( attrib.vertices[idx1 * 3 + 0], attrib.vertices[idx1 * 3 + 1], attrib.vertices[idx1 * 3 + 2] );
+				const float3 vert2 = make_float3( attrib.vertices[idx2 * 3 + 0], attrib.vertices[idx2 * 3 + 1], attrib.vertices[idx2 * 3 + 2] );
+				const float3 vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
+				const float3 vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
+				const float3 vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
+				float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
+				if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
+				// loop over vertices
+				// Note: we clamp at approx. 45 degree angles; beyond this the approach fails.
+				alphas[nidx0] = min( alphas[nidx0], max( 0.7f, dot( vN0, N ) ) );
+				alphas[nidx1] = min( alphas[nidx1], max( 0.7f, dot( vN1, N ) ) );
+				alphas[nidx2] = min( alphas[nidx2], max( 0.7f, dot( vN2, N ) ) );
+			}
 	}
 	// finalize alpha values based on max dots
 	const float w = 0.03632f;
@@ -290,7 +290,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			tri.alpha = make_float3( alphas[nidx0], tri.alpha.y = alphas[nidx1], tri.alpha.z = alphas[nidx2] );
 			// calculate triangle LOD data
 			HostMaterial* mat = HostScene::materials[tri.material];
-			int textureID = mat->map[TEXTURE0].textureID;
+			int textureID = mat->color.textureID;
 			if (textureID > -1)
 			{
 				HostTexture* texture = HostScene::textures[textureID];

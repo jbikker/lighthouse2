@@ -19,44 +19,44 @@
 //  |  generateEyeRaysKernel                                                      |
 //  |  Generate primary rays, to be traced by Optix Prime.                  LH2'19|
 //  +-----------------------------------------------------------------------------+
-__global__  __launch_bounds__( 256 , 1 )
-void finalizeContributionKernel(int smcount,
-    uint* visibilityHitBuffer, float4* accumulatorOnePass,
-    float4* contribution_buffer)
+__global__  __launch_bounds__( 256, 1 )
+void finalizeContributionKernel( int smcount,
+	uint* visibilityHitBuffer, float4* accumulatorOnePass,
+	float4* contribution_buffer )
 {
-    int gid = threadIdx.x + blockIdx.x * blockDim.x;
-    if (gid >= counters->contribution_count) return;
+	int gid = threadIdx.x + blockIdx.x * blockDim.x;
+	if (gid >= counters->contribution_count) return;
 
 
-    const uint occluded = visibilityHitBuffer[gid >> 5] & (1 << (gid & 31));
+	const uint occluded = visibilityHitBuffer[gid >> 5] & (1 << (gid & 31));
 
-    if (!occluded)
-    {
-        float4 color = contribution_buffer[gid];
-        uint jobIndex = __float_as_uint(color.w);
-        
-        
-        color.w = 0.0f;
+	if (!occluded)
+	{
+		float4 color = contribution_buffer[gid];
+		uint jobIndex = __float_as_uint( color.w );
 
-        // accumulatorOnePass[jobIndex] += color;
 
-        atomicAdd(&(accumulatorOnePass[jobIndex].x), color.x);
-        atomicAdd(&(accumulatorOnePass[jobIndex].y), color.y);
-        atomicAdd(&(accumulatorOnePass[jobIndex].z), color.z);
-    }
+		color.w = 0.0f;
+
+		// accumulatorOnePass[jobIndex] += color;
+
+		atomicAdd( &(accumulatorOnePass[jobIndex].x), color.x );
+		atomicAdd( &(accumulatorOnePass[jobIndex].y), color.y );
+		atomicAdd( &(accumulatorOnePass[jobIndex].z), color.z );
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
 //  |  constructionLightPos                                                            |
 //  |  Entry point for the persistent constructionLightPos kernel.               LH2'19|
 //  +-----------------------------------------------------------------------------+
-__host__ void finalizeContribution(int smcount,
-    uint* visibilityHitBuffer, float4* accumulatorOnePass,
-    float4* contribution_buffer)
+__host__ void finalizeContribution( int smcount,
+	uint* visibilityHitBuffer, float4* accumulatorOnePass,
+	float4* contribution_buffer )
 {
-	const dim3 gridDim( NEXTMULTIPLEOF(smcount, 256 ) / 256, 1 ), blockDim( 256, 1 );
-    finalizeContributionKernel << < gridDim.x, 256 >> > (smcount,
-        visibilityHitBuffer,accumulatorOnePass,contribution_buffer);
+	const dim3 gridDim( NEXTMULTIPLEOF( smcount, 256 ) / 256, 1 ), blockDim( 256, 1 );
+	finalizeContributionKernel << < gridDim.x, 256 >> > (smcount,
+		visibilityHitBuffer, accumulatorOnePass, contribution_buffer);
 }
 
 // EOF

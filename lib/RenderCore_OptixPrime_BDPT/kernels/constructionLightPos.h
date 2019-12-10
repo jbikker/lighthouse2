@@ -108,7 +108,7 @@ void constructionLightPosKernel( int smcount,
 		randomWalkRays[randomWalkRayIdx].O4 = make_float4( SafeOrigin( pos, lightDir, normal, geometryEpsilon ), 0 );
 		randomWalkRays[randomWalkRayIdx].D4 = make_float4( lightDir, 1e34f );
 	}
-    
+
 
 	pathStateData[jobIndex].data0 = make_float4( throughput, dL );
 	pathStateData[jobIndex].data1 = make_float4( beta, light_p );

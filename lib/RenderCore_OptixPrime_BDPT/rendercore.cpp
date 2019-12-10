@@ -4,7 +4,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,8 +23,6 @@
 
 #include "core_settings.h"
 
-
-
 namespace lh2core
 {
 
@@ -36,7 +34,7 @@ void InitCountersForPixels();
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 // setters / getters
 void SetInstanceDescriptors( CoreInstanceDesc* p );
-void SetMaterialList( CoreMaterial* p );
+void SetMaterialList( CUDAMaterial* p );
 void SetAreaLights( CoreLightTri* p );
 void SetPointLights( CorePointLight* p );
 void SetSpotLights( CoreSpotLight* p );
@@ -54,38 +52,38 @@ void SetCounters( Counters* p );
 
 // BDPT
 ////////////////////////////////////////
-void InitIndexForConstructionLight(int pathCount, uint* constructLightBuffer);
-void constructionLightPos(int pathCount, 
-    BiPathState* pathStateBuffer, const uint R0, const uint* blueNoise, const int4 screenParams,
-    Ray4* randomWalkRays, float4* accumulatorOnePass, 
-    const int probePixelIdx, uint* constructEyeBuffer);
-void constructionEyePos(int pathCount, uint* constructEyeBuffer,
-    BiPathState* pathStateBuffer, Ray4* visibilityRays, Ray4* randomWalkRays,
-    const uint R0, const float aperture, const float imgPlaneSize, const float3 camPos,
-    const float3 right, const float3 up, const float3 forward, const float3 p1,
-    const int4 screenParams, const uint* blueNoise);
-void extendEyePath(int pathCount, BiPathState* pathStateBuffer,
-    Ray4* visibilityRays, Ray4* randomWalkRays,
-    const uint R0, const uint* blueNoise, const float spreadAngle,
-    const int4 screenParams, const int probePixelIdx, uint* eyePathBuffer,
-    float4* contribution_buffer, float4* accumulatorOnePass);
-void extendLightPath(int smcount, BiPathState* pathStateBuffer,
-    Ray4* visibilityRays, Ray4* randomWalkRays, const uint R0, const uint* blueNoise,
-    const float3 camPos, const float spreadAngle,const int4 screenParams, 
-    uint* lightPathBuffer, float4* contribution_buffer,
-    const float aperture, const float imgPlaneSize,
-    const float3 forward, const float focalDistance, const float3 p1,
-    const float3 right, const float3 up);
+void InitIndexForConstructionLight( int pathCount, uint* constructLightBuffer );
+void constructionLightPos( int pathCount,
+	BiPathState* pathStateBuffer, const uint R0, const uint* blueNoise, const int4 screenParams,
+	Ray4* randomWalkRays, float4* accumulatorOnePass,
+	const int probePixelIdx, uint* constructEyeBuffer );
+void constructionEyePos( int pathCount, uint* constructEyeBuffer,
+	BiPathState* pathStateBuffer, Ray4* visibilityRays, Ray4* randomWalkRays,
+	const uint R0, const float aperture, const float imgPlaneSize, const float3 camPos,
+	const float3 right, const float3 up, const float3 forward, const float3 p1,
+	const int4 screenParams, const uint* blueNoise );
+void extendEyePath( int pathCount, BiPathState* pathStateBuffer,
+	Ray4* visibilityRays, Ray4* randomWalkRays,
+	const uint R0, const uint* blueNoise, const float spreadAngle,
+	const int4 screenParams, const int probePixelIdx, uint* eyePathBuffer,
+	float4* contribution_buffer, float4* accumulatorOnePass );
+void extendLightPath( int smcount, BiPathState* pathStateBuffer,
+	Ray4* visibilityRays, Ray4* randomWalkRays, const uint R0, const uint* blueNoise,
+	const float3 camPos, const float spreadAngle, const int4 screenParams,
+	uint* lightPathBuffer, float4* contribution_buffer,
+	const float aperture, const float imgPlaneSize,
+	const float3 forward, const float focalDistance, const float3 p1,
+	const float3 right, const float3 up );
 
-void connectionPath(int smcount, BiPathState* pathStateData,
-    const Intersection* randomWalkHitBuffer,
-    float4* accumulatorOnePass,
-    const int4 screenParams,
-    uint* constructEyeBuffer, uint* eyePathBuffer);
+void connectionPath( int smcount, BiPathState* pathStateData,
+	const Intersection* randomWalkHitBuffer,
+	float4* accumulatorOnePass,
+	const int4 screenParams,
+	uint* constructEyeBuffer, uint* eyePathBuffer );
 
-void finalizeContribution(int smcount,
-    uint* visibilityHitBuffer, float4* accumulatorOnePass,
-    float4* contribution_buffer);
+void finalizeContribution( int smcount,
+	uint* visibilityHitBuffer, float4* accumulatorOnePass,
+	float4* contribution_buffer );
 //////////////////////////////////////////
 
 } // namespace lh2core
@@ -152,17 +150,17 @@ void RenderCore::Init()
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
 	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
-	for( int i = 0; i < 65536; i++ ) data32[i] = data8[i]; // convert
+	for (int i = 0; i < 65536; i++) data32[i] = data8[i]; // convert
 	data8 = (uchar*)scr256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 65536] = data8[i];
 	data8 = (uchar*)rnk256_64;
-	for( int i = 0; i < (128 * 128 * 8); i++ ) data32[i + 3 * 65536] = data8[i];
+	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 3 * 65536] = data8[i];
 	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
 	delete data32;
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// timing events
-	for( int i = 0; i < MAXPATHLENGTH; i++ )
+	for (int i = 0; i < MAXPATHLENGTH; i++)
 	{
 		cudaEventCreate( &shadeStart[i] );
 		cudaEventCreate( &shadeEnd[i] );
@@ -197,61 +195,61 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		// destroy previously created OptiX buffers
 		if (!firstFrame)
 		{
-            //BDPT
-            //////////////////////////
-            rtpBufferDescDestroy(visibilityRaysDesc);
-            rtpBufferDescDestroy(visibilityHitsDesc);
-            rtpBufferDescDestroy(randomWalkRaysDesc);
-            rtpBufferDescDestroy(randomWalkHitsDesc);
-            /////////////////////////
+			//BDPT
+			//////////////////////////
+			rtpBufferDescDestroy( visibilityRaysDesc );
+			rtpBufferDescDestroy( visibilityHitsDesc );
+			rtpBufferDescDestroy( randomWalkRaysDesc );
+			rtpBufferDescDestroy( randomWalkHitsDesc );
+			/////////////////////////
 		}
 		// delete CoreBuffers
-        delete accumulatorOnePass;
+		delete accumulatorOnePass;
 
-        delete contributions;
-        // BDPT
-        /////////////////////////////
-        delete constructEyeBuffer;
-        
-        delete eyePathBuffer;
+		delete contributions;
+		// BDPT
+		/////////////////////////////
+		delete constructEyeBuffer;
 
-        delete pathDataBuffer;
+		delete eyePathBuffer;
 
-        delete visibilityRayBuffer;
-        delete visibilityHitBuffer;
-        delete randomWalkRayBuffer;
-        delete randomWalkHitBuffer;
-        /////////////////////////////
+		delete pathDataBuffer;
 
-        uint nVisNum = (maxPixels * (MAX_EYEPATH * MAX_LIGHTPATH - 1));
-        maxVisNum = maxVisNum > nVisNum ? nVisNum : maxVisNum;
+		delete visibilityRayBuffer;
+		delete visibilityHitBuffer;
+		delete randomWalkRayBuffer;
+		delete randomWalkHitBuffer;
+		/////////////////////////////
 
-        accumulatorOnePass = new CoreBuffer<float4>(maxPixels, ON_DEVICE);
-        contributions = new CoreBuffer<float4>(maxVisNum, ON_DEVICE);
-        // BDPT
-        ///////////////////////////////////////////
-        //constructLightBuffer = new CoreBuffer<uint>( maxPixels * spp, ON_DEVICE );
-        constructEyeBuffer = new CoreBuffer<uint>(maxPixels * spp, ON_DEVICE);
+		uint nVisNum = (maxPixels * (MAX_EYEPATH * MAX_LIGHTPATH - 1));
+		maxVisNum = maxVisNum > nVisNum ? nVisNum : maxVisNum;
 
-        eyePathBuffer = new CoreBuffer<uint>(maxPixels * spp, ON_DEVICE);
+		accumulatorOnePass = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
+		contributions = new CoreBuffer<float4>( maxVisNum, ON_DEVICE );
+		// BDPT
+		///////////////////////////////////////////
+		//constructLightBuffer = new CoreBuffer<uint>( maxPixels * spp, ON_DEVICE );
+		constructEyeBuffer = new CoreBuffer<uint>( maxPixels * spp, ON_DEVICE );
 
-        pathDataBuffer = new CoreBuffer<BiPathState>(maxPixels * spp, ON_DEVICE);
-        
-        visibilityRayBuffer = new CoreBuffer<Ray4>(maxVisNum, ON_DEVICE);
-        CHK_PRIME(rtpBufferDescCreate(context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, visibilityRayBuffer->DevPtr(), &visibilityRaysDesc));
-        visibilityHitBuffer = new CoreBuffer<uint>((maxVisNum + 31) >> 5, ON_DEVICE);
-        CHK_PRIME(rtpBufferDescCreate(context, RTP_BUFFER_FORMAT_HIT_BITMASK, RTP_BUFFER_TYPE_CUDA_LINEAR, visibilityHitBuffer->DevPtr(), &visibilityHitsDesc));
-        randomWalkRayBuffer = new CoreBuffer<Ray4>(maxPixels * 2 * spp, ON_DEVICE);
-        CHK_PRIME(rtpBufferDescCreate(context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, randomWalkRayBuffer->DevPtr(), &randomWalkRaysDesc));
-        randomWalkHitBuffer = new CoreBuffer<Intersection>(maxPixels * 2 * spp, ON_DEVICE);
-        CHK_PRIME(rtpBufferDescCreate(context, RTP_BUFFER_FORMAT_HIT_T_TRIID_INSTID_U_V, RTP_BUFFER_TYPE_CUDA_LINEAR, randomWalkHitBuffer->DevPtr(), &randomWalkHitsDesc));
-        //////////////////////////////////////////
+		eyePathBuffer = new CoreBuffer<uint>( maxPixels * spp, ON_DEVICE );
+
+		pathDataBuffer = new CoreBuffer<BiPathState>( maxPixels * spp, ON_DEVICE );
+
+		visibilityRayBuffer = new CoreBuffer<Ray4>( maxVisNum, ON_DEVICE );
+		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, visibilityRayBuffer->DevPtr(), &visibilityRaysDesc ) );
+		visibilityHitBuffer = new CoreBuffer<uint>( (maxVisNum + 31) >> 5, ON_DEVICE );
+		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_HIT_BITMASK, RTP_BUFFER_TYPE_CUDA_LINEAR, visibilityHitBuffer->DevPtr(), &visibilityHitsDesc ) );
+		randomWalkRayBuffer = new CoreBuffer<Ray4>( maxPixels * 2 * spp, ON_DEVICE );
+		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, randomWalkRayBuffer->DevPtr(), &randomWalkRaysDesc ) );
+		randomWalkHitBuffer = new CoreBuffer<Intersection>( maxPixels * 2 * spp, ON_DEVICE );
+		CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_HIT_T_TRIID_INSTID_U_V, RTP_BUFFER_TYPE_CUDA_LINEAR, randomWalkHitBuffer->DevPtr(), &randomWalkHitsDesc ) );
+		//////////////////////////////////////////
 		printf( "buffers resized for %i pixels @ %i samples.\n", maxPixels, spp );
 	}
 	// clear the accumulator
-    accumulatorOnePass->Clear(ON_DEVICE);
-    contributions->Clear(ON_DEVICE);
-    samplesTaken = 0;
+	accumulatorOnePass->Clear( ON_DEVICE );
+	contributions->Clear( ON_DEVICE );
+	samplesTaken = 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -396,32 +394,51 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount )
+#define TOCHAR(a) ((uint)((a)*255.0f))
+#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
+void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
 	delete materialBuffer;
 	delete hostMaterialBuffer;
-	hostMaterialBuffer = new CoreMaterial[materialCount];
-	memcpy( hostMaterialBuffer, mat, materialCount * sizeof( CoreMaterial ) );
+	hostMaterialBuffer = new CUDAMaterial[materialCount];
 	for (int i = 0; i < materialCount; i++)
 	{
-		CoreMaterial& m = hostMaterialBuffer[i];
-		const CoreMaterialEx& e = matEx[i];
-		if (e.texture[0] != -1) m.texaddr0 = texDescs[e.texture[0]].firstPixel;
-		if (e.texture[1] != -1) m.texaddr1 = texDescs[e.texture[1]].firstPixel;
-		if (e.texture[2] != -1) m.texaddr2 = texDescs[e.texture[2]].firstPixel;
-		if (e.texture[3] != -1) m.nmapaddr0 = texDescs[e.texture[3]].firstPixel;
-		if (e.texture[4] != -1) m.nmapaddr1 = texDescs[e.texture[4]].firstPixel;
-		if (e.texture[5] != -1) m.nmapaddr2 = texDescs[e.texture[5]].firstPixel;
-		if (e.texture[6] != -1) m.smapaddr = texDescs[e.texture[6]].firstPixel;
-		if (e.texture[7] != -1) m.rmapaddr = texDescs[e.texture[7]].firstPixel;
-		// if (e.texture[ 8] != -1) m.texaddr0 = texDescs[e.texture[ 8]].firstPixel; second roughness map is not used
-		if (e.texture[9] != -1) m.cmapaddr = texDescs[e.texture[9]].firstPixel;
-		if (e.texture[10] != -1) m.amapaddr = texDescs[e.texture[10]].firstPixel;
+		// perform conversion to internal material format
+		CoreMaterial& m = mat[i];
+		CUDAMaterial& gpuMat = hostMaterialBuffer[i];
+		memset( &gpuMat, 0, sizeof( CUDAMaterial ) );
+		gpuMat.diffuse_r = m.color.value.x,
+			gpuMat.diffuse_g = m.color.value.y;
+		gpuMat.diffuse_b = m.color.value.z;
+		gpuMat.transmittance_r = 1 - m.absorption.value.x;
+		gpuMat.transmittance_g = 1 - m.absorption.value.y;
+		gpuMat.transmittance_b = 1 - m.absorption.value.z;
+		gpuMat.parameters.x = TOUINT4( m.metallic.value, m.subsurface.value, m.specular.value, m.roughness.value );
+		gpuMat.parameters.y = TOUINT4( m.specularTint.value, m.anisotropic.value, m.sheen.value, m.sheenTint.value );
+		gpuMat.parameters.z = TOUINT4( m.clearcoat.value, m.clearcoatGloss.value, m.transmission.value, 0 );
+		gpuMat.parameters.w = *((uint*)&m.eta);
+		if (m.color.textureID != -1) gpuMat.tex0 = Map<CoreMaterial::Vec3Value>( m.color );
+		if (m.detailColor.textureID != -1) gpuMat.tex1 = Map<CoreMaterial::Vec3Value>( m.detailColor );
+		if (m.normals.textureID != -1) gpuMat.nmap0 = Map<CoreMaterial::Vec3Value>( m.normals );
+		if (m.detailNormals.textureID != -1) gpuMat.nmap1 = Map<CoreMaterial::Vec3Value>( m.detailNormals );
+		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness );
+		if (m.specular.textureID != -1) gpuMat.smap = Map<CoreMaterial::ScalarValue>( m.specular );
+		bool hdr = false;
+		if (m.color.textureID != 1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
+		gpuMat.flags =
+			(m.eta.value < 1 ? ISDIELECTRIC : 0) + (hdr ? DIFFUSEMAPISHDR : 0) +
+			(m.color.textureID != -1 ? HASDIFFUSEMAP : 0) +
+			(m.normals.textureID != -1 ? HASNORMALMAP : 0) +
+			(m.specular.textureID != -1 ? HASSPECULARITYMAP : 0) +
+			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
+			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
+			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	materialBuffer = new CoreBuffer<CoreMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
+	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
 	SetMaterialList( materialBuffer->DevPtr() );
 }
 
@@ -495,27 +512,27 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 	// clean accumulator, if requested
 	if (converge == Restart)
 	{
-        accumulatorOnePass->Clear(ON_DEVICE);
-        contributions->Clear(ON_DEVICE);
-        pathDataBuffer->Clear(ON_DEVICE);
+		accumulatorOnePass->Clear( ON_DEVICE );
+		contributions->Clear( ON_DEVICE );
+		pathDataBuffer->Clear( ON_DEVICE );
 
-        //InitCountersForExtend(scrwidth * scrheight * scrspp);
-        //InitIndexForConstructionLight(scrwidth * scrheight * scrspp, constructLightBuffer->DevPtr());
+		//InitCountersForExtend(scrwidth * scrheight * scrspp);
+		//InitIndexForConstructionLight(scrwidth * scrheight * scrspp, constructLightBuffer->DevPtr());
 
 		camRNGseed = 0x12345678; // same seed means same noise.
-        samplesTaken = 0;
+		samplesTaken = 0;
 	}
 
-    // BDPT
-    ///////////////////////////////////
-    //if (!bInit)
-    {
-        InitCountersForExtend(scrwidth * scrheight * scrspp);
-        //InitIndexForConstructionLight(scrwidth * scrheight * scrspp, constructLightBuffer->DevPtr());
-        InitCountersForPixels();
-        //bInit = true;
-    }    
-    //////////////////////////////////////
+	// BDPT
+	///////////////////////////////////
+	//if (!bInit)
+	{
+		InitCountersForExtend( scrwidth * scrheight * scrspp );
+		//InitIndexForConstructionLight(scrwidth * scrheight * scrspp, constructLightBuffer->DevPtr());
+		InitCountersForPixels();
+		//bInit = true;
+	}
+	//////////////////////////////////////
 	// update instance descriptor array on device
 	// Note: we are not using the built-in OptiX instance system for shading. Instead,
 	// we figure out which triangle we hit, and to what instance it belongs; from there,
@@ -546,144 +563,144 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 		// instancesDirty = false;
 	}
 
-    uint pathCount = scrwidth * scrheight * scrspp;
-    uint visNum = 0;
-    float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
-    float3 forward = cross(right, up);
+	uint pathCount = scrwidth * scrheight * scrspp;
+	uint visNum = 0;
+	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
+	float3 forward = cross( right, up );
 	// render image
-    RTPquery queryVisibility,queryRandomWalk;
-    CHK_PRIME(rtpQueryCreate(*topLevel, RTP_QUERY_TYPE_CLOSEST, &queryVisibility));
-    CHK_PRIME(rtpQueryCreate(*topLevel, RTP_QUERY_TYPE_CLOSEST, &queryRandomWalk));
+	RTPquery queryVisibility, queryRandomWalk;
+	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &queryVisibility ) );
+	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &queryRandomWalk ) );
 
-    uint extendEyePathNum = pathCount;
-    uint extendLightPathNum = pathCount;
+	uint extendEyePathNum = pathCount;
+	uint extendLightPathNum = pathCount;
 
-    coreStats.totalExtensionRays = 0;
-    coreStats.totalShadowRays = 0;
+	coreStats.totalExtensionRays = 0;
+	coreStats.totalShadowRays = 0;
 
-    coreStats.shadowTraceTime = 0;
+	coreStats.shadowTraceTime = 0;
 
-    constructionLightPos(pathCount,
-        pathDataBuffer->DevPtr(),
-        RandomUInt(camRNGseed), blueNoise->DevPtr(), GetScreenParams(),
-        randomWalkRayBuffer->DevPtr(), accumulatorOnePass->DevPtr(),
-        probePos.x + scrwidth * probePos.y, constructEyeBuffer->DevPtr());
+	constructionLightPos( pathCount,
+		pathDataBuffer->DevPtr(),
+		RandomUInt( camRNGseed ), blueNoise->DevPtr(), GetScreenParams(),
+		randomWalkRayBuffer->DevPtr(), accumulatorOnePass->DevPtr(),
+		probePos.x + scrwidth * probePos.y, constructEyeBuffer->DevPtr() );
 
-    int pathLength = 1;
-    uint checkCount = extendEyePathNum+ extendLightPathNum;
-    coreStats.traceTime0 = 0;
+	int pathLength = 1;
+	uint checkCount = extendEyePathNum + extendLightPathNum;
+	coreStats.traceTime0 = 0;
 
-    counterBuffer->CopyToHost();
-    Counters& counters = counterBuffer->HostPtr()[0];
+	counterBuffer->CopyToHost();
+	Counters& counters = counterBuffer->HostPtr()[0];
 
-    while(true)
-    {
-        constructionEyePos(pathCount, constructEyeBuffer->DevPtr(),
-            pathDataBuffer->DevPtr(), visibilityRayBuffer->DevPtr(),
-            randomWalkRayBuffer->DevPtr(), samplesTaken * 7907 + pathLength * 91771,
-            view.aperture, view.imagePlane, view.pos, right, up, forward, view.p1,
-            GetScreenParams(),blueNoise->DevPtr());
-        
-        extendEyePath(pathCount, pathDataBuffer->DevPtr(),
-            visibilityRayBuffer->DevPtr(), randomWalkRayBuffer->DevPtr(),
-            samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), view.spreadAngle, GetScreenParams(),
-            probePos.x + scrwidth * probePos.y, eyePathBuffer->DevPtr(),
-            contributions->DevPtr(), accumulatorOnePass->DevPtr());
-        
-        extendLightPath(pathCount, pathDataBuffer->DevPtr(),
-            visibilityRayBuffer->DevPtr(), randomWalkRayBuffer->DevPtr(),
-            samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), view.pos,
-            view.spreadAngle, GetScreenParams(), constructEyeBuffer->DevPtr(),
-            contributions->DevPtr(),
-            view.aperture, view.imagePlane, forward,
-            view.focalDistance, view.p1, right, up);        
-        
-        counterBuffer->CopyToHost();
-        counters = counterBuffer->HostPtr()[0];
-        uint queryNum = counters.randomWalkRays;// checkCount == 0 ? pathCount * 2 : extendLightPathNum * 2 + extendEyePathNum;
+	while (true)
+	{
+		constructionEyePos( pathCount, constructEyeBuffer->DevPtr(),
+			pathDataBuffer->DevPtr(), visibilityRayBuffer->DevPtr(),
+			randomWalkRayBuffer->DevPtr(), samplesTaken * 7907 + pathLength * 91771,
+			view.aperture, view.imagePlane, view.pos, right, up, forward, view.p1,
+			GetScreenParams(), blueNoise->DevPtr() );
 
-        visNum = counters.contribution_count;
-        extendLightPathNum = counters.extendLightPath;
-        extendEyePathNum = counters.extendEyePath;
+		extendEyePath( pathCount, pathDataBuffer->DevPtr(),
+			visibilityRayBuffer->DevPtr(), randomWalkRayBuffer->DevPtr(),
+			samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), view.spreadAngle, GetScreenParams(),
+			probePos.x + scrwidth * probePos.y, eyePathBuffer->DevPtr(),
+			contributions->DevPtr(), accumulatorOnePass->DevPtr() );
 
-        checkCount = extendLightPathNum + extendEyePathNum;
-        coreStats.totalExtensionRays += queryNum;
-        
-        if (queryNum == 0)
-            break;
+		extendLightPath( pathCount, pathDataBuffer->DevPtr(),
+			visibilityRayBuffer->DevPtr(), randomWalkRayBuffer->DevPtr(),
+			samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), view.pos,
+			view.spreadAngle, GetScreenParams(), constructEyeBuffer->DevPtr(),
+			contributions->DevPtr(),
+			view.aperture, view.imagePlane, forward,
+			view.focalDistance, view.p1, right, up );
 
-        Timer t;                
-        CHK_PRIME(rtpBufferDescSetRange(randomWalkRaysDesc, 0, queryNum));
-        CHK_PRIME(rtpBufferDescSetRange(randomWalkHitsDesc, 0, queryNum));
-        CHK_PRIME(rtpQuerySetRays(queryRandomWalk, randomWalkRaysDesc));
-        CHK_PRIME(rtpQuerySetHits(queryRandomWalk, randomWalkHitsDesc));
-        CHK_PRIME(rtpQueryExecute(queryRandomWalk, RTP_QUERY_HINT_NONE));
+		counterBuffer->CopyToHost();
+		counters = counterBuffer->HostPtr()[0];
+		uint queryNum = counters.randomWalkRays;// checkCount == 0 ? pathCount * 2 : extendLightPathNum * 2 + extendEyePathNum;
 
-        if (pathLength == 1) coreStats.traceTime0 = t.elapsed(), coreStats.primaryRayCount = counters.randomWalkRays;
-        else if (pathLength == 2)  coreStats.traceTime1 = t.elapsed(), coreStats.bounce1RayCount = counters.randomWalkRays;
-        else coreStats.traceTimeX = t.elapsed(), coreStats.deepRayCount = counters.randomWalkRays;
-        
-        pathLength++;
-        
-        //printf("%d\n", queryNum);
+		visNum = counters.contribution_count;
+		extendLightPathNum = counters.extendLightPath;
+		extendEyePathNum = counters.extendEyePath;
 
-        InitCountersForExtend(0);
-        
-        //float scene_area = 5989.0f;
-        connectionPath(pathCount, pathDataBuffer->DevPtr(), randomWalkHitBuffer->DevPtr(),
-            accumulatorOnePass->DevPtr(),
-            GetScreenParams(), 
-            constructEyeBuffer->DevPtr(),eyePathBuffer->DevPtr());
+		checkCount = extendLightPathNum + extendEyePathNum;
+		coreStats.totalExtensionRays += queryNum;
 
-        //counterBuffer->CopyToHost();
-        //counters = counterBuffer->HostPtr()[0];
-        
-        if (visNum + checkCount > maxVisNum)
-        {
-            CHK_PRIME(rtpBufferDescSetRange(visibilityRaysDesc, 0, visNum));
-            CHK_PRIME(rtpBufferDescSetRange(visibilityHitsDesc, 0, visNum));
-            CHK_PRIME(rtpQuerySetRays(queryVisibility, visibilityRaysDesc));
-            CHK_PRIME(rtpQuerySetHits(queryVisibility, visibilityHitsDesc));
-            CHK_PRIME(rtpQueryExecute(queryVisibility, RTP_QUERY_HINT_NONE));
+		if (queryNum == 0)
+			break;
 
-            finalizeContribution(visNum, visibilityHitBuffer->DevPtr(),
-                accumulatorOnePass->DevPtr(), contributions->DevPtr());
+		Timer t;
+		CHK_PRIME( rtpBufferDescSetRange( randomWalkRaysDesc, 0, queryNum ) );
+		CHK_PRIME( rtpBufferDescSetRange( randomWalkHitsDesc, 0, queryNum ) );
+		CHK_PRIME( rtpQuerySetRays( queryRandomWalk, randomWalkRaysDesc ) );
+		CHK_PRIME( rtpQuerySetHits( queryRandomWalk, randomWalkHitsDesc ) );
+		CHK_PRIME( rtpQueryExecute( queryRandomWalk, RTP_QUERY_HINT_NONE ) );
 
-            coreStats.totalShadowRays += visNum;
+		if (pathLength == 1) coreStats.traceTime0 = t.elapsed(), coreStats.primaryRayCount = counters.randomWalkRays;
+		else if (pathLength == 2)  coreStats.traceTime1 = t.elapsed(), coreStats.bounce1RayCount = counters.randomWalkRays;
+		else coreStats.traceTimeX = t.elapsed(), coreStats.deepRayCount = counters.randomWalkRays;
 
-            InitCountersForPixels();
-            visNum = 0;
-        }        
+		pathLength++;
 
-        coreStats.probedInstid = counters.probedInstid;
-        coreStats.probedTriid = counters.probedTriid;
-        coreStats.probedDist = counters.probedDist;
-    
-    } // while (extendLightPathNum + extendEyePathNum > 0);
+		//printf("%d\n", queryNum);
 
-    Timer t;
-    CHK_PRIME(rtpBufferDescSetRange(visibilityRaysDesc, 0, visNum));
-    CHK_PRIME(rtpBufferDescSetRange(visibilityHitsDesc, 0, visNum));
-    CHK_PRIME(rtpQuerySetRays(queryVisibility, visibilityRaysDesc));
-    CHK_PRIME(rtpQuerySetHits(queryVisibility, visibilityHitsDesc));
-    CHK_PRIME(rtpQueryExecute(queryVisibility, RTP_QUERY_HINT_NONE));
-    coreStats.shadowTraceTime = t.elapsed();
+		InitCountersForExtend( 0 );
 
-    finalizeContribution(visNum, visibilityHitBuffer->DevPtr(),
-        accumulatorOnePass->DevPtr(), contributions->DevPtr());
+		//float scene_area = 5989.0f;
+		connectionPath( pathCount, pathDataBuffer->DevPtr(), randomWalkHitBuffer->DevPtr(),
+			accumulatorOnePass->DevPtr(),
+			GetScreenParams(),
+			constructEyeBuffer->DevPtr(), eyePathBuffer->DevPtr() );
 
-    coreStats.totalShadowRays += visNum;
+		//counterBuffer->CopyToHost();
+		//counters = counterBuffer->HostPtr()[0];
 
-    samplesTaken++;
-    renderTarget.BindSurface();
-    finalizeRender(accumulatorOnePass->DevPtr(), scrwidth, scrheight, samplesTaken);
-    renderTarget.UnbindSurface();
+		if (visNum + checkCount > maxVisNum)
+		{
+			CHK_PRIME( rtpBufferDescSetRange( visibilityRaysDesc, 0, visNum ) );
+			CHK_PRIME( rtpBufferDescSetRange( visibilityHitsDesc, 0, visNum ) );
+			CHK_PRIME( rtpQuerySetRays( queryVisibility, visibilityRaysDesc ) );
+			CHK_PRIME( rtpQuerySetHits( queryVisibility, visibilityHitsDesc ) );
+			CHK_PRIME( rtpQueryExecute( queryVisibility, RTP_QUERY_HINT_NONE ) );
 
-    coreStats.renderTime = timer.elapsed();
-    coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+			finalizeContribution( visNum, visibilityHitBuffer->DevPtr(),
+				accumulatorOnePass->DevPtr(), contributions->DevPtr() );
 
-    CHK_PRIME(rtpQueryDestroy(queryVisibility));
-    CHK_PRIME(rtpQueryDestroy(queryRandomWalk));    
+			coreStats.totalShadowRays += visNum;
+
+			InitCountersForPixels();
+			visNum = 0;
+		}
+
+		coreStats.probedInstid = counters.probedInstid;
+		coreStats.probedTriid = counters.probedTriid;
+		coreStats.probedDist = counters.probedDist;
+
+	} // while (extendLightPathNum + extendEyePathNum > 0);
+
+	Timer t;
+	CHK_PRIME( rtpBufferDescSetRange( visibilityRaysDesc, 0, visNum ) );
+	CHK_PRIME( rtpBufferDescSetRange( visibilityHitsDesc, 0, visNum ) );
+	CHK_PRIME( rtpQuerySetRays( queryVisibility, visibilityRaysDesc ) );
+	CHK_PRIME( rtpQuerySetHits( queryVisibility, visibilityHitsDesc ) );
+	CHK_PRIME( rtpQueryExecute( queryVisibility, RTP_QUERY_HINT_NONE ) );
+	coreStats.shadowTraceTime = t.elapsed();
+
+	finalizeContribution( visNum, visibilityHitBuffer->DevPtr(),
+		accumulatorOnePass->DevPtr(), contributions->DevPtr() );
+
+	coreStats.totalShadowRays += visNum;
+
+	samplesTaken++;
+	renderTarget.BindSurface();
+	finalizeRender( accumulatorOnePass->DevPtr(), scrwidth, scrheight, samplesTaken );
+	renderTarget.UnbindSurface();
+
+	coreStats.renderTime = timer.elapsed();
+	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+
+	CHK_PRIME( rtpQueryDestroy( queryVisibility ) );
+	CHK_PRIME( rtpQueryDestroy( queryRandomWalk ) );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -693,19 +710,19 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 void RenderCore::Shutdown()
 {
 	// delete ray buffers
-    delete constructEyeBuffer;
+	delete constructEyeBuffer;
 
-    delete eyePathBuffer;
+	delete eyePathBuffer;
 
-    delete pathDataBuffer;
+	delete pathDataBuffer;
 
-    delete visibilityRayBuffer;
-    delete visibilityHitBuffer;
-    delete randomWalkRayBuffer;
-    delete randomWalkHitBuffer;
+	delete visibilityRayBuffer;
+	delete visibilityHitBuffer;
+	delete randomWalkRayBuffer;
+	delete randomWalkHitBuffer;
 
 	// delete internal data
-    delete accumulatorOnePass;
+	delete accumulatorOnePass;
 	delete counterBuffer;
 	delete texDescs;
 	delete texel32Buffer;
@@ -724,10 +741,10 @@ void RenderCore::Shutdown()
 	for (auto mesh : meshes) delete mesh;
 	for (auto instance : instances) delete instance;
 	delete topLevel;
-	rtpBufferDescDestroy(visibilityRaysDesc );
-	rtpBufferDescDestroy(visibilityHitsDesc );
-	rtpBufferDescDestroy(randomWalkRaysDesc);
-    rtpBufferDescDestroy(randomWalkHitsDesc);
+	rtpBufferDescDestroy( visibilityRaysDesc );
+	rtpBufferDescDestroy( visibilityHitsDesc );
+	rtpBufferDescDestroy( randomWalkRaysDesc );
+	rtpBufferDescDestroy( randomWalkHitsDesc );
 	rtpContextDestroy( context );
 }
 

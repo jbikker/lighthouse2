@@ -22,6 +22,7 @@
 // global include files
 #include "../../RenderSystem/common_settings.h"
 #include "../../RenderSystem/common_types.h"
+#define OPTIX_CU // skip CUDAMaterial definition in core_settings.h; not needed here 
 #include "../core_settings.h"
 
 // global path tracing parameters

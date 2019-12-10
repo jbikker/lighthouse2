@@ -13,7 +13,7 @@
    limitations under the License.
 
    The settings and classes in this file are global:
-   - avilable in host and device code
+   - available in host and device code
    - the same for each core.
    Settings that can be configured per core can be found in core_settings.h.
 */
@@ -22,7 +22,6 @@
 
 // global settings
 #define CACHEIMAGES					// imported images will be saved to bin files (faster)
-// #define ZIPIMGBINS				// cached images will be zipped (slower but smaller)
 
 // default screen size
 #define SCRWIDTH			1280
@@ -35,11 +34,6 @@
 #define IBLHEIGHT			256
 #define IBLWBITS			9
 #define IBLHBITS			8
-
-// low discrepancy sampling
-#define LDSETS				256		// number of full low discrepancy sets
-#define LDDIMENSIONS		16		// number of dimensions per ld set
-#define LDSAMPLES			128		// number of samples per pixel before we start using random floats
 
 // low level settings
 #define PI					3.14159265358979323846264f

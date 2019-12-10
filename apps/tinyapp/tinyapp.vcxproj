@@ -54,7 +54,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/AntTweakBar/include;../../lib/freeimage/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/freeimage/inc</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -74,7 +74,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/AntTweakBar/include;../../lib/freeimage/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/freeimage/inc</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>

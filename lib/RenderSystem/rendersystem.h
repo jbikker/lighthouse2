@@ -16,7 +16,6 @@
 #pragma once
 
 #include "system.h"
-#include "core_api_base.h"
 #ifdef RENDERSYSTEMBUILD
 // we will not expose these to the host application
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -53,6 +52,7 @@ typedef int tinyobjMaterial;
 #include "host_anim.h"
 #include "host_scene.h"
 #include "host_node.h"
+#include "core_api_base.h"
 #include "render_api.h"
 
 #ifdef RENDERSYSTEMBUILD

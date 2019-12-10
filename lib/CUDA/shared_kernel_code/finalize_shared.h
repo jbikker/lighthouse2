@@ -282,7 +282,7 @@ __global__ void __launch_bounds__( 64 /* max block size */, 6 /* min blocks per 
 	#if 0
 		// motion vector dilation
 		float bestDepth = 1e20f;
-		for( int v = 0; v < 3; v++ ) for( int u = 0; u < 3; u++ )
+		for (int v = 0; v < 3; v++) for (int u = 0; u < 3; u++)
 		{
 			int uu = x + (u - 1);
 			int vv = y + (v - 1);

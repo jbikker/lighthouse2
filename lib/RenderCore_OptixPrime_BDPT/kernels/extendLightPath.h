@@ -158,9 +158,9 @@ void extendLightPathKernel( int smcount, BiPathState* pathStateData,
 		r5 = RandomFloat( seed );
 	}
 
-    bool specular = false;
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, dir * -1.0f, HIT_T, r4, r5, R, pdf_solidangle, specular,type);
-    if (specular) FLAGS_L |= S_SPECULAR;
+	bool specular = false;
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, dir * -1.0f, HIT_T, r4, r5, R, pdf_solidangle, specular, type );
+	if (specular) FLAGS_L |= S_SPECULAR;
 
 	if (!(pdf_solidangle < EPSILON || isnan( pdf_solidangle )))
 	{
@@ -206,7 +206,7 @@ void extendLightPathKernel( int smcount, BiPathState* pathStateData,
 		pdf_ = 0.0f; // terminate the eye path extension
 	}
 	else if (t < MAX_LIGHTPATH) // reduce this query
-#endif
+	#endif
 	{
 		randomWalkRayIdx = atomicAdd( &counters->randomWalkRays, 1 );
 		randomWalkRays[randomWalkRayIdx].O4 = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), 0 );

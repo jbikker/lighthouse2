@@ -103,7 +103,7 @@ void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const ma
 	// adjust the instances vector if we have more.
 	if (meshIdx == -1)
 	{
-		if (rasterizer.scene.root->child.size() > instanceIdx) 
+		if (rasterizer.scene.root->child.size() > instanceIdx)
 			rasterizer.scene.root->child.resize( instanceIdx );
 		return;
 	}
@@ -136,7 +136,7 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 		t->pixels = (uint*)MALLOC64( tex[i].pixelCount * sizeof( uint ) );
 		if (tex[i].idata) memcpy( t->pixels, tex[i].idata, tex[i].pixelCount * sizeof( uint ) );
 		else memcpy( t->pixels, 0, tex[i].pixelCount * sizeof( uint ) /* assume integer textures */ );
-		// Note: texture width and height are not known yet, will be set when we get the materials.
+		t->width = tex[i].width, t->height = tex[i].height;
 	}
 }
 
@@ -144,7 +144,7 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount )
+void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
 	// copy the supplied array of materials
 	for (int i = 0; i < materialCount; i++)
@@ -153,17 +153,17 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, c
 		if (i < rasterizer.scene.matList.size()) m = rasterizer.scene.matList[i];
 		else rasterizer.scene.matList.push_back( m = new Material() );
 		m->texture = 0;
-		int texID = matEx[i].texture[TEXTURE0];
+		int texID = mat[i].color.textureID;
 		if (texID == -1)
 		{
-			float r = mat[i].diffuse_r, g = mat[i].diffuse_g, b = mat[i].diffuse_b;
+			float r = mat[i].color.value.x;
+			float g = mat[i].color.value.y;
+			float b = mat[i].color.value.z;
 			m->diffuse = ((int)(b * 255.0f) << 16) + ((int)(g * 255.0f) << 8) + (int)(r * 255.0f);
 		}
 		else
 		{
 			m->texture = rasterizer.scene.texList[texID];
-			m->texture->width = mat[i].texwidth0; // we know this only now, so set it properly
-			m->texture->height = mat[i].texheight0;
 		}
 	}
 }

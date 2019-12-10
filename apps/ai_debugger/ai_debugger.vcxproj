@@ -54,7 +54,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../lib/pathfinding/recastnavigation/Detour/Include;../../lib/pathfinding/recastnavigation/DetourTileCache/Include;../../lib/pathfinding/recastnavigation/DetourCrowd/Include;../../lib/pathfinding/recastnavigation/DebugUtils/Include;../../lib/pathfinding/recastnavigation/Recast/Include;../../lib/tinyxml2;../../lib/pathfinding;%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/AntTweakBar/include;../../lib/freeimage/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../lib/pathfinding/recastnavigation/Detour/Include;../../lib/pathfinding/recastnavigation/DetourTileCache/Include;../../lib/pathfinding/recastnavigation/DetourCrowd/Include;../../lib/pathfinding/recastnavigation/DebugUtils/Include;../../lib/pathfinding/recastnavigation/Recast/Include;../../lib/tinyxml2;../../lib/pathfinding;%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/freeimage/inc</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -62,7 +62,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>pathfinding.lib;rendersystem.lib;platform.lib;libz-static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;opengl32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../lib/pathfinding/lib/$(Configuration);../../lib/AntTweakBar/lib;../../lib/zlib;../../lib/RenderSystem/lib/debug;../../lib/platform/lib/debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../lib/pathfinding/lib/$(Configuration);../../lib/zlib;../../lib/RenderSystem/lib/debug;../../lib/platform/lib/debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -73,7 +73,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../lib/pathfinding/recastnavigation/Detour/Include;../../lib/pathfinding/recastnavigation/DetourTileCache/Include;../../lib/pathfinding/recastnavigation/DetourCrowd/Include;../../lib/pathfinding/recastnavigation/DebugUtils/Include;../../lib/pathfinding/recastnavigation/Recast/Include;../../lib/tinyxml2;../../lib/pathfinding;%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/AntTweakBar/include;../../lib/freeimage/inc</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../lib/pathfinding/recastnavigation/Detour/Include;../../lib/pathfinding/recastnavigation/DetourTileCache/Include;../../lib/pathfinding/recastnavigation/DetourCrowd/Include;../../lib/pathfinding/recastnavigation/DebugUtils/Include;../../lib/pathfinding/recastnavigation/Recast/Include;../../lib/tinyxml2;../../lib/pathfinding;%(AdditionalIncludeDirectories);../../lib/RenderCore;../../lib/zlib;../../lib/glfw/include;../../lib/glad/include;../../lib/half2.1.0;../../lib/RenderSystem;../../lib/platform;../../lib/freeimage/inc</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -84,7 +84,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>pathfinding.lib;rendersystem.lib;platform.lib;libz-static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;opengl32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../lib/pathfinding/lib/$(Configuration);../../lib/AntTweakBar/lib;../../lib/zlib;../../lib/RenderSystem/lib/release;../../lib/platform/lib/release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../../lib/pathfinding/lib/$(Configuration);../../lib/zlib;../../lib/RenderSystem/lib/release;../../lib/platform/lib/release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
     </Link>

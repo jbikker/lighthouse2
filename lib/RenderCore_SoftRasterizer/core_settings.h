@@ -13,7 +13,7 @@
    limitations under the License.
 
    The settings and classes in this file are core-specific:
-   - avilable in host and device code
+   - available in host and device code
    - specific to this particular core.
    Global settings can be configured shared.h.
 */

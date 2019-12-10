@@ -35,7 +35,7 @@
 
 #if 1
 // JB: prevent inclusion of stddef.h so we don't have to search vs directories.
-typedef unsigned long long size_t;
+// typedef unsigned long long size_t;
 #else
 #include <stddef.h> /* for size_t */
 #endif

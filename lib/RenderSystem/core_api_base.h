@@ -97,14 +97,14 @@ public:
 	// SetTextures: update the texture data in the RenderCore using the supplied data.
 	virtual void SetTextures( const CoreTexDesc* tex, const int textureCount ) = 0;
 	// SetMaterials: update the material list used by the RenderCore. Textures referenced by the materials must be set in advance.
-	virtual void SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount ) = 0;
+	virtual void SetMaterials( CoreMaterial* mat, const int materialCount ) = 0;
 	// SetLights: update the point lights, spot lights and directional lights.
 	virtual void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount ) = 0;
 	// SetSkyData: specify the data required for sky dome rendering.
-	virtual void SetSkyData( const float3* pixels, const uint width, const uint height ) = 0;
+	virtual void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight = mat4() ) = 0;
 	// SetGeometry: update the geometry for a single mesh.
 	virtual void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 ) = 0;
 	// SetInstance: update the data on a single instance.

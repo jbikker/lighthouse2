@@ -37,6 +37,7 @@ public:
 	float* cdf = nullptr;				// cdf for importance sampling
 	float* pdf = nullptr;				// pdf for importance sampling
 	float* columncdf = nullptr;			// column cdf for importance sampling
+	mat4 worldToLight;					// for PBRT scenes; transform for skydome
 	TRACKCHANGES;						// add Changed(), MarkAsDirty() methods, see system.h
 };
 

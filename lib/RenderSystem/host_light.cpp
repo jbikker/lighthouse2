@@ -36,7 +36,7 @@ HostAreaLight::HostAreaLight( HostTri* origTri, int origIdx, int origInstance )
 	const float c = length( vertex0 - vertex2 );
 	const float s = (a + b + c) * 0.5f;
 	area = sqrtf( s * (s - a) * (s - b) * (s - c) ); // Heron's formula
-	radiance = HostScene::materials[origTri->material]->color;
+	radiance = HostScene::materials[origTri->material]->color();
 	const float3 E = radiance * area;
 	energy = E.x + E.y + E.z;
 }

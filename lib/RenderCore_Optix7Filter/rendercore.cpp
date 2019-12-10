@@ -15,6 +15,7 @@
 
 #include "core_settings.h"
 #include <optix_function_table_definition.h>
+#include <optix_stack_size.h>
 
 namespace lh2core
 {
@@ -51,7 +52,7 @@ void RenderCore::applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffe
 
 // setters / getters
 void SetInstanceDescriptors( CoreInstanceDesc* p );
-void SetMaterialList( CoreMaterial* p );
+void SetMaterialList( CUDAMaterial* p );
 void SetAreaLights( CoreLightTri* p );
 void SetPointLights( CorePointLight* p );
 void SetSpotLights( CoreSpotLight* p );
@@ -158,10 +159,16 @@ void RenderCore::CreateOptixContext( int cc )
 	}
 	else
 	{
+		const char* file = NULL;
+		if (cc / 10 == 7) file = "../../lib/RenderCore_Optix7Filter/optix/.optix.turing.cu.ptx";
+		else if (cc / 10 == 6) file = "../../lib/RenderCore_Optix7Filter/optix/.optix.pascal.cu.ptx";
+		else if (cc / 10 == 5) file = "../../lib/RenderCore_Optix7Filter/optix/.optix.maxwell.cu.ptx";
 		FILE* f;
-		if (cc / 10 == 7) fopen_s( &f, "../../lib/RenderCore_Optix7Filter/optix/.optix.turing.cu.ptx", "rb" );
-		else if (cc / 10 == 6) fopen_s( &f, "../../lib/RenderCore_Optix7Filter/optix/.optix.pascal.cu.ptx", "rb" );
-		else if (cc / 10 == 5) fopen_s( &f, "../../lib/RenderCore_Optix7Filter/optix/.optix.maxwell.cu.ptx", "rb" );
+	#ifdef _MSC_VER
+		fopen_s( &f, file, "rb" );
+	#else
+		f = fopen( file, "rb" );
+	#endif
 		int len;
 		fread( &len, 1, 4, f );
 		char* t = new char[len];
@@ -551,32 +558,51 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetMaterials( CoreMaterial* mat, const CoreMaterialEx* matEx, const int materialCount )
+#define TOCHAR(a) ((uint)((a)*255.0f))
+#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
+void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
 	delete materialBuffer;
 	delete hostMaterialBuffer;
-	hostMaterialBuffer = new CoreMaterial[materialCount];
-	memcpy( hostMaterialBuffer, mat, materialCount * sizeof( CoreMaterial ) );
+	hostMaterialBuffer = new CUDAMaterial[materialCount];
 	for (int i = 0; i < materialCount; i++)
 	{
-		CoreMaterial& m = hostMaterialBuffer[i];
-		const CoreMaterialEx& e = matEx[i];
-		if (e.texture[0] != -1) m.texaddr0 = texDescs[e.texture[0]].firstPixel;
-		if (e.texture[1] != -1) m.texaddr1 = texDescs[e.texture[1]].firstPixel;
-		if (e.texture[2] != -1) m.texaddr2 = texDescs[e.texture[2]].firstPixel;
-		if (e.texture[3] != -1) m.nmapaddr0 = texDescs[e.texture[3]].firstPixel;
-		if (e.texture[4] != -1) m.nmapaddr1 = texDescs[e.texture[4]].firstPixel;
-		if (e.texture[5] != -1) m.nmapaddr2 = texDescs[e.texture[5]].firstPixel;
-		if (e.texture[6] != -1) m.smapaddr = texDescs[e.texture[6]].firstPixel;
-		if (e.texture[7] != -1) m.rmapaddr = texDescs[e.texture[7]].firstPixel;
-		// if (e.texture[ 8] != -1) m.texaddr0 = texDescs[e.texture[ 8]].firstPixel; second roughness map is not used
-		if (e.texture[9] != -1) m.cmapaddr = texDescs[e.texture[9]].firstPixel;
-		if (e.texture[10] != -1) m.amapaddr = texDescs[e.texture[10]].firstPixel;
+		// perform conversion to internal material format
+		CoreMaterial& m = mat[i];
+		CUDAMaterial& gpuMat = hostMaterialBuffer[i];
+		memset( &gpuMat, 0, sizeof( CUDAMaterial ) );
+		gpuMat.diffuse_r = m.color.value.x,
+			gpuMat.diffuse_g = m.color.value.y;
+		gpuMat.diffuse_b = m.color.value.z;
+		gpuMat.transmittance_r = 1 - m.absorption.value.x;
+		gpuMat.transmittance_g = 1 - m.absorption.value.y;
+		gpuMat.transmittance_b = 1 - m.absorption.value.z;
+		gpuMat.parameters.x = TOUINT4( m.metallic.value, m.subsurface.value, m.specular.value, m.roughness.value );
+		gpuMat.parameters.y = TOUINT4( m.specularTint.value, m.anisotropic.value, m.sheen.value, m.sheenTint.value );
+		gpuMat.parameters.z = TOUINT4( m.clearcoat.value, m.clearcoatGloss.value, m.transmission.value, 0 );
+		gpuMat.parameters.w = *((uint*)&m.eta);
+		if (m.color.textureID != -1) gpuMat.tex0 = Map<CoreMaterial::Vec3Value>( m.color );
+		if (m.detailColor.textureID != -1) gpuMat.tex1 = Map<CoreMaterial::Vec3Value>( m.detailColor );
+		if (m.normals.textureID != -1) gpuMat.nmap0 = Map<CoreMaterial::Vec3Value>( m.normals );
+		if (m.detailNormals.textureID != -1) gpuMat.nmap1 = Map<CoreMaterial::Vec3Value>( m.detailNormals );
+		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness );
+		if (m.specular.textureID != -1) gpuMat.smap = Map<CoreMaterial::ScalarValue>( m.specular );
+		bool hdr = false;
+		if (m.color.textureID != 1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
+		gpuMat.flags =
+			(m.eta.value < 1 ? ISDIELECTRIC : 0) + (hdr ? DIFFUSEMAPISHDR : 0) +
+			(m.color.textureID != -1 ? HASDIFFUSEMAP : 0) +
+			(m.normals.textureID != -1 ? HASNORMALMAP : 0) +
+			(m.specular.textureID != -1 ? HASSPECULARITYMAP : 0) +
+			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
+			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
+			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	materialBuffer = new CoreBuffer<CoreMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
+	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
 	SetMaterialList( materialBuffer->DevPtr() );
 }
 
@@ -768,7 +794,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 		pathCount = counters.extensionRays;
 		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		if (pathCount == 0) break;
-		// handle shadow buffer overflow
+		// trace shadow rays now if the next loop iteration could overflow the buffer.
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
 		if ((pathCount + counters.shadowRays) >= maxShadowRays) if (counters.shadowRays > 0)
 		{
@@ -806,7 +832,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 			shading->DevPtr(), motion->DevPtr(), moments->DevPtr(), prevMoments->DevPtr(), deltaDepth->DevPtr(),
 			prevView, j0, j1, prevj0, prevj1,
 			scrwidth, scrheight, samplesTaken, vars.filterClampDirect, vars.filterClampIndirect, converge == Restart ? 0 : 1 );
-#ifdef _MSC_VER
+	#ifdef _MSC_VER
 		// TODO: Cross-compatible way of passing key input FROM APP down to RenderCore
 		if (GetAsyncKeyState( VK_F4 ))
 		{
@@ -814,7 +840,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 				deltaDepth->DevPtr(), motion->DevPtr(), moments->DevPtr(), shading->DevPtr() );
 		}
 		else
-#endif
+		#endif
 		{
 			applyFilter( 1, shading, filteredIN, filteredOUT );
 			applyFilter( 2, filteredOUT, 0, filteredIN );

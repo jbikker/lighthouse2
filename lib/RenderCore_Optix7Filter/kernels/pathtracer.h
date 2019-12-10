@@ -287,7 +287,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (pathLength == MAXPATHLENGTH /* don't fill arrays with rays we won't trace */)
 	{
 		// it ends here, and we didn't finalize the filter data, so store something sensible
-		if (firstHitToBeStored) 
+		if (firstHitToBeStored)
 		{
 			const uint isSpecular = FLAGS & S_VIASPECULAR ? 1 : 0;
 			const uint packedNormal = PackNormal2( N ) + isSpecular;

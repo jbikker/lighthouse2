@@ -32,6 +32,11 @@ void RenderCore::SetProbePos( int2 pos )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
+#ifdef _DEBUG
+	printf( "Initializing SoftRasterizer core - DEBUG build.\n" );
+#else
+	printf( "Initializing SoftRasterizer core - RELEASE build.\n" );
+#endif
 	// initialize scene
 	rasterizer.Init();
 	rasterizer.scene.root = new SGNode();

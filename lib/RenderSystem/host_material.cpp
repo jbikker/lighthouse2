@@ -77,6 +77,7 @@ void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltfModel& model, const int textureBase )
 {
 	name = original.name;
+	flags |= HostMaterial::FROM_MTL; // this material will be serialized on exit.
 	for (const auto& value : original.values)
 	{
 		if (value.first == "baseColorFactor")

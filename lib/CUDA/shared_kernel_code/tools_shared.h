@@ -275,9 +275,20 @@ LH2_DEVFUNC float3 UniformSampleCone( const float r0, const float r1, const floa
 }
 
 // origin offset
-
 LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N, const float geoEpsilon )
 {
+#if 1
+	// from Ray Tracing Gems 1, chapter 6: does not use geoEpsilon nor ray direction.
+	const float3 _N = dot( N, R ) > 0 ? N : (-N);
+	int3 of_i = make_int3( 256.0f * _N.x, 256.0f * _N.y, 256.0f * _N.z );
+	float3 p_i = make_float3(
+		__int_as_float( __float_as_int( O.x ) + ((O.x < 0) ? -of_i.x : of_i.x) ),
+		__int_as_float( __float_as_int( O.y ) + ((O.y < 0) ? -of_i.y : of_i.y) ),
+		__int_as_float( __float_as_int( O.z ) + ((O.z < 0) ? -of_i.z : of_i.z) ) );
+	return make_float3( fabsf( O.x ) < (1.0f / 32.0f) ? O.x + (1.0f / 65536.0f) * _N.x : p_i.x,
+		fabsf( O.y ) < (1.0f / 32.0f) ? O.y + (1.0f / 65536.0f) * _N.y : p_i.y,
+		fabsf( O.z ) < (1.0f / 32.0f) ? O.z + (1.0f / 65536.0f) * _N.z : p_i.z );
+#else
 	// offset outgoing ray direction along R and / or N: along N when strongly parallel to the origin surface; mostly along R otherwise
 	const float parallel = 1 - fabs( dot( N, R ) );
 	const float v = parallel * parallel;
@@ -289,6 +300,7 @@ LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N
 	const float side = 1.0f;
 #endif
 	return O + R * geoEpsilon * (1 - v) + N * side * geoEpsilon * v;
+#endif
 }
 
 // consistent normal interpolation

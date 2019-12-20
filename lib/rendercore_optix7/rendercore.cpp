@@ -235,6 +235,11 @@ void RenderCore::CreateOptixContext( int cc )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
+#ifdef _DEBUG
+	printf( "Initializing Optix7 core - DEBUG build.\n" );
+#else
+	printf( "Initializing Optix7 core - RELEASE build.\n" );
+#endif
 	// select the fastest device
 	uint device = CUDATools::FastestDevice();
 	cudaSetDevice( device );

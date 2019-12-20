@@ -196,7 +196,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 				CLAMPINTENSITY;
 				// add fire-and-forget shadow ray to the connections buffer
 				const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
-				connections[shadowRayIdx] = make_float4( SafeOrigin( I, L, N * faceDir, geometryEpsilon ), 0 ); // O4
+				connections[shadowRayIdx] = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 ); // O4
 				connections[shadowRayIdx + stride * 2] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
 				connections[shadowRayIdx + stride * 2 * 2] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
 			}
@@ -233,7 +233,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN * faceDir );
 	if (!(FLAGS & S_SPECULAR)) FLAGS |= FLAGS & S_BOUNCED ? S_BOUNCEDTWICE : S_BOUNCED; else FLAGS |= S_VIASPECULAR;
-	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N * faceDir, geometryEpsilon ), __uint_as_float( FLAGS ) );
+	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
 	pathStates[extensionRayIdx + stride] = make_float4( R, __uint_as_float( packedNormal ) );
 	FIXNAN_FLOAT3( throughput );
 	pathStates[extensionRayIdx + stride * 2] = make_float4( throughput * bsdf * abs( dot( fN, R ) ), newBsdfPdf );

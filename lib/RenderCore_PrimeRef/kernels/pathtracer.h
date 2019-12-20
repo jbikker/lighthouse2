@@ -137,7 +137,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 			float3 contribution = throughput * sampledBSDF * lightColor * (NdotL / (pickProb * lightPdf));
 			// add fire-and-forget shadow ray to the connections buffer
 			const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
-			connections[shadowRayIdx].O4 = make_float4( SafeOrigin( I, L, N * faceDir, geometryEpsilon ), 0 );
+			connections[shadowRayIdx].O4 = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 );
 			connections[shadowRayIdx].D4 = make_float4( L, dist - 2 * geometryEpsilon );
 			potentials[shadowRayIdx] = make_float4( contribution, __int_as_float( pixelIdx ) );
 		}
@@ -159,7 +159,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 
 	// write extension ray
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
-	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N * faceDir, geometryEpsilon ), 0 );
+	extensionRaysOut[extensionRayIdx].O4 = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), 0 );
 	extensionRaysOut[extensionRayIdx].D4 = make_float4( R, 1e34f );
 	pathStateDataOut[extensionRayIdx * 2 + 0] = make_float4( throughput, __uint_as_float( FLAGS ) );
 }

@@ -95,6 +95,11 @@ void RenderCore::SetProbePos( int2 pos )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
+#ifdef _DEBUG
+	printf( "Initializing OptixPrime core - DEBUG build.\n" );
+#else
+	printf( "Initializing OptixPrime core - RELEASE build.\n" );
+#endif
 	// select the fastest device
 	uint device = CUDATools::FastestDevice();
 	cudaSetDevice( device );

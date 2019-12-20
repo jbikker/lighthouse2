@@ -418,7 +418,7 @@
         <clearcoat>1e-32</clearcoat>
         <clearcoatGloss>1e-32</clearcoatGloss>
         <transmission>1</transmission>
-        <eta>0.65799999</eta>
+        <eta>0.66299999</eta>
     </material_20>
     <material_21>
         <name>Plastic_Blue_ExtraLight</name>

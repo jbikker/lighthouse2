@@ -83,7 +83,8 @@ LH2_DEVFUNC void GetShadingData(
 	const float3 A = make_float3( instanceDescriptors[instIdx].invTransform.A );
 	const float3 B = make_float3( instanceDescriptors[instIdx].invTransform.B );
 	const float3 C = make_float3( instanceDescriptors[instIdx].invTransform.C );
-	N = N.x * A + N.y * B + N.z * C, iN = iN.x * A + iN.y * B + iN.z * C;
+	N = normalize( N.x * A + N.y * B + N.z * C );
+	iN = normalize( iN.x * A + iN.y * B + iN.z * C );
 	// "Consistent Normal Interpolation", Reshetov et al., 2010
 	const float4 vertexAlpha = tri.alpha4;
 	const bool backSide = dot( D, N ) > 0;

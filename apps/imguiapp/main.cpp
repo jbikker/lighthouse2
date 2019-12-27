@@ -57,15 +57,17 @@ void PrepareScene()
 #endif
 #if 1
 	// overhead light, use regular PT
-	int lightMat = renderer->AddMaterial( make_float3( 50, 50, 45 ) );
-	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
+	// int lightMat = renderer->AddMaterial( make_float3( 50, 50, 45 ) );
+	// int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 #else
 	// difficult light; use BDPT
 	int lightMat = renderer->AddMaterial( make_float3( 500, 500, 400 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0.15188693, -0.32204545, 0.93446094 ), make_float3( -12.938412, -5.0068984, -25.725601 ), 1.9f, 1.9f, lightMat );
 #endif
-	int lightInst = renderer->AddInstance( lightQuad );
+	// int lightInst = renderer->AddInstance( lightQuad );
+	renderer->AddPointLight( make_float3( 20, 26, 20 ), make_float3( 1000, 1000, 1000 ) );
 	// optional animated models
+	renderer->AddScene( "scene.gltf", "data/", mat4::Scale( 1 ) );
 	// renderer->AddScene( "CesiumMan.glb", "data/", mat4::Translate( 0, -2, -9 ) );
 	// renderer->AddScene( "project_polly.glb", "data/", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	// load changed materials
@@ -139,8 +141,9 @@ int main()
 
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );		// OPTIX7 core, with filtering (static scenes only for now)
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );			// OPTIX PRIME, best for pre-RTX CUDA devices
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );				// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Guiding" );		// OPTIX7 core with path guiding for next event estimation
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core

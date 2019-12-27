@@ -85,6 +85,9 @@
     <ClInclude Include="host_anim.h">
       <Filter>scene</Filter>
     </ClInclude>
+    <ClInclude Include="common_functions.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="scene">

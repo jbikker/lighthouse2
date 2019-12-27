@@ -58,7 +58,6 @@ public:
 	CorePointLight ConvertToCorePointLight();
 	// data members
 	float3 position = make_float3( 0 );
-	float energy = 0;
 	float3 radiance = make_float3( 0 );
 	int ID = 0;
 	bool enabled = true;
@@ -100,7 +99,6 @@ public:
 	CoreDirectionalLight ConvertToCoreDirectionalLight();
 	// data members
 	float3 direction = make_float3( 0, -1, 0 );
-	float energy = 0;
 	float3 radiance = make_float3( 0 );
 	int ID = 0;
 	bool enabled = true;

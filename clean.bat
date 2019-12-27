@@ -13,15 +13,10 @@ rem | Clean up RenderCore folders
 
 rd lib\RenderCore_Minimal\lib /S /Q
 rd lib\RenderCore_Minimal\x64 /S /Q
-rd lib\RenderCore_OptixPrime\lib /S /Q
-rd lib\RenderCore_OptixPrime\x64 /S /Q
 rd lib\RenderCore_PrimeRef\lib /S /Q
 rd lib\RenderCore_PrimeRef\x64 /S /Q
 rd lib\RenderCore_OptixPrime_B\lib /S /Q
 rd lib\RenderCore_OptixPrime_B\x64 /S /Q
-rd lib\RenderCore_OptixRTX\lib /S /Q
-rd lib\RenderCore_OptixRTX\x64 /S /Q
-del lib\RenderCore_OptixRTX\optix\*.ptx /S /Q
 rd lib\RenderCore_OptixRTX_B\lib /S /Q
 rd lib\RenderCore_OptixRTX_B\x64 /S /Q
 del lib\RenderCore_OptixRTX_B\optix\*.ptx /S /Q
@@ -30,15 +25,14 @@ rd lib\RenderCore_OptixPrime_BDPT\x64 /S /Q
 del lib\RenderCore_OptixPrime_BDPT\optix\*.ptx /S /Q
 rd lib\RenderCore_Optix7\lib /S /Q
 rd lib\RenderCore_Optix7\x64 /S /Q
+rd lib\RenderCore_Optix7Guiding\lib /S /Q
+rd lib\RenderCore_Optix7Guiding\x64 /S /Q
 del lib\RenderCore_Optix7\optix\*.ptx /S /Q
 rd lib\RenderCore_Optix7Filter\lib /S /Q
 rd lib\RenderCore_Optix7Filter\x64 /S /Q
 del lib\RenderCore_Optix7Filter\optix\*.ptx /S /Q
 rd lib\RenderCore_SoftRasterizer\lib /S /Q
 rd lib\RenderCore_SoftRasterizer\x64 /S /Q
-rd lib\RenderCore_RTX_AO\lib /S /Q
-rd lib\RenderCore_RTX_AO\x64 /S /Q
-del lib\RenderCore_RTX_AO\optix\*.ptx /S /Q
 rd lib\RenderCore_OpenCL\lib /S /Q
 rd lib\RenderCore_OpenCL\x64 /S /Q
 rd lib\RenderCore_Embree\x64 /S /Q

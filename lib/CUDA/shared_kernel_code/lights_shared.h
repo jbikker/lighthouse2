@@ -138,32 +138,6 @@ LH2_DEVFUNC float LightPickProb( int idx, const float3& O, const float3& N, cons
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  RandomBarycentrics                                                         |
-//  |  Helper function for selecting a random point on a triangle. From:          |
-//  |  https://pharr.org/matt/blog/2019/02/27/triangle-sampling-1.html      LH2'19|
-//  +-----------------------------------------------------------------------------+
-LH2_DEVFUNC float3 RandomBarycentrics( const float r0 )
-{
-	const uint uf = (uint)(r0 * (1ull << 32));			// convert to 0:32 fixed point
-	float2 A = make_float2( 1, 0 ), B = make_float2( 0, 1 ), C = make_float2( 0, 0 ); // barycentrics
-	for (int i = 0; i < 16; ++i)						// for each base-4 digit
-	{
-		const int d = (uf >> (2 * (15 - i))) & 0x3;		// get the digit
-		float2 An, Bn, Cn;
-		switch (d)
-		{
-		case 0: An = (B + C) * 0.5f; Bn = (A + C) * 0.5f; Cn = (A + B) * 0.5f; break;
-		case 1: An = A; Bn = (A + B) * 0.5f; Cn = (A + C) * 0.5f; break;
-		case 2: An = (B + A) * 0.5f; Bn = B; Cn = (B + C) * 0.5f; break;
-		case 3: An = (C + A) * 0.5f; Bn = (C + B) * 0.5f; Cn = C; break;
-		}
-		A = An, B = Bn, C = Cn;
-	}
-	const float2 r = (A + B + C) * 0.3333333f;
-	return make_float3( r.x, r.y, 1 - r.x - r.y );
-}
-
-//  +-----------------------------------------------------------------------------+
 //  |  RandomPointOnLight                                                         |
 //  |  Selects a random point on a random light. Returns a position, a normal on  |
 //  |  the light source, the probability that this particular light would have    |
@@ -224,9 +198,9 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 	{
 		// pick a pointlight
 		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - AREALIGHTCOUNT];
-		const float3 pos = make_float3( light.data0 );			// position
-		const float3 lightColor = make_float3( light.data1 );	// radiance
-		const float3 L = I - pos; // reversed
+		const float3 pos = make_float3( light.data0 );	// position
+		lightColor = make_float3( light.data1 );	// radiance
+		const float3 L = I - pos;				// reversed
 		const float sqDist = dot( L, L );
 		lightPdf = dot( L, N ) < 0 ? sqDist : 0;
 		return pos;

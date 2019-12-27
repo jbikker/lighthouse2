@@ -70,7 +70,7 @@ CorePointLight HostPointLight::ConvertToCorePointLight()
 	CorePointLight light;
 	light.position = position;
 	light.radiance = radiance;
-	light.energy = energy;
+	light.energy = radiance.x + radiance.y + radiance.z;
 	return light;
 }
 
@@ -97,6 +97,7 @@ CoreDirectionalLight HostDirectionalLight::ConvertToCoreDirectionalLight()
 {
 	CoreDirectionalLight light;
 	light.radiance = radiance;
+	light.energy = radiance.x + radiance.y + radiance.z;
 	light.direction = direction;
 	return light;
 }

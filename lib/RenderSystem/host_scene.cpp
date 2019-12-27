@@ -235,9 +235,8 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 	const int textureBase = (int)textures.size();
 	const int meshBase = (int)meshPool.size();
 	const int skinBase = (int)skins.size();
-	bool hasTransform = (transform != mat4::Identity());
-	const int nodeBase = (int)nodePool.size() + (hasTransform ? 1 : 0);
-	const int retVal = nodeBase;
+	const int retVal = (int)nodePool.size();
+	const int nodeBase = (int)nodePool.size() + 1;
 	// load gltf file
 	string cleanFileName = string( dir ) + (dir[strlen( dir ) - 1] == '/' ? "" : "/") + string( sceneFile );
 	tinygltf::Model gltfModel;
@@ -292,20 +291,17 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 		newMesh->ID = (int)i + meshBase;
 		meshPool.push_back( newMesh );
 	}
+	// push an extra node that holds a transform for the gltf scene
+	HostNode* newNode = new HostNode(); 
+	newNode->localTransform = transform;
+	newNode->ID = nodeBase - 1;
+	nodePool.push_back( newNode );
 	// convert nodes
-	if (hasTransform)
-	{
-		// push an extra node that holds a transform for the gltf scene
-		HostNode* newNode = new HostNode();
-		newNode->localTransform = transform;
-		newNode->ID = nodeBase - 1;
-		nodePool.push_back( newNode );
-	}
 	for (size_t s = gltfModel.nodes.size(), i = 0; i < s; i++)
 	{
 		tinygltf::Node& gltfNode = gltfModel.nodes[i];
 		HostNode* newNode = new HostNode( gltfNode, nodeBase, meshBase, skinBase );
-		newNode->ID = (int)i + nodeBase;
+		newNode->ID = (int)nodePool.size();
 		nodePool.push_back( newNode );
 	}
 	// convert animations and skins
@@ -321,18 +317,10 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 	}
 	// construct a scene graph for scene 0, assuming the GLTF file has one scene
 	tinygltf::Scene& glftScene = gltfModel.scenes[0];
-	if (hasTransform)
-	{
-		// add the root nodes to the scene transform node
-		for (size_t i = 0; i < glftScene.nodes.size(); i++) nodePool[nodeBase - 1]->childIdx.push_back( glftScene.nodes[i] + nodeBase );
-		// add the root transform to the scene
-		rootNodes.push_back( nodeBase - 1 );
-	}
-	else
-	{
-		// add the root nodes to the scene
-		for (size_t i = 0; i < glftScene.nodes.size(); i++) rootNodes.push_back( glftScene.nodes[i] + nodeBase );
-	}
+	// add the root nodes to the scene transform node
+	for (size_t i = 0; i < glftScene.nodes.size(); i++) nodePool[nodeBase - 1]->childIdx.push_back( glftScene.nodes[i] + nodeBase );
+	// add the root transform to the scene
+	rootNodes.push_back( nodeBase - 1 );
 	// return index of first created node
 	return retVal;
 }

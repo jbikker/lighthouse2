@@ -701,7 +701,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 		if (pathLength == 1)
 		{
 			// spawn and extend camera rays
-			params.phase = 0;
+			params.phase = Params::SPAWN_PRIMARY;
 			coreStats.primaryRayCount = pathCount;
 			InitCountersForExtend( pathCount );
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
@@ -711,7 +711,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 		{
 			// extend bounced paths
 			if (pathLength == 2) coreStats.bounce1RayCount = pathCount; else coreStats.deepRayCount += pathCount;
-			params.phase = 1;
+			params.phase = Params::SPAWN_SECONDARY;
 			InitCountersSubsequent();
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, pathCount, 1, 1 ) );
@@ -734,7 +734,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
 		if ((pathCount + counters.shadowRays) >= maxShadowRays) if (counters.shadowRays > 0)
 		{
-			params.phase = 2;
+			params.phase = Params::SPAWN_SHADOW;
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 			counterBuffer->HostPtr()[0].shadowRays = 0;
@@ -746,7 +746,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 	cudaEventRecord( shadowStart );
 	if (counters.shadowRays > 0)
 	{
-		params.phase = 2;
+		params.phase = Params::SPAWN_SHADOW;
 		cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 		CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 	}

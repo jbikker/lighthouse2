@@ -41,9 +41,10 @@ using namespace half_float;
 
 #include "immintrin.h"
 #include "emmintrin.h"
-#include "common_types.h"
-#include "common_settings.h"
-#include "common_classes.h"
+#include "../RenderSystem/common_types.h"
+#include "../RenderSystem/common_settings.h"
+#include "../RenderSystem/common_classes.h"
+#include "../RenderSystem/common_functions.h"
 #include <GLFW/glfw3.h>		// needed for Timer class
 
 // https://devblogs.microsoft.com/cppblog/msvc-preprocessor-progress-towards-conformance/

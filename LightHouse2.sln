@@ -7,14 +7,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendersystem", "lib\RenderS
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "platform", "lib\platform\platform.vcxproj", "{7940AFAE-A1F7-440C-823C-239F2C3BB023}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_softrasterizer", "lib\RenderCore_SoftRasterizer\rendercore_softrasterizer.vcxproj", "{07247B19-33CB-4A06-A828-424ED7BC1796}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_SoftRasterizer", "lib\RenderCore_SoftRasterizer\rendercore_softrasterizer.vcxproj", "{07247B19-33CB-4A06-A828-424ED7BC1796}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "render cores", "render cores", "{24024FCF-C61F-4202-B224-31E446620333}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_optixprime_b", "lib\RenderCore_OptixPrime_B\rendercore_optixprime_b.vcxproj", "{036EBD5B-71EB-4B35-BED5-0EF49753B08E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_OptixPrime_B", "lib\RenderCore_OptixPrime_B\rendercore_optixprime_b.vcxproj", "{036EBD5B-71EB-4B35-BED5-0EF49753B08E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
@@ -35,7 +35,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tinyapp", "apps\tinyapp\tin
 		{0FA8FEF9-6E1C-4153-B169-523B14CBC615} = {0FA8FEF9-6E1C-4153-B169-523B14CBC615}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_optix7", "lib\RenderCore_Optix7\rendercore_optix7.vcxproj", "{5847939C-31F3-4D01-A50B-DAEA03A22EF9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_Optix7", "lib\RenderCore_Optix7\rendercore_optix7.vcxproj", "{5847939C-31F3-4D01-A50B-DAEA03A22EF9}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
@@ -50,27 +50,28 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imguiapp", "apps\imguiapp\i
 		{036EBD5B-71EB-4B35-BED5-0EF49753B08E} = {036EBD5B-71EB-4B35-BED5-0EF49753B08E}
 		{38070796-D9A4-4612-963F-1180D9C4D312} = {38070796-D9A4-4612-963F-1180D9C4D312}
 		{5847939C-31F3-4D01-A50B-DAEA03A22EF9} = {5847939C-31F3-4D01-A50B-DAEA03A22EF9}
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21} = {1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}
 		{0FA8FEF9-6E1C-4153-B169-523B14CBC615} = {0FA8FEF9-6E1C-4153-B169-523B14CBC615}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_primeref", "lib\RenderCore_PrimeRef\rendercore_primeref.vcxproj", "{FF0D391E-1A93-48B0-A700-650F6BAF2597}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_PrimeRef", "lib\RenderCore_PrimeRef\rendercore_primeref.vcxproj", "{FF0D391E-1A93-48B0-A700-650F6BAF2597}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_vulkan_rt", "lib\rendercore_vulkan_rt\rendercore_vulkan_rt.vcxproj", "{0FA8FEF9-6E1C-4153-B169-523B14CBC615}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_Vulkan_RT", "lib\RenderCore_Vulkan_RT\rendercore_vulkan_rt.vcxproj", "{0FA8FEF9-6E1C-4153-B169-523B14CBC615}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_optix7filter", "lib\RenderCore_Optix7Filter\rendercore_optix7filter.vcxproj", "{38070796-D9A4-4612-963F-1180D9C4D312}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_Optix7Filter", "lib\RenderCore_Optix7Filter\rendercore_optix7filter.vcxproj", "{38070796-D9A4-4612-963F-1180D9C4D312}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_optixprime_bdpt", "lib\RenderCore_OptixPrime_BDPT\rendercore_optixprime_bdpt.vcxproj", "{012E6953-2C4A-487C-A104-FD967B05A428}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_OptixPrime_BDPT", "lib\RenderCore_OptixPrime_BDPT\rendercore_optixprime_bdpt.vcxproj", "{012E6953-2C4A-487C-A104-FD967B05A428}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rendercore_minimal", "lib\RenderCore_Minimal\rendercore_minimal.vcxproj", "{4B7E4407-706F-442F-B5D3-FE8EF429F791}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_Minimal", "lib\RenderCore_Minimal\rendercore_minimal.vcxproj", "{4B7E4407-706F-442F-B5D3-FE8EF429F791}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
@@ -95,6 +96,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pathfinding", "lib\PathFind
 		{07290C5A-6E60-4C28-BEA7-FFFEA042E5CA} = {07290C5A-6E60-4C28-BEA7-FFFEA042E5CA}
 		{7940AFAE-A1F7-440C-823C-239F2C3BB023} = {7940AFAE-A1F7-440C-823C-239F2C3BB023}
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderCore_OptixPrime_PBRT", "lib\RenderCore_OptixPrime_PBRT\rendercore_optixprime_pbrt.vcxproj", "{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pbrtdemoapp", "apps\pbrtdemoapp\pbrtdemoapp.vcxproj", "{2BDEB641-2816-4C4F-8B62-A73C5B275E08}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -192,6 +197,18 @@ Global
 		{85133521-444D-4EEF-9FC6-435847A9CC16}.Release|x64.Build.0 = Release|x64
 		{85133521-444D-4EEF-9FC6-435847A9CC16}.Release|x86.ActiveCfg = Release|Win32
 		{85133521-444D-4EEF-9FC6-435847A9CC16}.Release|x86.Build.0 = Release|Win32
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}.Debug|x64.ActiveCfg = Debug|x64
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}.Debug|x64.Build.0 = Debug|x64
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}.Debug|x86.ActiveCfg = Debug|x64
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}.Release|x64.ActiveCfg = Release|x64
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}.Release|x64.Build.0 = Release|x64
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21}.Release|x86.ActiveCfg = Release|x64
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08}.Debug|x64.ActiveCfg = Debug|x64
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08}.Debug|x64.Build.0 = Debug|x64
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08}.Debug|x86.ActiveCfg = Debug|x64
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08}.Release|x64.ActiveCfg = Release|x64
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08}.Release|x64.Build.0 = Release|x64
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -208,6 +225,8 @@ Global
 		{012E6953-2C4A-487C-A104-FD967B05A428} = {24024FCF-C61F-4202-B224-31E446620333}
 		{4B7E4407-706F-442F-B5D3-FE8EF429F791} = {24024FCF-C61F-4202-B224-31E446620333}
 		{D754CC3F-4A2E-4942-A8D8-326E476833DF} = {CE339C88-1A68-48FF-B969-D3D1CFED807D}
+		{1F1C9DD3-DAAE-48EC-9613-1D0EF36C0B21} = {24024FCF-C61F-4202-B224-31E446620333}
+		{2BDEB641-2816-4C4F-8B62-A73C5B275E08} = {CE339C88-1A68-48FF-B969-D3D1CFED807D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7799D7AC-6A26-44C6-B345-CA1364BA60F1}

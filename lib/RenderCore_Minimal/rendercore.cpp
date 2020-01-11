@@ -30,7 +30,7 @@ void RenderCore::Init()
 //  |  RenderCore::SetTarget                                                      |
 //  |  Set the OpenGL texture that serves as the render target.             LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetTarget( GLTexture* target )
+void RenderCore::SetTarget( GLTexture* target, const uint )
 {
 	// synchronize OpenGL viewport
 	targetTextureID = target->ID;
@@ -65,7 +65,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 {
 	// render
 	screen->Clear();
-	for( Mesh& mesh : meshes ) for( int i = 0; i < mesh.vcount; i++ )
+	for (Mesh& mesh : meshes) for (int i = 0; i < mesh.vcount; i++)
 	{
 		// convert a vertex position to a screen coordinate
 		int screenx = mesh.vertices[i].x / 80 * (float)screen->width + screen->width / 2;
@@ -75,6 +75,15 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen->pixels );
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::GetCoreStats                                                   |
+//  |  Get a copy of the counters.                                          LH2'19|
+//  +-----------------------------------------------------------------------------+
+CoreStats RenderCore::GetCoreStats() const
+{
+	return coreStats;
 }
 
 //  +-----------------------------------------------------------------------------+

@@ -32,6 +32,59 @@ LH2_DEVFUNC float3 ciexyz_to_linear_rgb( const float3 xyz )
 		max( 0.0f, 0.055648f * xyz.x - 0.204043f * xyz.y + 1.057311f * xyz.z ) );
 }
 
+enum ShadingDataFlags
+{
+	ALPHA = 1,
+	EMISSIVE_TWOSIDED = 2,
+};
+
+// extract information from the triangle instance, not (directly) related to any material (type)
+LH2_DEVFUNC void SetupFrame(
+	const float3 D,					   // IN:	incoming ray direction, used for consistent normals
+	const float u, const float v,	  //		barycentric coordinates of intersection point
+	const CoreTri4& tri,			   //		triangle data
+	const int instIdx,				   //		instance index, for normal transform
+	const bool hasSmoothNormals,	   // model has a normal per vertex (to interpolate)
+	float3& N, float3& iN, float3& fN, //		geometric normal, interpolated normal, final normal (normal mapped)
+	float3& T,						   //		tangent vector
+	float& w )
+{
+	const float4 tdata2 = tri.vN0;
+	const float4 tdata3 = tri.vN1;
+	const float4 tdata4 = tri.vN2;
+	const float4 tdata5 = tri.T4;
+
+	// initialize normals
+	N = iN = fN = TRI_N;
+	T = TRI_T;
+	w = 1 - (u + v);
+	// calculate interpolated normal
+#ifdef OPTIXPRIMEBUILD
+	if (hasSmoothNormals) iN = normalize( u * TRI_N0 + v * TRI_N1 + w * TRI_N2 );
+#else
+	if (hasSmoothNormals) iN = normalize( w * TRI_N0 + u * TRI_N1 + v * TRI_N2 );
+#endif
+	// transform the normals for the current instance
+	const float3 A = make_float3( instanceDescriptors[instIdx].invTransform.A );
+	const float3 B = make_float3( instanceDescriptors[instIdx].invTransform.B );
+	const float3 C = make_float3( instanceDescriptors[instIdx].invTransform.C );
+	N = normalize( N.x * A + N.y * B + N.z * C );
+	iN = normalize( iN.x * A + iN.y * B + iN.z * C );
+	// "Consistent Normal Interpolation", Reshetov et al., 2010
+
+	const float4 vertexAlpha = tri.alpha4;
+	const bool backSide = dot( D, N ) > 0;
+#ifdef CONSISTENTNORMALS
+#ifdef OPTIXPRIMEBUILD
+	const float alpha = u * vertexAlpha.x + v * vertexAlpha.y + w * vertexAlpha.z;
+#else
+	const float alpha = w * vertexAlpha.x + u * vertexAlpha.y + v * vertexAlpha.z;
+#endif
+	iN = (backSide ? -1.0f : 1.0f) * ConsistentNormal( D * -1.0f, backSide ? (iN * -1.0f) : iN, alpha );
+#endif
+	fN = iN;
+}
+
 LH2_DEVFUNC void GetShadingData(
 	const float3 D,							// IN:	incoming ray direction, used for consistent normals
 	const float u, const float v,			//		barycentric coordinates of intersection point
@@ -48,10 +101,6 @@ LH2_DEVFUNC void GetShadingData(
 	// only called for intersections. We thus can assume that we have a valid
 	// triangle reference.
 	const float4 tdata1 = tri.v4;
-	const float4 tdata2 = tri.vN0;
-	const float4 tdata3 = tri.vN1;
-	const float4 tdata4 = tri.vN2;
-	const float4 tdata5 = tri.T4;
 	// fetch initial set of data from material
 	const CUDAMaterial4& mat = (const CUDAMaterial4&)materials[TRI_MATERIAL];
 	const uint4 baseData = mat.baseData4;
@@ -70,33 +119,18 @@ LH2_DEVFUNC void GetShadingData(
 	const float3 tint_xyz = linear_rgb_to_ciexyz( make_float3( base_rg.x, base_rg.y, base_b_medium_r.x ) );
 	retVal4.tint4 = make_float4( tint_xyz.y > 0 ? ciexyz_to_linear_rgb( tint_xyz * (1.0f / tint_xyz.y) ) : make_float3( 1 ), tint_xyz.y );
 	// initialize normals
-	N = iN = fN = TRI_N;
-	T = TRI_T;
-	const float w = 1 - (u + v);
-	// calculate interpolated normal
-#ifdef OPTIXPRIMEBUILD
-	if (MAT_HASSMOOTHNORMALS) iN = normalize( u * TRI_N0 + v * TRI_N1 + w * TRI_N2 );
-#else
-	if (MAT_HASSMOOTHNORMALS) iN = normalize( w * TRI_N0 + u * TRI_N1 + v * TRI_N2 );
-#endif
-	// transform the normals for the current instance
-	const float3 A = make_float3( instanceDescriptors[instIdx].invTransform.A );
-	const float3 B = make_float3( instanceDescriptors[instIdx].invTransform.B );
-	const float3 C = make_float3( instanceDescriptors[instIdx].invTransform.C );
-	N = normalize( N.x * A + N.y * B + N.z * C );
-	iN = normalize( iN.x * A + iN.y * B + iN.z * C );
-	// "Consistent Normal Interpolation", Reshetov et al., 2010
+	float w;
+	SetupFrame(
+		// Input:
+		D, u, v, tri, instIdx, MAT_HASSMOOTHNORMALS,
+		// Output:
+		N, iN, fN, T, w );
 	const float4 vertexAlpha = tri.alpha4;
-	const bool backSide = dot( D, N ) > 0;
-#ifdef CONSISTENTNORMALS
-#ifdef OPTIXPRIMEBUILD
-	const float alpha = u * vertexAlpha.x + v * vertexAlpha.y + w * vertexAlpha.z;
-#else
-	const float alpha = w * vertexAlpha.x + u * vertexAlpha.y + v * vertexAlpha.z;
+
+#ifdef MAT_EMISSIVE_TWOSIDED
+	if (MAT_EMISSIVE_TWOSIDED)
+		retVal.flags |= EMISSIVE_TWOSIDED;
 #endif
-	iN = (backSide ? -1.0f : 1.0f) * ConsistentNormal( D * -1.0f, backSide ? (iN * -1.0f) : iN, alpha );
-#endif
-	fN = iN;
 	// texturing
 	float tu, tv;
 	if (MAT_HASDIFFUSEMAP || MAT_HAS2NDDIFFUSEMAP || MAT_HASSPECULARITYMAP || MAT_HASNORMALMAP || MAT_HAS2NDNORMALMAP || MAT_HASROUGHNESSMAP)
@@ -122,7 +156,7 @@ LH2_DEVFUNC void GetShadingData(
 		const float4 texel = FetchTexelTrilinear( lambda, uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 );
 		if (MAT_HASALPHA && texel.w < 0.5f)
 		{
-			retVal.flags |= 1;
+			retVal.flags |= ALPHA;
 			return;
 		}
 		retVal.color = retVal.color * make_float3( texel );

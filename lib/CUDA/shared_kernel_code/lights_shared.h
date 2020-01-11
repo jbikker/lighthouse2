@@ -112,7 +112,7 @@ LH2_DEVFUNC float PotentialDirectionalLightContribution( const int idx, const fl
 //  +-----------------------------------------------------------------------------+
 LH2_DEVFUNC float CalculateLightPDF( const float3& D, const float t, const float lightArea, const float3 lightNormal )
 {
-	return (t * t) / (-dot( D, lightNormal ) * lightArea);
+	return (t * t) / (abs( dot( D, lightNormal ) ) * lightArea);
 }
 
 //  +-----------------------------------------------------------------------------+

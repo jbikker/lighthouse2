@@ -76,7 +76,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// use skydome if we didn't hit any geometry
 	if (PRIMIDX == NOHIT)
 	{
-		float3 contribution = throughput * make_float3( SampleSkydome( D, pathLength ) );
+		float3 contribution = throughput * make_float3( SampleSkydome( -worldToSky.TransformVector( D ), pathLength ) );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
 		return;
 	}

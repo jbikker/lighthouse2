@@ -24,6 +24,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>rendercorevulkanrt</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectName>RenderCore_Vulkan_RT</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -241,6 +242,11 @@
     <None Include="shaders\sampling.glsl" />
     <None Include="shaders\structures.glsl" />
     <None Include="shaders\tools.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\platform\platform.vcxproj">
+      <Project>{7940afae-a1f7-440c-823c-239f2c3bb023}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

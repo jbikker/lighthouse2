@@ -204,67 +204,27 @@ LH2_DEVFUNC void ReadTexelConsistent2( const float4* buffer, const float4* prevW
 	indirect = make_float3( w0 * pi0 + w1 * pi1 + w2 * pi2 + w3 * pi3 ) * (1.0f / sum);
 }
 
-#if 0
-
-template <typename T>
-__device__ T CoreTexture<T>::Evaluate( float2 uv ) const
+LH2_DEVFUNC float3 SampleCoreTexture( const CoreMaterial::Vec3Value& v, float2 uv )
 {
-	switch (type)
+	// TODO: Trilinear
+	if (v.textureID != -1)
 	{
-	case Constant:
-		return constant;
-	case Imagemap:
-		if (imagemap.trilinear)
-			return FetchTexelTrilinear(
-				0, uv,
-				imagemap.textureOffset,
-				imagemap.width,
-				imagemap.height );
-		else
-			return FetchTexel(
-				uv,
-				imagemap.textureOffset,
-				imagemap.width,
-				imagemap.height );
+		uv = v.uvscale * (v.uvoffset + uv);
+		// textureID represents the offset on the device:
+		return make_float3( FetchTexel( uv, v.textureID, v.size.x, v.size.y ) );
 	}
-	return T{};
+
+	return v.value;
 }
 
-template <>
-__device__ float CoreTexture<float>::Evaluate( float2 uv ) const
+LH2_DEVFUNC float SampleCoreTexture( const CoreMaterial::ScalarValue& v, float2 uv )
 {
-	switch (type)
-	{
-	case Constant:
-		return constant;
-	}
-	return 0.f;
-}
+	// TODO: Trilinear
 
-template <>
-__device__ float3 CoreTexture<float3>::Evaluate( float2 uv ) const
-{
-	switch (type)
-	{
-	case Constant:
-		return constant;
-	case Imagemap:
-		return make_float3(
-			imagemap.trilinear
-			? FetchTexelTrilinear(
-				0, uv,
-				imagemap.textureOffset,
-				imagemap.width,
-				imagemap.height )
-			: FetchTexel(
-				uv,
-				imagemap.textureOffset,
-				imagemap.width,
-				imagemap.height ) );
-	}
-	return make_float3( 0.f );
-}
+	// TODO:
+	// if (v.textureID != -1)
 
-#endif
+	return v.value;
+}
 
 // EOF

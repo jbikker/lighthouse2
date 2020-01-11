@@ -171,7 +171,6 @@ static void _CheckVK( int line, const char *file, vk::Result x )
 #include <map>
 #include <set>
 
-#include "core_api.h"
 #include "core_api_base.h"
 
 #include "vulkan_device.h"

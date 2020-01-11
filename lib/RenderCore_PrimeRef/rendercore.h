@@ -45,7 +45,7 @@ struct DeviceVars
 //  |  RenderCore                                                                 |
 //  |  Encapsulates device code.                                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-class RenderCore
+class RenderCore : public CoreAPI_Base
 {
 public:
 	// methods
@@ -62,7 +62,7 @@ public:
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount );
-	void SetSkyData( const float3* pixels, const uint width, const uint height );
+	void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight );
 	// geometry and instances:
 	// a scene is setup by first passing a number of meshes (geometry), then a number of instances.
 	// note that stored meshes can be used zero, one or multiple times in the scene.
@@ -72,6 +72,7 @@ public:
 	void UpdateToplevel();
 	int4 GetScreenParams();
 	void SetProbePos( const int2 pos );
+	CoreStats GetCoreStats() const override;
 	// internal methods
 private:
 	void SyncStorageType( const TexelStorage storage );

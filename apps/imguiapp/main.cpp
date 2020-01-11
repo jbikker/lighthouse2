@@ -15,7 +15,6 @@
 
 #include "platform.h"
 #include "rendersystem.h"
-
 #include <bitset>
 
 static RenderAPI* renderer = 0;
@@ -41,33 +40,29 @@ static CoreStats coreStats;
 void PrepareScene()
 {
 	// initialize scene
-#if 0
-	// mushrooms
-	materialFile = string( "data/woodville/wood_materials.xml" );
-	renderer->AddScene( "PUP_Woodville.gltf", "data/woodville/", mat4::Scale( 2 ) * mat4::Translate( 0, 0, 0 ) );
-	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
-	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
-	animPaused = true;
-#else
+	auto scene = renderer->GetScene();
+	auto sky = new HostSkyDome();
+	sky->Load( "data/sky_15.hdr" );
+	// Compensate for different evaluation in PBRT
+	sky->worldToLight = mat4::RotateX( -PI / 2 );
+	scene->SetSkyDome( sky );
 	// classic scene
 	materialFile = string( "data/pica/pica_materials.xml" );
 	renderer->AddScene( "scene.gltf", "data/pica/", mat4::Translate( 0, -10.2f, 0 ) );
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
-#endif
 #if 1
 	// overhead light, use regular PT
-	// int lightMat = renderer->AddMaterial( make_float3( 50, 50, 45 ) );
-	// int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
+	int lightMat = renderer->AddMaterial( make_float3( 50, 50, 45 ) );
+	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 26.0f, 0 ), 6.9f, 6.9f, lightMat );
 #else
 	// difficult light; use BDPT
 	int lightMat = renderer->AddMaterial( make_float3( 500, 500, 400 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0.15188693, -0.32204545, 0.93446094 ), make_float3( -12.938412, -5.0068984, -25.725601 ), 1.9f, 1.9f, lightMat );
 #endif
-	// int lightInst = renderer->AddInstance( lightQuad );
-	renderer->AddPointLight( make_float3( 20, 26, 20 ), make_float3( 1000, 1000, 1000 ) );
+	int lightInst = renderer->AddInstance( lightQuad );
+	// renderer->AddPointLight( make_float3( 20, 26, 20 ), make_float3( 1000, 1000, 1000 ) );
 	// optional animated models
-	renderer->AddScene( "scene.gltf", "data/", mat4::Scale( 1 ) );
 	// renderer->AddScene( "CesiumMan.glb", "data/", mat4::Translate( 0, -2, -9 ) );
 	// renderer->AddScene( "project_polly.glb", "data/", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	// load changed materials
@@ -141,15 +136,16 @@ int main()
 
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );		// OPTIX7 core, with filtering (static scenes only for now)
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );				// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Guiding" );		// OPTIX7 core with path guiding for next event estimation
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );			// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_BDPT" );	// Peter's OptixPrime / BDPT core
-
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_PBRT" );	// Marijn's PBRT core
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Guiding" );		// OPTIX7 core with path guiding for next event estimation (under construction)
+	
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
 	PrepareScene();

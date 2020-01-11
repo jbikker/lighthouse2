@@ -547,7 +547,16 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			float2 uv02 = make_float2( tri.u2 - tri.u0, tri.v2 - tri.v0 );
 			if (dot( uv01, uv01 ) == 0 || dot( uv02, uv02 ) == 0)
 			{
+			#if 1
+				// PBRT:
+				// https://github.com/mmp/pbrt-v3/blob/3f94503ae1777cd6d67a7788e06d67224a525ff4/src/shapes/triangle.cpp#L381
+				if ( std::abs( N.x ) > std::abs( N.y ) )
+					tri.T = make_float3( -N.z, 0, N.x ) / std::sqrt( N.x * N.x + N.z * N.z );
+				else
+					tri.T = make_float3( 0, N.z, -N.y ) / std::sqrt( N.y * N.y + N.z * N.z );
+			#else
 				tri.T = normalize( tri.vertex1 - tri.vertex0 );
+			#endif
 				tri.B = normalize( cross( N, tri.T ) );
 			}
 			else
@@ -688,16 +697,21 @@ void HostMesh::SetPose( const HostSkin* skin )
 	}
 #if 1
 	// code optimized for INFOMOV by Alysha Bogaers and Naraenda Prasetya
-#define USE_PARALLEL_SETPOSE 1
-	// adjust full triangles
-#if USE_PARALLEL_SETPOSE == 1
-#if 0
+
+#if defined( __AVX2__ ) && ( defined( _MSC_VER ) || defined( __FMA__ ) )
 	// use avx2 instruction
 #define FMADD256(a,b,c) _mm256_fmadd_ps( (a),(b),(c) )
 #else
 	// avx fallback (negligible impact on performance)
 #define FMADD256(a,b,c) _mm256_add_ps( _mm256_mul_ps( (a), (b) ), (c) )
 #endif
+
+#ifdef _MSC_VER
+#define USE_PARALLEL_SETPOSE // TODO: Find Linux replacement for PPL
+#endif
+
+	// adjust full triangles
+#ifdef USE_PARALLEL_SETPOSE
 	concurrency::parallel_for<int>( 0, (int)triangles.size(), [&]( int t ) {
 	#else
 	for (int s = (int)triangles.size(), t = 0; t < s; t++)
@@ -797,11 +811,11 @@ void HostMesh::SetPose( const HostSkin* skin )
 		_mm_store_ps( &triangles[t].vN1.x, tri_nrm[1] );
 		// store to [vN1 (float3), Nz (float)]
 		_mm_store_ps( &triangles[t].vN2.x, tri_nrm[2] );
-	#if USE_PARALLEL_SETPOSE == 1
-	} );
-#else
 	}
+#ifdef USE_PARALLEL_SETPOSE
+	);
 #endif
+
 #else
 	// transform original into vertex vector using skin matrices
 	for (int s = (int)vertices.size(), i = 0; i < s; i++)

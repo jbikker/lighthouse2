@@ -36,7 +36,6 @@ void KeyEventCallback( GLFWwindow* window, int key, int scancode, int action, in
 	else if (action == GLFW_RELEASE) keystates[key] = false;
 }
 void CharEventCallback( GLFWwindow* window, uint code ) { /* nothing here yet */ }
-void WindowFocusCallback( GLFWwindow* window, int focused ) { hasFocus = (focused == GL_TRUE); }
 void MouseButtonCallback( GLFWwindow* window, int button, int action, int mods ) { /* nothing here yet */ }
 void MousePosCallback( GLFWwindow* window, double x, double y )
 {
@@ -67,7 +66,6 @@ void InitGLFW()
 	// register callbacks
 	glfwSetFramebufferSizeCallback( window, ReshapeWindowCallback );
 	glfwSetKeyCallback( window, KeyEventCallback );
-	glfwSetWindowFocusCallback( window, WindowFocusCallback );
 	glfwSetMouseButtonCallback( window, MouseButtonCallback );
 	glfwSetCursorPosCallback( window, MousePosCallback );
 	glfwSetCharCallback( window, CharEventCallback );

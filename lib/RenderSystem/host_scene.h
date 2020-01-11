@@ -64,6 +64,7 @@ public:
 	static void DeserializeMaterials( const char* xmlFile );
 	// methods
 	static void Init();
+	static void SetSkyDome( HostSkyDome* );
 	static int FindOrCreateTexture( const string& origin, const uint modFlags = 0 );
 	static int CreateTexture( const string& origin, const uint modFlags = 0 );
 	static int FindOrCreateMaterial( const string& name );
@@ -74,13 +75,16 @@ public:
 	static void UpdateAnimation( const int animId, const float dt );
 	static int AnimationCount() { return (int)animations.size(); }
 	// scene construction / maintenance
+	static int AddMesh( HostMesh* mesh );
 	static int AddMesh( const char* objFile, const char* dir, const float scale = 1.0f, const bool flatShaded = false );
 	static int AddMesh( const int triCount );
 	static void AddTriToMesh( const int meshId, const float3& v0, const float3& v1, const float3& v2, const int matId );
 	static int AddScene( const char* sceneFile, const char* dir, const mat4& transform );
+	static int AddInstance( HostNode* node );
 	static int AddInstance( const int meshId, const mat4& transform );
 	static void RemoveNode( const int instId );
 	static int AddQuad( const float3 N, const float3 pos, const float width, const float height, const int matId, const int meshID = -1 );
+	static int AddMaterial( HostMaterial* material );
 	static int AddMaterial( const float3 color );
 	static int AddPointLight( const float3 pos, const float3 radiance, bool enabled = true );
 	static int AddSpotLight( const float3 pos, const float3 direction, const float inner, const float outer, const float3 radiance, bool enabled = true );

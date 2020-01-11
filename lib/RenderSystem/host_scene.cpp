@@ -117,9 +117,7 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 	if (root == nullptr) return;
 	XMLElement* countElement = root->FirstChildElement( "material_count" );
 	if (!countElement) return;
-	int materialCount;
-	const char* t = countElement->GetText();
-	sscanf_s( t, "%i", &materialCount );
+	const int materialCount = countElement->IntText();
 	if (materialCount != materials.size()) return;
 	for (int i = 0; i < materialCount; i++)
 	{
@@ -167,11 +165,33 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 //  +-----------------------------------------------------------------------------+
 void HostScene::Init()
 {
-	// initialize skydome
-	sky = new HostSkyDome();
-	sky->Load();
 	// initialize the camera
 	camera = new Camera();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::SetSkyDome                                                      |
+//  |  Set the skydome used for this scene.                                 LH2'19|
+//  +-----------------------------------------------------------------------------+
+void HostScene::SetSkyDome( HostSkyDome* skydome ) {
+	sky = skydome;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::AddMesh                                                         |
+//  |  Add an existing HostMesh to the list of meshes and return the mesh ID.     |
+//  |                                                                       LH2'19|
+//  +-----------------------------------------------------------------------------+
+int HostScene::AddMesh( HostMesh* mesh )
+{
+	auto res = std::find( meshPool.begin(), meshPool.end(), mesh );
+
+	if ( res != meshPool.end() )
+		return std::distance( meshPool.begin(), res );
+
+	mesh->ID = (int)meshPool.size();
+	meshPool.push_back( mesh );
+	return mesh->ID;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -182,9 +202,7 @@ void HostScene::Init()
 int HostScene::AddMesh( const char* objFile, const char* dir, const float scale, const bool flatShaded )
 {
 	HostMesh* newMesh = new HostMesh( objFile, dir, scale, flatShaded );
-	newMesh->ID = (int)meshPool.size();
-	meshPool.push_back( newMesh );
-	return newMesh->ID;
+	return AddMesh( newMesh );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -196,9 +214,7 @@ int HostScene::AddMesh( const char* objFile, const char* dir, const float scale,
 int HostScene::AddMesh( const int triCount )
 {
 	HostMesh* newMesh = new HostMesh( triCount );
-	newMesh->ID = (int)meshPool.size();
-	meshPool.push_back( newMesh );
-	return newMesh->ID;
+	return AddMesh( newMesh );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -384,9 +400,8 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 //  |  HostScene::AddInstance                                                     |
 //  |  Add an instance of an existing mesh to the scene.                    LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddInstance( const int meshId, const mat4& transform )
+int HostScene::AddInstance( HostNode* newNode )
 {
-	HostNode* newNode = new HostNode( meshId, transform );
 	if (nodeListHoles > 0)
 	{
 		// we have holes in the nodes vector due to instance deletions; search from the
@@ -408,6 +423,16 @@ int HostScene::AddInstance( const int meshId, const mat4& transform )
 	nodePool.push_back( newNode );
 	rootNodes.push_back( newNode->ID );
 	return newNode->ID;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::AddInstance                                                     |
+//  |  Add an instance of an existing mesh to the scene.                    LH2'19|
+//  +-----------------------------------------------------------------------------+
+int HostScene::AddInstance( const int meshId, const mat4& transform )
+{
+	HostNode* newNode = new HostNode( meshId, transform );
+	return AddInstance( newNode );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -533,7 +558,24 @@ int HostScene::CreateTexture( const string& origin, const uint modFlags )
 	// create a new texture
 	HostTexture* newTexture = new HostTexture( origin.c_str(), modFlags );
 	textures.push_back( newTexture );
-	return (int)textures.size() - 1;
+	return newTexture->ID = (int)textures.size() - 1;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::AddMaterial                                                     |
+//  |  Adds an existing HostMaterial* and returns the ID. If the material         |
+//  |  with that pointer is already added, it is not added again.           LH2'19|
+//  +-----------------------------------------------------------------------------+
+int HostScene::AddMaterial( HostMaterial* material )
+{
+	auto res = std::find( materials.begin(), materials.end(), material );
+
+	if ( res != materials.end() )
+		return std::distance( materials.begin(), res );
+
+	int matid = (int)materials.size();
+	materials.push_back( material );
+	return matid;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -544,9 +586,7 @@ int HostScene::AddMaterial( const float3 color )
 {
 	HostMaterial* material = new HostMaterial();
 	material->color = color;
-	material->ID = (int)materials.size();
-	materials.push_back( material );
-	return material->ID;
+	return material->ID = AddMaterial( material );
 }
 
 //  +-----------------------------------------------------------------------------+

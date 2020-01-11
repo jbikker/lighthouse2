@@ -53,9 +53,11 @@ public:
 	RenderSettings* GetSettings();
 	int GetTriangleNode( const int coreInstId, const int coreTriId );
 	int GetTriangleMesh( const int coreInstId, const int coreTriId );
+	HostScene* GetScene();
 	int GetTriangleMaterialID( const int coreInstId, const int coreTriId );
 	HostMaterial* GetTriangleMaterial( const int coreInstId, const int coreTriId );
 	HostMaterial* GetMaterial( const int matId );
+	const std::vector<HostMaterial*> &GetMaterials();
 	int FindNode( const char* name );
 	int FindMaterialID( const char* name );
 	int AddMaterial( const float3 color );
@@ -64,7 +66,7 @@ public:
 	int AddDirectionalLight( const float3 direction, const float3 radiance, bool enabled = true );
 	void SetTarget( GLTexture* tex, const uint spp );
 	void SetProbePos( const int2 pos );
-	CoreStats GetCoreStats();
+	CoreStats GetCoreStats() const;
 	SystemStats GetSystemStats();
 };
 

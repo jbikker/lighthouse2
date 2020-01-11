@@ -141,6 +141,10 @@ int RenderAPI::GetTriangleMesh( const int coreInstId, const int coreTriId )
 	return renderer->GetTriangleMesh( coreInstId, coreTriId );
 }
 
+HostScene* RenderAPI::GetScene() {
+	return renderer->scene;
+}
+
 int RenderAPI::GetTriangleMaterialID( const int coreInstId, const int coreTriId )
 {
 	return renderer->GetTriangleMaterial( coreInstId, coreTriId );
@@ -155,6 +159,11 @@ HostMaterial* RenderAPI::GetTriangleMaterial( const int coreInstId, const int co
 HostMaterial* RenderAPI::GetMaterial( const int matId )
 {
 	return renderer->scene->materials[matId];
+}
+
+const std::vector<HostMaterial *> &RenderAPI::GetMaterials()
+{
+	return renderer->scene->materials;
 }
 
 int RenderAPI::FindMaterialID( const char* name )
@@ -197,7 +206,7 @@ void RenderAPI::SetProbePos( const int2 pos )
 	renderer->SetProbePos( pos );
 }
 
-CoreStats RenderAPI::GetCoreStats()
+CoreStats RenderAPI::GetCoreStats() const
 {
 	return renderer->GetCoreStats();
 }

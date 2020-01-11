@@ -1,0 +1,110 @@
+Integrator "path" "integer maxdepth" [ 7 ] 
+Transform [ -0.730206 -0.151332 -0.666256 -0 7.45058e-009 0.975161 -0.221496 -0 -0.683227 0.161738 0.712069 -0 1.12447 -2.69387 11.0206 1]
+Sampler "sobol" "integer pixelsamples" [ 64 ] 
+PixelFilter "triangle" "float xwidth" [ 1.000000 ] "float ywidth" [ 1.000000 ] 
+Film "image" "integer xresolution" [ 1024 ] "integer yresolution" [ 1024 ] "string filename" [ "lamp.png" ] 
+Camera "perspective" "float fov" [ 35.000000 ] 
+WorldBegin
+	MakeNamedMaterial "ShinyMetal" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ] 
+	MakeNamedMaterial "Cable" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.006310 0.006310 0.006310 ] "float uroughness" [ 0.400000 ] "float vroughness" [ 0.400000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "BounceCard" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	MakeNamedMaterial "Emitter" "string type" [ "matte" ] "rgb Kd" [ 0.000000 0.000000 0.000000 ] 
+	MakeNamedMaterial "LampInterior" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ] 
+	MakeNamedMaterial "Lightbulb" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] 
+	MakeNamedMaterial "StainlessSteel" "string type" [ "mirror" ] 
+	MakeNamedMaterial "BlackPlastic" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.028991 0.028991 0.028991 ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "Backdrop" "string type" [ "matte" ] "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	NamedMaterial "BounceCard" 
+	Shape "plymesh" "string filename" [ "models/Mesh021.ply" ] 
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 2.000000 2.000000 2.000000 ] 
+		NamedMaterial "Emitter" 
+		TransformBegin
+			Transform [ 1 1.50996e-007 1.50996e-007 0 1.50996e-007 -1 2.27997e-014 0 1.50996e-007 0 -1 0 -1.27019 11.139 0.0770305 1]
+			Shape "plymesh" "string filename" [ "models/Mesh020.ply" ] 
+		TransformEnd
+	AttributeEnd
+	NamedMaterial "Backdrop" 
+	Shape "plymesh" "string filename" [ "models/Mesh024.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh034.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh008.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh018.ply" ] 
+	NamedMaterial "Cable" 
+	Shape "plymesh" "string filename" [ "models/Mesh025.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh028.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh016.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh042.ply" ] 
+	NamedMaterial "LampInterior" 
+	Shape "plymesh" "string filename" [ "models/Mesh017.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh045.ply" ] 
+	NamedMaterial "StainlessSteel" 
+	Shape "plymesh" "string filename" [ "models/Mesh007.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh013.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh011.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh010.ply" ] 
+	NamedMaterial "Lightbulb" 
+	Shape "plymesh" "string filename" [ "models/Mesh022.ply" ] 
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 5.000000 5.000000 5.000000 ] 
+		NamedMaterial "Emitter" 
+		Shape "plymesh" "string filename" [ "models/Mesh006.ply" ] 
+	AttributeEnd
+	NamedMaterial "StainlessSteel" 
+	Shape "plymesh" "string filename" [ "models/Mesh005.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh014.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh002.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh012.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh032.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh027.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh044.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh015.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh033.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh031.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh035.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh029.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh036.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh023.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh040.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh038.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh004.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh039.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh019.ply" ] 
+	NamedMaterial "Cable" 
+	Shape "plymesh" "string filename" [ "models/Mesh041.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh030.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh043.ply" ] 
+	NamedMaterial "BlackPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh046.ply" ] 
+	NamedMaterial "ShinyMetal" 
+	Shape "plymesh" "string filename" [ "models/Mesh037.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh048.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh003.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh047.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh049.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh001.ply" ] 
+	NamedMaterial "Cable" 
+	Shape "plymesh" "string filename" [ "models/Mesh026.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh009.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh000.ply" ] 
+	LightSource "distant" "point from" [ 0.000000 0.804621 -0.593788 ] "point to" [ 0.000000 0.000000 0.000000 ] "rgb L" [ 1.000000 1.000000 1.000000 ] 
+WorldEnd

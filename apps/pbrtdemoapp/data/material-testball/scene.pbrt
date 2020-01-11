@@ -1,0 +1,34 @@
+Integrator "path" "integer maxdepth" [ 65 ]
+Transform [ 0.721367 -0.373123 -0.583445 -0 -0 0.842456 -0.538765 -0 -0.692553 -0.388647 -0.60772 -0 0.0258668 -0.29189 5.43024 1]
+Sampler "sobol" "integer pixelsamples" [ 64 ]
+PixelFilter "triangle" "float xwidth" [ 1.000000 ] "float ywidth" [ 1.000000 ]
+Film "image" "integer xresolution" [ 1280 ] "integer yresolution" [ 720 ] "string filename" [ "material-testball.png" ]
+Camera "perspective" "float fov" [ 20.114292 ]
+WorldBegin
+	# Texture "Texture01" "spectrum" "checkerboard" "float uscale" [ 20.000000 ] "float vscale" [ 20.000000 ] "rgb tex1" [ 0.325000 0.310000 0.250000 ] "rgb tex2" [ 0.725000 0.710000 0.680000 ]
+	MakeNamedMaterial "RoughMetal" "string type" [ "metal" ] "rgb eta" [ 0.200438 0.924033 1.102212 ] "rgb k" [ 3.912949 2.452848 2.142188 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "Material" "string type" [ "substrate" ] "rgb Ks" [ 0.067215 0.067215 0.067215 ] "rgb Kd" [ 0.243117 0.059106 0.000849 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.001000 ] "float vroughness" [ 0.001000 ]
+	MakeNamedMaterial "Stand" "string type" [ "matte" ] "rgb Kd" [ 0.200000 0.200000 0.200000 ]
+	# MakeNamedMaterial "Floor" "string type" [ "matte" ] "texture Kd" [ "Texture01" ]
+	MakeNamedMaterial "Floor" "string type" [ "matte" ] "rgb Kd" [  0.200000 0.200000 0.200000  ]
+	TransformBegin
+		Transform [ -0.386527 0 0.922278 0 -0.922278 0 -0.386527 0 0 1 0 0 0 0 0 1]
+		LightSource "infinite" "string mapname" [ "textures/envmap.pfm" ]
+	TransformEnd
+	NamedMaterial "Floor"
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -0.785994 0 3.11108 -4.55196 -4.75246e-007 -0.80933 -0.63155 0 -4.57529 3.13441 4.75246e-007 -0.654886 ] "normal N" [ 1.2361e-007 -1 2.4837e-009 1.2361e-007 -1 2.4837e-009 1.2361e-007 -1 2.4837e-009 1.2361e-007 -1 2.4837e-009 ] "float uv" [ 0 0 1 0 1 1 0 1 ]
+	NamedMaterial "Material"
+	TransformBegin
+		Transform [ 0.482906 0 0 0 0 0.482906 0 0 0 0 0.482906 0 0.0571719 0.213656 0.0682078 1]
+		Shape "plymesh" "string filename" [ "models/Mesh001.ply" ]
+	TransformEnd
+	TransformBegin
+		Transform [ 0.482906 0 0 0 0 0.482906 0 0 0 0 0.482906 0 0.156382 0.777229 0.161698 1]
+		Shape "plymesh" "string filename" [ "models/Mesh002.ply" ]
+	TransformEnd
+	NamedMaterial "Stand"
+	TransformBegin
+		Transform [ 0.482906 0 0 0 0 0.482906 0 0 0 0 0.482906 0 0.110507 0.494301 0.126194 1]
+		Shape "plymesh" "string filename" [ "models/Mesh000.ply" ]
+	TransformEnd
+WorldEnd

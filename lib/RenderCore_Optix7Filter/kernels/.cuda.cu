@@ -35,6 +35,8 @@ __constant__ int skyheight;
 __constant__ PathState* pathStates;
 __constant__ float4* debugData;
 
+__constant__ mat4 worldToSky;
+
 // path tracer settings
 __constant__ __device__ float geometryEpsilon;
 __constant__ __device__ float clampValue;
@@ -57,6 +59,7 @@ __host__ void SetNRM32Pixels( uint* p ) { cudaMemcpyToSymbol( nrm32, &p, sizeof(
 __host__ void SetSkyPixels( float3* p ) { cudaMemcpyToSymbol( skyPixels, &p, sizeof( void* ) ); }
 __host__ void SetSkySize( int w, int h ) { cudaMemcpyToSymbol( skywidth, &w, sizeof( int ) ); cudaMemcpyToSymbol( skyheight, &h, sizeof( int ) ); }
 __host__ void SetPathStates( PathState* p ) { cudaMemcpyToSymbol( pathStates, &p, sizeof( void* ) ); }
+__host__ void SetWorldToSky( const mat4& worldToLight ) { cudaMemcpyToSymbol( worldToSky, &worldToLight, sizeof( worldToSky ) ); }
 __host__ void SetDebugData( float4* p ) { cudaMemcpyToSymbol( debugData, &p, sizeof( void* ) ); }
 
 // access

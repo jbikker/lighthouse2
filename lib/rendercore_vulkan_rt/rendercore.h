@@ -37,7 +37,7 @@ struct DeviceVars
 //  |  RenderCore                                                                 |
 //  |  Encapsulates device code.                                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-class RenderCore
+class RenderCore : public CoreAPI_Base
 {
 public:
 	static RenderCore *instance;
@@ -56,7 +56,7 @@ public:
 		const CorePointLight *pointLights, const int pointLightCount,
 		const CoreSpotLight *spotLights, const int spotLightCount,
 		const CoreDirectionalLight *directionalLights, const int directionalLightCount );
-	void SetSkyData( const float3 *pixels, const uint width, const uint height );
+	void SetSkyData( const float3 *pixels, const uint width, const uint height, const mat4& worldToLight = mat4() );
 	// geometry and instances:
 	// a scene is setup by first passing a number of meshes (geometry), then a number of instances.
 	// note that stored meshes can be used zero, one or multiple times in the scene.
@@ -65,6 +65,7 @@ public:
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4 &transform );
 	void UpdateToplevel();
 	void SetProbePos( const int2 pos );
+	CoreStats GetCoreStats() const override;
 
 	// helpers
 	template <class T> VulkanMaterial::Map Map( T v )
@@ -78,7 +79,6 @@ public:
 
 	// public data members
 	vk::DispatchLoaderDynamic dynamicDispatcher; // Dynamic dispatcher for extension functions such as NV_RT
-
 private:
 	// internal methods
 	void InitRenderer();

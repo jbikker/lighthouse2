@@ -34,15 +34,32 @@ public:
 //  |  RenderCore                                                                 |
 //  |  Encapsulates device code.                                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-class RenderCore
+class RenderCore : public CoreAPI_Base
 {
 public:
 	// methods
 	void Init();
-	void SetTarget( GLTexture* target );
+	void SetTarget( GLTexture* target, const uint spp );
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 );
 	void Render( const ViewPyramid& view, const Convergence converge );
+	CoreStats GetCoreStats() const override;
 	void Shutdown();
+
+	// unimplemented for the minimal core
+	inline void SetProbePos( const int2 pos ) override {}
+	inline void Setting( const char* name, float value ) override {}
+	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
+	inline void SetMaterials( CoreMaterial* mat, const int materialCount ) override {}
+	inline void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+		const CorePointLight* pointLights, const int pointLightCount,
+		const CoreSpotLight* spotLights, const int spotLightCount,
+		const CoreDirectionalLight* directionalLights, const int directionalLightCount ) override
+	{
+	}
+	inline void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight ) override {}
+	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
+	inline void UpdateToplevel() override {}
+
 	// internal methods
 private:
 	// data members

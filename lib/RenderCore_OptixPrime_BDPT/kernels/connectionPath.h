@@ -104,7 +104,7 @@ void connectionPathKernel( int smcount, BiPathState* pathStateData,
 		if (!(eye_pdf < EPSILON || isnan( eye_pdf )))
 		{
 			float3 hit_dir = make_float3( pathStateData[jobIndex].data7 );
-			float3 background = make_float3( SampleSkydome( hit_dir, s + 1 ) );
+			float3 background = make_float3( SampleSkydome( -worldToSky.TransformVector( hit_dir ), s + 1 ) );
 
 			// hit miss : beta 
 			float3 throughput = make_float3( pathStateData[jobIndex].data5 );

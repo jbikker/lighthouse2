@@ -83,7 +83,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// use skydome if we didn't hit any geometry
 	if (PRIMIDX == NOHIT)
 	{
-		float3 contribution = throughput * make_float3( SampleSkydome( D, pathLength ) ) * (1.0f / bsdfPdf);
+		float3 contribution = throughput * make_float3( SampleSkydome( -worldToSky.TransformVector( D ), pathLength ) ) * (1.0f / bsdfPdf);
 		CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
 		FIXNAN_FLOAT3( contribution );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
@@ -226,7 +226,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (specular) FLAGS |= S_SPECULAR;
 
 	// russian roulette (TODO: greatly increases variance.)
-	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0))  ? 1 : SurvivalProbability( bsdf );
+	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0)) ? 1 : SurvivalProbability( bsdf );
 	if (p < RandomFloat( seed )) return; else throughput *= 1 / p;
 
 	// write extension ray

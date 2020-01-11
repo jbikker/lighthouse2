@@ -39,6 +39,36 @@
     <ClCompile Include="host_anim.cpp">
       <Filter>scene</Filter>
     </ClCompile>
+    <ClCompile Include="materials\pbrt\api.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\create_material.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\fileutil.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\floatfile.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\paramset.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\parser.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\spectrum.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\ext\rply.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\shapes\plymesh.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\shapes\triangle.cpp">
+      <Filter>scene\pbrtmat</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rendersystem.h" />
@@ -88,6 +118,42 @@
     <ClInclude Include="common_functions.h">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="materials\pbrt\api.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\create_material.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\fileutil.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\floatfile.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\paramset.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\parser.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\pbrt_wrap.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\spectrum.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\stringprint.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\ext\rply.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\shapes\plymesh.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
+    <ClInclude Include="materials\pbrt\shapes\triangle.h">
+      <Filter>scene\pbrtmat</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="scene">
@@ -101,6 +167,9 @@
     </Filter>
     <Filter Include="common">
       <UniqueIdentifier>{dda54bf1-5a52-45e2-9ba4-c7b2bb86bce3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="scene\pbrtmat">
+      <UniqueIdentifier>{7527da49-fdab-4e25-991b-4026ec56e9c4}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

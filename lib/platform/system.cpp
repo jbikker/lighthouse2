@@ -232,7 +232,7 @@ void FatalError( const char* fmt, ... )
 	fprintf( stderr, t );
 #endif
 	assert( false );
-	while (1) exit( 0 );
+	while (1) exit( EXIT_FAILURE );
 }
 
 // EOF

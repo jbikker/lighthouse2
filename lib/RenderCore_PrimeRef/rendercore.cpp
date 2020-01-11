@@ -51,6 +51,7 @@ void SetARGB32Pixels( uint* p );
 void SetARGB128Pixels( float4* p );
 void SetNRM32Pixels( uint* p );
 void SetSkyPixels( float3* p );
+void SetWorldToSky( const mat4& worldToLight );
 void SetSkySize( int w, int h );
 void SetDebugData( float4* p );
 void SetGeometryEpsilon( float e );
@@ -378,7 +379,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness );
 		if (m.specular.textureID != -1) gpuMat.smap = Map<CoreMaterial::ScalarValue>( m.specular );
 		bool hdr = false;
-		if (m.color.textureID != 1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
+		if (m.color.textureID != -1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
 		gpuMat.flags =
 			(m.eta.value < 1 ? ISDIELECTRIC : 0) + (hdr ? DIFFUSEMAPISHDR : 0) +
 			(m.color.textureID != -1 ? HASDIFFUSEMAP : 0) +
@@ -417,12 +418,13 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 //  |  RenderCore::SetSkyData                                                     |
 //  |  Set the sky dome data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height )
+void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
 	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
 	SetSkyPixels( skyPixelBuffer->DevPtr() );
 	SetSkySize( width, height );
+	SetWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
 }
@@ -620,6 +622,15 @@ void RenderCore::Shutdown()
 	rtpBufferDescDestroy( extensionRaysDesc[1] );
 	rtpBufferDescDestroy( extensionHitsDesc );
 	rtpContextDestroy( context );
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::GetCoreStats                                                   |
+//  |  Get a copy of the counters.                                          LH2'19|
+//  +-----------------------------------------------------------------------------+
+CoreStats RenderCore::GetCoreStats() const 
+{
+	return coreStats;
 }
 
 // EOF

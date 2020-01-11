@@ -115,7 +115,7 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 				float* fdata = (float*)buildBuffer->HostPtr();
 				uint* idata = (uint*)buildBuffer->HostPtr();
 				size /= 4;
-				for( uint i = 0; i < size; i++ ) fprintf( f, "%04id\t%.02Xh\t%.02Xh\t%.02Xh\t%.02Xh\t%10i\t%f\n", i * 4, idata[i] & 255, (idata[i] >> 8) & 255, (idata[i] >> 16) & 255, idata[i] >> 24, idata[i], fdata[i] );
+				for (uint i = 0; i < size; i++) fprintf( f, "%04id\t%.02Xh\t%.02Xh\t%.02Xh\t%.02Xh\t%10i\t%f\n", i * 4, idata[i] & 255, (idata[i] >> 8) & 255, (idata[i] >> 16) & 255, idata[i] >> 24, idata[i], fdata[i] );
 				fclose( f );
 			}
 		#endif

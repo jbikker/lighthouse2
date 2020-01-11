@@ -1,0 +1,148 @@
+Integrator "path" "integer maxdepth" [ 65 ] 
+Transform [ 0.993341 -0.0130485 -0.114467 -0 -0 0.993565 -0.11326 -0 -0.115208 -0.112506 -0.98695 -0 1.33651 -11.1523 51.6855 1]
+Sampler "sobol" "integer pixelsamples" [ 64 ] 
+PixelFilter "triangle" "float xwidth" [ 1.000000 ] "float ywidth" [ 1.000000 ] 
+Film "image" "integer xresolution" [ 1280 ] "integer yresolution" [ 720 ] "string filename" [ "bathroom2.png" ] 
+Camera "perspective" "float fov" [ 35.983398 ] 
+WorldBegin
+	Texture "Texture01" "spectrum" "imagemap" "string filename" [ "textures/WoodPanel.tga" ] "bool trilinear" [ "true" ] 
+	Texture "Texture02" "spectrum" "imagemap" "string filename" [ "textures/WoodFloor.tga" ] "bool trilinear" [ "true" ] 
+	Texture "Texture03" "spectrum" "imagemap" "string filename" [ "textures/Label.tga" ] "bool trilinear" [ "true" ] 
+	MakeNamedMaterial "Wall" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	MakeNamedMaterial "Mirror" "string type" [ "mirror" ] 
+	MakeNamedMaterial "StainlessRough" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.010000 ] "float vroughness" [ 0.010000 ] 
+	MakeNamedMaterial "Towel" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	MakeNamedMaterial "BlackWoodLacquer" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.050000 0.050000 0.050000 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "Wood" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture01" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "WoodFloor" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture02" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "Label" "string type" [ "matte" ] "texture Kd" [ "Texture03" ] 
+	MakeNamedMaterial "RoughGlass" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] 
+	MakeNamedMaterial "Plastic" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.001000 ] "float vroughness" [ 0.001000 ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	MakeNamedMaterial "DarkPlastic" "string type" [ "matte" ] "rgb Kd" [ 0.050000 0.050000 0.050000 ] 
+	MakeNamedMaterial "Bin" "string type" [ "mirror" ] 
+	MakeNamedMaterial "WallRight" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	MakeNamedMaterial "DarkBorder" "string type" [ "matte" ] "rgb Kd" [ 0.050000 0.050000 0.050000 ] 
+	MakeNamedMaterial "Trims" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	MakeNamedMaterial "Ceramic" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.001000 ] "float vroughness" [ 0.001000 ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] 
+	NamedMaterial "RoughGlass" 
+	Shape "plymesh" "string filename" [ "models/Mesh029.ply" ] 
+	NamedMaterial "Plastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh038.ply" ] 
+	NamedMaterial "Label" 
+	Shape "plymesh" "string filename" [ "models/Mesh036.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh028.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh035.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh016.ply" ] 
+	NamedMaterial "Towel" 
+	Shape "plymesh" "string filename" [ "models/Mesh026.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh021.ply" ] 
+	NamedMaterial "BlackWoodLacquer" 
+	Shape "plymesh" "string filename" [ "models/Mesh023.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh020.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh032.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh019.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh033.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh056.ply" ] 
+	NamedMaterial "Wall" 
+	Shape "plymesh" "string filename" [ "models/Mesh018.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh030.ply" ] 
+	NamedMaterial "BlackWoodLacquer" 
+	Shape "plymesh" "string filename" [ "models/Mesh051.ply" ] 
+	NamedMaterial "Wall" 
+	Shape "plymesh" "string filename" [ "models/Mesh043.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh015.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh059.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh039.ply" ] 
+	NamedMaterial "Wall" 
+	Shape "plymesh" "string filename" [ "models/Mesh027.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh055.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh024.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh031.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh022.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh040.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh041.ply" ] 
+	NamedMaterial "Mirror" 
+	Shape "plymesh" "string filename" [ "models/Mesh017.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh042.ply" ] 
+	NamedMaterial "Towel" 
+	Shape "plymesh" "string filename" [ "models/Mesh044.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh047.ply" ] 
+	NamedMaterial "DarkPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh034.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh049.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh025.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh037.ply" ] 
+	NamedMaterial "Towel" 
+	Shape "plymesh" "string filename" [ "models/Mesh050.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh052.ply" ] 
+	NamedMaterial "Bin" 
+	Shape "plymesh" "string filename" [ "models/Mesh054.ply" ] 
+	NamedMaterial "DarkPlastic" 
+	Shape "plymesh" "string filename" [ "models/Mesh053.ply" ] 
+	NamedMaterial "StainlessRough" 
+	Shape "plymesh" "string filename" [ "models/Mesh057.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh058.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh060.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh014.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh013.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh012.ply" ] 
+	NamedMaterial "Ceramic" 
+	Shape "plymesh" "string filename" [ "models/Mesh011.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh010.ply" ] 
+	NamedMaterial "Wall" 
+	Shape "plymesh" "string filename" [ "models/Mesh009.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh007.ply" ] 
+	NamedMaterial "Wood" 
+	Shape "plymesh" "string filename" [ "models/Mesh006.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh005.ply" ] 
+	NamedMaterial "Ceramic" 
+	Shape "plymesh" "string filename" [ "models/Mesh004.ply" ] 
+	NamedMaterial "DarkBorder" 
+	Shape "plymesh" "string filename" [ "models/Mesh003.ply" ] 
+	NamedMaterial "Wood" 
+	Shape "plymesh" "string filename" [ "models/Mesh002.ply" ] 
+	NamedMaterial "WoodFloor" 
+	Shape "plymesh" "string filename" [ "models/Mesh001.ply" ] 
+	NamedMaterial "WallRight" 
+	Shape "plymesh" "string filename" [ "models/Mesh008.ply" ] 
+	NamedMaterial "Wall" 
+	Shape "plymesh" "string filename" [ "models/Mesh046.ply" ] 
+	NamedMaterial "Mirror" 
+	Shape "plymesh" "string filename" [ "models/Mesh045.ply" ] 
+	NamedMaterial "Trims" 
+	Shape "plymesh" "string filename" [ "models/Mesh000.ply" ] 
+	NamedMaterial "Wood" 
+	Shape "plymesh" "string filename" [ "models/Mesh048.ply" ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -18.3652 -0.677349 51.9018 17.1895 -0.677349 51.9018 17.1895 34.8773 51.9018 -18.3652 34.8773 51.9018 ] "normal N" [ 0 4.37114e-008 1 0 4.37114e-008 1 0 4.37114e-008 1 0 4.37114e-008 1 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -20.143 -2.4551 52.9 18.9672 -2.4551 52.9 18.9672 36.6551 52.9 -20.143 36.6551 52.9 ] "normal N" [ 0 4.37114e-008 1 0 4.37114e-008 1 0 4.37114e-008 1 0 4.37114e-008 1 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -20.143 35.9 -22.7325 18.9672 35.9 -22.7325 18.9672 35.9 53.5325 -20.143 35.9 53.5325 ] "normal N" [ -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -19.3879 -2.1551 -22.7325 -19.3879 36.9551 -22.7325 -19.3879 36.9551 53.5325 -19.3879 -2.1551 53.5325 ] "normal N" [ 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 18.138 -2.1551 -22.7326 18.138 36.9551 -22.7326 18.138 36.9551 53.5324 18.138 -2.1551 53.5324 ] "normal N" [ 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -20.143 -1.3 -22.7325 18.9672 -1.3 -22.7325 18.9672 -1.3 53.5325 -20.143 -1.3 53.5325 ] "normal N" [ -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -20.143 -0.0785079 -22.7325 18.9672 -0.0785138 -22.7325 18.9672 -0.0785103 53.5325 -20.143 -0.0785044 53.5325 ] "normal N" [ -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -17.5036 -2.1551 -22.7325 -17.5036 36.9551 -22.7325 -17.5036 36.9551 53.5325 -17.5036 -2.1551 53.5325 ] "normal N" [ 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ 17.1973 -2.1551 -22.7326 17.1973 36.9551 -22.7326 17.1973 36.9551 53.5324 17.1973 -2.1551 53.5324 ] "normal N" [ 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 1 -4.37114e-008 3.2147e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	Material "matte" "rgb Kd" [ 1.000000 1.000000 1.000000 ] 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -20.143 34.1541 -22.7325 18.9672 34.1541 -22.7325 18.9672 34.1541 53.5325 -20.143 34.1541 53.5325 ] "normal N" [ -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 -1.50996e-007 -1 1.70475e-007 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 125.000000 100.000000 75.000000 ] 
+		Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ] 
+		Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -6.163 15.8326 -22.7775 2.86203 15.8326 -22.7775 2.86203 26.5262 -22.7775 -6.163 26.5262 -22.7775 ] "normal N" [ 0 7.73717e-008 1 0 7.73717e-008 1 0 7.73717e-008 1 0 7.73717e-008 1 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	AttributeEnd
+WorldEnd

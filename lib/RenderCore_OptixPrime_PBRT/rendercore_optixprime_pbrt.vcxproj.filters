@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="rendercore.cpp" />
+    <ClCompile Include="..\CUDA\shared_host_code\interoptexture.cpp" />
+    <ClCompile Include="core_api.cpp">
+      <Filter>API</Filter>
+    </ClCompile>
+    <ClCompile Include="core_mesh.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="rendercore.h" />
+    <ClInclude Include="kernels\.cuda.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="core_settings.h" />
+    <ClInclude Include="..\CUDA\shared_host_code\interoptexture.h" />
+    <ClInclude Include="core_api.h">
+      <Filter>API</Filter>
+    </ClInclude>
+    <ClInclude Include="core_mesh.h" />
+    <ClInclude Include="..\CUDA\shared_kernel_code\finalize_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\lights_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\material_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\sampling_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CUDA\shared_kernel_code\tools_shared.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\camera.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\connections.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\pathtracer.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="kernels\bsdf.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CUDA">
+      <UniqueIdentifier>{71471ef2-2812-489b-b7e9-acabda02a120}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="API">
+      <UniqueIdentifier>{85ca225a-7b4b-4626-9d4f-c778bf53cb0c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="kernels\.cuda.cu">
+      <Filter>CUDA</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

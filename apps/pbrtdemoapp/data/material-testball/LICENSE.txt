@@ -1,0 +1,17 @@
+This is the pbrt-v3 version of 'Material Test Ball' by Benedikt Bitterli, downloaded from https://benedikt-bitterli.me/resources/
+
+The original file may be obtained here: https://benedikt-bitterli.me/resources
+
+This scene was released under a CC0 license and is in the public domain.
+It may be copied, modified and used commercially, without permission or
+attribution. However, crediting the artist is encouraged.
+
+For more information about the license, please see
+https://creativecommons.org/publicdomain/zero/1.0/
+
+
+This scene contains an environment map by Bernhard Vogl, available here:
+http://dativ.at/lightprobes/
+The environment map is NOT covered by this CC0 license, and is instead
+licensed under attribution/non-commercial terms. If you wish to use the
+environment map, you must follow the terms of its license.

@@ -93,6 +93,16 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">rendersystem.h</PrecompiledHeaderFile>
     </ClCompile>
+    <ClCompile Include="materials\pbrt\api.cpp" />
+    <ClCompile Include="materials\pbrt\create_material.cpp" />
+    <ClCompile Include="materials\pbrt\ext\rply.cpp" />
+    <ClCompile Include="materials\pbrt\fileutil.cpp" />
+    <ClCompile Include="materials\pbrt\floatfile.cpp" />
+    <ClCompile Include="materials\pbrt\paramset.cpp" />
+    <ClCompile Include="materials\pbrt\parser.cpp" />
+    <ClCompile Include="materials\pbrt\shapes\plymesh.cpp" />
+    <ClCompile Include="materials\pbrt\shapes\triangle.cpp" />
+    <ClCompile Include="materials\pbrt\spectrum.cpp" />
     <ClCompile Include="rendersystem.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">rendersystem.h</PrecompiledHeaderFile>
@@ -122,6 +132,18 @@
     <ClInclude Include="host_scene.h" />
     <ClInclude Include="host_skydome.h" />
     <ClInclude Include="host_texture.h" />
+    <ClInclude Include="materials\pbrt\api.h" />
+    <ClInclude Include="materials\pbrt\create_material.h" />
+    <ClInclude Include="materials\pbrt\ext\rply.h" />
+    <ClInclude Include="materials\pbrt\fileutil.h" />
+    <ClInclude Include="materials\pbrt\floatfile.h" />
+    <ClInclude Include="materials\pbrt\paramset.h" />
+    <ClInclude Include="materials\pbrt\parser.h" />
+    <ClInclude Include="materials\pbrt\pbrt_wrap.h" />
+    <ClInclude Include="materials\pbrt\shapes\plymesh.h" />
+    <ClInclude Include="materials\pbrt\shapes\triangle.h" />
+    <ClInclude Include="materials\pbrt\spectrum.h" />
+    <ClInclude Include="materials\pbrt\stringprint.h" />
     <ClInclude Include="rendersystem.h" />
     <ClInclude Include="render_api.h" />
   </ItemGroup>
@@ -166,8 +188,8 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>RENDERSYSTEMBUILD;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);FBXSDK_SHARED</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderCore_Prime;../tinyxml2;../platform;../tinygltf/rapidjson;../tinygltf</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RENDERSYSTEMBUILD;PBRT_IS_WINDOWS;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);FBXSDK_SHARED</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);.;../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderCore_Prime;../tinyxml2;../platform;../tinygltf/rapidjson;../tinygltf</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -193,8 +215,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RENDERSYSTEMBUILD;WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);FBXSDK_SHARED</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderCore_Prime;../tinyxml2;../platform;../tinygltf/rapidjson;../tinygltf</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>RENDERSYSTEMBUILD;PBRT_IS_WINDOWS;WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);FBXSDK_SHARED</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);.;../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderCore_Prime;../tinyxml2;../platform;../tinygltf/rapidjson;../tinygltf</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>

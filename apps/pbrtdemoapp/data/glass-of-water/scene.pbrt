@@ -1,0 +1,49 @@
+Integrator "bdpt" "integer maxdepth" [ 33 ] 
+Transform [ 0.999993 -5.92354e-005 0.00373545 -0 7.27596e-012 0.999874 0.0158556 -0 0.00373592 0.0158555 -0.999867 -0 -0.0065528 -3.10084 25.6268 1]
+Sampler "random" "integer pixelsamples" [ 64 ] 
+PixelFilter "triangle" "float xwidth" [ 1.000000 ] "float ywidth" [ 1.000000 ] 
+Film "image" "integer xresolution" [ 1280 ] "integer yresolution" [ 720 ] "string filename" [ "glass-of-water.png" ] 
+Camera "perspective" "float fov" [ 20.114292 ] 
+WorldBegin
+	MakeNamedMaterial "Backdrop" "string type" [ "metal" ] "rgb eta" [ 4.277513 3.513154 2.761126 ] "rgb k" [ 3.491184 2.889358 3.111696 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] 
+	MakeNamedMaterial "Floor" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] 
+	MakeNamedMaterial "WaterAir" "string type" [ "glass" ] "float index" [ 1.330000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "IceAir" "string type" [ "glass" ] "float index" [ 1.310000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "Glass" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] 
+	MakeNamedMaterial "AirIce" "string type" [ "glass" ] "float index" [ 0.763000 ] "bool remaproughness" [ "false" ] 
+	NamedMaterial "WaterAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh008.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh005.ply" ] 
+	NamedMaterial "IceAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh004.ply" ] 
+	NamedMaterial "AirIce" 
+	Shape "plymesh" "string filename" [ "models/Mesh003.ply" ] 
+	NamedMaterial "IceAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh010.ply" ] 
+	NamedMaterial "AirIce" 
+	Shape "plymesh" "string filename" [ "models/Mesh009.ply" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh012.ply" ] 
+	NamedMaterial "IceAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh014.ply" ] 
+	NamedMaterial "AirIce" 
+	Shape "plymesh" "string filename" [ "models/Mesh015.ply" ] 
+	NamedMaterial "IceAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh006.ply" ] 
+	NamedMaterial "AirIce" 
+	Shape "plymesh" "string filename" [ "models/Mesh002.ply" ] 
+	NamedMaterial "IceAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh001.ply" ] 
+	NamedMaterial "Backdrop" 
+	Shape "plymesh" "string filename" [ "models/Mesh007.ply" ] 
+	NamedMaterial "Floor" 
+	Shape "plymesh" "string filename" [ "models/Mesh011.ply" ] 
+	NamedMaterial "Glass" 
+	Shape "plymesh" "string filename" [ "models/Mesh013.ply" ] 
+	NamedMaterial "WaterAir" 
+	Shape "plymesh" "string filename" [ "models/Mesh000.ply" ] 
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 15.915494 27.056339 31.830988 ] 
+		Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ] 
+		Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -5.03848 14.3022 22.968 4.96152 14.3022 22.968 4.96152 6.65957 29.417 -5.03848 6.65957 29.417 ] "normal N" [ 3.5595e-008 -0.644902 -0.764265 3.5595e-008 -0.644902 -0.764265 3.5595e-008 -0.644902 -0.764265 3.5595e-008 -0.644902 -0.764265 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	AttributeEnd
+WorldEnd

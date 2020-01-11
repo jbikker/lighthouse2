@@ -47,6 +47,7 @@ public:
 		float scale = 1;						// map values will be scaled by this
 		float2 uvscale = make_float2( 1 );		// uv coordinate scale
 		float2 uvoffset = make_float2( 0 );		// uv coordinate offset
+		uint2 size = make_uint2( 0 );			// texture dimensions
 		bool Specified() { return (value.x != 1e32f) || (value.y != 1e32f) || (value.z != 1e32f) || (textureID != -1); }
 		float3& operator()() { return value; }
 	};
@@ -60,6 +61,7 @@ public:
 		float scale = 1;						// map values will be scaled by this
 		float2 uvscale = make_float2( 1 );		// uv coordinate scale
 		float2 uvoffset = make_float2( 0 );		// uv coordinate offset
+		uint2 size = make_uint2( 0 );			// texture dimensions
 		bool Specified() { return (value != 1e32f) || (textureID != -1); }
 		float& operator()() { return value; }
 	};
@@ -67,7 +69,8 @@ public:
 	{
 		SMOOTH = 1,								// material uses normal interpolation
 		HASALPHA = 2,							// material textures use alpha channel
-		FROM_MTL = 4							// changes are persistent for these, not for others
+		FROM_MTL = 4,							// changes are persistent for these, not for others
+		EMISSIVE_TWOSIDED = 8,
 	};
 
 	// constructor / destructor
@@ -124,7 +127,20 @@ public:
 	// additional bxdf properties
 	// Add data for new BxDFs here. Add '//' to values that are shared with previously
 	// specified material parameter sets.
-	// ...
+
+	// PBRT common values:
+	MaterialType pbrtMaterialType : 8;
+	ScalarValue urough, vrough;
+
+	Vec3Value Ks;
+	Vec3Value eta_rgb;
+	ScalarValue sigma;
+	bool thin = false;
+	ScalarValue specTrans, diffTrans;
+	Vec3Value scatterDistance;
+	ScalarValue flatness;
+	Vec3Value Kr;
+	Vec3Value opacity;
 
 	// END OF DATA THAT WILL BE COPIED TO COREMATERIAL
 

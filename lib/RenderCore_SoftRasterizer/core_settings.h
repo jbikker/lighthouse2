@@ -34,7 +34,6 @@
 using namespace lighthouse2;
 
 #include "core_api_base.h"
-#include "core_api.h"
 #include "rasterizer.h"
 #include "rendercore.h"
 

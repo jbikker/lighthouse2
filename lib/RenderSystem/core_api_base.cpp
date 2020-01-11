@@ -123,8 +123,6 @@ CoreAPI_Base* CoreAPI_Base::CreateCoreAPI( const char* coreName )
 		module = LoadModule( coreName );
 		createCore = (createCoreFunction)GetSymbol( module, "CreateCore" );
 		FATALERROR_IF( !createCore, "Could not find CreateCore in library" );
-		destroyCore = (destroyCoreFunction)GetSymbol( module, "DestroyCore" );
-		FATALERROR_IF( !createCore, "Could not find DestroyCore in library" );
 		api = createCore();
 		api->Init();
 	}

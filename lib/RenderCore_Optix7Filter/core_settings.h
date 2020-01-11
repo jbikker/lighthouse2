@@ -36,12 +36,6 @@
 
 #ifndef __CUDACC__
 
-#ifdef _DEBUG
-#pragma comment(lib, "../platform/lib/debug/platform.lib" )
-#else
-#pragma comment(lib, "../platform/lib/release/platform.lib" )
-#endif
-
 #define CUDABUILD			// signal system.h to include full CUDA headers
 #include "helper_math.h"	// for vector types
 #include "platform.h"
@@ -199,7 +193,6 @@ struct CUDAMaterial4
 #define OPTIXU_MATH_DEFINE_IN_NAMESPACE
 #define _USE_MATH_DEFINES
 #include "core_api_base.h"
-#include "core_api.h"
 #include "rendercore.h"
 #include <cstdint>
 

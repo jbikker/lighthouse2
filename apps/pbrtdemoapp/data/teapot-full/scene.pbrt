@@ -1,0 +1,31 @@
+Integrator "volpath" "integer maxdepth" [ 65 ] 
+Transform [ -0.00561587 -0.488405 -0.872599 -0 -0 0.872613 -0.488413 -0 -0.999984 0.00273835 0.00489243 -0 -0.0423531 -2.39555 27.8941 1]
+Sampler "sobol" "integer pixelsamples" [ 64 ] 
+PixelFilter "triangle" "float xwidth" [ 1.000000 ] "float ywidth" [ 1.000000 ] 
+Film "image" "integer xresolution" [ 1280 ] "integer yresolution" [ 720 ] "string filename" [ "teapot-full.png" ] 
+Camera "perspective" "float fov" [ 20.114292 ] 
+WorldBegin
+	Texture "Texture01" "spectrum" "checkerboard" "float uscale" [ 20.000000 ] "float vscale" [ 20.000000 ] "rgb tex1" [ 0.325000 0.310000 0.250000 ] "rgb tex2" [ 0.725000 0.710000 0.680000 ] 
+	MakeNamedMedium "Tea" "string type" [ "homogeneous" ] "rgb sigma_s" [ 0.000000 0.000000 0.000000 ] "rgb sigma_a" [ 0.148600 0.321000 0.736000 ] "float scale" [ 1.000000 ] 
+	MakeNamedMaterial "Floor" "string type" [ "matte" ] "texture Kd" [ "Texture01" ] 
+	NamedMaterial "Floor" 
+	Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -2.13123 0 70.0611 -71.502 -8.75425e-006 -2.15457 0.713687 0 -71.5254 70.0845 8.75425e-006 0.690351 ] "normal N" [ 1.2361e-007 -1 2.4837e-009 1.2361e-007 -1 2.4837e-009 1.2361e-007 -1 2.4837e-009 1.2361e-007 -1 2.4837e-009 ] "float uv" [ 0 0 1 0 1 1 0 1 ] 
+	TransformBegin
+		Transform [ -0.386527 0 0.922278 0 -0.922278 0 -0.386527 0 0 1 0 0 0 0 0 1]
+		LightSource "infinite" "string mapname" [ "textures/envmap.pfm" ] 
+	TransformEnd
+	Material "glass" "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh003.ply" ] 
+	Material "glass" "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] 
+	Shape "plymesh" "string filename" [ "models/Mesh001.ply" ] 
+	AttributeBegin
+		MediumInterface "Tea" ""
+		Material "glass" "float index" [ 1.330000 ] "bool remaproughness" [ "false" ] 
+		Shape "plymesh" "string filename" [ "models/Mesh002.ply" ] 
+	AttributeEnd
+	AttributeBegin
+		MediumInterface "" "Tea"
+		Material "glass" "float index" [ 1.130000 ] "bool remaproughness" [ "false" ] 
+		Shape "plymesh" "string filename" [ "models/Mesh000.ply" ] 
+	AttributeEnd
+WorldEnd

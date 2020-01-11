@@ -182,11 +182,21 @@ LH2_DEVFUNC float3 RGB32toHDRmin1( const uint c )
 		(float)max( 1u, c & 2047 ) * (1.0f / 2047.0f) );
 }
 
+LH2_DEVFUNC float SphericalTheta( const float3& v )
+{
+	return std::acos( clamp( v.z, -1.f, 1.f ) );
+}
+
+LH2_DEVFUNC float SphericalPhi( const float3& v )
+{
+	const float p = std::atan2( v.y, v.x );
+	return (p < 0) ? (p + 2 * PI) : p;
+}
+
 LH2_DEVFUNC float4 SampleSkydome( const float3 D, const int pathLength )
 {
-	// formulas by Paul Debevec, http://www.pauldebevec.com/Probes
-	uint u = (uint)(skywidth * 0.5f * (1.0f + atan2( D.x, -D.z ) * INVPI));
-	uint v = (uint)(skyheight * acos( D.y ) * INVPI);
+	uint u = (uint)(skywidth * SphericalPhi( D ) * INV2PI - 0.5f),
+		v = (uint)(skyheight * SphericalTheta( D ) * INVPI - 0.5f);
 	uint idx = u + v * skywidth;
 	return idx < skywidth * skyheight ? make_float4( skyPixels[idx], 1.0f ) : make_float4( 0 );
 }
@@ -226,7 +236,7 @@ LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N
 	// offset outgoing ray direction along R and / or N: along N when strongly parallel to the origin surface; mostly along R otherwise
 	const float parallel = 1 - fabs( dot( N, R ) );
 	const float v = parallel * parallel;
-#if 0
+#if 1
 	// we can go slightly into the surface when iN != N; negate the offset along N in that case
 	const float side = dot( N, R ) < 0 ? -1 : 1;
 #else

@@ -170,6 +170,39 @@ struct CoreInstanceDesc
 };
 #endif
 
+#ifdef __cplusplus
+enum class MaterialType : char
+#else
+enum MaterialType
+#endif
+{
+	// Existing compacted Disney material
+	DISNEY = 0,
+	// A tree of custom BSDF nodes
+	CUSTOM_BSDF,
+
+	// Other materials:
+
+	// The Disney material expressed in device-created BxDF nodes,
+	// Based on PBRT
+	PBRT_DISNEY,
+
+	// PBRT Common materials:
+	PBRT_FOURIER,
+	PBRT_GLASS,
+	PBRT_HAIR,
+	PBRT_KD_SUBSURFACE,
+	PBRT_MATTE,
+	PBRT_METAL,
+	PBRT_MIRROR,
+	PBRT_MIXTURE,
+	PBRT_PLASTIC,
+	PBRT_SUBSTRATE,
+	PBRT_SUBSURFACE,
+	PBRT_TRANSLUCENT,
+	PBRT_UBER,
+};
+
 //  +-----------------------------------------------------------------------------+
 //  |  CoreMaterial - keep this in sync with the HostMaterial class, as these     |
 //  |  will be copied into CoreMaterials before being passed to the cores.  LH2'19|
@@ -183,6 +216,7 @@ public:
 		int textureID;							// texture ID; 'value'field is used if -1
 		float scale;							// map values will be scaled by this
 		float2 uvscale, uvoffset;				// uv coordinate scale and offset
+		uint2 size;				// texture dimensions
 	};
 	struct ScalarValue
 	{
@@ -191,6 +225,7 @@ public:
 		int component;							// 0 = x, 1 = y, 2 = z, 3 = w
 		float scale;							// map values will be scaled by this
 		float2 uvscale, uvoffset;				// uv coordinate scale and offset
+		uint2 size;				// texture dimensions
 	};
 
 	// START OF HOSTMATERIAL DATA COPY
@@ -232,7 +267,50 @@ public:
 	// additional bxdf properties
 	// Add data for new BxDFs here. Add '//' to values that are shared with previously
 	// specified material parameter sets.
-	// ...
+
+	// PBRT common values:
+	// TODO: How should this be handled together with unidirectional roughness?
+	MaterialType pbrtMaterialType : 8;
+	ScalarValue urough, vrough;
+
+	// PBRT Glass mapping:
+	// Vec3Value R: color
+	// TODO: Validate if this is transmitted or absorbed color.
+	// Vec3Value T: absorption
+
+	// PBRT Substrate mapping:
+	// Vec3Value Kd: color
+	Vec3Value Ks;
+
+	// PBRT Mirror mapping:
+	// Vec3Value Kr: color
+
+	// PBRT Metal mapping:
+	// Vec3Value k: absorption
+	Vec3Value eta_rgb;
+
+	// PBRT Matte mapping:
+	// Vec3Value Kd: color
+	ScalarValue sigma;
+
+	// PBRT Disney mapping:
+	bool thin;
+	// Specular and diffuse transmission.
+	// TODO: One of these should reuse `transmission'!
+	ScalarValue specTrans, diffTrans;
+	Vec3Value scatterDistance;
+	ScalarValue flatness;
+
+	// PBRT Plastic mapping:
+	// Vec3Value Kd: color
+	// Vec3Value Ks;
+	// ScalarValue roughness;
+
+	// PBRT Uber mapping:
+	// Vec3Value Kd: color
+	Vec3Value Kr;
+	// Vec3Value Kt: absorptions
+	Vec3Value opacity;
 
 	// END OF DATA THAT WILL BE COPIED TO COREMATERIAL
 };

@@ -81,7 +81,7 @@ public:
 	// CreateCoreAPI: instantiate and initialize a RenderCore object and obtain an interface to it.
 	static CoreAPI_Base* CreateCoreAPI( const char* dllName );
 	// GetCoreStats: obtain a const ref to the CoreStats object, which provides statistics on the rendering process.
-	virtual CoreStats GetCoreStats() = 0;
+	virtual CoreStats GetCoreStats() const = 0;
 	// Init: initialize the core
 	virtual void Init() = 0;
 	// SetProbePos: set a pixel for which the triangle and instance id will be captured, e.g. for object picking.

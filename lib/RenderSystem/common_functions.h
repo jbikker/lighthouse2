@@ -21,7 +21,9 @@
 #define FUNCTYPE LH2_DEVFUNC
 #else
 #define FUNCTYPE static
-static inline void __sincosf( const float a, float* s, float* c ) { *s = sinf( a ); *c = cosf( a ); }
+#ifndef __USE_GNU // sincosf is a GNU extension
+static inline void sincosf( const float a, float* s, float* c ) { *s = sinf( a ); *c = cosf( a ); }
+#endif
 #endif
 
 FUNCTYPE float3 RandomBarycentrics( const float r0 )
@@ -80,7 +82,7 @@ FUNCTYPE float3 DiffuseReflectionCosWeighted( const float r0, const float r1 )
 {
 	const float term1 = TWOPI * r0, term2 = sqrtf( 1 - r1 );
 	float s, c;
-	__sincosf( term1, &s, &c );
+	sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, sqrtf( r1 ) );
 }
 
@@ -88,7 +90,7 @@ FUNCTYPE float3 DiffuseReflectionUniform( const float r0, const float r1 )
 {
 	const float term1 = TWOPI * r0, term2 = sqrtf( 1 - r1 * r1 );
 	float s, c;
-	__sincosf( term1, &s, &c );
+	sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, r1 );
 }
 
@@ -97,7 +99,7 @@ FUNCTYPE float3 UniformSampleSphere( const float r0, const float r1 )
 	const float z = 1.0f - 2.0f * r1; // [-1~1]
 	const float term1 = TWOPI * r0, term2 = sqrtf( 1 - z * z );
 	float s, c;
-	__sincosf( term1, &s, &c );
+	sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, z );
 }
 
@@ -107,7 +109,7 @@ FUNCTYPE float3 UniformSampleCone( const float r0, const float r1, const float c
 	float term2 = sqrtf( 1 - cosTheta * cosTheta );
 	const float term1 = TWOPI * r0;
 	float s, c;
-	__sincosf( term1, &s, &c );
+	sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, cosTheta );
 }
 

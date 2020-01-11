@@ -1,0 +1,572 @@
+Integrator "path" "integer maxdepth" [ 17 ]
+Transform [ 0.89874 -0.0182716 -0.4381 -0 1.86265e-009 0.999132 -0.0416703 -0 -0.438481 -0.0374507 -0.89796 -0 0.600822 -1.63678 4.06504 1]
+Sampler "sobol" "integer pixelsamples" [ 64 ]
+PixelFilter "triangle" "float xwidth" [ 1.000000 ] "float ywidth" [ 1.000000 ]
+Film "image" "integer xresolution" [ 1280 ] "integer yresolution" [ 720 ] "string filename" [ "kitchen.png" ]
+Camera "perspective" "float fov" [ 35.983398 ]
+WorldBegin
+	Texture "Texture01" "spectrum" "imagemap" "string filename" [ "textures/Worktopt-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture02" "spectrum" "imagemap" "string filename" [ "textures/Tabletop-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture03" "spectrum" "imagemap" "string filename" [ "textures/Chopping-Board.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture04" "spectrum" "imagemap" "string filename" [ "textures/Kitchen-book-leftpage.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture05" "spectrum" "imagemap" "string filename" [ "textures/Kitchen-bookpage-large.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture06" "spectrum" "imagemap" "string filename" [ "textures/Kitchen-carrot-uv.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture07" "spectrum" "imagemap" "string filename" [ "textures/Kitchen-mushroom-texture.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture08" "spectrum" "imagemap" "string filename" [ "textures/Worktopt-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture09" "spectrum" "imagemap" "string filename" [ "textures/Tea-Towel.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture10" "spectrum" "imagemap" "string filename" [ "textures/radio-dial-idea.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture11" "float" "imagemap" "string filename" [ "textures/cushion-bump.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture12" "spectrum" "imagemap" "string filename" [ "textures/cushion-red.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture13" "float" "imagemap" "string filename" [ "textures/bread-bin-front-bump.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture14" "spectrum" "imagemap" "string filename" [ "textures/Worktopt-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture15" "spectrum" "imagemap" "string filename" [ "textures/Worktopt-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture16" "spectrum" "imagemap" "string filename" [ "textures/Worktopt-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture17" "spectrum" "imagemap" "string filename" [ "textures/Tabletop-light.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture18" "spectrum" "imagemap" "string filename" [ "textures/cushion-red.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture19" "spectrum" "imagemap" "string filename" [ "textures/wood.tga" ] "bool trilinear" [ "true" ]
+	Texture "Texture20" "spectrum" "imagemap" "string filename" [ "textures/Kitchen-mushroom-texture.tga" ] "bool trilinear" [ "true" ]
+	MakeNamedMaterial "ChromeHandle" "string type" [ "matte" ] "rgb Kd" [ 0.640000 0.640000 0.640000 ]
+	MakeNamedMaterial "RadioHandle" "string type" [ "matte" ] "rgb Kd" [ 0.389509 0.372589 0.293747 ]
+	MakeNamedMaterial "RadioInside" "string type" [ "matte" ] "rgb Kd" [ 0.015078 0.015078 0.015078 ]
+	MakeNamedMaterial "RadioKnob" "string type" [ "matte" ] "rgb Kd" [ 0.358375 0.300936 0.128617 ]
+	MakeNamedMaterial "RadioPlastic" "string type" [ "matte" ] "rgb Kd" [ 0.640000 0.600153 0.434490 ]
+	MakeNamedMaterial "RadioSurround" "string type" [ "matte" ] "rgb Kd" [ 0.066822 0.028495 0.013827 ]
+	MakeNamedMaterial "SteelPot" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "KettleGreen" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.039947 0.141980 0.003303 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "RadioGlass" "string type" [ "uber" ] "rgb Kd" [ 0.000000 0.000000 0.000000 ] "rgb Ks" [ 0.000000 0.000000 0.000000 ] "rgb opacity" [ 0.000000 0.000000 0.000000 ]
+	MakeNamedMaterial "Utensils" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ]
+	MakeNamedMaterial "MetalHandles" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.075000 ] "float vroughness" [ 0.075000 ]
+	MakeNamedMaterial "SmallWorktop" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture01" ] "float uroughness" [ 0.040000 ] "float vroughness" [ 0.040000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "ExtractorHood" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.080000 ] "float vroughness" [ 0.080000 ]
+	MakeNamedMaterial "Walls" "string type" [ "matte" ] "rgb Kd" [ 1.000000 1.000000 1.000000 ]
+	MakeNamedMaterial "Plates" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.001000 ] "float vroughness" [ 0.001000 ] "rgb Kd" [ 0.578596 0.578596 0.578596 ]
+	MakeNamedMaterial "WineGlasses" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Tabletop" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture02" ] "float uroughness" [ 0.025000 ] "float vroughness" [ 0.025000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "ChoppingBoard" "string type" [ "matte" ] "texture Kd" [ "Texture03" ]
+	MakeNamedMaterial "CupboardUnits" "string type" [ "matte" ] "rgb Kd" [ 0.547857 0.547857 0.547857 ]
+	MakeNamedMaterial "BookCover" "string type" [ "matte" ] "rgb Kd" [ 0.080564 0.081309 0.080147 ]
+	MakeNamedMaterial "LeftPage" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture04" ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "BookPages" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture05" ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Carrots" "string type" [ "matte" ] "texture Kd" [ "Texture06" ]
+	MakeNamedMaterial "Tomatoes" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.592438 0.000000 0.002932 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Pepper-Green" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.030257 0.197516 0.000000 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Pepper-Yellow" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 1.000000 0.204710 0.000000 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Pepper-Red" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.476177 0.000000 0.000000 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Mushrooms" "string type" [ "matte" ] "rgb Kd" [ 0.300837 0.281435 0.243189 ]
+	MakeNamedMaterial "SlicedMushroms" "string type" [ "matte" ] "texture Kd" [ "Texture07" ]
+	MakeNamedMaterial "ChoppingKnifeBlade" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.020000 ] "float vroughness" [ 0.020000 ]
+	MakeNamedMaterial "ChoppingKnifeHandle" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.028991 0.028991 0.028991 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "ChoppingKnifeEdge" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "WhitePot" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.001000 ] "float vroughness" [ 0.001000 ] "rgb Kd" [ 0.578596 0.578596 0.578596 ]
+	MakeNamedMaterial "Worktops" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture08" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Towel" "string type" [ "matte" ] "texture Kd" [ "Texture09" ]
+	MakeNamedMaterial "Tiles" "string type" [ "matte" ] "rgb Kd" [ 0.394083 0.325037 0.263175 ]
+	MakeNamedMaterial "WallSocket" "string type" [ "matte" ] "rgb Kd" [ 0.571765 0.563535 0.559972 ]
+	MakeNamedMaterial "CookerBlack" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.015396 0.015396 0.015396 ] "float uroughness" [ 0.080000 ] "float vroughness" [ 0.080000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "CookerIron" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.001373 0.001373 0.001373 ] "float uroughness" [ 0.020000 ] "float vroughness" [ 0.020000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "CookerGlass" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] "rgb Kt" [ 0.000000 0.000000 0.000000 ]
+	MakeNamedMaterial "CookerChrome" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "BushLogo" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "RadioMetalRing" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "RadioDialBack" "string type" [ "matte" ] "texture Kd" [ "Texture10" ]
+	MakeNamedMaterial "RadioDialLine" "string type" [ "mirror" ]
+	MakeNamedMaterial "MicrowaveGlass" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] "rgb Kt" [ 0.000000 0.000000 0.000000 ]
+	MakeNamedMaterial "Microwave" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "MicrowaveBack" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "MicrowaveDigital" "string type" [ "glass" ] "float index" [ 1.500000 ] "bool remaproughness" [ "false" ] "rgb Kt" [ 0.000000 0.000000 0.000000 ]
+	MakeNamedMaterial "WindowFrame" "string type" [ "matte" ] "rgb Kd" [ 0.572423 0.572423 0.572423 ]
+	MakeNamedMaterial "Blinds" "string type" [ "uber" ] "rgb Ks" [ 0.000000 0.000000 0.000000 ] "rgb Kd" [ 0.612066 0.499505 0.378676 ] "rgb opacity" [ 0.612066 0.612066 0.612066 ]
+	MakeNamedMaterial "BlindStringKnob" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ]
+	MakeNamedMaterial "BlindString" "string type" [ "matte" ] "rgb Kd" [ 0.217638 0.217638 0.217638 ]
+	MakeNamedMaterial "WindowLock" "string type" [ "mirror" ]
+	MakeNamedMaterial "TableMats" "string type" [ "matte" ] "rgb Kd" [ 0.047366 0.047366 0.047366 ]
+	MakeNamedMaterial "Cutlery" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "Home" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ]
+	MakeNamedMaterial "Cushion1" "string type" [ "matte" ] "texture Kd" [ "Texture12" ] # "texture bumpmap" [ "Texture11" ]
+	MakeNamedMaterial "TableCross" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.612066 0.612066 0.612066 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "PotHandles" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.006310 0.006310 0.006310 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Kettle" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.050000 ] "float vroughness" [ 0.050000 ]
+	MakeNamedMaterial "KettleHandle" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.006310 0.006310 0.006310 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Burners" "string type" [ "metal" ] "rgb eta" [ 1.657460 0.880369 0.521229 ] "rgb k" [ 9.223869 6.269523 4.837001 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "BurnersTop" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.006310 0.006310 0.006310 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "BreadBinHandle" "string type" [ "metal" ] "rgb eta" [ 4.369683 2.916703 1.654701 ] "rgb k" [ 5.206434 4.231365 3.754947 ] "bool remaproughness" [ "false" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ]
+	MakeNamedMaterial "BreadBinFront" "string type" [ "matte" ] "texture Kd" [ "Texture14" ] # "texture bumpmap" [ "Texture13" ]
+	MakeNamedMaterial "BreadBinSides" "string type" [ "matte" ] "texture Kd" [ "Texture15" ]
+	MakeNamedMaterial "BreadBinTop" "string type" [ "matte" ] "texture Kd" [ "Texture16" ]
+	MakeNamedMaterial "WoodTop" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture17" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "CushionTies" "string type" [ "matte" ] "texture Kd" [ "Texture18" ]
+	MakeNamedMaterial "Cable" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.612066 0.612066 0.612066 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "CeilingLightFitting" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.578596 0.578596 0.578596 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Floor" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "texture Kd" [ "Texture19" ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "Ceiling" "string type" [ "matte" ] "rgb Kd" [ 0.612066 0.612066 0.612066 ]
+	MakeNamedMaterial "MushroomEnds" "string type" [ "matte" ] "texture Kd" [ "Texture20" ]
+	MakeNamedMaterial "PepperStems" "string type" [ "matte" ] "rgb Kd" [ 0.136099 0.284452 0.005522 ]
+	MakeNamedMaterial "Bulb" "string type" [ "matte" ] "rgb Kd" [ 0.000000 0.000000 0.000000 ]
+	MakeNamedMaterial "Grout" "string type" [ "matte" ] "rgb Kd" [ 0.793110 0.793110 0.793110 ]
+	MakeNamedMaterial "LampCable" "string type" [ "matte" ] "rgb Kd" [ 0.479179 0.479179 0.479179 ]
+	MakeNamedMaterial "Lamp" "string type" [ "substrate" ] "rgb Ks" [ 0.040000 0.040000 0.040000 ] "rgb Kd" [ 0.541798 0.297653 0.052842 ] "float uroughness" [ 0.100000 ] "float vroughness" [ 0.100000 ] "bool remaproughness" [ "false" ]
+	MakeNamedMaterial "LampInside" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ]
+	MakeNamedMaterial "Window" "string type" [ "matte" ] "rgb Kd" [ 0.571765 0.563535 0.559972 ]
+	MakeNamedMaterial "Skirting" "string type" [ "matte" ] "rgb Kd" [ 0.578913 0.578913 0.578913 ]
+	MakeNamedMaterial "BlindEnds" "string type" [ "matte" ] "rgb Kd" [ 0.047366 0.047366 0.047366 ]
+	MakeNamedMaterial "BlindWoodStrip" "string type" [ "matte" ] "rgb Kd" [ 0.578596 0.578596 0.578596 ]
+	MakeNamedMaterial "RadioEdges" "string type" [ "mirror" ]
+	NamedMaterial "WallSocket"
+	Shape "plymesh" "string filename" [ "models/Mesh129.ply" ]
+	NamedMaterial "WindowLock"
+	Shape "plymesh" "string filename" [ "models/Mesh165.ply" ]
+	NamedMaterial "ExtractorHood"
+	Shape "plymesh" "string filename" [ "models/Mesh263.ply" ]
+	NamedMaterial "CushionTies"
+	Shape "plymesh" "string filename" [ "models/Mesh126.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh087.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh130.ply" ]
+	NamedMaterial "Cable"
+	Shape "plymesh" "string filename" [ "models/Mesh088.ply" ]
+	NamedMaterial "Cushion1"
+	Shape "plymesh" "string filename" [ "models/Mesh124.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh136.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh251.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh164.ply" ]
+	NamedMaterial "CeilingLightFitting"
+	Shape "plymesh" "string filename" [ "models/Mesh147.ply" ]
+	NamedMaterial "WallSocket"
+	Shape "plymesh" "string filename" [ "models/Mesh171.ply" ]
+	NamedMaterial "BreadBinTop"
+	Shape "plymesh" "string filename" [ "models/Mesh140.ply" ]
+	NamedMaterial "WineGlasses"
+	Shape "plymesh" "string filename" [ "models/Mesh122.ply" ]
+	NamedMaterial "TableCross"
+	Shape "plymesh" "string filename" [ "models/Mesh172.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh113.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh139.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh174.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh144.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh175.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh247.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh083.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh178.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh167.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh183.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh099.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh284.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh173.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh184.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh155.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh159.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh232.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh121.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh278.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh120.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh235.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh243.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh117.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh157.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh116.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh207.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh107.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh112.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh287.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh105.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh103.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh102.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh100.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh095.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh098.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh259.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh143.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh255.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh128.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh150.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh200.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh085.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh114.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh182.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh082.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh106.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh132.ply" ]
+	NamedMaterial "Tabletop"
+	Shape "plymesh" "string filename" [ "models/Mesh166.ply" ]
+	NamedMaterial "WoodTop"
+	Shape "plymesh" "string filename" [ "models/Mesh161.ply" ]
+	NamedMaterial "ExtractorHood"
+	Shape "plymesh" "string filename" [ "models/Mesh137.ply" ]
+	NamedMaterial "Tiles"
+	Shape "plymesh" "string filename" [ "models/Mesh145.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh133.ply" ]
+	NamedMaterial "MetalHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh074.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh068.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh125.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh079.ply" ]
+	NamedMaterial "MetalHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh169.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh093.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh097.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh181.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh260.ply" ]
+	NamedMaterial "MetalHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh274.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh066.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh141.ply" ]
+	NamedMaterial "CookerIron"
+	Shape "plymesh" "string filename" [ "models/Mesh238.ply" ]
+	NamedMaterial "MetalHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh076.ply" ]
+	NamedMaterial "CookerBlack"
+	Shape "plymesh" "string filename" [ "models/Mesh177.ply" ]
+	NamedMaterial "CookerChrome"
+	Shape "plymesh" "string filename" [ "models/Mesh185.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh186.ply" ]
+	NamedMaterial "CookerBlack"
+	Shape "plymesh" "string filename" [ "models/Mesh188.ply" ]
+	NamedMaterial "CookerChrome"
+	Shape "plymesh" "string filename" [ "models/Mesh189.ply" ]
+	NamedMaterial "CookerBlack"
+	Shape "plymesh" "string filename" [ "models/Mesh115.ply" ]
+	NamedMaterial "LeftPage"
+	Shape "plymesh" "string filename" [ "models/Mesh162.ply" ]
+	NamedMaterial "BreadBinSides"
+	Shape "plymesh" "string filename" [ "models/Mesh134.ply" ]
+	NamedMaterial "BreadBinHandle"
+	Shape "plymesh" "string filename" [ "models/Mesh192.ply" ]
+	NamedMaterial "BreadBinTop"
+	Shape "plymesh" "string filename" [ "models/Mesh131.ply" ]
+	NamedMaterial "BreadBinSides"
+	Shape "plymesh" "string filename" [ "models/Mesh077.ply" ]
+	NamedMaterial "BreadBinFront"
+	Shape "plymesh" "string filename" [ "models/Mesh229.ply" ]
+	NamedMaterial "PotHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh281.ply" ]
+	NamedMaterial "SteelPot"
+	Shape "plymesh" "string filename" [ "models/Mesh194.ply" ]
+	NamedMaterial "SlicedMushroms"
+	Shape "plymesh" "string filename" [ "models/Mesh195.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh104.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh196.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh197.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh256.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh081.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh209.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh210.ply" ]
+	NamedMaterial "Carrots"
+	Shape "plymesh" "string filename" [ "models/Mesh211.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh213.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh216.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh146.ply" ]
+	NamedMaterial "TableCross"
+	Shape "plymesh" "string filename" [ "models/Mesh219.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh220.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh221.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh268.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh223.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh227.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh199.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh271.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh233.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh202.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh230.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh240.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh176.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh234.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh142.ply" ]
+	NamedMaterial "Worktops"
+	Shape "plymesh" "string filename" [ "models/Mesh069.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh236.ply" ]
+	NamedMaterial "Floor"
+	Shape "plymesh" "string filename" [ "models/Mesh135.ply" ]
+	NamedMaterial "Ceiling"
+	Shape "plymesh" "string filename" [ "models/Mesh153.ply" ]
+	NamedMaterial "Walls"
+	Shape "plymesh" "string filename" [ "models/Mesh239.ply" ]
+	NamedMaterial "Tomatoes"
+	Shape "plymesh" "string filename" [ "models/Mesh242.ply" ]
+	NamedMaterial "MushroomEnds"
+	Shape "plymesh" "string filename" [ "models/Mesh244.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh249.ply" ]
+	NamedMaterial "SlicedMushroms"
+	Shape "plymesh" "string filename" [ "models/Mesh075.ply" ]
+	NamedMaterial "Mushrooms"
+	Shape "plymesh" "string filename" [ "models/Mesh291.ply" ]
+	NamedMaterial "Pepper-Yellow"
+	Shape "plymesh" "string filename" [ "models/Mesh254.ply" ]
+	NamedMaterial "PepperStems"
+	Shape "plymesh" "string filename" [ "models/Mesh257.ply" ]
+	NamedMaterial "Pepper-Green"
+	Shape "plymesh" "string filename" [ "models/Mesh258.ply" ]
+	NamedMaterial "PepperStems"
+	Shape "plymesh" "string filename" [ "models/Mesh089.ply" ]
+	NamedMaterial "Pepper-Red"
+	Shape "plymesh" "string filename" [ "models/Mesh261.ply" ]
+	NamedMaterial "PepperStems"
+	Shape "plymesh" "string filename" [ "models/Mesh119.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh264.ply" ]
+	NamedMaterial "Cutlery"
+	Shape "plymesh" "string filename" [ "models/Mesh127.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh091.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh225.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh266.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh190.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh245.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh267.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh179.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh269.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh270.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh214.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh108.ply" ]
+	NamedMaterial "SteelPot"
+	Shape "plymesh" "string filename" [ "models/Mesh080.ply" ]
+	NamedMaterial "PotHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh272.ply" ]
+	NamedMaterial "KettleHandle"
+	Shape "plymesh" "string filename" [ "models/Mesh273.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh275.ply" ]
+	NamedMaterial "KettleGreen"
+	Shape "plymesh" "string filename" [ "models/Mesh086.ply" ]
+	NamedMaterial "Kettle"
+	Shape "plymesh" "string filename" [ "models/Mesh241.ply" ]
+	NamedMaterial "Utensils"
+	Shape "plymesh" "string filename" [ "models/Mesh222.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh276.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh279.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh248.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh282.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh277.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh180.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh285.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh170.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh293.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh215.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh252.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh204.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh286.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh096.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh288.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh253.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh109.ply" ]
+	NamedMaterial "MicrowaveBack"
+	Shape "plymesh" "string filename" [ "models/Mesh289.ply" ]
+	NamedMaterial "Microwave"
+	Shape "plymesh" "string filename" [ "models/Mesh152.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh226.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh290.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh292.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh208.ply" ]
+	NamedMaterial "MicrowaveGlass"
+	Shape "plymesh" "string filename" [ "models/Mesh191.ply" ]
+	NamedMaterial "MicrowaveDigital"
+	Shape "plymesh" "string filename" [ "models/Mesh201.ply" ]
+	NamedMaterial "Microwave"
+	Shape "plymesh" "string filename" [ "models/Mesh294.ply" ]
+	NamedMaterial "WineGlasses"
+	Shape "plymesh" "string filename" [ "models/Mesh065.ply" ]
+	NamedMaterial "TableMats"
+	Shape "plymesh" "string filename" [ "models/Mesh064.ply" ]
+	NamedMaterial "Plates"
+	Shape "plymesh" "string filename" [ "models/Mesh094.ply" ]
+	NamedMaterial "BookPages"
+	Shape "plymesh" "string filename" [ "models/Mesh063.ply" ]
+	NamedMaterial "BookCover"
+	Shape "plymesh" "string filename" [ "models/Mesh062.ply" ]
+	NamedMaterial "BookPages"
+	Shape "plymesh" "string filename" [ "models/Mesh092.ply" ]
+	NamedMaterial "ChoppingKnifeBlade"
+	Shape "plymesh" "string filename" [ "models/Mesh061.ply" ]
+	NamedMaterial "ChoppingKnifeHandle"
+	Shape "plymesh" "string filename" [ "models/Mesh059.ply" ]
+	NamedMaterial "ChoppingKnifeEdge"
+	Shape "plymesh" "string filename" [ "models/Mesh058.ply" ]
+	NamedMaterial "ChoppingBoard"
+	Shape "plymesh" "string filename" [ "models/Mesh057.ply" ]
+	NamedMaterial "WallSocket"
+	Shape "plymesh" "string filename" [ "models/Mesh056.ply" ]
+	NamedMaterial "Bulb"
+	Shape "plymesh" "string filename" [ "models/Mesh055.ply" ]
+	NamedMaterial "Grout"
+	Shape "plymesh" "string filename" [ "models/Mesh138.ply" ]
+	NamedMaterial "WoodTop"
+	Shape "plymesh" "string filename" [ "models/Mesh224.ply" ]
+	NamedMaterial "Tiles"
+	Shape "plymesh" "string filename" [ "models/Mesh054.ply" ]
+	NamedMaterial "LampCable"
+	Shape "plymesh" "string filename" [ "models/Mesh053.ply" ]
+	NamedMaterial "Lamp"
+	Shape "plymesh" "string filename" [ "models/Mesh052.ply" ]
+	NamedMaterial "LampInside"
+	Shape "plymesh" "string filename" [ "models/Mesh050.ply" ]
+	NamedMaterial "WindowFrame"
+	Shape "plymesh" "string filename" [ "models/Mesh049.ply" ]
+	NamedMaterial "Window"
+	Shape "plymesh" "string filename" [ "models/Mesh163.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh154.ply" ]
+	NamedMaterial "MetalHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh078.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh246.ply" ]
+	NamedMaterial "WindowFrame"
+	Shape "plymesh" "string filename" [ "models/Mesh048.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh047.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh046.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh045.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh044.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh043.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh041.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh193.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh040.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh218.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh039.ply" ]
+	NamedMaterial "Skirting"
+	Shape "plymesh" "string filename" [ "models/Mesh187.ply" ]
+	NamedMaterial "MetalHandles"
+	Shape "plymesh" "string filename" [ "models/Mesh073.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh042.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh037.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh035.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh034.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh033.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh038.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh072.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh231.ply" ]
+	NamedMaterial "SmallWorktop"
+	Shape "plymesh" "string filename" [ "models/Mesh032.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh031.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh030.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh029.ply" ]
+	NamedMaterial "Burners"
+	Shape "plymesh" "string filename" [ "models/Mesh028.ply" ]
+	NamedMaterial "BurnersTop"
+	Shape "plymesh" "string filename" [ "models/Mesh027.ply" ]
+	NamedMaterial "Burners"
+	Shape "plymesh" "string filename" [ "models/Mesh198.ply" ]
+	NamedMaterial "BurnersTop"
+	Shape "plymesh" "string filename" [ "models/Mesh026.ply" ]
+	NamedMaterial "Burners"
+	Shape "plymesh" "string filename" [ "models/Mesh071.ply" ]
+	NamedMaterial "BurnersTop"
+	Shape "plymesh" "string filename" [ "models/Mesh149.ply" ]
+	NamedMaterial "Burners"
+	Shape "plymesh" "string filename" [ "models/Mesh025.ply" ]
+	NamedMaterial "BurnersTop"
+	Shape "plymesh" "string filename" [ "models/Mesh203.ply" ]
+	NamedMaterial "Burners"
+	Shape "plymesh" "string filename" [ "models/Mesh024.ply" ]
+	NamedMaterial "BurnersTop"
+	Shape "plymesh" "string filename" [ "models/Mesh023.ply" ]
+	NamedMaterial "Burners"
+	Shape "plymesh" "string filename" [ "models/Mesh022.ply" ]
+	NamedMaterial "BurnersTop"
+	Shape "plymesh" "string filename" [ "models/Mesh020.ply" ]
+	NamedMaterial "CookerBlack"
+	Shape "plymesh" "string filename" [ "models/Mesh084.ply" ]
+	NamedMaterial "CookerChrome"
+	Shape "plymesh" "string filename" [ "models/Mesh019.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh017.ply" ]
+	NamedMaterial "CookerBlack"
+	Shape "plymesh" "string filename" [ "models/Mesh280.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh015.ply" ]
+	NamedMaterial "CookerChrome"
+	Shape "plymesh" "string filename" [ "models/Mesh014.ply" ]
+	NamedMaterial "CookerBlack"
+	Shape "plymesh" "string filename" [ "models/Mesh090.ply" ]
+	NamedMaterial "CookerGlass"
+	Shape "plymesh" "string filename" [ "models/Mesh206.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh228.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh111.ply" ]
+	NamedMaterial "ExtractorHood"
+	Shape "plymesh" "string filename" [ "models/Mesh168.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh148.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh013.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh012.ply" ]
+	NamedMaterial "Worktops"
+	Shape "plymesh" "string filename" [ "models/Mesh158.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh237.ply" ]
+	NamedMaterial "CupboardUnits"
+	Shape "plymesh" "string filename" [ "models/Mesh011.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh018.ply" ]
+	NamedMaterial "Walls"
+	Shape "plymesh" "string filename" [ "models/Mesh262.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh010.ply" ]
+	NamedMaterial "BlindEnds"
+	Shape "plymesh" "string filename" [ "models/Mesh212.ply" ]
+	NamedMaterial "BlindStringKnob"
+	Shape "plymesh" "string filename" [ "models/Mesh156.ply" ]
+	NamedMaterial "BlindString"
+	Shape "plymesh" "string filename" [ "models/Mesh151.ply" ]
+	NamedMaterial "BlindWoodStrip"
+	Shape "plymesh" "string filename" [ "models/Mesh009.ply" ]
+	NamedMaterial "Blinds"
+	Shape "plymesh" "string filename" [ "models/Mesh110.ply" ]
+	NamedMaterial "BlindEnds"
+	Shape "plymesh" "string filename" [ "models/Mesh118.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh008.ply" ]
+	NamedMaterial "Blinds"
+	Shape "plymesh" "string filename" [ "models/Mesh007.ply" ]
+	NamedMaterial "RadioHandle"
+	Shape "plymesh" "string filename" [ "models/Mesh250.ply" ]
+	NamedMaterial "RadioPlastic"
+	Shape "plymesh" "string filename" [ "models/Mesh021.ply" ]
+	NamedMaterial "BushLogo"
+	Shape "plymesh" "string filename" [ "models/Mesh205.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh067.ply" ]
+	NamedMaterial "RadioDialLine"
+	Shape "plymesh" "string filename" [ "models/Mesh283.ply" ]
+	NamedMaterial "RadioDialBack"
+	Shape "plymesh" "string filename" [ "models/Mesh005.ply" ]
+	NamedMaterial "RadioMetalRing"
+	Shape "plymesh" "string filename" [ "models/Mesh016.ply" ]
+	NamedMaterial "RadioGlass"
+	Shape "plymesh" "string filename" [ "models/Mesh265.ply" ]
+	NamedMaterial "RadioPlastic"
+	Shape "plymesh" "string filename" [ "models/Mesh006.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh004.ply" ]
+	NamedMaterial "ChromeHandle"
+	Shape "plymesh" "string filename" [ "models/Mesh060.ply" ]
+	NamedMaterial "RadioPlastic"
+	Shape "plymesh" "string filename" [ "models/Mesh123.ply" ]
+	NamedMaterial "RadioInside"
+	Shape "plymesh" "string filename" [ "models/Mesh160.ply" ]
+	NamedMaterial "RadioKnob"
+	Shape "plymesh" "string filename" [ "models/Mesh051.ply" ]
+	NamedMaterial "RadioSurround"
+	Shape "plymesh" "string filename" [ "models/Mesh003.ply" ]
+	NamedMaterial "RadioEdges"
+	Shape "plymesh" "string filename" [ "models/Mesh002.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh001.ply" ]
+	NamedMaterial "WhitePot"
+	Shape "plymesh" "string filename" [ "models/Mesh036.ply" ]
+	NamedMaterial "Towel"
+	Shape "plymesh" "string filename" [ "models/Mesh070.ply" ]
+	Shape "plymesh" "string filename" [ "models/Mesh101.ply" ]
+	NamedMaterial "WallSocket"
+	Shape "plymesh" "string filename" [ "models/Mesh000.ply" ]
+	NamedMaterial "Home"
+	Shape "plymesh" "string filename" [ "models/Mesh217.ply" ]
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 16.032043 16.032043 16.032043 ]
+		Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ]
+		Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -0.75145 0.873153 -3.1173 0.872078 0.873153 -3.1173 0.872078 3.07443 -3.1173 -0.75145 3.07443 -3.1173 ] "normal N" [ 1.99681e-021 9.96628e-008 1 1.99681e-021 9.96628e-008 1 1.99681e-021 9.96628e-008 1 1.99681e-021 9.96628e-008 1 ] "float uv" [ 0 0 1 0 1 1 0 1 ]
+	AttributeEnd
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 11.221238 11.221238 11.221238 ]
+		Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ]
+		Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -2.3594 1.6129 -0.804218 -2.41746 1.6129 -0.804218 -2.41746 1.6129 -1.29282 -2.3594 1.6129 -1.29282 ] "normal N" [ -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 ] "float uv" [ 0 0 1 0 1 1 0 1 ]
+	AttributeEnd
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 11.221238 11.221238 11.221238 ]
+		Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ]
+		Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -2.3594 1.6129 -1.34067 -2.41746 1.6129 -1.34067 -2.41746 1.6129 -1.82928 -2.3594 1.6129 -1.82928 ] "normal N" [ -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 ] "float uv" [ 0 0 1 0 1 1 0 1 ]
+	AttributeEnd
+	AttributeBegin
+		AreaLightSource "diffuse" "rgb L" [ 11.221238 11.221238 11.221238 ]
+		Material "matte" "rgb Kd" [ 0.000000 0.000000 0.000000 ]
+		Shape "trianglemesh" "integer indices" [ 0 1 2 0 2 3 ] "point P" [ -2.3594 1.6129 -1.89779 -2.41746 1.6129 -1.89779 -2.41746 1.6129 -2.38639 -2.3594 1.6129 -2.38639 ] "normal N" [ -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 -1.50996e-007 -1 -4.2715e-008 ] "float uv" [ 0 0 1 0 1 1 0 1 ]
+	AttributeEnd
+WorldEnd

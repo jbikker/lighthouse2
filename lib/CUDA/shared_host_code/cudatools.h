@@ -19,21 +19,11 @@
 
 enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2 };
 
-#define CHK_CUDA( stmt )                                                                                         \
-	do                                                                                                           \
-	{                                                                                                            \
-		auto ret = ( stmt );                                                                                     \
-		if ( ret )                                                                                               \
-		{                                                                                                        \
-			if ( !strncmp( #stmt, "cudaGraphicsGLRegisterImage", sizeof( "cudaGraphicsGLRegisterImage" ) - 1 ) ) \
-				FATALERROR_IN( #stmt, CUDATools::decodeError( ret ),                                             \
-							   "\n\t(Are you running using the IGP?\n"                                           \
-							   "Use NVIDIA control panel to enable the high performance GPU.)" )                 \
-			else                                                                                                 \
-				FATALERROR_IN( #stmt, CUDATools::decodeError( ret ), "" )                                        \
-		}                                                                                                        \
-	} while ( 0 )
-
+#define CHK_CUDA( stmt ) do { auto ret = ( stmt ); if ( ret ) {                                      \
+if ( !strncmp( #stmt, "cudaGraphicsGLRegisterImage", sizeof( "cudaGraphicsGLRegisterImage" ) - 1 ) ) \
+FATALERROR_IN( #stmt, CUDATools::decodeError( ret ), "\n\t(Are you running using the IGP?\n"         \
+"Use NVIDIA control panel to enable the high performance GPU.)" ) else                               \
+FATALERROR_IN( #stmt, CUDATools::decodeError( ret ), "" ) } } while ( 0 )
 #define CHK_NVRTC( stmt ) FATALERROR_IN_CALL( ( stmt ), nvrtcGetErrorString, "" )
 
 class CUDATools
@@ -65,7 +55,7 @@ public:
 		uint64_t max_perf = 0;
 		cudaDeviceProp deviceProp;
 		cudaGetDeviceCount( &count );
-		if (count == 0) exit( EXIT_FAILURE );
+		if (count == 0) FatalError( "No CUDA devices." );
 		while (curdev < count)
 		{
 			cudaGetDeviceProperties( &deviceProp, curdev );
@@ -83,13 +73,8 @@ public:
 			else prohibited++;
 			++curdev;
 		}
-		if (prohibited == count) exit( EXIT_FAILURE );
+		if (prohibited == count) FatalError( "All CUDA devices are prohibited from use." );
 		return fastest;
-	}
-	static void fail( const char* t )
-	{
-		printf( t );
-		while (1) exit( 0 );
 	}
 	static const char* decodeError( cudaError_t res )
 	{

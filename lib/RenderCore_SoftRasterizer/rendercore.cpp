@@ -189,7 +189,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 //  |  RenderCore::SetSkyData                                                     |
 //  |  Set the sky dome data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height )
+void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& /* worldToLight */ )
 {
 	// not supported yet
 }
@@ -229,6 +229,15 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 void RenderCore::Shutdown()
 {
 	delete renderTarget;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::GetCoreStats                                                   |
+//  |  Get a copy of the counters.                                          LH2'19|
+//  +-----------------------------------------------------------------------------+
+CoreStats RenderCore::GetCoreStats() const 
+{
+	return coreStats;
 }
 
 // EOF

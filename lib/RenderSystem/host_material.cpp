@@ -97,7 +97,13 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 		{
 			if (item.first == "index") color.textureID = (int)item.second + textureBase;
 		}
-		// TODO: do a better automatic conversion.
+	}
+	// set normal map, if any
+	if (original.normalTexture.index > -1)
+	{
+		normals.textureID = original.normalTexture.index + textureBase;
+		normals.scale = original.normalTexture.scale;
+		HostScene::textures[normals.textureID]->flags |= HostTexture::NORMALMAP;
 	}
 }
 

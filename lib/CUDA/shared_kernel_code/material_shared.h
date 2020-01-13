@@ -40,20 +40,20 @@ enum ShadingDataFlags
 
 // extract information from the triangle instance, not (directly) related to any material (type)
 LH2_DEVFUNC void SetupFrame(
-	const float3 D,					   // IN:	incoming ray direction, used for consistent normals
-	const float u, const float v,	  //		barycentric coordinates of intersection point
-	const CoreTri4& tri,			   //		triangle data
-	const int instIdx,				   //		instance index, for normal transform
-	const bool hasSmoothNormals,	   // model has a normal per vertex (to interpolate)
-	float3& N, float3& iN, float3& fN, //		geometric normal, interpolated normal, final normal (normal mapped)
-	float3& T,						   //		tangent vector
-	float& w )
+	const float3 D,						// IN:	incoming ray direction, used for consistent normals
+	const float u, const float v,		//		barycentric coordinates of intersection point
+	const CoreTri4& tri,				//		triangle data
+	const int instIdx,					//		instance index, for normal transform
+	const bool hasSmoothNormals,		//		model has a normal per vertex (to interpolate)
+	float3& N, float3& iN, float3& fN,	// OUT: geometric normal, interpolated normal, final normal (normal mapped)
+	float3& T,							//		tangent vector
+	float& w
+)
 {
 	const float4 tdata2 = tri.vN0;
 	const float4 tdata3 = tri.vN1;
 	const float4 tdata4 = tri.vN2;
 	const float4 tdata5 = tri.T4;
-
 	// initialize normals
 	N = iN = fN = TRI_N;
 	T = TRI_T;
@@ -71,7 +71,6 @@ LH2_DEVFUNC void SetupFrame(
 	N = normalize( N.x * A + N.y * B + N.z * C );
 	iN = normalize( iN.x * A + iN.y * B + iN.z * C );
 	// "Consistent Normal Interpolation", Reshetov et al., 2010
-
 	const float4 vertexAlpha = tri.alpha4;
 	const bool backSide = dot( D, N ) > 0;
 #ifdef CONSISTENTNORMALS
@@ -120,16 +119,10 @@ LH2_DEVFUNC void GetShadingData(
 	retVal4.tint4 = make_float4( tint_xyz.y > 0 ? ciexyz_to_linear_rgb( tint_xyz * (1.0f / tint_xyz.y) ) : make_float3( 1 ), tint_xyz.y );
 	// initialize normals
 	float w;
-	SetupFrame(
-		// Input:
-		D, u, v, tri, instIdx, MAT_HASSMOOTHNORMALS,
-		// Output:
-		N, iN, fN, T, w );
+	SetupFrame( /* Input: */ D, u, v, tri, instIdx, MAT_HASSMOOTHNORMALS, /* Output: */ N, iN, fN, T, w );
 	const float4 vertexAlpha = tri.alpha4;
-
 #ifdef MAT_EMISSIVE_TWOSIDED
-	if (MAT_EMISSIVE_TWOSIDED)
-		retVal.flags |= EMISSIVE_TWOSIDED;
+	if (MAT_EMISSIVE_TWOSIDED) retVal.flags |= EMISSIVE_TWOSIDED;
 #endif
 	// texturing
 	float tu, tv;
@@ -137,13 +130,13 @@ LH2_DEVFUNC void GetShadingData(
 	{
 		const float4 tdata0 = tri.u4;
 		const float w = 1 - (u + v);
-	#ifdef OPTIXPRIMEBUILD
+#ifdef OPTIXPRIMEBUILD
 		tu = u * TRI_U0 + v * TRI_U1 + w * TRI_U2;
 		tv = u * TRI_V0 + v * TRI_V1 + w * TRI_V2;
-	#else
+#else
 		tu = w * TRI_U0 + u * TRI_U1 + v * TRI_U2;
 		tv = w * TRI_V0 + u * TRI_V1 + v * TRI_V2;
-	#endif
+#endif
 	}
 	if (MAT_HASDIFFUSEMAP)
 	{

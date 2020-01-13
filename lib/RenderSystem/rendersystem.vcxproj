@@ -53,7 +53,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">rendersystem.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="host_mesh_tinyobj.cpp">
+    <ClCompile Include="host_meshloaders.cpp">
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AnySuitable</InlineFunctionExpansion>
       <IntrinsicFunctions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</IntrinsicFunctions>
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Speed</FavorSizeOrSpeed>
@@ -62,8 +62,7 @@
       <SDLCheck Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</SDLCheck>
       <MultiProcessorCompilation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</MultiProcessorCompilation>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">rendersystem.h</PrecompiledHeaderFile>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">rendersystem.h</PrecompiledHeaderFile>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Full</Optimization>
@@ -93,16 +92,36 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">rendersystem.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="materials\pbrt\api.cpp" />
-    <ClCompile Include="materials\pbrt\create_material.cpp" />
-    <ClCompile Include="materials\pbrt\ext\rply.cpp" />
-    <ClCompile Include="materials\pbrt\fileutil.cpp" />
-    <ClCompile Include="materials\pbrt\floatfile.cpp" />
-    <ClCompile Include="materials\pbrt\paramset.cpp" />
-    <ClCompile Include="materials\pbrt\parser.cpp" />
-    <ClCompile Include="materials\pbrt\shapes\plymesh.cpp" />
-    <ClCompile Include="materials\pbrt\shapes\triangle.cpp" />
-    <ClCompile Include="materials\pbrt\spectrum.cpp" />
+    <ClCompile Include="materials\pbrt\api.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\paramset.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\pbrtparser.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\plymesh.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="materials\pbrt\spectrum.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">materials/pbrt/pbrtparser.h</PrecompiledHeaderFile>
+    </ClCompile>
     <ClCompile Include="rendersystem.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">rendersystem.h</PrecompiledHeaderFile>
@@ -132,18 +151,8 @@
     <ClInclude Include="host_scene.h" />
     <ClInclude Include="host_skydome.h" />
     <ClInclude Include="host_texture.h" />
-    <ClInclude Include="materials\pbrt\api.h" />
-    <ClInclude Include="materials\pbrt\create_material.h" />
-    <ClInclude Include="materials\pbrt\ext\rply.h" />
-    <ClInclude Include="materials\pbrt\fileutil.h" />
-    <ClInclude Include="materials\pbrt\floatfile.h" />
-    <ClInclude Include="materials\pbrt\paramset.h" />
-    <ClInclude Include="materials\pbrt\parser.h" />
-    <ClInclude Include="materials\pbrt\pbrt_wrap.h" />
-    <ClInclude Include="materials\pbrt\shapes\plymesh.h" />
-    <ClInclude Include="materials\pbrt\shapes\triangle.h" />
+    <ClInclude Include="materials\pbrt\pbrtparser.h" />
     <ClInclude Include="materials\pbrt\spectrum.h" />
-    <ClInclude Include="materials\pbrt\stringprint.h" />
     <ClInclude Include="rendersystem.h" />
     <ClInclude Include="render_api.h" />
   </ItemGroup>

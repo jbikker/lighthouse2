@@ -1,38 +1,35 @@
-
 /*
-    pbrt source code is Copyright(c) 1998-2016
-                        Matt Pharr, Greg Humphreys, and Wenzel Jakob.
+	pbrt source code is Copyright(c) 1998-2016
+						Matt Pharr, Greg Humphreys, and Wenzel Jakob.
 
-    This file is part of pbrt.
+	This file is part of pbrt.
 
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
+	Redistribution and use in source and binary forms, with or without
+	modification, are permitted provided that the following conditions are
+	met:
 
-    - Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
+	- Redistributions of source code must retain the above copyright
+	  notice, this list of conditions and the following disclaimer.
 
-    - Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
+	- Redistributions in binary form must reproduce the above copyright
+	  notice, this list of conditions and the following disclaimer in the
+	  documentation and/or other materials provided with the distribution.
 
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-    IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-    TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-    PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+	THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+	IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+	TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+	PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+	HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+	SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+	LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+	DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+	THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+	(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+	OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-// core/paramset.cpp*
-#include "paramset.h"
-#include "floatfile.h"
+#include "materials/pbrt/pbrtparser.h"
 
 namespace pbrt
 {
@@ -60,7 +57,7 @@ namespace pbrt
 
 // ParamSet Methods
 void ParamSet::AddFloat( const std::string& name,
-						 std::unique_ptr<Float[]> values, int nValues )
+	std::unique_ptr<Float[]> values, int nValues )
 {
 	EraseFloat( name );
 	floats.emplace_back(
@@ -68,94 +65,94 @@ void ParamSet::AddFloat( const std::string& name,
 }
 
 void ParamSet::AddInt( const std::string& name, std::unique_ptr<int[]> values,
-					   int nValues )
+	int nValues )
 {
 	EraseInt( name );
 	ADD_PARAM_TYPE( int, ints );
 }
 
 void ParamSet::AddBool( const std::string& name, std::unique_ptr<bool[]> values,
-						int nValues )
+	int nValues )
 {
 	EraseBool( name );
 	ADD_PARAM_TYPE( bool, bools );
 }
 
 void ParamSet::AddPoint2f( const std::string& name,
-						   std::unique_ptr<Point2f[]> values, int nValues )
+	std::unique_ptr<Point2f[]> values, int nValues )
 {
 	ErasePoint2f( name );
 	ADD_PARAM_TYPE( Point2f, point2fs );
 }
 
 void ParamSet::AddVector2f( const std::string& name,
-							std::unique_ptr<Vector2f[]> values, int nValues )
+	std::unique_ptr<Vector2f[]> values, int nValues )
 {
 	EraseVector2f( name );
 	ADD_PARAM_TYPE( Vector2f, vector2fs );
 }
 
 void ParamSet::AddPoint3f( const std::string& name,
-						   std::unique_ptr<Point3f[]> values, int nValues )
+	std::unique_ptr<Point3f[]> values, int nValues )
 {
 	ErasePoint3f( name );
 	ADD_PARAM_TYPE( Point3f, point3fs );
 }
 
 void ParamSet::AddVector3f( const std::string& name,
-							std::unique_ptr<Vector3f[]> values, int nValues )
+	std::unique_ptr<Vector3f[]> values, int nValues )
 {
 	EraseVector3f( name );
 	ADD_PARAM_TYPE( Vector3f, vector3fs );
 }
 
 void ParamSet::AddNormal3f( const std::string& name,
-							std::unique_ptr<Normal3f[]> values, int nValues )
+	std::unique_ptr<Normal3f[]> values, int nValues )
 {
 	EraseNormal3f( name );
 	ADD_PARAM_TYPE( Normal3f, normals );
 }
 
 void ParamSet::AddRGBSpectrum( const std::string& name,
-							   std::unique_ptr<Float[]> values, int nValues )
+	std::unique_ptr<Float[]> values, int nValues )
 {
 	EraseSpectrum( name );
 	CHECK_EQ( nValues % 3, 0 );
 	nValues /= 3;
 	std::unique_ptr<Spectrum[]> s( new Spectrum[nValues] );
-	for ( int i = 0; i < nValues; ++i ) s[i] = Spectrum::FromRGB( &values[3 * i] );
+	for (int i = 0; i < nValues; ++i) s[i] = Spectrum::FromRGB( &values[3 * i] );
 	std::shared_ptr<ParamSetItem<Spectrum>> psi(
 		new ParamSetItem<Spectrum>( name, std::move( s ), nValues ) );
 	spectra.push_back( psi );
 }
 
 void ParamSet::AddXYZSpectrum( const std::string& name,
-							   std::unique_ptr<Float[]> values, int nValues )
+	std::unique_ptr<Float[]> values, int nValues )
 {
 	EraseSpectrum( name );
 	CHECK_EQ( nValues % 3, 0 );
 	nValues /= 3;
 	std::unique_ptr<Spectrum[]> s( new Spectrum[nValues] );
-	for ( int i = 0; i < nValues; ++i ) s[i] = Spectrum::FromXYZ( &values[3 * i] );
+	for (int i = 0; i < nValues; ++i) s[i] = Spectrum::FromXYZ( &values[3 * i] );
 	std::shared_ptr<ParamSetItem<Spectrum>> psi(
 		new ParamSetItem<Spectrum>( name, std::move( s ), nValues ) );
 	spectra.push_back( psi );
 }
 
 void ParamSet::AddBlackbodySpectrum( const std::string& name,
-									 std::unique_ptr<Float[]> values,
-									 int nValues )
+	std::unique_ptr<Float[]> values,
+	int nValues )
 {
 	EraseSpectrum( name );
 	CHECK_EQ( nValues % 2, 0 ); // temperature (K), scale, ...
 	nValues /= 2;
 	std::unique_ptr<Spectrum[]> s( new Spectrum[nValues] );
 	std::unique_ptr<Float[]> v( new Float[nCIESamples] );
-	for ( int i = 0; i < nValues; ++i )
+	for (int i = 0; i < nValues; ++i)
 	{
 		BlackbodyNormalized( CIE_lambda, nCIESamples, values[2 * i], v.get() );
 		s[i] = values[2 * i + 1] *
-			   Spectrum::FromSampled( CIE_lambda, v.get(), nCIESamples );
+			Spectrum::FromSampled( CIE_lambda, v.get(), nCIESamples );
 	}
 	std::shared_ptr<ParamSetItem<Spectrum>> psi(
 		new ParamSetItem<Spectrum>( name, std::move( s ), nValues ) );
@@ -163,15 +160,15 @@ void ParamSet::AddBlackbodySpectrum( const std::string& name,
 }
 
 void ParamSet::AddSampledSpectrum( const std::string& name,
-								   std::unique_ptr<Float[]> values,
-								   int nValues )
+	std::unique_ptr<Float[]> values,
+	int nValues )
 {
 	EraseSpectrum( name );
 	CHECK_EQ( nValues % 2, 0 );
 	nValues /= 2;
 	std::unique_ptr<Float[]> wl( new Float[nValues] );
 	std::unique_ptr<Float[]> v( new Float[nValues] );
-	for ( int i = 0; i < nValues; ++i )
+	for (int i = 0; i < nValues; ++i)
 	{
 		wl[i] = values[2 * i];
 		v[i] = values[2 * i + 1];
@@ -184,21 +181,21 @@ void ParamSet::AddSampledSpectrum( const std::string& name,
 }
 
 void ParamSet::AddSampledSpectrumFiles( const std::string& name,
-										const char** names, int nValues )
+	const char** names, int nValues )
 {
 	EraseSpectrum( name );
 	std::unique_ptr<Spectrum[]> s( new Spectrum[nValues] );
-	for ( int i = 0; i < nValues; ++i )
+	for (int i = 0; i < nValues; ++i)
 	{
 		std::string fn = AbsolutePath( ResolveFilename( names[i] ) );
-		if ( cachedSpectra.find( fn ) != cachedSpectra.end() )
+		if (cachedSpectra.find( fn ) != cachedSpectra.end())
 		{
 			s[i] = cachedSpectra[fn];
 			continue;
 		}
 
 		std::vector<Float> vals;
-		if ( !ReadFloatFile( fn.c_str(), &vals ) )
+		if (!ReadFloatFile( fn.c_str(), &vals ))
 		{
 			Warning(
 				"Unable to read SPD file \"%s\".  Using black distribution.",
@@ -207,7 +204,7 @@ void ParamSet::AddSampledSpectrumFiles( const std::string& name,
 		}
 		else
 		{
-			if ( vals.size() % 2 )
+			if (vals.size() % 2)
 			{
 				Warning(
 					"Extra value found in spectrum file \"%s\". "
@@ -215,12 +212,12 @@ void ParamSet::AddSampledSpectrumFiles( const std::string& name,
 					fn.c_str() );
 			}
 			std::vector<Float> wls, v;
-			for ( size_t j = 0; j < vals.size() / 2; ++j )
+			for (size_t j = 0; j < vals.size() / 2; ++j)
 			{
 				wls.push_back( vals[2 * j] );
 				v.push_back( vals[2 * j + 1] );
 			}
-			s[i] = Spectrum::FromSampled( &wls[0], &v[0], wls.size() );
+			s[i] = Spectrum::FromSampled( &wls[0], &v[0], (int)wls.size() );
 		}
 		cachedSpectra[fn] = s[i];
 	}
@@ -232,7 +229,7 @@ void ParamSet::AddSampledSpectrumFiles( const std::string& name,
 
 std::map<std::string, Spectrum> ParamSet::cachedSpectra;
 void ParamSet::AddString( const std::string& name,
-						  std::unique_ptr<std::string[]> values, int nValues )
+	std::unique_ptr<std::string[]> values, int nValues )
 {
 	EraseString( name );
 	ADD_PARAM_TYPE( std::string, strings );
@@ -250,8 +247,8 @@ void ParamSet::AddTexture( const std::string& name, const std::string& value )
 
 bool ParamSet::EraseInt( const std::string& n )
 {
-	for ( size_t i = 0; i < ints.size(); ++i )
-		if ( ints[i]->name == n )
+	for (size_t i = 0; i < ints.size(); ++i)
+		if (ints[i]->name == n)
 		{
 			ints.erase( ints.begin() + i );
 			return true;
@@ -261,8 +258,8 @@ bool ParamSet::EraseInt( const std::string& n )
 
 bool ParamSet::EraseBool( const std::string& n )
 {
-	for ( size_t i = 0; i < bools.size(); ++i )
-		if ( bools[i]->name == n )
+	for (size_t i = 0; i < bools.size(); ++i)
+		if (bools[i]->name == n)
 		{
 			bools.erase( bools.begin() + i );
 			return true;
@@ -272,8 +269,8 @@ bool ParamSet::EraseBool( const std::string& n )
 
 bool ParamSet::EraseFloat( const std::string& n )
 {
-	for ( size_t i = 0; i < floats.size(); ++i )
-		if ( floats[i]->name == n )
+	for (size_t i = 0; i < floats.size(); ++i)
+		if (floats[i]->name == n)
 		{
 			floats.erase( floats.begin() + i );
 			return true;
@@ -283,8 +280,8 @@ bool ParamSet::EraseFloat( const std::string& n )
 
 bool ParamSet::ErasePoint2f( const std::string& n )
 {
-	for ( size_t i = 0; i < point2fs.size(); ++i )
-		if ( point2fs[i]->name == n )
+	for (size_t i = 0; i < point2fs.size(); ++i)
+		if (point2fs[i]->name == n)
 		{
 			point2fs.erase( point2fs.begin() + i );
 			return true;
@@ -294,8 +291,8 @@ bool ParamSet::ErasePoint2f( const std::string& n )
 
 bool ParamSet::EraseVector2f( const std::string& n )
 {
-	for ( size_t i = 0; i < vector2fs.size(); ++i )
-		if ( vector2fs[i]->name == n )
+	for (size_t i = 0; i < vector2fs.size(); ++i)
+		if (vector2fs[i]->name == n)
 		{
 			vector2fs.erase( vector2fs.begin() + i );
 			return true;
@@ -305,8 +302,8 @@ bool ParamSet::EraseVector2f( const std::string& n )
 
 bool ParamSet::ErasePoint3f( const std::string& n )
 {
-	for ( size_t i = 0; i < point3fs.size(); ++i )
-		if ( point3fs[i]->name == n )
+	for (size_t i = 0; i < point3fs.size(); ++i)
+		if (point3fs[i]->name == n)
 		{
 			point3fs.erase( point3fs.begin() + i );
 			return true;
@@ -316,8 +313,8 @@ bool ParamSet::ErasePoint3f( const std::string& n )
 
 bool ParamSet::EraseVector3f( const std::string& n )
 {
-	for ( size_t i = 0; i < vector3fs.size(); ++i )
-		if ( vector3fs[i]->name == n )
+	for (size_t i = 0; i < vector3fs.size(); ++i)
+		if (vector3fs[i]->name == n)
 		{
 			vector3fs.erase( vector3fs.begin() + i );
 			return true;
@@ -327,8 +324,8 @@ bool ParamSet::EraseVector3f( const std::string& n )
 
 bool ParamSet::EraseNormal3f( const std::string& n )
 {
-	for ( size_t i = 0; i < normals.size(); ++i )
-		if ( normals[i]->name == n )
+	for (size_t i = 0; i < normals.size(); ++i)
+		if (normals[i]->name == n)
 		{
 			normals.erase( normals.begin() + i );
 			return true;
@@ -338,8 +335,8 @@ bool ParamSet::EraseNormal3f( const std::string& n )
 
 bool ParamSet::EraseSpectrum( const std::string& n )
 {
-	for ( size_t i = 0; i < spectra.size(); ++i )
-		if ( spectra[i]->name == n )
+	for (size_t i = 0; i < spectra.size(); ++i)
+		if (spectra[i]->name == n)
 		{
 			spectra.erase( spectra.begin() + i );
 			return true;
@@ -349,8 +346,8 @@ bool ParamSet::EraseSpectrum( const std::string& n )
 
 bool ParamSet::EraseString( const std::string& n )
 {
-	for ( size_t i = 0; i < strings.size(); ++i )
-		if ( strings[i]->name == n )
+	for (size_t i = 0; i < strings.size(); ++i)
+		if (strings[i]->name == n)
 		{
 			strings.erase( strings.begin() + i );
 			return true;
@@ -360,8 +357,8 @@ bool ParamSet::EraseString( const std::string& n )
 
 bool ParamSet::EraseTexture( const std::string& n )
 {
-	for ( size_t i = 0; i < textures.size(); ++i )
-		if ( textures[i]->name == n )
+	for (size_t i = 0; i < textures.size(); ++i)
+		if (textures[i]->name == n)
 		{
 			textures.erase( textures.begin() + i );
 			return true;
@@ -371,8 +368,8 @@ bool ParamSet::EraseTexture( const std::string& n )
 
 Float ParamSet::FindOneFloat( const std::string& name, Float d ) const
 {
-	for ( const auto& f : floats )
-		if ( f->name == name && f->nValues == 1 )
+	for (const auto& f : floats)
+		if (f->name == name && f->nValues == 1)
 		{
 			f->lookedUp = true;
 			return f->values[0];
@@ -382,8 +379,8 @@ Float ParamSet::FindOneFloat( const std::string& name, Float d ) const
 
 const Float* ParamSet::FindFloat( const std::string& name, int* n ) const
 {
-	for ( const auto& f : floats )
-		if ( f->name == name )
+	for (const auto& f : floats)
+		if (f->name == name)
 		{
 			*n = f->nValues;
 			f->lookedUp = true;
@@ -413,94 +410,94 @@ bool ParamSet::FindOneBool( const std::string& name, bool d ) const
 }
 
 const Point2f* ParamSet::FindPoint2f( const std::string& name,
-									  int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( point2fs );
 }
 
 Point2f ParamSet::FindOnePoint2f( const std::string& name,
-								  const Point2f& d ) const
+	const Point2f& d ) const
 {
 	LOOKUP_ONE( point2fs );
 }
 
 const Vector2f* ParamSet::FindVector2f( const std::string& name,
-										int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( vector2fs );
 }
 
 Vector2f ParamSet::FindOneVector2f( const std::string& name,
-									const Vector2f& d ) const
+	const Vector2f& d ) const
 {
 	LOOKUP_ONE( vector2fs );
 }
 
 const Point3f* ParamSet::FindPoint3f( const std::string& name,
-									  int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( point3fs );
 }
 
 Point3f ParamSet::FindOnePoint3f( const std::string& name,
-								  const Point3f& d ) const
+	const Point3f& d ) const
 {
 	LOOKUP_ONE( point3fs );
 }
 
 const Vector3f* ParamSet::FindVector3f( const std::string& name,
-										int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( vector3fs );
 }
 
 Vector3f ParamSet::FindOneVector3f( const std::string& name,
-									const Vector3f& d ) const
+	const Vector3f& d ) const
 {
 	LOOKUP_ONE( vector3fs );
 }
 
 const Normal3f* ParamSet::FindNormal3f( const std::string& name,
-										int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( normals );
 }
 
 Normal3f ParamSet::FindOneNormal3f( const std::string& name,
-									const Normal3f& d ) const
+	const Normal3f& d ) const
 {
 	LOOKUP_ONE( normals );
 }
 
 const Spectrum* ParamSet::FindSpectrum( const std::string& name,
-										int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( spectra );
 }
 
 Spectrum ParamSet::FindOneSpectrum( const std::string& name,
-									const Spectrum& d ) const
+	const Spectrum& d ) const
 {
 	LOOKUP_ONE( spectra );
 }
 
 const std::string* ParamSet::FindString( const std::string& name,
-										 int* nValues ) const
+	int* nValues ) const
 {
 	LOOKUP_PTR( strings );
 }
 
 std::string ParamSet::FindOneString( const std::string& name,
-									 const std::string& d ) const
+	const std::string& d ) const
 {
 	LOOKUP_ONE( strings );
 }
 
 std::string ParamSet::FindOneFilename( const std::string& name,
-									   const std::string& d ) const
+	const std::string& d ) const
 {
 	std::string filename = FindOneString( name, "" );
-	if ( filename == "" ) return d;
+	if (filename == "") return d;
 	filename = AbsolutePath( ResolveFilename( filename ) );
 	return filename;
 }
@@ -553,7 +550,7 @@ std::string ParamSet::ToString() const
 	size_t i;
 	int j;
 	std::string typeString;
-	for ( i = 0; i < ints.size(); ++i )
+	for (i = 0; i < ints.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<int>>& item = ints[i];
 		typeString = "integer ";
@@ -564,11 +561,11 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%d ", item->values[j] );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < bools.size(); ++i )
+	for (i = 0; i < bools.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<bool>>& item = bools[i];
 		typeString = "bool ";
@@ -579,11 +576,11 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "\"%s\" ", item->values[j] ? "true" : "false" );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < floats.size(); ++i )
+	for (i = 0; i < floats.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Float>>& item = floats[i];
 		typeString = "float ";
@@ -594,11 +591,11 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%.8g ", item->values[j] );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < point2fs.size(); ++i )
+	for (i = 0; i < point2fs.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Point2f>>& item = point2fs[i];
 		typeString = "point2 ";
@@ -609,12 +606,12 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%.8g %.8g ", item->values[j].x,
-								 item->values[j].y );
+				item->values[j].y );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < vector2fs.size(); ++i )
+	for (i = 0; i < vector2fs.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Vector2f>>& item = vector2fs[i];
 		typeString = "vector2 ";
@@ -625,12 +622,12 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%.8g %.8g ", item->values[j].x,
-								 item->values[j].y );
+				item->values[j].y );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < point3fs.size(); ++i )
+	for (i = 0; i < point3fs.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Point3f>>& item = point3fs[i];
 		typeString = "point3 ";
@@ -641,12 +638,12 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%.8g %.8g %.8g ", item->values[j].x,
-								 item->values[j].y, item->values[j].z );
+				item->values[j].y, item->values[j].z );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < vector3fs.size(); ++i )
+	for (i = 0; i < vector3fs.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Vector3f>>& item = vector3fs[i];
 		typeString = "vector3 ";
@@ -657,12 +654,12 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%.8g %.8g %.8g ", item->values[j].x,
-								 item->values[j].y, item->values[j].z );
+				item->values[j].y, item->values[j].z );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < normals.size(); ++i )
+	for (i = 0; i < normals.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Normal3f>>& item = normals[i];
 		typeString = "normal ";
@@ -673,12 +670,12 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "%.8g %.8g %.8g ", item->values[j].x,
-								 item->values[j].y, item->values[j].z );
+				item->values[j].y, item->values[j].z );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < strings.size(); ++i )
+	for (i = 0; i < strings.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<std::string>>& item = strings[i];
 		typeString = "string ";
@@ -689,11 +686,11 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "\"%s\" ", item->values[j].c_str() );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < textures.size(); ++i )
+	for (i = 0; i < textures.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<std::string>>& item = textures[i];
 		typeString = "texture ";
@@ -704,11 +701,11 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 			ret += StringPrintf( "\"%s\" ", item->values[j].c_str() );
 		ret += std::string( "] " );
 	}
-	for ( i = 0; i < spectra.size(); ++i )
+	for (i = 0; i < spectra.size(); ++i)
 	{
 		const std::shared_ptr<ParamSetItem<Spectrum>>& item = spectra[i];
 		typeString = "color ";
@@ -719,7 +716,7 @@ std::string ParamSet::ToString() const
 		ret += item->name;
 		ret += std::string( "\"" );
 		ret += std::string( " [" );
-		for ( j = 0; j < nPrint; ++j )
+		for (j = 0; j < nPrint; ++j)
 		{
 			Float rgb[3];
 			item->values[j].ToRGB( rgb );
@@ -737,7 +734,7 @@ static int print( bool v )
 }
 static int print( Float f )
 {
-	if ( (int)f == f )
+	if ((int)f == f)
 		return printf( "%d ", (int)f );
 	else
 		return printf( "%.9g ", f );
@@ -785,14 +782,14 @@ static void printItems(
 	const char* type, int indent,
 	const std::vector<std::shared_ptr<ParamSetItem<T>>>& items )
 {
-	for ( const auto& item : items )
+	for (const auto& item : items)
 	{
 		int np = printf( "\n%*s\"%s %s\" [ ", indent + 8, "", type,
-						 item->name.c_str() );
-		for ( int i = 0; i < item->nValues; ++i )
+			item->name.c_str() );
+		for (int i = 0; i < item->nValues; ++i)
 		{
 			np += print( item->values[i] );
-			if ( np > 80 && i < item->nValues - 1 )
+			if (np > 80 && i < item->nValues - 1)
 				np = printf( "\n%*s", indent + 8, "" );
 		}
 		printf( "] " );
@@ -819,7 +816,7 @@ HostMaterial::Vec3Value TextureParams::GetFloat3Texture(
 	const std::string& n, const float3& def ) const
 {
 	auto tex = GetFloat3TextureOrNull( n );
-	if ( tex )
+	if (tex)
 		return *tex;
 	else
 		return HostMaterial::Vec3Value( def );
@@ -830,44 +827,44 @@ HostMaterial::Vec3Value* TextureParams::GetFloat3TextureOrNull(
 {
 	// Check the shape parameters first.
 	std::string name = geomParams.FindTexture( n );
-	if ( name.empty() )
+	if (name.empty())
 	{
 		int count;
 		const Spectrum* s = geomParams.FindSpectrum( n, &count );
-		if ( s )
+		if (s)
 		{
-			if ( count > 1 )
+			if (count > 1)
 				Warning( "Ignoring excess values provided with parameter \"%s\"",
-						 n.c_str() );
+					n.c_str() );
 			return new HostMaterial::Vec3Value( s->vector() );
 		}
 
 		name = materialParams.FindTexture( n );
-		if ( name.empty() )
+		if (name.empty())
 		{
 			int count;
 			const Spectrum* s = materialParams.FindSpectrum( n, &count );
-			if ( s )
+			if (s)
 			{
-				if ( count > 1 )
+				if (count > 1)
 					Warning( "Ignoring excess values provided with parameter \"%s\"",
-							 n.c_str() );
+						n.c_str() );
 				return new HostMaterial::Vec3Value( s->vector() );
 			}
 		}
 
-		if ( name.empty() )
+		if (name.empty())
 			return nullptr;
 	}
 
 	// We have a texture name, from either the shape or the material's
 	// parameters.
-	if ( spectrumTextures.find( name ) != spectrumTextures.end() )
+	if (spectrumTextures.find( name ) != spectrumTextures.end())
 		return spectrumTextures[name];
 	else
 	{
 		Error( "Couldn't find spectrum texture named \"%s\" for parameter \"%s\"",
-			   name.c_str(), n.c_str() );
+			name.c_str(), n.c_str() );
 		return nullptr;
 	}
 }
@@ -882,7 +879,7 @@ HostMaterial::ScalarValue TextureParams::GetFloatTexture(
 	const std::string& n, Float def ) const
 {
 	auto tex = GetFloatTextureOrNull( n );
-	if ( tex )
+	if (tex)
 		return *tex;
 	else
 		return HostMaterial::ScalarValue( def );
@@ -893,44 +890,44 @@ HostMaterial::ScalarValue* TextureParams::GetFloatTextureOrNull(
 {
 	// Check the shape parameters first.
 	std::string name = geomParams.FindTexture( n );
-	if ( name.empty() )
+	if (name.empty())
 	{
 		int count;
 		const Float* s = geomParams.FindFloat( n, &count );
-		if ( s )
+		if (s)
 		{
-			if ( count > 1 )
+			if (count > 1)
 				Warning( "Ignoring excess values provided with parameter \"%s\"",
-						 n.c_str() );
+					n.c_str() );
 			return new HostMaterial::ScalarValue( *s );
 		}
 
 		name = materialParams.FindTexture( n );
-		if ( name.empty() )
+		if (name.empty())
 		{
 			int count;
 			const Float* s = materialParams.FindFloat( n, &count );
-			if ( s )
+			if (s)
 			{
-				if ( count > 1 )
+				if (count > 1)
 					Warning( "Ignoring excess values provided with parameter \"%s\"",
-							 n.c_str() );
+						n.c_str() );
 				return new HostMaterial::ScalarValue( *s );
 			}
 		}
 
-		if ( name.empty() )
+		if (name.empty())
 			return nullptr;
 	}
 
 	// We have a texture name, from either the shape or the material's
 	// parameters.
-	if ( floatTextures.find( name ) != floatTextures.end() )
+	if (floatTextures.find( name ) != floatTextures.end())
 		return floatTextures[name];
 	else
 	{
 		Error( "Couldn't find float texture named \"%s\" for parameter \"%s\"",
-			   name.c_str(), n.c_str() );
+			name.c_str(), n.c_str() );
 		return nullptr;
 	}
 }
@@ -941,17 +938,17 @@ reportUnusedMaterialParams(
 	const std::vector<std::shared_ptr<ParamSetItem<T>>>& mtl,
 	const std::vector<std::shared_ptr<ParamSetItem<T>>>& geom )
 {
-	for ( const auto& param : mtl )
+	for (const auto& param : mtl)
 	{
-		if ( param->lookedUp )
+		if (param->lookedUp)
 			continue;
 
 		// Don't complain about any unused material parameters if their
 		// values were provided by a shape parameter.
-		if ( std::find_if( geom.begin(), geom.end(),
-						   [&param]( const std::shared_ptr<ParamSetItem<T>>& gp ) {
-							   return gp->name == param->name;
-						   } ) == geom.end() )
+		if (std::find_if( geom.begin(), geom.end(),
+			[&param]( const std::shared_ptr<ParamSetItem<T>>& gp ) {
+			return gp->name == param->name;
+		} ) == geom.end())
 			Warning( "Parameter \"%s\" not used", param->name.c_str() );
 	}
 }

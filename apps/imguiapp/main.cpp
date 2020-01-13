@@ -47,13 +47,8 @@ void PrepareScene()
 	sky->worldToLight = mat4::RotateX( -PI / 2 );
 	scene->SetSkyDome( sky );
 	// classic scene
-#if 1
-	materialFile = string( "data/normal_materials.xml" );
-	renderer->AddScene( "normal_map.gltf", "data/", mat4::Identity() );
-#else
 	materialFile = string( "data/pica/pica_materials.xml" );
 	renderer->AddScene( "scene.gltf", "data/pica/", mat4::Translate( 0, -10.2f, 0 ) );
-#endif
 	int rootNode = renderer->FindNode( "RootNode (gltf orientation matrix)" );
 	renderer->SetNodeTransform( rootNode, mat4::RotateX( -PI / 2 ) );
 #if 1

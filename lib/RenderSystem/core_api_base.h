@@ -29,6 +29,7 @@ namespace lighthouse2
 //  +-----------------------------------------------------------------------------+
 struct CoreStats
 {
+	void SetProbeInfo( int inst, int prim, float t ) { probedInstid = inst, probedTriid = prim, probedDist = t; }
 	// device
 	char* deviceName = 0;				// device name; TODO: will leak
 	uint SMcount = 0;					// number of shading multiprocessors on device
@@ -91,7 +92,9 @@ public:
 	// Setting: modify a render setting
 	virtual void Setting( const char* name, float value ) = 0;
 	// Render: produce one frame. Convergence can be 'Converge' or 'Restart'.
-	virtual void Render( const ViewPyramid& view, const Convergence converge ) = 0;
+	virtual void Render( const ViewPyramid& view, const Convergence converge, bool async ) = 0;
+	// WaitForRender: wait for the asynchronous render to complete.
+	virtual void WaitForRender() = 0;
 	// Shutdown: destroy the RenderCore and free all resources.
 	virtual void Shutdown() = 0;
 	// SetTextures: update the texture data in the RenderCore using the supplied data.
@@ -109,8 +112,8 @@ public:
 	virtual void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 ) = 0;
 	// SetInstance: update the data on a single instance.
 	virtual void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform = mat4::Identity() ) = 0;
-	// UpdateTopLevel: trigger a top-level BVH update.
-	virtual void UpdateToplevel() = 0;
+	// FinalizeInstances: allow the core to do any finalizing work after receiving all geometry and instances.
+	virtual void FinalizeInstances() = 0;
 };
 
 } // namespace lighthouse2

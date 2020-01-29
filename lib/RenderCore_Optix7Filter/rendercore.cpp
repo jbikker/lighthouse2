@@ -51,24 +51,25 @@ void RenderCore::applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffe
 }
 
 // setters / getters
-void SetInstanceDescriptors( CoreInstanceDesc* p );
-void SetMaterialList( CUDAMaterial* p );
-void SetAreaLights( CoreLightTri* p );
-void SetPointLights( CorePointLight* p );
-void SetSpotLights( CoreSpotLight* p );
-void SetDirectionalLights( CoreDirectionalLight* p );
-void SetLightCounts( int area, int point, int spot, int directional );
-void SetARGB32Pixels( uint* p );
-void SetARGB128Pixels( float4* p );
-void SetNRM32Pixels( uint* p );
-void SetSkyPixels( float3* p );
-void SetSkySize( int w, int h );
-void SetWorldToSky( const mat4& worldToLight );
-void SetPathStates( PathState* p );
-void SetDebugData( float4* p );
-void SetGeometryEpsilon( float e );
-void SetClampValue( float c );
+void stageInstanceDescriptors( CoreInstanceDesc* p );
+void stageMaterialList( CUDAMaterial* p );
+void stageAreaLights( CoreLightTri* p );
+void stagePointLights( CorePointLight* p );
+void stageSpotLights( CoreSpotLight* p );
+void stageDirectionalLights( CoreDirectionalLight* p );
+void stageLightCounts( int area, int point, int spot, int directional );
+void stageARGB32Pixels( uint* p );
+void stageARGB128Pixels( float4* p );
+void stageNRM32Pixels( uint* p );
+void stageSkyPixels( float3* p );
+void stageSkySize( int w, int h );
+void stageWorldToSky( const mat4& worldToLight );
+void stagePathStates( PathState* p );
+void stageDebugData( float4* p );
+void stageGeometryEpsilon( float e );
+void stageClampValue( float c );
 void SetCounters( Counters* p );
+void stageMemcpy( void* d, void* s, int n );
 
 } // namespace lh2core
 
@@ -276,7 +277,7 @@ void RenderCore::Init()
 	// initialize Optix7
 	CreateOptixContext( computeCapability );
 	// render settings
-	SetClampValue( 10.0f );
+	stageClampValue( 10.0f );
 	// prepare counters for persistent threads
 	counterBuffer = new CoreBuffer<Counters>( 1, ON_HOST | ON_DEVICE );
 	SetCounters( counterBuffer->DevPtr() );
@@ -371,7 +372,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 			deltaDepth = new CoreBuffer<float4>( maxPixels * 2, ON_DEVICE );
 		#if 1
 			debugData = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
-			SetDebugData( debugData->DevPtr() );
+			stageDebugData( debugData->DevPtr() );
 		#endif
 		}
 		params.connectData = connectionBuffer->DevPtr();
@@ -436,11 +437,10 @@ void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const ma
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  RenderCore::UpdateToplevel                                                 |
-//  |  After changing meshes, instances or instance transforms, we need to        |
-//  |  rebuild the top-level structure.                                     LH2'19|
+//  |  RenderCore::FinalizeInstances                                              |
+//  |  Update instance descriptor array on device.                          LH2'20|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::UpdateToplevel()
+void RenderCore::FinalizeInstances()
 {
 	// resize instance array if more space is needed
 	if (instances.size() > (size_t)instanceArray->GetSize())
@@ -455,32 +455,43 @@ void RenderCore::UpdateToplevel()
 		instanceArray->HostPtr()[i] = instances[i]->instance;
 	}
 	instanceArray->CopyToDevice();
-	// build the top-level tree
-	OptixBuildInput buildInput = {};
-	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-	buildInput.instanceArray.instances = (CUdeviceptr)instanceArray->DevPtr();
-	buildInput.instanceArray.numInstances = (uint)instances.size();
-	OptixAccelBuildOptions options = {};
-	options.buildFlags = OPTIX_BUILD_FLAG_NONE;
-	options.operation = OPTIX_BUILD_OPERATION_BUILD;
-	static size_t reservedTemp = 0, reservedTop = 0;
-	static CoreBuffer<uchar> *temp, *topBuffer = 0;
-	OptixAccelBufferSizes sizes;
-	CHK_OPTIX( optixAccelComputeMemoryUsage( optixContext, &options, &buildInput, 1, &sizes ) );
-	if (sizes.tempSizeInBytes > reservedTemp)
+	// update instance descriptor array on device
+	if (instancesDirty)
 	{
-		reservedTemp = sizes.tempSizeInBytes + 1024;
-		delete temp;
-		temp = new CoreBuffer<uchar>( reservedTemp, ON_DEVICE );
+		// prepare CoreInstanceDesc array. For any sane number of instances this should
+		// be efficient while yielding supreme flexibility.
+		vector<CoreInstanceDesc> instDescArray;
+		for (auto instance : instances)
+		{
+			CoreInstanceDesc id;
+			id.triangles = meshes[instance->mesh]->triangles->DevPtr();
+			mat4 T, invT;
+			if (instance->transform)
+			{
+				T = mat4::Identity();
+				memcpy( &T, instance->transform, 12 * sizeof( float ) );
+				invT = T.Inverted();
+			}
+			else
+			{
+				T = mat4::Identity();
+				invT = mat4::Identity();
+			}
+			id.invTransform = *(float4x4*)&invT;
+			instDescArray.push_back( id );
+		}
+		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)instances.size())
+		{
+			delete instDescBuffer;
+			// size of instance list changed beyond capacity.
+			// Allocate a new buffer, with some slack, to prevent excessive reallocs.
+			instDescBuffer = new CoreBuffer<CoreInstanceDesc>( instances.size() * 2, ON_HOST | ON_DEVICE );
+			stageInstanceDescriptors( instDescBuffer->DevPtr() );
+		}
+		memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
+		instDescBuffer->CopyToDevice();
+		// instancesDirty = false;
 	}
-	if (sizes.outputSizeInBytes > reservedTop)
-	{
-		reservedTop = sizes.outputSizeInBytes + 1024;
-		delete topBuffer;
-		topBuffer = new CoreBuffer<uchar>( reservedTop, ON_DEVICE );
-	}
-	CHK_OPTIX( optixAccelBuild( optixContext, 0, &options, &buildInput, 1, (CUdeviceptr)temp->DevPtr(),
-		reservedTemp, (CUdeviceptr)topBuffer->DevPtr(), reservedTop, &bvhRoot, 0, 0 ) );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -525,17 +536,17 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 	case TexelStorage::ARGB32:
 		delete texel32Buffer;
 		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE );
-		SetARGB32Pixels( texel32Buffer->DevPtr() );
+		stageARGB32Pixels( texel32Buffer->DevPtr() );
 		coreStats.argb32TexelCount = texelTotal;
 		break;
 	case TexelStorage::ARGB128:
 		delete texel128Buffer;
-		SetARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
 		coreStats.argb128TexelCount = texelTotal;
 		break;
 	case TexelStorage::NRM32:
 		delete normal32Buffer;
-		SetNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
 		coreStats.nrm32TexelCount = texelTotal;
 		break;
 	}
@@ -580,12 +591,8 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 		CoreMaterial& m = mat[i];
 		CUDAMaterial& gpuMat = hostMaterialBuffer[i];
 		memset( &gpuMat, 0, sizeof( CUDAMaterial ) );
-		gpuMat.diffuse_r = m.color.value.x,
-			gpuMat.diffuse_g = m.color.value.y;
-		gpuMat.diffuse_b = m.color.value.z;
-		gpuMat.transmittance_r = 1 - m.absorption.value.x;
-		gpuMat.transmittance_g = 1 - m.absorption.value.y;
-		gpuMat.transmittance_b = 1 - m.absorption.value.z;
+		gpuMat.SetDiffuse( m.color.value );
+		gpuMat.SetTransmittance( make_float3( 1 ) - m.absorption.value );
 		gpuMat.parameters.x = TOUINT4( m.metallic.value, m.subsurface.value, m.specular.value, m.roughness.value );
 		gpuMat.parameters.y = TOUINT4( m.specularTint.value, m.anisotropic.value, m.sheen.value, m.sheenTint.value );
 		gpuMat.parameters.z = TOUINT4( m.clearcoat.value, m.clearcoatGloss.value, m.transmission.value, 0 );
@@ -609,27 +616,65 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
 	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
-	SetMaterialList( materialBuffer->DevPtr() );
+	stageMaterialList( materialBuffer->DevPtr() );
 }
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore::SetLights                                                      |
-//  |  Set the light data.                                                  LH2'19|
+//  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	delete areaLightBuffer;
-	delete pointLightBuffer;
-	delete spotLightBuffer;
-	delete directionalLightBuffer;
-	SetAreaLights( (areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE, areaLights ))->DevPtr() );
-	SetPointLights( (pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights ))->DevPtr() );
-	SetSpotLights( (spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights ))->DevPtr() );
-	SetDirectionalLights( (directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights ))->DevPtr() );
-	SetLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
+	{
+		// we need a new or larger buffer; (re)allocate.
+		delete areaLightBuffer;
+		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE|ON_HOST, areaLights, POLICY_COPY_SOURCE );
+		stageAreaLights( areaLightBuffer->DevPtr() );
+	}
+	else 
+	{
+		// existing buffer is large enough; copy new data
+		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
+		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
+	}
+	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
+	{
+		delete pointLightBuffer;
+		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
+		stagePointLights( pointLightBuffer->DevPtr() );
+	}
+	else 
+	{
+		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
+		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
+	}
+	if (spotLightBuffer == 0 || spotLightCount > spotLightBuffer->GetSize())
+	{
+		delete spotLightBuffer;
+		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
+		stageSpotLights( spotLightBuffer->DevPtr() );
+	}
+	else 
+	{
+		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
+		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
+	}
+	if (directionalLightBuffer == 0 || directionalLightCount > directionalLightBuffer->GetSize())
+	{
+		delete directionalLightBuffer;
+		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
+		stageDirectionalLights( directionalLightBuffer->DevPtr() );
+	}
+	else 
+	{
+		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
+		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
+	}
+	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -640,9 +685,9 @@ void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint 
 {
 	delete skyPixelBuffer;
 	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
-	SetSkyPixels( skyPixelBuffer->DevPtr() );
-	SetSkySize( width, height );
-	SetWorldToSky( worldToLight );
+	stageSkyPixels( skyPixelBuffer->DevPtr() );
+	stageSkySize( width, height );
+	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
 }
@@ -658,7 +703,7 @@ void RenderCore::Setting( const char* name, const float value )
 		if (vars.geometryEpsilon != value)
 		{
 			vars.geometryEpsilon = value;
-			SetGeometryEpsilon( value );
+			stageGeometryEpsilon( value );
 			// context["geometryEpsilon"]->setFloat( value );
 		}
 	}
@@ -667,7 +712,7 @@ void RenderCore::Setting( const char* name, const float value )
 		if (vars.clampValue != value)
 		{
 			vars.clampValue = value;
-			SetClampValue( value );
+			stageClampValue( value );
 		}
 	}
 	else if (!strcmp( name, "clampDirect" )) vars.filterClampDirect = value;
@@ -677,14 +722,51 @@ void RenderCore::Setting( const char* name, const float value )
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  RenderCore::UpdateToplevel                                                 |
+//  |  After changing meshes, instances or instance transforms, we need to        |
+//  |  rebuild the top-level structure.                                     LH2'19|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::UpdateToplevel()
+{
+	// build the top-level tree
+	OptixBuildInput buildInput = {};
+	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
+	buildInput.instanceArray.instances = (CUdeviceptr)instanceArray->DevPtr();
+	buildInput.instanceArray.numInstances = (uint)instances.size();
+	OptixAccelBuildOptions options = {};
+	options.buildFlags = OPTIX_BUILD_FLAG_NONE;
+	options.operation = OPTIX_BUILD_OPERATION_BUILD;
+	static size_t reservedTemp = 0, reservedTop = 0;
+	static CoreBuffer<uchar> *temp, *topBuffer = 0;
+	OptixAccelBufferSizes sizes;
+	CHK_OPTIX( optixAccelComputeMemoryUsage( optixContext, &options, &buildInput, 1, &sizes ) );
+	if (sizes.tempSizeInBytes > reservedTemp)
+	{
+		reservedTemp = sizes.tempSizeInBytes + 1024;
+		delete temp;
+		temp = new CoreBuffer<uchar>( reservedTemp, ON_DEVICE );
+	}
+	if (sizes.outputSizeInBytes > reservedTop)
+	{
+		reservedTop = sizes.outputSizeInBytes + 1024;
+		delete topBuffer;
+		topBuffer = new CoreBuffer<uchar>( reservedTop, ON_DEVICE );
+	}
+	CHK_OPTIX( optixAccelBuild( optixContext, 0, &options, &buildInput, 1, (CUdeviceptr)temp->DevPtr(),
+		reservedTemp, (CUdeviceptr)topBuffer->DevPtr(), reservedTop, &bvhRoot, 0, 0 ) );
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// wait for OpenGL
 	glFinish();
 	Timer timer;
+	// update acceleration structure
+	UpdateToplevel();
 	// clean accumulator, if requested
 	if (converge == Restart || (features != 0 && vars.filterEnabled) || firstConvergingFrame)
 	{
@@ -694,46 +776,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
 	if (converge == Converge) firstConvergingFrame = false;
-	// update instance descriptor array on device
-	// Note: we are not using the built-in OptiX instance system for shading. Instead,
-	// we figure out which triangle we hit, and to what instance it belongs; from there,
-	// we handle normal management and material acquisition in custom code.
-	if (instancesDirty)
-	{
-		// prepare CoreInstanceDesc array. For any sane number of instances this should
-		// be efficient while yielding supreme flexibility.
-		vector<CoreInstanceDesc> instDescArray;
-		for (auto instance : instances)
-		{
-			CoreInstanceDesc id;
-			id.triangles = meshes[instance->mesh]->triangles->DevPtr();
-			mat4 T, invT;
-			if (instance->transform)
-			{
-				T = mat4::Identity();
-				memcpy( &T, instance->transform, 12 * sizeof( float ) );
-				invT = T.Inverted();
-			}
-			else
-			{
-				T = mat4::Identity();
-				invT = mat4::Identity();
-			}
-			id.invTransform = *(float4x4*)&invT;
-			instDescArray.push_back( id );
-		}
-		if (instDescBuffer == 0 || instDescBuffer->GetSize() < (int)instances.size())
-		{
-			delete instDescBuffer;
-			// size of instance list changed beyond capacity.
-			// Allocate a new buffer, with some slack, to prevent excessive reallocs.
-			instDescBuffer = new CoreBuffer<CoreInstanceDesc>( instances.size() * 2, ON_HOST | ON_DEVICE );
-			SetInstanceDescriptors( instDescBuffer->DevPtr() );
-		}
-		memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
-		instDescBuffer->CopyToDevice();
-		// instancesDirty = false;
-	}
 	// render image
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
 	// jitter the view for TAA

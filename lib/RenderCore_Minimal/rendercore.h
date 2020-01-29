@@ -41,7 +41,8 @@ public:
 	void Init();
 	void SetTarget( GLTexture* target, const uint spp );
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 );
-	void Render( const ViewPyramid& view, const Convergence converge );
+	void Render( const ViewPyramid& view, const Convergence converge, bool async );
+	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
 	CoreStats GetCoreStats() const override;
 	void Shutdown();
 
@@ -58,10 +59,11 @@ public:
 	}
 	inline void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight ) override {}
 	inline void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform ) override {}
-	inline void UpdateToplevel() override {}
+	inline void FinalizeInstances() override {}
 
 	// internal methods
 private:
+
 	// data members
 	Bitmap* screen = 0;								// temporary storage of RenderCore output; will be copied to render target
 	int targetTextureID = 0;						// ID of the target OpenGL texture

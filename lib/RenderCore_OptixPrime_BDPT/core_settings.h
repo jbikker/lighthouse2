@@ -142,6 +142,8 @@ struct Counters
 struct CUDAMaterial
 {
 #ifndef OPTIX_CU
+	void SetDiffuse( float3 d ) { diffuse_r = d.x, diffuse_g = d.y, diffuse_b = d.z; }
+	void SetTransmittance( float3 t ) { transmittance_r = t.x, transmittance_g = t.y, transmittance_b = t.z; }
 	struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; };
 	// data to be read unconditionally
 	half diffuse_r, diffuse_g, diffuse_b, transmittance_r, transmittance_g, transmittance_b; uint flags;
@@ -173,6 +175,7 @@ struct CUDAMaterial4
 #define HAS2NDDIFFUSEMAP			(1 << 9)
 #define HASSMOOTHNORMALS			(1 << 11)
 #define HASALPHA					(1 << 12)
+#define HASMETALNESSMAP				(1 << 13)
 #define MAT_ISDIELECTRIC			(flags & ISDIELECTRIC)
 #define MAT_DIFFUSEMAPISHDR			(flags & DIFFUSEMAPISHDR)
 #define MAT_HASDIFFUSEMAP			(flags & HASDIFFUSEMAP)
@@ -184,6 +187,7 @@ struct CUDAMaterial4
 #define MAT_HAS2NDDIFFUSEMAP		(flags & HAS2NDDIFFUSEMAP)
 #define MAT_HASSMOOTHNORMALS		(flags & HASSMOOTHNORMALS)
 #define MAT_HASALPHA				(flags & HASALPHA)
+#define MAT_HASMETALNESSMAP			(flags & HASMETALNESSMAP)
 };
 
 // ------------------------------------------------------------------------------

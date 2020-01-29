@@ -224,7 +224,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 		sceneBounds.Grow( make_float3( tv1 ) );
 		sceneBounds.Grow( make_float3( tv2 ) );
 	}
-	printf( "created polygon soup in %5.3fs\n", timer.elapsed() );
+	printf( "created polygon soup for %i triangles in %5.3fs\n", (int)vertices.size() / 3, timer.elapsed() );
 	printf( "scene bounds: (%5.2f,%5.2f,%5.2f)-(%5.2f,%5.2f,%5.2f)\n",
 		sceneBounds.bmin3.x, sceneBounds.bmin3.y, sceneBounds.bmin3.z,
 		sceneBounds.bmax3.x, sceneBounds.bmax3.y, sceneBounds.bmax3.z );

@@ -44,6 +44,7 @@
     <ClInclude Include="..\..\lib\imgui\imgui_impl_opengl3.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="main_ui.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shaders">

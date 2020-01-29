@@ -1325,5 +1325,5 @@ void pbrtParseString( std::string str )
 
 // namespace-less interface
 
-void PBRTInit( HostScene* hs ) { pbrt::Options opt; pbrt::pbrtInit( opt, hs ); }
+void PBRTInit() { pbrt::Options opt; pbrt::pbrtInit( opt ); }
 void ParsePBRTScene( std::string filename ) { pbrt::pbrtParseFile( filename ); }

@@ -18,6 +18,7 @@
 #include <cstdint>
 
 enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2 };
+enum { POLICY_DEFAULT = 0, POLICY_COPY_SOURCE };
 
 #define CHK_CUDA( stmt ) do { auto ret = ( stmt ); if ( ret ) {                                      \
 if ( !strncmp( #stmt, "cudaGraphicsGLRegisterImage", sizeof( "cudaGraphicsGLRegisterImage" ) - 1 ) ) \
@@ -196,7 +197,7 @@ template <class T> class CoreBuffer
 {
 public:
 	CoreBuffer() = default;
-	CoreBuffer( uint64_t elements, uint64_t loc, const void* source = 0 ) : location( loc )
+	CoreBuffer( uint64_t elements, uint64_t loc, const void* source = 0, const int policy = POLICY_DEFAULT ) : location( loc )
 	{
 		numElements = elements;
 		sizeInBytes = elements * sizeof( T );
@@ -213,7 +214,12 @@ public:
 				// location is ON_HOST; use supplied pointer or allocate room if no source was specified
 				if (source)
 				{
-					hostPtr = (T*)source;
+					if (policy == POLICY_DEFAULT) hostPtr = (T*)source; else
+					{
+						// POLICY_COPY_SOURCE: pointer was supplied, and we are supposed to copy it
+						hostPtr = (T*)MALLOC64( sizeInBytes ), owner |= ON_HOST;
+						memcpy( hostPtr, source, sizeInBytes );
+					}
 					if (location & ON_DEVICE) CopyToDevice();
 				}
 				else

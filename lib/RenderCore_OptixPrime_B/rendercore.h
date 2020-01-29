@@ -23,6 +23,8 @@ rtpContextGetLastErrorString( RenderCore::context, &e );                       \
 FatalError( #stmt " returned error '%s' at %s:%d\n", e, __FILE__, __LINE__ );  \
 } } while ( 0 )
 
+class RenderThread;
+
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |
 //  |  Copy of device-side variables, to detect changes.                    LH2'19|
@@ -43,7 +45,8 @@ class RenderCore : public CoreAPI_Base
 public:
 	// methods
 	void Init();
-	void Render( const ViewPyramid& view, const Convergence converge );
+	void Render( const ViewPyramid& view, const Convergence converge, bool async );
+	void WaitForRender();
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
@@ -62,12 +65,15 @@ public:
 	// also note that, when using alpha flags, materials must be in sync.
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 );
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform );
-	void UpdateToplevel();
+	void FinalizeInstances();
 	int4 GetScreenParams();
 	void SetProbePos( const int2 pos );
 	CoreStats GetCoreStats() const override;
 	// internal methods
 private:
+	float TraceShadowRays( const int rayCount );
+	float TraceExtensionRays( const int rayCount );
+	void UpdateToplevel();
 	void SyncStorageType( const TexelStorage storage );
 	// helpers
 	template <class T> CUDAMaterial::Map Map( T v )
@@ -99,6 +105,7 @@ private:
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
 	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
 	RTPmodel* topLevel = 0;							// the top-level node; combines all instances and is the entry point for ray queries
+	RTPquery shadowQuery, extendQuery;				// queries for shadow rays and extension rays
 	CoreBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
 	CoreBuffer<Counters>* counterBuffer = 0;		// counters for persistent threads
 	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
@@ -130,9 +137,26 @@ private:
 	CoreBuffer<uint>* blueNoise = 0;
 	// timing
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
+	// events
+	HANDLE startEvent, doneEvent;
+	// worker thread
+	RenderThread* renderThread;
 public:
 	static RTPcontext context;						// the OptiX prime context
 	CoreStats coreStats;							// rendering statistics
+};
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderThread                                                               |
+//  |  Worker thread for asynchronous rendering.                            LH2'20|
+//  +-----------------------------------------------------------------------------+
+class RenderThread : public WinThread
+{
+public:
+	void Init( RenderCore* core );
+	void run();
+private:
+	RenderCore coreState; // frozen copy of the state at render start
 };
 
 } // namespace lh2core

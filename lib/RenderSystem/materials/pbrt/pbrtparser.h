@@ -337,7 +337,7 @@ private:
 };
 
 // API Function Declarations
-void pbrtInit( const Options& opt, HostScene* hs );
+void pbrtInit( const Options& opt );
 void pbrtCleanup();
 void pbrtIdentity();
 void pbrtTranslate( Float dx, Float dy, Float dz );

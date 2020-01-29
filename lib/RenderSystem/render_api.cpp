@@ -61,6 +61,11 @@ int RenderAPI::AddMesh( const char* file, const char* dir, const float scale, bo
 	return renderer->scene->AddMesh( file, dir, scale, flatShaded );
 }
 
+int RenderAPI::AddMesh( const char* file, const float scale, bool flatShaded )
+{
+	return renderer->scene->AddMesh( file, scale, flatShaded );
+}
+
 int RenderAPI::AddMesh( const int triCount )
 {
 	return renderer->scene->AddMesh( triCount );
@@ -74,6 +79,11 @@ void RenderAPI::AddTriToMesh( const int meshId, const float3& v0, const float3& 
 int RenderAPI::AddScene( const char* file, const char* dir, const mat4& transform )
 {
 	return renderer->scene->AddScene( file, dir, transform );
+}
+
+int RenderAPI::AddScene( const char* file, const mat4& transform )
+{
+	return renderer->scene->AddScene( file, transform );
 }
 
 int RenderAPI::AddQuad( const float3 N, const float3 pos, const float width, const float height, const int material, const int meshID )
@@ -116,9 +126,14 @@ void RenderAPI::SynchronizeSceneData()
 	renderer->SynchronizeSceneData();
 }
 
-void RenderAPI::Render( Convergence converge )
+void RenderAPI::Render( Convergence converge, bool async )
 {
-	renderer->Render( renderer->scene->camera->GetView(), converge );
+	renderer->Render( renderer->scene->camera->GetView(), converge, async );
+}
+
+void RenderAPI::WaitForRender()
+{
+	renderer->WaitForRender();
 }
 
 Camera* RenderAPI::GetCamera()
@@ -141,7 +156,8 @@ int RenderAPI::GetTriangleMesh( const int coreInstId, const int coreTriId )
 	return renderer->GetTriangleMesh( coreInstId, coreTriId );
 }
 
-HostScene* RenderAPI::GetScene() {
+HostScene* RenderAPI::GetScene()
+{
 	return renderer->scene;
 }
 

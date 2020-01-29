@@ -797,12 +797,12 @@ struct Material {
 
 struct BufferView {
   std::string name;
-  int buffer;         // Required
-  size_t byteOffset;  // minimum 0, default 0
-  size_t byteLength;  // required, minimum 1
-  size_t byteStride;  // minimum 4, maximum 252 (multiple of 4), default 0 =
+  int buffer{-1};         // Required
+  size_t byteOffset{0};  // minimum 0, default 0
+  size_t byteLength{0};  // required, minimum 1. 0 = invalid
+  size_t byteStride{0};  // minimum 4, maximum 252 (multiple of 4), default 0 =
                       // understood to be tightly packed
-  int target;         // ["ARRAY_BUFFER", "ELEMENT_ARRAY_BUFFER"]
+  int target{0};         // ["ARRAY_BUFFER", "ELEMENT_ARRAY_BUFFER"] for vertex indices or atttribs. Could be 0 for other data
   Value extras;
   ExtensionMap extensions;
 
@@ -810,9 +810,9 @@ struct BufferView {
   std::string extras_json_string;
   std::string extensions_json_string;
 
-  bool dracoDecoded;  // Flag indicating this has been draco decoded
+  bool dracoDecoded{false};  // Flag indicating this has been draco decoded
 
-  BufferView() : byteOffset(0), byteStride(0), dracoDecoded(false) {}
+  BufferView() : buffer(-1), byteOffset(0), byteLength(0), byteStride(0), target(0), dracoDecoded(false) {}
   DEFAULT_METHODS(BufferView)
   bool operator==(const BufferView &) const;
 };
@@ -2458,8 +2458,10 @@ std::string ExpandFilePath(const std::string &filepath, void *) {
     return "";
   }
 
+  // Quote the string to keep any spaces in filepath intact.
+  std::string quoted_path = "\"" + filepath + "\"";
   // char** w;
-  int ret = wordexp(filepath.c_str(), &p, 0);
+  int ret = wordexp(quoted_path.c_str(), &p, 0);
   if (ret) {
     // err
     s = filepath;
@@ -2728,6 +2730,7 @@ bool DecodeDataURI(std::vector<unsigned char> *out, std::string &mime_type,
     }
   }
 
+  // TODO(syoyo): Allow empty buffer? #229
   if (data.empty()) {
     return false;
   }
@@ -5525,7 +5528,7 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
 
   // Assign missing bufferView target types
   // - Look for missing Mesh indices
-  // - Look for missing bufferView targets
+  // - Look for missing Mesh attributes
   for (auto &mesh : model->meshes) {
     for (auto &primitive : mesh.primitives) {
       if (primitive.indices >
@@ -5553,14 +5556,11 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
         // we could optionally check if acessors' bufferView type is Scalar, as
         // it should be
       }
-    }
-  }
-  // find any missing targets, must be an array buffer type if not fulfilled
-  // from previous check
-  for (auto &bufferView : model->bufferViews) {
-    if (bufferView.target == 0)  // missing target type
-    {
-      bufferView.target = TINYGLTF_TARGET_ARRAY_BUFFER;
+
+      for (auto &attribute : primitive.attributes) {
+        model->bufferViews[size_t(model->accessors[size_t(attribute.second)].bufferView)]
+            .target = TINYGLTF_TARGET_ARRAY_BUFFER;
+      }
     }
   }
 
@@ -6278,9 +6278,15 @@ static void SerializeValue(const std::string &key, const Value &value,
 static void SerializeGltfBufferData(const std::vector<unsigned char> &data,
                                     json &o) {
   std::string header = "data:application/octet-stream;base64,";
-  std::string encodedData =
-      base64_encode(&data[0], static_cast<unsigned int>(data.size()));
-  SerializeStringProperty("uri", header + encodedData, o);
+  if (data.size() > 0) {
+    std::string encodedData =
+        base64_encode(&data[0], static_cast<unsigned int>(data.size()));
+    SerializeStringProperty("uri", header + encodedData, o);
+  } else {
+    // Issue #229
+    // size 0 is allowd. Just emit mime header.
+    SerializeStringProperty("uri", header, o);
+  }
 }
 
 static bool SerializeGltfBufferData(const std::vector<unsigned char> &data,
@@ -6302,8 +6308,14 @@ static bool SerializeGltfBufferData(const std::vector<unsigned char> &data,
   std::ofstream output(binFilename.c_str(), std::ofstream::binary);
   if (!output.is_open()) return false;
 #endif
-  output.write(reinterpret_cast<const char *>(&data[0]),
-               std::streamsize(data.size()));
+  if (data.size() > 0) {
+    output.write(reinterpret_cast<const char *>(&data[0]),
+                 std::streamsize(data.size()));
+  } else {
+    // Issue #229
+    // size 0 will be still valid buffer data.
+    // write empty file.
+  }
   return true;
 }
 
@@ -6455,6 +6467,7 @@ static void SerializeGltfAnimation(Animation &animation, json &o) {
 
   {
     json samplers;
+    JsonReserveArray(samplers, animation.samplers.size());
     for (unsigned int i = 0; i < animation.samplers.size(); ++i) {
       json sampler;
       AnimationSampler gltfSampler = animation.samplers[i];
@@ -6782,7 +6795,7 @@ static void SerializeGltfMesh(Mesh &mesh, json &o) {
       JsonAddMember(primitive, "targets", std::move(targets));
     }
 
-    SerializeExtensionMap(gltfPrimitive.extensions, o);
+    SerializeExtensionMap(gltfPrimitive.extensions, primitive);
 
     if (gltfPrimitive.extras.Type() != NULL_TYPE) {
       SerializeValue("extras", gltfPrimitive.extras, primitive);
@@ -7209,20 +7222,20 @@ static void WriteBinaryGltfStream(std::ostream &stream,
       return numToRound + multiple - remainder;
   };
 
-  const uint32_t padding_size = roundUp((uint32_t)content.size(), 4) - (uint32_t)content.size();
+  const uint32_t padding_size = roundUp(uint32_t(content.size()), 4) - uint32_t(content.size());
 
   // 12 bytes for header, JSON content length, 8 bytes for JSON chunk info.
   // Chunk data must be located at 4-byte boundary.
-  const int length = 12 + 8 + roundUp((uint32_t)content.size(), 4)+
-      (binBuffer.size()?(8+roundUp((uint32_t)binBuffer.size(),4)) : 0);
+  const uint32_t length = 12 + 8 + roundUp(uint32_t(content.size()), 4)+
+      (binBuffer.size()?(8+roundUp(uint32_t(binBuffer.size()),4)) : 0);
 
   stream.write(header.c_str(), std::streamsize(header.size()));
   stream.write(reinterpret_cast<const char *>(&version), sizeof(version));
   stream.write(reinterpret_cast<const char *>(&length), sizeof(length));
 
   // JSON chunk info, then JSON data
-  const int model_length = int(content.size()) + padding_size;
-  const int model_format = 0x4E4F534A;
+  const uint32_t model_length = uint32_t(content.size()) + padding_size;
+  const uint32_t model_format = 0x4E4F534A;
   stream.write(reinterpret_cast<const char *>(&model_length),
                sizeof(model_length));
   stream.write(reinterpret_cast<const char *>(&model_format),
@@ -7235,19 +7248,19 @@ static void WriteBinaryGltfStream(std::ostream &stream,
     stream.write(padding.c_str(), std::streamsize(padding.size()));
   }
   if (binBuffer.size() > 0){
-    const uint32_t bin_padding_size = roundUp((uint32_t)binBuffer.size(), 4) - (uint32_t)binBuffer.size();
+    const uint32_t bin_padding_size = roundUp(uint32_t(binBuffer.size()), 4) - uint32_t(binBuffer.size());
     // BIN chunk info, then BIN data
-    const int bin_length = int(binBuffer.size()) + bin_padding_size;
-    const int bin_format = 0x004e4942;
+    const uint32_t bin_length = uint32_t(binBuffer.size()) + bin_padding_size;
+    const uint32_t bin_format = 0x004e4942;
     stream.write(reinterpret_cast<const char *>(&bin_length),
 		 sizeof(bin_length));
     stream.write(reinterpret_cast<const char *>(&bin_format),
 		 sizeof(bin_format));
-    stream.write((const char *)binBuffer.data(), std::streamsize(binBuffer.size()));
+    stream.write(reinterpret_cast<const char *>(binBuffer.data()), std::streamsize(binBuffer.size()));
     // Chunksize must be multiplies of 4, so pad with zeroes
     if (bin_padding_size > 0) {
       const std::vector<unsigned char> padding = std::vector<unsigned char>(size_t(bin_padding_size), 0);
-      stream.write((const char *)padding.data(), std::streamsize(padding.size()));
+      stream.write(reinterpret_cast<const char *>(padding.data()), std::streamsize(padding.size()));
     }
   }
 }

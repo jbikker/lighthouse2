@@ -207,7 +207,7 @@ void RenderCore::Setting( const char* name, const float value )
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// render
 	mat4 transform;

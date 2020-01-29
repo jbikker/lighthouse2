@@ -32,11 +32,6 @@ int currentMaterialID = -1;
 static CoreStats coreStats;
 
 #include "main_tools.h"
-// forward declare the only two pbrt functions we need for now; have a proper interface later.
-void PBRTInit( HostScene* hs );
-void ParsePBRTScene( std::string filename );
-
-// using namespace pbrt;
 
 //  +-----------------------------------------------------------------------------+
 //  |  PrepareScene                                                               |
@@ -45,17 +40,9 @@ void ParsePBRTScene( std::string filename );
 void PrepareScene()
 {
 	// initialize scene
-	auto scene = renderer->GetScene();
-	PBRTInit( scene );
-	// ParsePBRTScene( "data/coffee/scene.pbrt" );
-	// ParsePBRTScene( "data/material-testball/scene.pbrt" );
-	// ParsePBRTScene( "data/glass-of-water/scene.pbrt" );
-	// ParsePBRTScene( "data/lamp/scene.pbrt" );
-	ParsePBRTScene( "data/kitchen/scene.pbrt" );
-	// ParsePBRTScene( "data/bathroom2/scene.pbrt" );
-
-	// TODO in end of main!
-	// pbrtCleanup();
+	// renderer->AddScene( "data/kitchen/scene.pbrt" );
+	renderer->AddScene( "data/coffee/scene.pbrt" );
+	// renderer->AddScene( "data/bathroom2/scene.pbrt" );
 }
 
 //  +-----------------------------------------------------------------------------+

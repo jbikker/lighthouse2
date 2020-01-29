@@ -248,20 +248,18 @@ void shadeKernel( float4* accumulator, const uint stride,
 //  |  shadeKernel                                                                |
 //  |  Host-side access point for the shadeKernel code.                     LH2'19|
 //  +-----------------------------------------------------------------------------+
-__host__ void shade( const int pathCount, float4* accumulator, const uint stride,
+__host__ void shade( const int pathCount, float4* accumulator,
 	const Ray4* extensionRays, const float4* pathStateData, const Intersection* hits,
 	Ray4* extensionRaysOut, float4* pathStateDataOut,
 	Ray4* connections, float4* potentials,
 	const uint R0, const uint* blueNoise, const int pass,
-	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
+	const int2 probePos, const int pathLength, const int scrwidth, const int scrheight, 
+	const ViewPyramid& view  )
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 ), blockDim( 128, 1 );
-	shadeKernel << < gridDim.x, 128 >> > (accumulator, stride,
-		extensionRays, pathStateData, hits,
-		extensionRaysOut, pathStateDataOut, connections, potentials,
-		R0, blueNoise, pass,
-		probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos, pathCount);
+	shadeKernel << < gridDim.x, 128 >> > (accumulator, scrwidth * scrheight,
+		extensionRays, pathStateData, hits, extensionRaysOut, pathStateDataOut, connections, potentials, R0, blueNoise, pass, 
+		probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle, view.p1, view.p2, view.p3, view.pos, pathCount);
 }
 
 // EOF

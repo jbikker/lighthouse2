@@ -43,31 +43,33 @@ __constant__ mat4 worldToSky;
 __constant__ __device__ float geometryEpsilon;
 __constant__ __device__ float clampValue;
 
-// access
-__host__ void SetInstanceDescriptors( CoreInstanceDesc* p ) { cudaMemcpyToSymbol( instanceDescriptors, &p, sizeof( void* ) ); }
-__host__ void SetMaterialList( CUDAMaterial* p ) { cudaMemcpyToSymbol( materials, &p, sizeof( void* ) ); }
-__host__ void SetMaterialDescList( CoreMaterialDesc* p ) { cudaMemcpyToSymbol( materialDescriptors, &p, sizeof( void* ) ); }
-__host__ void SetPbrtMaterialList( CoreMaterial* p ) { cudaMemcpyToSymbol( pbrtMaterials, &p, sizeof( p ) ); }
-__host__ void SetAreaLights( CoreLightTri* p ) { cudaMemcpyToSymbol( areaLights, &p, sizeof( void* ) ); }
-__host__ void SetPointLights( CorePointLight* p ) { cudaMemcpyToSymbol( pointLights, &p, sizeof( void* ) ); }
-__host__ void SetSpotLights( CoreSpotLight* p ) { cudaMemcpyToSymbol( spotLights, &p, sizeof( void* ) ); }
-__host__ void SetDirectionalLights( CoreDirectionalLight* p ) { cudaMemcpyToSymbol( directionalLights, &p, sizeof( void* ) ); }
-__host__ void SetLightCounts( int area, int point, int spot, int directional )
+// faking staged copies for now
+#define stagedcpy( d, a ) cudaMemcpyToSymbol( (d), &a, sizeof( a ) )
+
+// staged render state access
+__host__ void stageInstanceDescriptors( CoreInstanceDesc* p ) { stagedcpy( instanceDescriptors, p ); }
+__host__ void stageMaterialList( CUDAMaterial* p ) { stagedcpy( materials, p ); }
+__host__ void stageMaterialDescList( CoreMaterialDesc* p ) { stagedcpy( materialDescriptors, p ); }
+__host__ void stagePbrtMaterialList( CoreMaterial* p ) { stagedcpy( pbrtMaterials, p ); }
+__host__ void stageAreaLights( CoreLightTri* p ) { stagedcpy( areaLights, p ); }
+__host__ void stagePointLights( CorePointLight* p ) { stagedcpy( pointLights, p ); }
+__host__ void stageSpotLights( CoreSpotLight* p ) { stagedcpy( spotLights, p ); }
+__host__ void stageDirectionalLights( CoreDirectionalLight* p ) { stagedcpy( directionalLights, p ); }
+__host__ void stageLightCounts( int area, int point, int spot, int directional )
 {
 	const int4 counts = make_int4( area, point, spot, directional );
-	cudaMemcpyToSymbol( lightCounts, &counts, sizeof( int4 ) );
+	stagedcpy( lightCounts, counts );
 }
-__host__ void SetARGB32Pixels( uint* p ) { cudaMemcpyToSymbol( argb32, &p, sizeof( void* ) ); }
-__host__ void SetARGB128Pixels( float4* p ) { cudaMemcpyToSymbol( argb128, &p, sizeof( void* ) ); }
-__host__ void SetNRM32Pixels( uint* p ) { cudaMemcpyToSymbol( nrm32, &p, sizeof( void* ) ); }
-__host__ void SetSkyPixels( float3* p ) { cudaMemcpyToSymbol( skyPixels, &p, sizeof( void* ) ); }
-__host__ void SetSkySize( int w, int h ) { cudaMemcpyToSymbol( skywidth, &w, sizeof( int ) ); cudaMemcpyToSymbol( skyheight, &h, sizeof( int ) ); }
-__host__ void SetWorldToSky( const mat4& worldToLight ) { cudaMemcpyToSymbol( worldToSky, &worldToLight, sizeof( worldToSky ) ); }
-__host__ void SetDebugData( float4* p ) { cudaMemcpyToSymbol( debugData, &p, sizeof( void* ) ); }
-
-// access
-__host__ void SetGeometryEpsilon( float e ) { cudaMemcpyToSymbol( geometryEpsilon, &e, sizeof( float ) ); }
-__host__ void SetClampValue( float c ) { cudaMemcpyToSymbol( clampValue, &c, sizeof( float ) ); }
+__host__ void stageARGB32Pixels( uint* p ) { stagedcpy( argb32, p ); }
+__host__ void stageARGB128Pixels( float4* p ) { stagedcpy( argb128, p ); }
+__host__ void stageNRM32Pixels( uint* p ) { stagedcpy( nrm32, p ); }
+__host__ void stageSkyPixels( float3* p ) { stagedcpy( skyPixels, p ); }
+__host__ void stageSkySize( int w, int h ) { stagedcpy( skywidth, w ); stagedcpy( skyheight, h ); }
+__host__ void stageWorldToSky( const mat4& worldToLight ) { stagedcpy( worldToSky, worldToLight ); }
+__host__ void stageDebugData( float4* p ) { stagedcpy( debugData, p ); }
+__host__ void stageGeometryEpsilon( float e ) { stagedcpy( geometryEpsilon, e ); }
+__host__ void stageClampValue( float c ) { stagedcpy( clampValue, c ); }
+__host__ void stageMemcpy( void* d, void* s, int n ) { cudaMemcpy( d, s, n, cudaMemcpyHostToDevice ); }
 
 // counters for persistent threads
 static __device__ Counters* counters;

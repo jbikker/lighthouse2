@@ -9,18 +9,13 @@
     <ClCompile Include="..\CUDA\shared_host_code\interoptexture.cpp" />
     <ClCompile Include="core_mesh.cpp" />
     <ClCompile Include="rendercore.cpp" />
-    <ClCompile Include="core_api.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
+    <ClCompile Include="core_api.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\CUDA\shared_host_code\interoptexture.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="core_mesh.h" />
     <ClInclude Include="rendercore.h" />
-    <ClInclude Include="core_api.h">
-      <Filter>API</Filter>
-    </ClInclude>
     <ClInclude Include="kernels\.cuda.h">
       <Filter>CUDA</Filter>
     </ClInclude>
@@ -62,9 +57,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="API">
-      <UniqueIdentifier>{a947f2f2-231c-485d-b9c2-d55997a77357}</UniqueIdentifier>
-    </Filter>
     <Filter Include="CUDA">
       <UniqueIdentifier>{c60fc2a7-91f8-4383-b66a-c141ff32f47e}</UniqueIdentifier>
     </Filter>

@@ -81,7 +81,8 @@ public:
 	// methods
 	void Init( const char* dllName );
 	void SynchronizeSceneData();
-	void Render( const ViewPyramid& view, Convergence converge );
+	void Render( const ViewPyramid& view, Convergence converge, bool async = false );
+	void WaitForRender();
 	void SetTarget( GLTexture* target, const uint spp );
 	void SetProbePos( int2 pos ) { if (core) core->SetProbePos( pos ); }
 	int GetTriangleMaterial( const int coreInstId, const int coreTriId );

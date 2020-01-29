@@ -1,7 +1,7 @@
 <camera>
-    <position x="4.4431357" y="16.93445" z="49.910236"/>
-    <direction x="-0.11446667" y="-0.11326015" z="-0.98694915"/>
-    <FOV>35.983398</FOV>
+    <position x="-0.0029600391" y="0.19830315" z="0.82815105"/>
+    <direction x="0.0072655166" y="-0.039318744" z="-0.99920064"/>
+    <FOV>25</FOV>
     <brightness>0</brightness>
     <contrast>0</contrast>
     <gamma>2.2</gamma>

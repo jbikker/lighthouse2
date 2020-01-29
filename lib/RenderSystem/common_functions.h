@@ -47,14 +47,20 @@ FUNCTYPE float3 RandomBarycentrics( const float r0 )
 	return make_float3( r.x, r.y, 1 - r.x - r.y );
 }
 
-FUNCTYPE float3 Tangent2World( const float3& V, const float3& N )
+FUNCTYPE void SetupTangentSpace( const float3& N, float3& T, float3& B )
 {
 	// "Building an Orthonormal Basis, Revisited"
 	float sign = copysignf( 1.0f, N.z );
 	const float a = -1.0f / (sign + N.z);
 	const float b = N.x * N.y * a;
-	const float3 B = make_float3( 1.0f + sign * N.x * N.x * a, sign * b, -sign * N.x );
-	const float3 T = make_float3( b, sign + N.y * N.y * a, -N.y );
+	B = make_float3( 1.0f + sign * N.x * N.x * a, sign * b, -sign * N.x );
+	T = make_float3( b, sign + N.y * N.y * a, -N.y );
+}
+
+FUNCTYPE float3 Tangent2World( const float3& V, const float3& N )
+{
+	float3 T, B;
+	SetupTangentSpace( N, T, B );
 	return V.x * T + V.y * B + V.z * N;
 }
 

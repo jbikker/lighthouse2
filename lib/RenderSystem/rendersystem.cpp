@@ -167,10 +167,10 @@ void RenderSystem::UpdateSceneGraph()
 			core->SetInstance( instanceIdx, node->meshID, node->combinedTransform );
 		}
 		core->SetInstance( instanceCount, -1 );
-		// finalize
-		core->UpdateToplevel();
 		meshesChanged = false;
 	}
+	// allow the core to finalize after receiving all instances
+	core->FinalizeInstances();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -217,15 +217,15 @@ void RenderSystem::SynchronizeSceneData()
 	SynchronizeTextures();
 	SynchronizeMaterials();
 	SynchronizeMeshes();
-	UpdateSceneGraph();
 	SynchronizeLights();
+	UpdateSceneGraph();
 }
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderSystem::Render                                                       |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderSystem::Render( const ViewPyramid& view, Convergence converge )
+void RenderSystem::Render( const ViewPyramid& view, Convergence converge, bool async )
 {
 	// forward to core; core may ignore or accept a setting
 	core->Setting( "epsilon", settings.geometryEpsilon );
@@ -234,7 +234,16 @@ void RenderSystem::Render( const ViewPyramid& view, Convergence converge )
 	core->Setting( "clampIndirect", settings.filterIndirectClamp );
 	core->Setting( "filter", settings.filterEnabled );
 	core->Setting( "TAA", settings.TAAEnabled );
-	core->Render( view, converge );
+	core->Render( view, converge, async );
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderSystem::WaitForRender                                                |
+//  |  Wait for the asynchronous renderer to complete.                      LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderSystem::WaitForRender()
+{
+	core->WaitForRender();
 }
 
 //  +-----------------------------------------------------------------------------+

@@ -35,6 +35,14 @@
 #define IBLWBITS			9
 #define IBLHBITS			8
 
+// PNEE settings
+#define PHOTONCOUNT			5000000
+#define GRIDDIMX			128
+#define GRIDDIMY			128
+#define GRIDDIMZ			128
+#define CDFSIZE				16		// Note: CUDA code assumes 16 (hardcoded)
+#define CDFFLOOR			0.1f
+
 // low level settings
 #define PI					3.14159265358979323846264f
 #define INVPI				0.31830988618379067153777f
@@ -65,5 +73,18 @@
 #define REPORTNAN_FLOAT3(a)	{if(isnan(a.x+a.y+a.z))printf("getting NaNs here!");}
 #define REPORTNAN_FLOAT4(a)	{if(isnan(a.x+a.y+a.z))printf("getting NaNs here!");}
 #endif
+
+// Get the log2 for an integer using the preprocessor.
+// https://stackoverflow.com/questions/27581671/how-to-compute-log-with-the-preprocessor
+#define NB_(N,B) (((unsigned long)N >> B) > 0)
+#define BITS_TO_REPRESENT( N )                                       \
+        (NB_((N),  0) + NB_((N),  1) + NB_((N),  2) + NB_((N),  3) + \
+         NB_((N),  4) + NB_((N),  5) + NB_((N),  6) + NB_((N),  7) + \
+         NB_((N),  8) + NB_((N),  9) + NB_((N), 10) + NB_((N), 11) + \
+         NB_((N), 12) + NB_((N), 13) + NB_((N), 14) + NB_((N), 15) + \
+         NB_((N), 16) + NB_((N), 17) + NB_((N), 18) + NB_((N), 19) + \
+         NB_((N), 20) + NB_((N), 21) + NB_((N), 22) + NB_((N), 23) + \
+         NB_((N), 24) + NB_((N), 25) + NB_((N), 26) + NB_((N), 27) + \
+         NB_((N), 28) + NB_((N), 29) + NB_((N), 30) + NB_((N), 31) )
 
 // EOF

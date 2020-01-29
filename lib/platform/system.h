@@ -22,16 +22,11 @@
 #include <algorithm>
 #include <cassert>
 #include <chrono>
-#include <cstdarg>
-#include <cstdint>
-#include <cstdlib>
-#include <ctime>
 #include <fstream>
 #include <half.hpp>
 #ifdef _MSC_VER
 #include <ppl.h>
 #endif
-#include <ratio>
 #include <string>
 #include <thread>
 #include <vector>
@@ -40,7 +35,6 @@ using namespace std;
 using namespace half_float;
 
 #include "immintrin.h"
-#include "emmintrin.h"
 #include "../RenderSystem/common_types.h"
 #include "../RenderSystem/common_settings.h"
 #include "../RenderSystem/common_classes.h"
@@ -49,23 +43,12 @@ using namespace half_float;
 
 // https://devblogs.microsoft.com/cppblog/msvc-preprocessor-progress-towards-conformance/
 // MSVC _Should_ support this extended functionality for the token-paste operator:
-#define FATALERROR( fmt, ... ) FatalError( "Error on line %d of %s: " fmt "\n", __LINE__, __FILE__, ##__VA_ARGS__ )
-#define FATALERROR_IF( condition, fmt, ... ) do { if ( ( condition ) ) FATALERROR( fmt, ##__VA_ARGS__ ); } while ( 0 )
+#define FATALERROR( f, ... ) FatalError( "Error on line %d of %s: " f "\n", __LINE__, __FILE__, ##__VA_ARGS__ )
+#define FATALERROR_IF( c, f, ... ) do { if (c) FATALERROR( f, ##__VA_ARGS__ ); } while ( 0 )
+#define FATALERROR_IN( p, e, f, ... ) FatalError( p " returned error '%s' at %s:%d" f "\n", e, __FILE__, __LINE__, ##__VA_ARGS__ );
+#define FATALERROR_IN_CALL( s, e, f, ... ) do { auto r = (s); if (r) FATALERROR_IN( #s, e( r ), f, ##__VA_ARGS__ ) } while (0)
 
-#define FATALERROR_IN( prefix, errstr, fmt, ... )                \
-	FatalError( prefix " returned error '%s' at %s:%d" fmt "\n", \
-				errstr, __FILE__, __LINE__,                      \
-				##__VA_ARGS__ );
-
-// Fatal error helper. Executes statement and throws fatal error on non-zero result.
-// The result is converted to string by calling error_parser( ret )
-#define FATALERROR_IN_CALL( stmt, error_parser, fmt, ... )                         \
-	do                                                                             \
-	{                                                                              \
-		auto ret = ( stmt );                                                       \
-		if ( ret ) FATALERROR_IN( #stmt, error_parser( ret ), fmt, ##__VA_ARGS__ ) \
-	} while ( 0 )
-
+// data / memory address alignment
 #ifdef _MSC_VER
 #define ALIGN( x ) __declspec( align( x ) )
 #define MALLOC64( x ) ((x)==0?0:_aligned_malloc((x),64))
@@ -76,33 +59,21 @@ using namespace half_float;
 #define FREE64( x ) free( x )
 #endif
 
-// threading
-class Thread
-{
-public:
-	void start();
-	inline virtual void run() {};
-	std::thread thread;
-};
-extern "C" { uint sthread_proc( void* param ); }
-
 // timer
 struct Timer
 {
 	Timer() { reset(); }
 	float elapsed() const
 	{
-		std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - start);
+		chrono::high_resolution_clock::time_point t2 = chrono::high_resolution_clock::now();
+		chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(t2 - start);
 		return (float)time_span.count();
 	}
-	void reset()
-	{
-		start = std::chrono::high_resolution_clock::now();
-	}
-	std::chrono::high_resolution_clock::time_point start;
+	void reset() { start = chrono::high_resolution_clock::now(); }
+	chrono::high_resolution_clock::time_point start;
 };
 
+// convenience functions
 #define wrap(x,a,b) (((x)>=(a))?((x)<=(b)?(x):((x)-((b)-(a)))):((x)+((b)-(a))))
 __inline float sqr( const float x ) { return x * x; }
 template <class T> void Swap( T& x, T& y ) { T t; t = x; x = y; y = t; }
@@ -234,11 +205,7 @@ public:
 class GLTexture
 {
 public:
-	enum
-	{
-		DEFAULT = 0,
-		FLOAT = 1
-	};
+	enum { DEFAULT = 0, FLOAT = 1 };
 	// constructor / destructor
 	GLTexture( uint width, uint height, uint type = DEFAULT );
 	GLTexture( const char* fileName, int filter = GL_NEAREST );
@@ -273,7 +240,6 @@ using namespace lighthouse2;
 #define COREDLL_IMPORT
 #pragma warning Unknown dynamic link import/export semantics.
 #endif
-
 #ifdef COREDLL_EXPORTS
 #define COREDLL_API COREDLL_EXPORT
 #else

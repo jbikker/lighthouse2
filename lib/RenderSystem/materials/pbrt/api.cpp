@@ -127,7 +127,6 @@ static std::vector<GraphicsState> pushedGraphicsStates;
 static std::vector<TransformSet> pushedTransforms;
 static std::vector<uint32_t> pushedActiveTransformBits;
 
-HostScene* hostScene;
 Options PbrtOptions;
 
 enum class APIState
@@ -318,13 +317,13 @@ static HostMaterial::Vec3Value* CreateImageSpectrumTexture(
 	bool gamma = tp.FindBool( "gamma", HasExtension( filename, ".tga" ) || HasExtension( filename, ".png" ) );
 	int flags = HostTexture::FLIPPED;
 	if (gamma) flags |= HostTexture::GAMMACORRECTION;
-	int texId = hostScene->FindOrCreateTexture( filename, flags );
+	int texId = HostScene::FindOrCreateTexture( filename, flags );
 	auto texPtr = new HostMaterial::Vec3Value();
 	texPtr->textureID = texId;
 	return texPtr;
 	// return new ImageTexture<RGBSpectrum, Spectrum>(
 	// 	std::move( map ), filename, trilerp, maxAniso, wrapMode, scale, gamma );
-	// hostScene->FindOrCreateTexture();
+	// HostScene::FindOrCreateTexture();
 }
 
 static HostMaterial::ScalarValue* CreateCheckerboardFloatTexture( const Transform& tex2world, const TextureParams& tp )
@@ -385,16 +384,15 @@ static HostMaterial::Vec3Value* MakeSpectrumTexture(
 	return tex;
 }
 
-void pbrtInit( HostScene* hs )
+void pbrtInit()
 {
 	Options opt;
-	pbrtInit( opt, hs );
+	pbrtInit( opt );
 }
 
-void pbrtInit( const Options& opt, HostScene* hs )
+void pbrtInit( const Options& opt )
 {
 	PbrtOptions = opt;
-	hostScene = hs;
 	// API Initialization
 	if (currentApiState != APIState::Uninitialized) Error( "pbrtInit() has already been called." );
 	currentApiState = APIState::OptionsBlock;
@@ -515,14 +513,14 @@ void pbrtCamera( const std::string& name, const ParamSet& params )
 		params.Print( catIndentCount );
 		printf( "\n" );
 	}
-	hostScene->camera->position = make_float3( CameraToWorld[0] * make_float4( 0, 0, 0, 1 ) );
-	hostScene->camera->direction = make_float3( CameraToWorld[0] * make_float4( 0, 0, 1, 0 ) );
-	hostScene->camera->FOV = params.FindOneFloat( "fov", 90.f );
-	hostScene->camera->focalDistance = params.FindOneFloat( "focaldistance", 1e6f );
+	HostScene::camera->position = make_float3( CameraToWorld[0] * make_float4( 0, 0, 0, 1 ) );
+	HostScene::camera->direction = make_float3( CameraToWorld[0] * make_float4( 0, 0, 1, 0 ) );
+	HostScene::camera->FOV = params.FindOneFloat( "fov", 90.f );
+	HostScene::camera->focalDistance = params.FindOneFloat( "focaldistance", 1e6f );
 	// This should be `aperturediameter', but is hardly ever used.
-	hostScene->camera->aperture = params.FindOneFloat( "lensradius", 0.f );
+	HostScene::camera->aperture = params.FindOneFloat( "lensradius", 0.f );
 	// Reset distortion, PBRT does not pass any such information:
-	hostScene->camera->distortion = 0.f;
+	HostScene::camera->distortion = 0.f;
 }
 
 void pbrtMakeNamedMedium( const std::string& name, const ParamSet& params ) { Warning( "pbrtMakeNamedMedium is not implemented!" ); }
@@ -716,7 +714,7 @@ void pbrtLightSource( const std::string& name, const ParamSet& params )
 		// transform the point to the desired position in space:
 		const auto light2world = curTransform[0];
 		const auto pos = light2world.TransformPoint( P );
-		hostScene->AddPointLight( pos, (I * sc).vector() );
+		HostScene::AddPointLight( pos, (I * sc).vector() );
 	}
 	else if (name == "spot")
 	{
@@ -753,7 +751,7 @@ void pbrtLightSource( const std::string& name, const ParamSet& params )
 		// const auto totalWidth = coneangle + conedelta;
 		// const auto falloffStart = coneangle;
 		// This is perhaps worth filing an issue for.
-		hostScene->AddSpotLight( from, dir, std::cos( Radians( falloffStart ) ), std::cos( Radians( totalWidth ) ), (I * sc).vector() );
+		HostScene::AddSpotLight( from, dir, std::cos( Radians( falloffStart ) ), std::cos( Radians( totalWidth ) ), (I * sc).vector() );
 	}
 	else if (name == "distant")
 	{
@@ -765,7 +763,7 @@ void pbrtLightSource( const std::string& name, const ParamSet& params )
 		// WARNING: In PBRT the dir vector points _towards_ the light,
 		// while in LH2 this represents the direction the light is pointed towards
 		const auto dir = normalize( light2world.TransformVector( to - from ) );
-		hostScene->AddDirectionalLight( dir, (L * sc).vector() );
+		HostScene::AddDirectionalLight( dir, (L * sc).vector() );
 	}
 	else if (name == "infinite" || name == "exinfinite")
 	{
@@ -778,7 +776,7 @@ void pbrtLightSource( const std::string& name, const ParamSet& params )
 		const auto light2world = curTransform[0];
 		sd->worldToLight = light2world.Inverted();
 		sd->Load( texmap.c_str(), (L * sc).vector() );
-		hostScene->SetSkyDome( sd );
+		HostScene::SetSkyDome( sd );
 	}
 	// TODO: Implement other light types
 	else Error( "LightSource: light type \"%s\" unknown.", name.c_str() );
@@ -824,12 +822,12 @@ void pbrtShape( const std::string& name, const ParamSet& params )
 		// Sanity, ensure the material is emissive within LH2 definitions:
 		if (!mtl->IsEmissive()) Error( "None of the rgb components are larger than 1, material is not emissive!" );
 		if (twoSided) mtl->flags |= HostMaterial::EMISSIVE_TWOSIDED;
-		materialIdx = hostScene->AddMaterial( mtl );
+		materialIdx = HostScene::AddMaterial( mtl );
 	}
 	else
 	{
 		auto mtl = graphicsState.GetMaterialForShape( params );
-		materialIdx = hostScene->AddMaterial( mtl );
+		materialIdx = HostScene::AddMaterial( mtl );
 	}
 	// Initialize _prims_ and _areaLights_ for static shape
 	// Create shapes for shape _name_
@@ -853,14 +851,14 @@ void pbrtShape( const std::string& name, const ParamSet& params )
 	prims.push_back(
 		std::make_shared<GeometricPrimitive>( s, mtl, area, mi ) );
 #endif
-	auto meshIdx = hostScene->AddMesh( hostMesh );
+	auto meshIdx = HostScene::AddMesh( hostMesh );
 	HostNode* newNode = new HostNode( meshIdx, ObjToWorld );
 	// Add _prims_ and _areaLights_ to scene or current instance
 	if (currentInstance)
 		// Abusing HostNode instance (this is not an instance of the mesh _yet_)
 		// because it keeps track of the transform.
 		currentInstance->push_back( newNode );
-	else hostScene->AddInstance( newNode );
+	else HostScene::AddInstance( newNode );
 }
 
 // Attempt to determine if the ParamSet for a shape may provide a value for
@@ -967,7 +965,7 @@ void pbrtObjectInstance( const std::string& name )
 	// std::shared_ptr<Primitive> prim(
 	// 	std::make_shared<TransformedPrimitive>( in[0], animatedInstanceToWorld ) );
 	// primitives.push_back( prim );
-	for (auto& mesh : in) hostScene->AddInstance( new HostNode( *mesh ) );
+	for (auto& mesh : in) HostScene::AddInstance( new HostNode( *mesh ) );
 }
 
 void pbrtWorldEnd()

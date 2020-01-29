@@ -21,8 +21,8 @@
 
 #include "noerrors.h"
 
-#define ISLIGHTS
-#define MAXISLIGHTS	64
+// #define ISLIGHTS
+#define MAXISLIGHTS	8
 
 #define AREALIGHTCOUNT			lightCounts.x
 #define POINTLIGHTCOUNT			lightCounts.y
@@ -172,8 +172,7 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 #else
 	// uniform random sampling of lights, pickProb is simply 1.0 / lightCount
 	pickProb = 1.0f / lightCount;
-	int lightIdx = (int)(r0 * lightCount);
-	r0 = (r0 - (float)lightIdx * (1.0f / lightCount)) * lightCount;
+	int lightIdx = (int)(r1 * lightCount);
 #endif
 	lightIdx = clamp( lightIdx, 0, (int)lightCount - 1 );
 	if (lightIdx < AREALIGHTCOUNT)
@@ -198,29 +197,29 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 	{
 		// pick a pointlight
 		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - AREALIGHTCOUNT];
-		const float3 pos = make_float3( light.data0 );	// position
+		const float3 P = make_float3( light.data0 );	// position
 		lightColor = make_float3( light.data1 );	// radiance
-		const float3 L = I - pos;				// reversed
+		const float3 L = P - I;
 		const float sqDist = dot( L, L );
-		lightPdf = dot( L, N ) < 0 ? sqDist : 0;
-		return pos;
+		lightPdf = dot( L, N ) > 0 ? sqDist : 0;
+		return P;
 	}
 	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT))
 	{
 		// pick a spotlight
 		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT)];
-		const float4 P = light.data0;			// position + cos_inner
-		const float4 E = light.data1;			// radiance + cos_outer
+		const float4 V0 = light.data0;			// position + cos_inner
+		const float4 V1 = light.data1;			// radiance + cos_outer
 		const float4 D = light.data2;			// direction
-		const float3 pos = make_float3( P );
-		float3 L = I - make_float3( P );
+		const float3 P = make_float3( V0 );
+		float3 L = I - P;
 		const float sqDist = dot( L, L );
 		L = normalize( L );
-		float d = (max( 0.0f, L.x * D.x + L.y * D.y + L.z * D.z ) - E.w) / (P.w - E.w);
+		float d = (max( 0.0f, L.x * D.x + L.y * D.y + L.z * D.z ) - V1.w) / (V0.w - V1.w);
 		const float LNdotL = min( 1.0f, d );
 		lightPdf = (LNdotL > 0 && dot( L, N ) < 0) ? (sqDist / LNdotL) : 0;
-		lightColor = make_float3( E );
-		return pos;
+		lightColor = make_float3( V1 );
+		return P;
 	}
 	else
 	{
@@ -297,8 +296,7 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 #else
 	// uniform random sampling of lights, pickProb is simply 1.0 / lightCount
 	lightPdf = 1.0f / lightCount;
-	int lightIdx = (int)(r0 * lightCount);
-	r0 = (r0 - (float)lightIdx * (1.0f / lightCount)) * lightCount;
+	int lightIdx = (int)(r1 * lightCount);
 #endif
 	lightIdx = clamp( lightIdx, 0, (int)lightCount - 1 );
 	float3 pos;

@@ -36,14 +36,14 @@ void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 {
 	// properties
 	name = original.name;
-	color = make_float3( original.diffuse[0], original.diffuse[1], original.diffuse[2] ); // Kd
-	absorption = make_float3( original.transmittance[0], original.transmittance[1], original.transmittance[2] ); // Kt
-	roughness = min( 1 - original.shininess, 1.0f );
+	color.value = make_float3( original.diffuse[0], original.diffuse[1], original.diffuse[2] ); // Kd
+	absorption.value = make_float3( original.transmittance[0], original.transmittance[1], original.transmittance[2] ); // Kt
+	roughness = max( 0.0f, min( 1 - original.shininess, 1.0f ) );
 	// maps
 	if (original.diffuse_texname != "")
 	{
 		int diffuseTextureID = color.textureID = HostScene::FindOrCreateTexture( original.diffuse_texname, HostTexture::LINEARIZED | HostTexture::FLIPPED );
-		color = make_float3( 1 ); // we have a texture now; default modulation to white
+		color.value = make_float3( 1 ); // we have a texture now; default modulation to white
 		if (HostScene::textures[diffuseTextureID]->flags & HASALPHA) flags |= HASALPHA;
 	}
 	if (original.normal_texname != "")
@@ -78,32 +78,106 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 {
 	name = original.name;
 	flags |= HostMaterial::FROM_MTL; // this material will be serialized on exit.
+	// set normal map, if any
+	if (original.normalTexture.index > -1)
+	{
+		// note: may be overwritten by the "normalTexture" field in additionalValues.
+		normals.textureID = original.normalTexture.index + textureBase;
+		normals.scale = original.normalTexture.scale;
+		HostScene::textures[normals.textureID]->flags |= HostTexture::NORMALMAP;
+	}
+	// process values list
 	for (const auto& value : original.values)
 	{
 		if (value.first == "baseColorFactor")
 		{
 			tinygltf::Parameter p = value.second;
-			color = make_float3( p.number_array[0], p.number_array[1], p.number_array[2] );
+			color.value = make_float3( p.number_array[0], p.number_array[1], p.number_array[2] );
 		}
 		if (value.first == "metallicFactor") if (value.second.has_number_value)
 		{
-			metallic = (float)value.second.number_value;
+			metallic.value = (float)value.second.number_value;
 		}
 		if (value.first == "roughnessFactor") if (value.second.has_number_value)
 		{
-			roughness = (float)value.second.number_value;
+			roughness.value = (float)value.second.number_value;
 		}
 		if (value.first == "baseColorTexture") for (auto& item : value.second.json_double_value)
 		{
 			if (item.first == "index") color.textureID = (int)item.second + textureBase;
 		}
+		if (value.first == "metallicRoughnessTexture") for (auto& item : value.second.json_double_value)
+		{
+			if (item.first == "index") 
+			{
+				roughness.textureID = (int)item.second + textureBase;	// green channel contains roughness
+				metallic.textureID = (int)item.second + textureBase;	// blue channel contains metalness
+			}
+		}
 	}
-	// set normal map, if any
-	if (original.normalTexture.index > -1)
+	// process additionalValues list
+	for (const auto& value : original.additionalValues)
 	{
-		normals.textureID = original.normalTexture.index + textureBase;
-		normals.scale = original.normalTexture.scale;
-		HostScene::textures[normals.textureID]->flags |= HostTexture::NORMALMAP;
+		if (value.first == "doubleSided")
+		{
+			// ignored; all faces are double sided in LH2.
+		}
+		if (value.first == "normalTexture")
+		{
+			tinygltf::Parameter p = value.second;
+			for (auto& item : value.second.json_double_value)
+			{
+				if (item.first == "index") normals.textureID = (int)item.second + textureBase;
+				if (item.first == "scale") normals.scale = item.second;
+				if (item.first == "texCoord") { /* TODO */ };
+			}
+		}
+		if (value.first == "occlusionTexture")
+		{
+			// ignored; the occlusion map stores baked AO, but LH2 is a path tracer.
+		}
+	}
+	// process extensions
+	// NOTE: LH2 currently does not properly support PBR materials. Below code is merely
+	// here to ease a future proper implementation.
+	for (const auto& extension : original.extensions)
+	{
+		if (extension.first == "KHR_materials_pbrSpecularGlossiness" )
+		{
+			tinygltf::Value value = extension.second;
+			if (value.IsObject())
+			{
+				for (const auto& key : value.Keys())
+				{
+					if (key == "diffuseFactor")
+					{
+						tinygltf::Value v = value.Get( key );
+						int w = 0; // TODO
+					}
+					if (key == "diffuseTexture" )
+					{
+						tinygltf::Value v = value.Get( key );
+						color.textureID = v.GetNumberAsInt() + textureBase;
+					}
+					if (key == "glossinessFactor" )
+					{
+						tinygltf::Value v = value.Get( key );
+						float glossyness = (float)v.GetNumberAsDouble();
+						roughness = 1 - glossyness;
+					}
+					if (key == "specularFactor" )
+					{
+						tinygltf::Value v = value.Get( key );
+						int w = 0; // TODO
+					}
+					if (key == "specularGlossinessTexture" )
+					{
+						tinygltf::Value v = value.Get( key );
+						int w = 0; // TODO
+					}
+				}
+			}
+		}
 	}
 }
 

@@ -142,11 +142,11 @@ LH2_DEVFUNC void GetShadingData(
 	{
 		// determine LOD
 		const float lambda = TRI_LOD + log2f( coneWidth * (1.0f / fabs( dot( D, N ) )) ); // eq. 26
-		const uint4 data = mat.t0data4;
+		const uint4 t0data = mat.t0data4; // layout: struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; }
 		// fetch texels
-		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-		const float4 texel = FetchTexelTrilinear( lambda, uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 );
+		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( t0data.y & 0xffff ), __ushort_as_half( t0data.y >> 16 ) ) );
+		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( t0data.z & 0xffff ), __ushort_as_half( t0data.z >> 16 ) ) );
+		const float4 texel = FetchTexelTrilinear( lambda, uvscale * (uvoffs + make_float2( tu, tv )), t0data.w, t0data.x & 0xffff, t0data.x >> 16 );
 		if (MAT_HASALPHA && texel.w < 0.5f)
 		{
 			retVal.flags |= ALPHA;
@@ -155,10 +155,10 @@ LH2_DEVFUNC void GetShadingData(
 		retVal.color = retVal.color * make_float3( texel );
 		if (MAT_HAS2NDDIFFUSEMAP) // must have base texture; second and third layers are additive
 		{
-			const uint4 data = mat.t1data4;
-			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			retVal.color += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ) ) - make_float3( 0.5f );
+			const uint4 t1data = mat.t1data4; // layout: struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; }
+			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( t1data.y & 0xffff ), __ushort_as_half( t1data.y >> 16 ) ) );
+			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( t1data.z & 0xffff ), __ushort_as_half( t1data.z >> 16 ) ) );
+			retVal.color += make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), t1data.w, t1data.x & 0xffff, t1data.x >> 16 ) ) - make_float3( 0.5f );
 		}
 	}
 	// normal mapping
@@ -167,35 +167,35 @@ LH2_DEVFUNC void GetShadingData(
 		// fetch bitangent for applying normal map vector to geometric normal
 		float4 tdata6 = tri.B4;
 		float3 B = TRI_B;
-		const uint4 data = mat.n0data4;
+		const uint4 n0data = mat.n0data4; // layout: struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; }
 		const uint part3 = baseData.z;
 		const float n0scale = copysignf( -0.0001f + 0.0001f * __expf( 0.1f * fabsf( (float)((part3 >> 8) & 255) - 128.0f ) ), (float)((part3 >> 8) & 255) - 128.0f );
-		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-		float3 shadingNormal = (make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16, NRM32 ) ) - make_float3( 0.5f )) * 2.0f;
+		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( n0data.y & 0xffff ), __ushort_as_half( n0data.y >> 16 ) ) );
+		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( n0data.z & 0xffff ), __ushort_as_half( n0data.z >> 16 ) ) );
+		float3 shadingNormal = (make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), n0data.w, n0data.x & 0xffff, n0data.x >> 16, NRM32 ) ) - make_float3( 0.5f )) * 2.0f;
 		shadingNormal.x *= n0scale, shadingNormal.y *= n0scale;
 		if (MAT_HAS2NDNORMALMAP)
 		{
-			const uint4 data = mat.n1data4;
+			const uint4 n1data = mat.n1data4; // layout: struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; }
 			const float n1scale = copysignf( -0.0001f + 0.0001f * __expf( 0.1f * ((float)((part3 >> 16) & 255) - 128.0f) ), (float)((part3 >> 16) & 255) - 128.0f );
-			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-			float3 normalLayer1 = (make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16, NRM32 ) ) - make_float3( 0.5f )) * 2.0f;
+			const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( n1data.y & 0xffff ), __ushort_as_half( n1data.y >> 16 ) ) );
+			const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( n1data.z & 0xffff ), __ushort_as_half( n1data.z >> 16 ) ) );
+			float3 normalLayer1 = (make_float3( FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), n1data.w, n1data.x & 0xffff, n1data.x >> 16, NRM32 ) ) - make_float3( 0.5f )) * 2.0f;
 			normalLayer1.x *= n1scale, normalLayer1.y *= n1scale;
 			shadingNormal += normalLayer1;
 		}
 		shadingNormal = normalize( shadingNormal );
 		fN = normalize( shadingNormal.x * T + shadingNormal.y * B + shadingNormal.z * iN );
 	}
-	// roughness map
+	// roughness map. Note: gltf stores roughness and metalness in a single map, so we'll assume we have metalness as well.
 	if (MAT_HASROUGHNESSMAP)
 	{
-		const uint4 data = mat.rdata4;
-		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( data.y & 0xffff ), __ushort_as_half( data.y >> 16 ) ) );
-		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( data.z & 0xffff ), __ushort_as_half( data.z >> 16 ) ) );
-		const uint blend = (retVal.parameters.x & 0xffffff) +
-			(((uint)(FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), data.w, data.x & 0xffff, data.x >> 16 ).x * 255.0f)) << 24);
-		retVal.parameters.x = blend;
+		const uint4 rmdata = mat.rdata4; // layout: struct Map { short width, height; half uscale, vscale, uoffs, voffs; uint addr; }
+		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( rmdata.y & 0xffff ), __ushort_as_half( rmdata.y >> 16 ) ) );
+		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( rmdata.z & 0xffff ), __ushort_as_half( rmdata.z >> 16 ) ) );
+		const float4 texel = FetchTexel( uvscale * (uvoffs + make_float2( tu, tv )), rmdata.w, rmdata.x & 0xffff, rmdata.x >> 16 );
+		retVal.parameters.x = (retVal.parameters.x & 0x00ffffff) + ((int)(texel.y * 255.0f) << 24);
+		retVal.parameters.x = (retVal.parameters.x & 0xffffff00) + (int)(texel.x * 255.0f);
 	}
 #ifdef FILTERINGCORE
 	// prevent r, g and b from becoming zero, for albedo separation

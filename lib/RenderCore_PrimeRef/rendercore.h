@@ -50,7 +50,8 @@ class RenderCore : public CoreAPI_Base
 public:
 	// methods
 	void Init();
-	void Render( const ViewPyramid& view, const Convergence converge );
+	void Render( const ViewPyramid& view, const Convergence converge, bool async );
+	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
@@ -69,12 +70,13 @@ public:
 	// also note that, when using alpha flags, materials must be in sync.
 	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 );
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform );
-	void UpdateToplevel();
+	void FinalizeInstances();
 	int4 GetScreenParams();
 	void SetProbePos( const int2 pos );
 	CoreStats GetCoreStats() const override;
 	// internal methods
 private:
+	void UpdateToplevel();
 	void SyncStorageType( const TexelStorage storage );
 	// helpers
 	template <class T> CUDAMaterial::Map Map( T v )

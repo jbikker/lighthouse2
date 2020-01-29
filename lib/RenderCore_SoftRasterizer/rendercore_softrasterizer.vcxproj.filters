@@ -3,21 +3,11 @@
   <ItemGroup>
     <ClCompile Include="rendercore.cpp" />
     <ClCompile Include="rasterizer.cpp" />
-    <ClCompile Include="core_api.cpp">
-      <Filter>API</Filter>
-    </ClCompile>
+    <ClCompile Include="core_api.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rendercore.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="rasterizer.h" />
-    <ClInclude Include="core_api.h">
-      <Filter>API</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="API">
-      <UniqueIdentifier>{85ca225a-7b4b-4626-9d4f-c778bf53cb0c}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
 </Project>

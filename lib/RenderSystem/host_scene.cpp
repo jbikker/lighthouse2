@@ -31,6 +31,10 @@ vector<HostDirectionalLight*> HostScene::directionalLights;
 Camera* HostScene::camera = 0;
 int HostScene::nodeListHoles = 0;
 
+// forward declaration of the PBRT scene loader functions
+void PBRTInit();
+void ParsePBRTScene( std::string filename );
+
 //  +-----------------------------------------------------------------------------+
 //  |  HostScene::HostScene                                                       |
 //  |  Constructor.                                                         LH2'19|
@@ -118,11 +122,10 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 	XMLElement* countElement = root->FirstChildElement( "material_count" );
 	if (!countElement) return;
 	const int materialCount = countElement->IntText();
-	if (materialCount != materials.size()) return;
+	// if (materialCount != materials.size()) return;
 	for (int i = 0; i < materialCount; i++)
 	{
 		// find the entry for the material
-		HostMaterial* m /* for brevity */ = materials[i];
 		char entryName[128];
 		snprintf( entryName, sizeof( entryName ), "material_%i", i );
 		XMLNode* entry = root->FirstChildElement( entryName );
@@ -130,7 +133,9 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 		// set the properties
 		const char* materialName = entry->FirstChildElement( "name" )->GetText();
 		const char* materialOrigin = entry->FirstChildElement( "origin" )->GetText();
-		m->name = string( materialName ? materialName : "" );
+		int matID = HostScene::FindMaterialID( materialName );
+		if (matID == -1) continue;
+		HostMaterial* m /* for brevity */ = HostScene::materials[matID];
 		m->origin = string( materialOrigin ? materialOrigin : "" );
 		if (entry->FirstChildElement( "id" )) entry->FirstChildElement( "id" )->QueryIntText( &m->ID );
 		if (entry->FirstChildElement( "flags" )) entry->FirstChildElement( "flags" )->QueryUnsignedText( &m->flags );
@@ -199,6 +204,16 @@ int HostScene::AddMesh( HostMesh* mesh )
 //  |  Create a mesh specified by a file name and data dir, apply a scale, add    |
 //  |  the mesh to the list of meshes and return the mesh ID.               LH2'19|
 //  +-----------------------------------------------------------------------------+
+int HostScene::AddMesh( const char* objFile, const float scale, const bool flatShaded )
+{
+	// extract directory from specified file name
+	char* tmp = new char[strlen( objFile ) + 1];
+	memcpy( tmp, objFile, strlen( objFile ) + 1 );
+	char* lastSlash = tmp, *pos = tmp;
+	while (*pos) { if (*pos == '/' || *pos == '\\') lastSlash = pos; pos++; }
+	*lastSlash = 0;
+	return AddMesh( lastSlash + 1, tmp, scale, flatShaded );
+}
 int HostScene::AddMesh( const char* objFile, const char* dir, const float scale, const bool flatShaded )
 {
 	HostMesh* newMesh = new HostMesh( objFile, dir, scale, flatShaded );
@@ -243,6 +258,29 @@ void HostScene::AddTriToMesh( const int meshId, const float3& v0, const float3& 
 //  |  Loads a collection of meshes from a gltf file. An instance and a scene     |
 //  |  graph node is created for each mesh.                                 LH2'19|
 //  +-----------------------------------------------------------------------------+
+int HostScene::AddScene( const char* sceneFile, const mat4& transform )
+{
+	// extract directory from specified file name
+	char* tmp = new char[strlen( sceneFile ) + 1];
+	memcpy( tmp, sceneFile, strlen( sceneFile ) + 1 );
+	char* lastSlash = tmp, *pos = tmp;
+	while (*pos) { if (*pos == '/' || *pos == '\\') lastSlash = pos; pos++; }
+	*lastSlash = 0;
+	int retVal = 0;
+	if (strstr( lastSlash + 1, ".pbrt" ))
+	{
+		// load a .pbrt scene
+		PBRTInit();
+		ParsePBRTScene( sceneFile );
+	}
+	else
+	{
+		// not a .pbrt file; must be a .gltf file
+		retVal = AddScene( lastSlash + 1, tmp, transform );
+	}
+	delete tmp;
+	return retVal;
+}
 int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& transform )
 {
 	// offsets: if we loaded an object before this one, indices should not start at 0.
@@ -265,7 +303,7 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 		string extension3 = cleanFileName.substr( cleanFileName.size() - 4, 4 );
 		if (extension4.compare( ".gltf" ) == 0)
 			ret = loader.LoadASCIIFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() );
-		if (extension3.compare( ".bin" ) == 0 || extension3.compare( ".glb" ) == 0)
+		else if (extension3.compare( ".bin" ) == 0 || extension3.compare( ".glb" ) == 0)
 			ret = loader.LoadBinaryFromFile( &gltfModel, &err, &warn, cleanFileName.c_str() );
 	}
 	if (!warn.empty()) printf( "Warn: %s\n", warn.c_str() );

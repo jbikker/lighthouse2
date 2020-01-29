@@ -30,9 +30,9 @@ struct ShadingData
 	float3 transmittance; int matID;
 	float4 tint;
 	uint4 parameters;
-	/* 16 uchars:   x: metallic, subsurface, specular, roughness;
-					y: specTint, anisotropic, sheen, sheenTint;
-					z: clearcoat, clearcoatGloss, transmission, dummy;
+	/* 16 uchars:   x: 0..7 = metallic, 8..15 = subsurface, 16..23 = specular, 24..31 = roughness;
+					y: 0..7 = specTint, 8..15 = anisotropic, 16..23 = sheen, 24..31 = sheenTint;
+					z: 0..7 = clearcoat, 8..15 = clearcoatGloss, 16..23 = transmission, 24..31 = dummy;
 					w: eta (32-bit float). */
 	__device__ int IsSpecular( const int layer ) const { return 0; /* for now. */ }
 	__device__ bool IsEmissive() const { return color.x > 1.0f || color.y > 1.0f || color.z > 1.0f; }
@@ -221,7 +221,7 @@ LH2_DEVFUNC float FresnelDielectricExact( const float3& wo, const float3& N, flo
 // origin offset
 LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N, const float geoEpsilon )
 {
-#if 1
+#if 0
 	// from Ray Tracing Gems 1, chapter 6: does not use geoEpsilon nor ray direction.
 	const float3 _N = dot( N, R ) > 0 ? N : (-N);
 	int3 of_i = make_int3( 256.0f * _N.x, 256.0f * _N.y, 256.0f * _N.z );

@@ -61,7 +61,7 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::Render( const ViewPyramid& view, const Convergence converge )
+void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// render
 	screen->Clear();

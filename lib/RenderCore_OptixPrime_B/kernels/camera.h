@@ -97,17 +97,16 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 //  |  generateEyeRays                                                            |
 //  |  Entry point for the persistent generateEyeRays kernel.               LH2'19|
 //  +-----------------------------------------------------------------------------+
-__host__ void generateEyeRays( int smcount, Ray4* rayBuffer, float4* pathStateData,
-	const uint R0, const uint* blueNoise, const int pass,
-	const float aperture, const float3 camPos, const float3 right, const float3 up, const float3 p1,
-	const float distortion, const int4 screenParams )
+__host__ void generateEyeRays( Ray4* rayBuffer, float4* pathStateData,
+	const uint R0, const uint* blueNoise, const int pass, const ViewPyramid& view, const int4 screenParams )
 {
 	const int scrwidth = screenParams.x & 0xffff;
 	const int scrheight = screenParams.x >> 16;
 	const int scrspp = screenParams.y & 255;
 	const int pathCount = scrwidth * scrheight * scrspp;
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 256 ) / 256, 1 ), blockDim( 256, 1 );
-	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, pass, camPos, right, up, aperture, p1, distortion, screenParams, pathCount);
+	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, pass, view.pos, 
+		view.p2 - view.p1, view.p3 - view.p1, view.aperture, view.p1, view.distortion, screenParams, pathCount);
 }
 
 // EOF

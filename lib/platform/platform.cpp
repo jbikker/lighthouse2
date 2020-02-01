@@ -41,7 +41,7 @@ void WinThread::start()
 {
 	DWORD id = 0;	
 	t = (unsigned long*)CreateThread( NULL, 0, (LPTHREAD_START_ROUTINE)sthread_proc, this, 0, &id );
-	setPriority( THREAD_PRIORITY_NORMAL );
+	setPriority( THREAD_PRIORITY_ABOVE_NORMAL );
 }
 
 //  +-----------------------------------------------------------------------------+

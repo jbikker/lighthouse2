@@ -153,6 +153,8 @@ void RenderCore::Init()
 	doneEvent = CreateEvent( NULL, false, false, NULL );
 	// create worker thread
 	renderThread = new RenderThread();
+	renderThread->Init( this );
+	renderThread->start();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -310,6 +312,8 @@ void RenderCore::FinalizeInstances()
 	memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
 	stageMemcpy( instDescBuffer->DevPtr(), instDescBuffer->HostPtr(), instDescBuffer->GetSizeInBytes() );
 	// instancesDirty = false;
+	// rendering is allowed from now on
+	gpuHasSceneData = true;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -559,7 +563,14 @@ void RenderCore::UpdateToplevel()
 //  +-----------------------------------------------------------------------------+
 void RenderThread::run()
 {
-	// under construction
+	while (1)
+	{
+		WaitForSingleObject( coreState.startEvent, INFINITE );
+		// render a single frame
+		coreState.RenderImpl( view, converge );
+		// we're done, go back to waiting
+		SetEvent( coreState.doneEvent );
+	}
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -568,22 +579,39 @@ void RenderThread::run()
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	if (!gpuHasSceneData) return;
 	// wait for OpenGL
 	glFinish();
-	Timer timer;
 	// finalize staged writes
 	pushStagedCopies();
-	// update acceleration structure
-	UpdateToplevel();
-	// clean accumulator, if requested
+	// handle converge restart
 	if (converge == Restart || firstConvergingFrame)
 	{
-		accumulator->Clear( ON_DEVICE );
 		samplesTaken = 0;
 		firstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
 	if (converge == Converge) firstConvergingFrame = false;
+	// do the actual rendering
+	if (async)
+	{
+		asyncRenderInProgress = true;
+		renderThread->Init( this, view, converge );
+		SetEvent( startEvent );
+	}
+	else
+	{
+		RenderImpl( view, converge );
+		FinalizeRender();
+	}
+}
+void RenderCore::RenderImpl( const ViewPyramid& view, const Convergence converge )
+{
+	Timer timer;
+	// update acceleration structure
+	UpdateToplevel();
+	// clean accumulator, if requested
+	if (samplesTaken == 0) accumulator->Clear( ON_DEVICE );
 	// render image
 	coreStats.totalExtensionRays = 0;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
@@ -633,11 +661,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		coreStats.shadowTraceTime = TraceShadowRays( counters.shadowRays );
 		finalizeConnections( counters.shadowRays, accumulator->DevPtr(), shadowHitBuffer->DevPtr(), shadowRayPotential->DevPtr() );
 	}
-	// present accumulator to final buffer
-	renderTarget.BindSurface();
-	samplesTaken += scrspp;
-	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
-	renderTarget.UnbindSurface();
 	// finalize statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
@@ -650,10 +673,32 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore::WaitForRender                                                  |
-//  |  Wait for the render thread to finish.                                LH2'20|
+//  |  Wait for the render thread to finish.                                      |
+//  |  Note: will deadlock if we didn't actually start a render.            LH2'20|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::WaitForRender()
 {
+	// wait for the renderthread to complete
+	if (!asyncRenderInProgress) return;
+	WaitForSingleObject( doneEvent, INFINITE );
+	asyncRenderInProgress = false;
+	// get back the RenderCore state data changed by the thread
+	coreStats = renderThread->coreState.coreStats;
+	// copy the accumulator to the OpenGL texture
+	FinalizeRender();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::FinalizeRender                                                 |
+//  |  Fill the OpenGL rendertarget texture.                                LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::FinalizeRender()
+{
+	// present accumulator to final buffer
+	renderTarget.BindSurface();
+	samplesTaken += scrspp;
+	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
+	renderTarget.UnbindSurface();
 }
 
 //  +-----------------------------------------------------------------------------+

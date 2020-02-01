@@ -42,6 +42,7 @@ struct DeviceVars
 //  +-----------------------------------------------------------------------------+
 class RenderCore : public CoreAPI_Base
 {
+	friend class RenderThread;
 public:
 	// methods
 	void Init();
@@ -70,6 +71,9 @@ public:
 	void SetProbePos( const int2 pos );
 	CoreStats GetCoreStats() const override;
 	// internal methods
+protected:
+	void RenderImpl( const ViewPyramid& view, const Convergence converge );
+	void FinalizeRender();
 private:
 	float TraceShadowRays( const int rayCount );
 	float TraceExtensionRays( const int rayCount );
@@ -130,6 +134,8 @@ private:
 	uint seed = 0x23456789;							// generic seed
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
+	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
+	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
@@ -137,6 +143,7 @@ private:
 	CoreBuffer<uint>* blueNoise = 0;
 	// timing
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
+protected:
 	// events
 	HANDLE startEvent, doneEvent;
 	// worker thread
@@ -153,10 +160,20 @@ public:
 class RenderThread : public WinThread
 {
 public:
-	void Init( RenderCore* core );
+	void Init( RenderCore* core )
+	{
+		coreState = *core;
+	}
+	void Init( RenderCore* core, const ViewPyramid& pyramid, const Convergence c )
+	{
+		coreState = *core;
+		view = pyramid;
+		converge = c;
+	}
 	void run();
-private:
 	RenderCore coreState; // frozen copy of the state at render start
+	ViewPyramid view;
+	Convergence converge;
 };
 
 } // namespace lh2core

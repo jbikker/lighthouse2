@@ -20,7 +20,7 @@
 static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0;
 static Shader* shader = 0;
-static uint scrwidth = 0, scrheight = 0, scrspp = 1;
+static uint scrwidth = 0, scrheight = 0, scrspp = 2;
 static bool spaceDown = false, hasFocus = true, running = true, animPaused = false;
 static std::bitset<1024> keystates;
 static std::bitset<8> mbstates;
@@ -71,7 +71,7 @@ void PrepareScene()
 #endif
 	// optional animated models
 	// renderer->AddScene( "data/CesiumMan.glb", mat4::Translate( 0, -2, -9 ) );
-	// renderer->AddScene( "data/project_polly.glb", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
+	renderer->AddScene( "data/project_polly.glb", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	// test data for PNEE
 	// int lightText = renderer->AddMesh( "data/lh2text.obj", 0.1f );
 	// renderer->AddInstance( lightText, mat4::Translate( make_float3( -1, -3.7f, 0 ) ) * mat4::RotateX( PI / 2 ) );
@@ -89,7 +89,7 @@ bool HandleInput( float frameTime )
 	// handle keyboard input
 	float tspd = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rspd = 2.5f * frameTime;
 	bool changed = false;
-	Camera *camera = renderer->GetCamera();
+	Camera* camera = renderer->GetCamera();
 	if (keystates[GLFW_KEY_A]) { changed = true; camera->TranslateRelative( make_float3( -tspd, 0, 0 ) ); }
 	if (keystates[GLFW_KEY_D]) { changed = true; camera->TranslateRelative( make_float3( tspd, 0, 0 ) ); }
 	if (keystates[GLFW_KEY_W]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, tspd ) ); }
@@ -199,7 +199,7 @@ int main()
 		glfwPollEvents();
 		if (!running) break;
 		// start renderering in a separate thread
-		if (!firstFrame) renderer->Render( camMoved ? Restart : Converge );
+		renderer->Render( camMoved ? Restart : Converge, true /* async */ );
 		// camera and user input
 		frameTime = frameTimer.elapsed();
 		frameTimer.reset();

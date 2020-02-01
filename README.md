@@ -10,7 +10,7 @@ A software rasterizer is also included, mostly as an example of a minimal API im
 
 Quick pointers / Important advice:
 
-* Building Lighthouse 2: CUDA 10 currently does *not* properly support vs2019; use vs2017 for now.
+* Building Lighthouse 2: Since February 20202, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 10.2.
 * Lighthouse 2 wiki: https://github.com/jbikker/lighthouse2/wiki (early stages)
 * Trouble shooting page on the wiki: https://github.com/jbikker/lighthouse2/wiki/TroubleShooting
 * Lighthouse 2 forum: https://ompf2.com/viewforum.php?f=18
@@ -54,7 +54,7 @@ The ray tracing infrastructure (with related scene management acceleration struc
 model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
 achieved with the platform: https://youtu.be/uEDTtu2ky3o .
 
-Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2017 / 2019. For the CUDA/Optix based cores CUDA 10.2 is required:
+Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2019. For the CUDA/Optix based cores CUDA 10.2 is required:
 
 https://developer.nvidia.com/cuda-downloads
 

@@ -153,27 +153,24 @@ __device__ void generateShadowRay( const uint rayIdx, const uint stride )
 	if (u0) return;
 	const float4 E4 = params.connectData[rayIdx + stride * 2 * 2]; // E4
 	const int pixelIdx = __float_as_int( E4.w );
-	params.accumulator[pixelIdx] += make_float4( E4.x, E4.y, E4.z, 1 );
+	if (pixelIdx < stride /* OptiX bug workaround? */) params.accumulator[pixelIdx] += make_float4( E4.x, E4.y, E4.z, 1 );
 }
 
 extern "C" __global__ void __raygen__rg()
 {
 	const uint stride = params.scrsize.x * params.scrsize.y * params.scrsize.z;
 	const uint3 idx = optixGetLaunchIndex();
-	if (params.phase == 0)
+	switch (params.phase)
 	{
-		// primary rays
+	case Params::SPAWN_PRIMARY: // primary rays
 		setupPrimaryRay( idx.x + idx.y * params.scrsize.x, stride );
-	}
-	else if (params.phase == 1)
-	{
-		// secondary rays
+		break;
+	case Params::SPAWN_SECONDARY: // secondary rays
 		setupSecondaryRay( idx.x + idx.y * params.scrsize.x, stride );
-	}
-	else
-	{
-		// shadow rays
+		break;
+	case Params::SPAWN_SHADOW: // shadow rays
 		generateShadowRay( idx.x + idx.y * params.scrsize.x, stride );
+		break;
 	}
 }
 

@@ -441,6 +441,8 @@ void RenderCore::FinalizeInstances()
 		instDescBuffer->CopyToDevice();
 		// instancesDirty = false; // TODO: for now we do this every frame.
 	}
+	// rendering is allowed from now on
+	gpuHasSceneData = true;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -572,57 +574,26 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
+template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData )
+{
+	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
+	{
+		delete lightBuffer;
+		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST|ON_DEVICE );
+	}
+	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
+	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
+	return lightBuffer->DevPtr();
+}
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
-	{
-		// we need a new or larger buffer; (re)allocate.
-		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE | ON_HOST, areaLights, POLICY_COPY_SOURCE );
-		stageAreaLights( areaLightBuffer->DevPtr() );
-	}
-	else
-	{
-		// existing buffer is large enough; copy new data
-		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
-		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
-	}
-	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
-	{
-		delete pointLightBuffer;
-		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
-		stagePointLights( pointLightBuffer->DevPtr() );
-	}
-	else
-	{
-		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
-		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
-	}
-	if (spotLightBuffer == 0 || spotLightCount > spotLightBuffer->GetSize())
-	{
-		delete spotLightBuffer;
-		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
-		stageSpotLights( spotLightBuffer->DevPtr() );
-	}
-	else
-	{
-		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
-		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
-	}
-	if (directionalLightBuffer == 0 || directionalLightCount > directionalLightBuffer->GetSize())
-	{
-		delete directionalLightBuffer;
-		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
-		stageDirectionalLights( directionalLightBuffer->DevPtr() );
-	}
-	else
-	{
-		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
-		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
-	}
+	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
+	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
+	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
 }
 
@@ -996,6 +967,7 @@ void RenderCore::UpdateToplevel()
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	if (!gpuHasSceneData) return;
 	// wait for OpenGL
 	glFinish();
 	Timer timer;

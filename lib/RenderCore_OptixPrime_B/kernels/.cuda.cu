@@ -39,11 +39,9 @@ __constant__ mat4 worldToSky;
 // path tracer settings
 __constant__ __device__ float geometryEpsilon;
 __constant__ __device__ float clampValue;
-
-#if 1
-
-// alternative staging method: copies will be batched and carried out after rendering
-// completes, so allow the CPU to update the scene concurrently with GPU rendering.
+ 
+// staging: copies will be batched and carried out after rendering completes, 
+// to allow the CPU to update the scene concurrently with GPU rendering.
 
 enum { INSTS = 0, MATS, ALGHTS, PLGHTS, SLGHTS, DLGHTS, LCNTS, RGB32, RGBH, NRMLS, SKYPIX, SKYW, SKYH, SMAT, DBGDAT, GEPS, CLMPV };
 
@@ -133,54 +131,6 @@ __host__ void pushStagedCopies()
 	for (auto n : stagedF32) pushF32Cpy( n.id, n.v ); stagedF32.clear();
 	for (auto n : stagedMat) pushMatCpy( n.id, n.v ); stagedMat.clear();
 }
-
-#else
-
-#if 0
-
-// staged copies using streams - cannot work with OptixPrime, because BVH updates in
-// prime are not guaranteed to be tied to a stream.
-
-// streams
-cudaStream_t stageStream, renderStream;
-
-// staging:
-// In order to allow for concurrent GPU-side rendering and CPU-side scene updates,
-// all changes made by CPU-side code to the GPU-side data are batched in the stageStream
-// and saved up until the renderStream completes.
-#define stagedcpy( d, a ) cudaMemcpyToSymbolAsync( (d), &a, sizeof( a ), stageStream )
-
-#else
-
-// when using Optix Prime we will just run the 'staged' copies right away.
-#define stagedcpy( d, a ) cudaMemcpyToSymbol( (d), &a, sizeof( a ) )
-
-#endif
-
-// render state access - staged
-__host__ void stageInstanceDescriptors( CoreInstanceDesc* p ) { stagedcpy( instanceDescriptors, p ); }
-__host__ void stageMaterialList( CUDAMaterial* p ) { stagedcpy( materials, p ); }
-__host__ void stageAreaLights( CoreLightTri* p ) { stagedcpy( areaLights, p ); }
-__host__ void stagePointLights( CorePointLight* p ) { stagedcpy( pointLights, p ); }
-__host__ void stageSpotLights( CoreSpotLight* p ) { stagedcpy( spotLights, p ); }
-__host__ void stageDirectionalLights( CoreDirectionalLight* p ) { stagedcpy( directionalLights, p ); }
-__host__ void stageLightCounts( int area, int point, int spot, int directional )
-{
-	const int4 counts = make_int4( area, point, spot, directional );
-	stagedcpy( lightCounts, counts );
-}
-__host__ void stageARGB32Pixels( uint* p ) { stagedcpy( argb32, p ); }
-__host__ void stageARGB128Pixels( float4* p ) { stagedcpy( argb128, p ); }
-__host__ void stageNRM32Pixels( uint* p ) { stagedcpy( nrm32, p ); }
-__host__ void stageSkyPixels( float3* p ) { stagedcpy( skyPixels, p ); }
-__host__ void stageSkySize( int w, int h ) { stagedcpy( skywidth, w ); stagedcpy( skyheight, h ); }
-__host__ void stageWorldToSky( const mat4& worldToLight ) { stagedcpy( worldToSky, worldToLight ); }
-__host__ void stageDebugData( float4* p ) { stagedcpy( debugData, p ); }
-__host__ void stageGeometryEpsilon( float e ) { stagedcpy( geometryEpsilon, e ); }
-__host__ void stageClampValue( float c ) { stagedcpy( clampValue, c ); }
-__host__ void stageMemcpy( void* d, void* s, int n ) { cudaMemcpy( d, s, n, cudaMemcpyHostToDevice ); }
-
-#endif
 
 // counters for persistent threads
 static __device__ Counters* counters;

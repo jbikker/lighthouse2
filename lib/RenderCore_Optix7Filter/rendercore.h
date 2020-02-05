@@ -18,6 +18,8 @@
 namespace lh2core
 {
 
+class RenderThread;
+
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |
 //  |  Copy of device-side variables, to detect changes.                    LH2'19|
@@ -39,11 +41,12 @@ struct DeviceVars
 //  +-----------------------------------------------------------------------------+
 class RenderCore : public CoreAPI_Base
 {
+	friend class RenderThread;
 public:
 	// methods
 	void Init();
 	void Render( const ViewPyramid& view, const Convergence converge, bool async );
-	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
+	void WaitForRender();
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
@@ -67,6 +70,9 @@ public:
 	CoreStats GetCoreStats() const override;
 	// internal methods
 private:
+	void RenderImpl( const ViewPyramid& view );
+	void FinalizeRender();
+	template <class T> T* StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData );
 	void UpdateToplevel();
 	void SyncStorageType( const TexelStorage storage );
 	void CreateOptixContext( int cc );
@@ -117,7 +123,7 @@ private:
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
 	uint frameCycle = 0;							// keeping track of the frame, for TAA
-	float prevj0 = 0, prevj1 = 0;					// jittering values of the previous frame
+	float j0, prevj0 = 0, j1, prevj1 = 0;			// jittering values of the previous frame
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	// filtering data
@@ -134,16 +140,23 @@ private:
 	CoreBuffer<float4>* deltaDepth = 0;				// depth derivatives for filtering
 	CoreBuffer<float4>* debugData = 0;				// used to store arbitrary data for inspection
 	ViewPyramid prevView;							// previous view frustum, for reprojection
+	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
+	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
+	Timer renderTimer, frameTimer;					// timers for asynchronous rendering
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
 	CoreBuffer<uint>* blueNoise = 0;
-	int blueSlot = 0;
 	// timing
 	cudaEvent_t traceStart[MAXPATHLENGTH], traceEnd[MAXPATHLENGTH];
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];
 	cudaEvent_t shadowStart, shadowEnd, filterStart, filterEnd;
+protected:
+	// events
+	HANDLE startEvent, doneEvent;
+	// worker thread
+	RenderThread* renderThread;
 public:
 	CoreStats coreStats;							// rendering statistics
 	static OptixDeviceContext optixContext;			// static, for access from CoreMesh
@@ -155,6 +168,27 @@ public:
 	OptixTraversableHandle bvhRoot;
 	Params params;
 	CUdeviceptr d_params;
+};
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderThread                                                               |
+//  |  Worker thread for asynchronous rendering.                            LH2'20|
+//  +-----------------------------------------------------------------------------+
+class RenderThread : public WinThread
+{
+public:
+	void Init( RenderCore* core )
+	{
+		coreState = *core;
+	}
+	void Init( RenderCore* core, const ViewPyramid& pyramid )
+	{
+		coreState = *core;
+		view = pyramid;
+	}
+	void run();
+	RenderCore coreState; // frozen copy of the state at render start
+	ViewPyramid view;
 };
 
 } // namespace lh2core

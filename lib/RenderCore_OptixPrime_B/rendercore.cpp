@@ -28,13 +28,13 @@ namespace lh2core
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise, 
+void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise,
 	const int pass, const ViewPyramid& view, const int4 screenParams );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
-void shade( const int pathCount, float4* accumulator, const Ray4* extensionRays, const float4* extensionData, 
-	const Intersection* hits, Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays, 
-	float4* connectionT4, const uint R0, const uint* blueNoise, const int pass, const int2 probePos, 
+void shade( const int pathCount, float4* accumulator, const Ray4* extensionRays, const float4* extensionData,
+	const Intersection* hits, Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays,
+	float4* connectionT4, const uint R0, const uint* blueNoise, const int pass, const int2 probePos,
 	const int pathLength, const int w, const int h, const ViewPyramid& view );
 void finalizeConnections( int rayCount, float4* accumulator, uint* hitBuffer, float4* contributions );
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
@@ -126,7 +126,7 @@ void RenderCore::Init()
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &shadowQuery ) );
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &extendQuery ) );
 	// prepare counters for persistent threads
-	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE|ON_HOST );
+	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE | ON_HOST );
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
 	stageClampValue( 10.0f );
@@ -175,8 +175,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 	bool reallocate = false;
 	if (scrwidth * scrheight > maxPixels || spp != currentSPP)
 	{
-		maxPixels = scrwidth * scrheight;
-		maxPixels += maxPixels >> 4; // reserve a bit extra to prevent frequent reallocs
+		maxPixels = scrwidth * scrheight + maxPixels / 16; // reserve a bit extra to prevent frequent reallocs
 		currentSPP = spp;
 		reallocate = true;
 	}
@@ -335,10 +334,10 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 	// Notes:
 	// - the three types are copied from the original HostTexture pixel data (to which the
 	//   descriptors point) straight to the GPU. There is no pixel storage on the host
-	//   in the RenderCore.
+	//   in this RenderCore.
 	// - the types are copied one by one. Copying involves creating a temporary host-side
 	//   buffer; doing this one by one allows us to delete host-side data for one type
-	//   before allocating space for the next, thus reducing storage requirements.
+	//   before allocating space for the next, thus reducing runtime storage.
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -445,57 +444,27 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
+template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData )
+{
+	// helper function for (re)allocating light buffers with staged buffer and pointer update.
+	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
+	{
+		delete lightBuffer;
+		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
+	}
+	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
+	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
+	return lightBuffer->DevPtr();
+}
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
-	{
-		// we need a new or larger buffer; (re)allocate.
-		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE|ON_HOST, areaLights, POLICY_COPY_SOURCE );
-		stageAreaLights( areaLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		// existing buffer is large enough; copy new data
-		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
-		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
-	}
-	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
-	{
-		delete pointLightBuffer;
-		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
-		stagePointLights( pointLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
-		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
-	}
-	if (spotLightBuffer == 0 || spotLightCount > spotLightBuffer->GetSize())
-	{
-		delete spotLightBuffer;
-		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
-		stageSpotLights( spotLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
-		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
-	}
-	if (directionalLightBuffer == 0 || directionalLightCount > directionalLightBuffer->GetSize())
-	{
-		delete directionalLightBuffer;
-		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
-		stageDirectionalLights( directionalLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
-		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
-	}
+	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
+	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
+	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
 }
 
@@ -567,7 +536,7 @@ void RenderThread::run()
 	{
 		WaitForSingleObject( coreState.startEvent, INFINITE );
 		// render a single frame
-		coreState.RenderImpl( view, converge );
+		coreState.RenderImpl( view );
 		// we're done, go back to waiting
 		SetEvent( coreState.doneEvent );
 	}
@@ -593,21 +562,21 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	}
 	if (converge == Converge) firstConvergingFrame = false;
 	// do the actual rendering
+	renderTimer.reset();
 	if (async)
 	{
 		asyncRenderInProgress = true;
-		renderThread->Init( this, view, converge );
+		renderThread->Init( this, view );
 		SetEvent( startEvent );
 	}
 	else
 	{
-		RenderImpl( view, converge );
+		RenderImpl( view );
 		FinalizeRender();
 	}
 }
-void RenderCore::RenderImpl( const ViewPyramid& view, const Convergence converge )
+void RenderCore::RenderImpl( const ViewPyramid& view )
 {
-	Timer timer;
 	// update acceleration structure
 	UpdateToplevel();
 	// clean accumulator, if requested
@@ -620,7 +589,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view, const Convergence converge
 	// start wavefront loop
 	uint pathCount = scrwidth * scrheight * scrspp, pathLength = 1;
 	Counters& counters = counterBuffer->HostPtr()[0];
-	for ( ; pathLength <= MAXPATHLENGTH; pathLength++)
+	for (; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// extend
 		float traceTime = TraceExtensionRays( pathCount );
@@ -629,9 +598,9 @@ void RenderCore::RenderImpl( const ViewPyramid& view, const Convergence converge
 		else coreStats.traceTimeX = traceTime, coreStats.deepRayCount = pathCount;
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
-		shade( pathCount, accumulator->DevPtr(), extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(), 
-			extensionHitBuffer->DevPtr(), extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(), 
-			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(), samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), 
+		shade( pathCount, accumulator->DevPtr(), extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
+			extensionHitBuffer->DevPtr(), extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
+			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(), samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(),
 			samplesTaken, probePos, pathLength, scrwidth, scrheight, view );
 		counterBuffer->CopyToHost(); // sadly this is needed; Optix Prime doesn't expose persistent threads
 		cudaEventRecord( shadeEnd[pathLength - 1] );
@@ -664,9 +633,6 @@ void RenderCore::RenderImpl( const ViewPyramid& view, const Convergence converge
 	// finalize statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
-	coreStats.renderTime = timer.elapsed();
-	coreStats.shadeTime = 0;
-	for (uint i = 0; i < pathLength - 1; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.SetProbeInfo( counters.probedInstid, counters.probedTriid, counters.probedDist );
 }
@@ -684,6 +650,7 @@ void RenderCore::WaitForRender()
 	asyncRenderInProgress = false;
 	// get back the RenderCore state data changed by the thread
 	coreStats = renderThread->coreState.coreStats;
+	camRNGseed = renderThread->coreState.camRNGseed;
 	// copy the accumulator to the OpenGL texture
 	FinalizeRender();
 }
@@ -699,6 +666,11 @@ void RenderCore::FinalizeRender()
 	samplesTaken += scrspp;
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
+	// timing statistics
+	coreStats.renderTime = renderTimer.elapsed();
+	coreStats.shadeTime = 0;
+	for (uint i = 0; i < MAXPATHLENGTH; i++)
+		coreStats.shadeTime += CUDATools::Elapsed( renderThread->coreState.shadeStart[i], renderThread->coreState.shadeEnd[i] );
 }
 
 //  +-----------------------------------------------------------------------------+

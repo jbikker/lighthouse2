@@ -52,7 +52,7 @@ void MousePosCallback( GLFWwindow* window, double x, double y )
 	// set pixel probe pos for triangle picking
 	if (renderer) renderer->SetProbePos( make_int2( (int)x, (int)y ) );
 }
-void ErrorCallback( int error, const char*description )
+void ErrorCallback( int error, const char* description )
 {
 	fprintf( stderr, "GLFW Error: %s\n", description );
 }
@@ -93,6 +93,7 @@ void InitGLFW()
 	glfwSetMouseButtonCallback( window, MouseButtonCallback );
 	glfwSetCursorPosCallback( window, MousePosCallback );
 	glfwSetCharCallback( window, CharEventCallback );
+	glfwSwapInterval( 0 ); // disable vsync to get accurate performance measurements.
 	// initialize GLAD
 	if (!gladLoadGLLoader( (GLADloadproc)glfwGetProcAddress ))
 	{

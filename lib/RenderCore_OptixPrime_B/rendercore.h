@@ -72,9 +72,10 @@ public:
 	CoreStats GetCoreStats() const override;
 	// internal methods
 protected:
-	void RenderImpl( const ViewPyramid& view, const Convergence converge );
+	void RenderImpl( const ViewPyramid& view );
 	void FinalizeRender();
 private:
+	template <class T> T* StagedBufferResize( CoreBuffer<T>*& buffer, const int newCount, const T* sourceData );
 	float TraceShadowRays( const int rayCount );
 	float TraceExtensionRays( const int rayCount );
 	void UpdateToplevel();
@@ -136,6 +137,7 @@ private:
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
 	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
+	Timer renderTimer;								// timer for asynchronous rendering
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
@@ -164,16 +166,14 @@ public:
 	{
 		coreState = *core;
 	}
-	void Init( RenderCore* core, const ViewPyramid& pyramid, const Convergence c )
+	void Init( RenderCore* core, const ViewPyramid& pyramid )
 	{
 		coreState = *core;
 		view = pyramid;
-		converge = c;
 	}
 	void run();
 	RenderCore coreState; // frozen copy of the state at render start
 	ViewPyramid view;
-	Convergence converge;
 };
 
 } // namespace lh2core

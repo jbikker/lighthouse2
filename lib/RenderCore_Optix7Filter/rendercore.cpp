@@ -22,15 +22,16 @@ namespace lh2core
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 void prepareFilter( const float4* accumulator, uint4* features, const float4* worldPos, const float4* prevWorldPos,
 	float4* shading, float2* motion, float4* moments, float4* prevMoments, const float4* deltaDepth,
 	const ViewPyramid& prevView, const float j0, const float j1, const float prevj0, const float prevj1,
 	const int w, const int h, const uint spp, const float directClamp, const float indirectClamp, const int camIsStationary );
+void InitCountersForExtend( int pathCount );
+void InitCountersSubsequent();
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	uint4* features, float4* worldPos, float4* deltaDepth,
 	float4* pathStates, const float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const uint blueSlot, const int pass,
+	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
 void applyFilter( const uint4* features, const float4* prevWorldPos, const float4* worldPos, const float4* deltaDepth, const float2* motion, const float4* moments,
@@ -40,8 +41,7 @@ void unsharpenTAA( const float4* pixels, const uint w, const uint h );
 void finalizeNoTAA( float4* pixels, const uint w, const uint h );
 void finalizeFilterDebug( const uint w, const uint h, const uint4* features, const float4* worldPos, const float4* prevWorldPos,
 	const float4* deltaDepth, const float2* motion, const float4* moments, const float4* shading );
-void InitCountersForExtend( int pathCount );
-void InitCountersSubsequent();
+void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 
 // abbreviation of cuda calls
 void RenderCore::applyFilter( const uint phase, CoreBuffer<float4>* A, CoreBuffer<float4>* B, CoreBuffer<float4>* C, const uint lastPass )
@@ -64,12 +64,12 @@ void stageNRM32Pixels( uint* p );
 void stageSkyPixels( float3* p );
 void stageSkySize( int w, int h );
 void stageWorldToSky( const mat4& worldToLight );
-void stagePathStates( PathState* p );
 void stageDebugData( float4* p );
 void stageGeometryEpsilon( float e );
 void stageClampValue( float c );
-void SetCounters( Counters* p );
 void stageMemcpy( void* d, void* s, int n );
+void pushStagedCopies();
+void SetCounters( Counters* p );
 
 } // namespace lh2core
 
@@ -308,6 +308,13 @@ void RenderCore::Init()
 	cudaEventCreate( &shadowEnd );
 	cudaEventCreate( &filterStart );
 	cudaEventCreate( &filterEnd );
+	// create events for worker thread communication
+	startEvent = CreateEvent( NULL, false, false, NULL );
+	doneEvent = CreateEvent( NULL, false, false, NULL );
+	// create worker thread
+	renderThread = new RenderThread();
+	renderThread->Init( this );
+	renderThread->start();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -455,7 +462,7 @@ void RenderCore::FinalizeInstances()
 		instanceArray->HostPtr()[i] = instances[i]->instance;
 	}
 	instanceArray->CopyToDevice();
-	// update instance descriptor array on device
+	// pass instance descriptors to the device; will be used during shading.
 	if (instancesDirty)
 	{
 		// prepare CoreInstanceDesc array. For any sane number of instances this should
@@ -472,11 +479,7 @@ void RenderCore::FinalizeInstances()
 				memcpy( &T, instance->transform, 12 * sizeof( float ) );
 				invT = T.Inverted();
 			}
-			else
-			{
-				T = mat4::Identity();
-				invT = mat4::Identity();
-			}
+			else T = mat4::Identity(), invT = mat4::Identity();
 			id.invTransform = *(float4x4*)&invT;
 			instDescArray.push_back( id );
 		}
@@ -490,8 +493,10 @@ void RenderCore::FinalizeInstances()
 		}
 		memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
 		instDescBuffer->CopyToDevice();
-		// instancesDirty = false;
+		// instancesDirty = false; // TODO: for now we do this every frame.
 	}
+	// rendering is allowed from now on
+	gpuHasSceneData = true;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -575,10 +580,10 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-#define TOCHAR(a) ((uint)((a)*255.0f))
-#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
 void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
+#define TOCHAR(a) ((uint)((a)*255.0f))
+#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
@@ -611,6 +616,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.normals.textureID != -1 ? HASNORMALMAP : 0) +
 			(m.specular.textureID != -1 ? HASSPECULARITYMAP : 0) +
 			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
+			(m.metallic.textureID != -1 ? HASMETALNESSMAP : 0) +
 			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
@@ -623,57 +629,27 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
+template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData )
+{
+	// helper function for (re)allocating light buffers with staged buffer and pointer update.
+	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
+	{
+		delete lightBuffer;
+		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
+	}
+	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
+	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
+	return lightBuffer->DevPtr();
+}
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
-	{
-		// we need a new or larger buffer; (re)allocate.
-		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE|ON_HOST, areaLights, POLICY_COPY_SOURCE );
-		stageAreaLights( areaLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		// existing buffer is large enough; copy new data
-		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
-		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
-	}
-	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
-	{
-		delete pointLightBuffer;
-		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
-		stagePointLights( pointLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
-		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
-	}
-	if (spotLightBuffer == 0 || spotLightCount > spotLightBuffer->GetSize())
-	{
-		delete spotLightBuffer;
-		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
-		stageSpotLights( spotLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
-		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
-	}
-	if (directionalLightBuffer == 0 || directionalLightCount > directionalLightBuffer->GetSize())
-	{
-		delete directionalLightBuffer;
-		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
-		stageDirectionalLights( directionalLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
-		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
-	}
+	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
+	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
+	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
 }
 
@@ -704,7 +680,6 @@ void RenderCore::Setting( const char* name, const float value )
 		{
 			vars.geometryEpsilon = value;
 			stageGeometryEpsilon( value );
-			// context["geometryEpsilon"]->setFloat( value );
 		}
 	}
 	else if (!strcmp( name, "clampValue" ))
@@ -728,7 +703,7 @@ void RenderCore::Setting( const char* name, const float value )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::UpdateToplevel()
 {
-	// build the top-level tree
+	// build the top-level tree.
 	OptixBuildInput buildInput = {};
 	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
 	buildInput.instanceArray.instances = (CUdeviceptr)instanceArray->DevPtr();
@@ -737,7 +712,7 @@ void RenderCore::UpdateToplevel()
 	options.buildFlags = OPTIX_BUILD_FLAG_NONE;
 	options.operation = OPTIX_BUILD_OPERATION_BUILD;
 	static size_t reservedTemp = 0, reservedTop = 0;
-	static CoreBuffer<uchar> *temp, *topBuffer = 0;
+	static CoreBuffer<uchar>* temp, * topBuffer = 0;
 	OptixAccelBufferSizes sizes;
 	CHK_OPTIX( optixAccelComputeMemoryUsage( optixContext, &options, &buildInput, 1, &sizes ) );
 	if (sizes.tempSizeInBytes > reservedTemp)
@@ -757,34 +732,71 @@ void RenderCore::UpdateToplevel()
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  RenderThread::run                                                          |
+//  |  Main function of the render worker thread.                           LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderThread::run()
+{
+	while (1)
+	{
+		WaitForSingleObject( coreState.startEvent, INFINITE );
+		// render a single frame
+		coreState.RenderImpl( view );
+		// we're done, go back to waiting
+		SetEvent( coreState.doneEvent );
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	if (!gpuHasSceneData) return;
 	// wait for OpenGL
 	glFinish();
-	Timer timer;
-	// update acceleration structure
-	UpdateToplevel();
-	// clean accumulator, if requested
-	if (converge == Restart || (features != 0 && vars.filterEnabled) || firstConvergingFrame)
+	// finalize staged writes
+	pushStagedCopies();
+	// handle converge restart
+	if (converge == Restart || firstConvergingFrame)
 	{
-		accumulator->Clear( ON_DEVICE );
 		samplesTaken = 0;
 		firstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
 	if (converge == Converge) firstConvergingFrame = false;
-	// render image
-	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
+	// do the actual rendering
+	renderTimer.reset();
 	// jitter the view for TAA
-	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	const float haltonx[4] = { 0.3f, 0.7f, 0.2f, 0.8f }, haltony[4] = { 0.2f, 0.8f, 0.7f, 0.3f };
-	const float j0 = (vars.TAAEnabled && vars.filterEnabled) ? (haltonx[frameCycle] - 0.0f) : 0.0f;
-	const float j1 = (vars.TAAEnabled && vars.filterEnabled) ? (haltony[frameCycle] - 0.0f) : 0.0f;
+	j0 = (vars.TAAEnabled && vars.filterEnabled) ? (haltonx[frameCycle] - 0.0f) : 0.0f;
+	j1 = (vars.TAAEnabled && vars.filterEnabled) ? (haltony[frameCycle] - 0.0f) : 0.0f;
 	frameCycle = (frameCycle + 1) & 3;
+	if (async)
+	{
+		asyncRenderInProgress = true;
+		renderThread->Init( this, view );
+		SetEvent( startEvent );
+	}
+	else
+	{
+		RenderImpl( view );
+		FinalizeRender();
+	}
+	// store view for next frame
+	prevView = view;
+}
+void RenderCore::RenderImpl( const ViewPyramid& view )
+{
+	// update acceleration structure
+	UpdateToplevel();
+	// clean accumulator, if requested
+	if (samplesTaken == 0) accumulator->Clear( ON_DEVICE );
+	// render an image using OptiX
+	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
 	ViewPyramid jitteredView = view;
+	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	const float3 jitter = (j0 / (float)scrwidth) * right + (j1 / (float)scrheight) * up;
 	jitteredView.p1 += jitter;
 	jitteredView.p2 += jitter;
@@ -800,11 +812,10 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	params.j0 = vars.filterEnabled ? j0 : -5;
 	params.j1 = j1;
 	// loop
-	params.bvhRoot = bvhRoot; // meshes[1]->gasHandle;
+	params.bvhRoot = bvhRoot;
 	Counters counters;
 	coreStats.deepRayCount = 0;
 	uint pathCount = scrwidth * scrheight * scrspp;
-	int actualPathLength = 0;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// generate / extend
@@ -812,7 +823,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		if (pathLength == 1)
 		{
 			// spawn and extend camera rays
-			params.phase = 0;
+			params.phase = Params::SPAWN_PRIMARY;
 			coreStats.primaryRayCount = pathCount;
 			InitCountersForExtend( pathCount );
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
@@ -822,7 +833,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		{
 			// extend bounced paths
 			if (pathLength == 2) coreStats.bounce1RayCount = pathCount; else coreStats.deepRayCount += pathCount;
-			params.phase = 1;
+			params.phase = Params::SPAWN_SECONDARY;
 			InitCountersSubsequent();
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, pathCount, 1, 1 ) );
@@ -834,20 +845,19 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			(features != 0 && vars.filterEnabled) ? features->DevPtr() : 0,
 			worldPos ? worldPos->DevPtr() : 0, deltaDepth ? deltaDepth->DevPtr() : 0,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), blueSlot, samplesTaken,
+			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			jitteredView.spreadAngle, jitteredView.p1, jitteredView.p2, jitteredView.p3, jitteredView.pos );
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
 		pathCount = counters.extensionRays;
-		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		if (pathCount == 0) break;
 		// trace shadow rays now if the next loop iteration could overflow the buffer.
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
 		if ((pathCount + counters.shadowRays) >= maxShadowRays) if (counters.shadowRays > 0)
 		{
-			params.phase = 2;
+			params.phase = Params::SPAWN_SHADOW;
 			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 			counterBuffer->HostPtr()[0].shadowRays = 0;
@@ -859,7 +869,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	cudaEventRecord( shadowStart );
 	if (counters.shadowRays > 0)
 	{
-		params.phase = 2;
+		params.phase = Params::SPAWN_SHADOW;
 		cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 		CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 	}
@@ -867,9 +877,42 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
+	// finalize statistics
+	cudaStreamSynchronize( 0 );
+	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
+	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
+	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	coreStats.filterTime = CUDATools::Elapsed( filterStart, filterEnd );
 	coreStats.probedInstid = counters.probedInstid;
 	coreStats.probedTriid = counters.probedTriid;
 	coreStats.probedDist = counters.probedDist;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::WaitForRender                                                  |
+//  |  Wait for the render thread to finish.                                      |
+//  |  Note: will deadlock if we didn't actually start a render.            LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::WaitForRender()
+{
+	// wait for the renderthread to complete
+	if (!asyncRenderInProgress) return;
+	WaitForSingleObject( doneEvent, INFINITE );
+	asyncRenderInProgress = false;
+	// get back the RenderCore state data changed by the thread
+	coreStats = renderThread->coreState.coreStats;
+	camRNGseed = renderThread->coreState.camRNGseed;
+	// copy the accumulator to the OpenGL texture
+	FinalizeRender();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::FinalizeRender                                                 |
+//  |  Fill the OpenGL rendertarget texture.                                LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::FinalizeRender()
+{
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
@@ -880,8 +923,7 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		prepareFilter( accumulator->DevPtr(), features->DevPtr(), worldPos->DevPtr(), prevWorldPos->DevPtr(),
 			shading->DevPtr(), motion->DevPtr(), moments->DevPtr(), prevMoments->DevPtr(), deltaDepth->DevPtr(),
 			prevView, j0, j1, prevj0, prevj1,
-			scrwidth, scrheight, samplesTaken, vars.filterClampDirect, vars.filterClampIndirect, converge == Restart ? 0 : 1 );
-	#ifdef _MSC_VER
+			scrwidth, scrheight, samplesTaken, vars.filterClampDirect, vars.filterClampIndirect, samplesTaken == scrspp ? 0 : 1 );
 		// TODO: Cross-compatible way of passing key input FROM APP down to RenderCore
 		if (GetAsyncKeyState( VK_F4 ))
 		{
@@ -889,7 +931,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 				deltaDepth->DevPtr(), motion->DevPtr(), moments->DevPtr(), shading->DevPtr() );
 		}
 		else
-		#endif
 		{
 			applyFilter( 1, shading, filteredIN, filteredOUT );
 			applyFilter( 2, filteredOUT, 0, filteredIN );
@@ -906,25 +947,20 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		swap( shading, prevPixels );
 		swap( prevWorldPos, worldPos );
 		swap( moments, prevMoments );
-		blueSlot = (blueSlot + 1) & 255;
 		prevj0 = j0, prevj1 = j1;
 		cudaEventRecord( filterEnd );
 	}
 	else finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
-	// finalize statistics
-	cudaStreamSynchronize( 0 );
-	coreStats.renderTime = timer.elapsed();
-	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
-	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
-	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
-	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
-	coreStats.filterTime = CUDATools::Elapsed( filterStart, filterEnd );
+	// timing statistics
+	coreStats.renderTime = renderTimer.elapsed();
+	coreStats.frameOverhead = max( 0.0f, frameTimer.elapsed() - coreStats.renderTime );
+	frameTimer.reset();
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
-	for (int i = 2; i < actualPathLength; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
-	for (int i = 0; i < actualPathLength; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
-	// store view for next frame
-	prevView = view;
+	for (int i = 2; i < MAXPATHLENGTH; i++)
+		coreStats.traceTimeX += CUDATools::Elapsed( renderThread->coreState.traceStart[i], renderThread->coreState.traceEnd[i] );
+	for (int i = 0; i < MAXPATHLENGTH; i++)
+		coreStats.shadeTime += CUDATools::Elapsed( renderThread->coreState.shadeStart[i], renderThread->coreState.shadeEnd[i] );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -946,7 +982,7 @@ void RenderCore::Shutdown()
 //  |  RenderCore::GetCoreStats                                                   |
 //  |  Get a copy of the counters.                                          LH2'19|
 //  +-----------------------------------------------------------------------------+
-CoreStats RenderCore::GetCoreStats() const 
+CoreStats RenderCore::GetCoreStats() const
 {
 	return coreStats;
 }

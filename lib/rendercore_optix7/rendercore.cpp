@@ -45,11 +45,11 @@ void stageNRM32Pixels( uint* p );
 void stageSkyPixels( float3* p );
 void stageSkySize( int w, int h );
 void stageWorldToSky( const mat4& worldToLight );
-void stagePathStates( PathState* p );
 void stageDebugData( float4* p );
 void stageGeometryEpsilon( float e );
 void stageClampValue( float c );
 void stageMemcpy( void* d, void* s, int n );
+void pushStagedCopies();
 void SetCounters( Counters* p );
 
 } // namespace lh2core
@@ -59,7 +59,7 @@ using namespace lh2core;
 OptixDeviceContext RenderCore::optixContext = 0;
 struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
-const char *ParseOptixError( OptixResult r )
+const char* ParseOptixError( OptixResult r )
 {
 	switch (r)
 	{
@@ -142,7 +142,7 @@ void RenderCore::CreateOptixContext( int cc )
 	}
 	else
 	{
-		const char *file = NULL;
+		const char* file = NULL;
 		if (cc / 10 == 7) file = "../../lib/RenderCore_Optix7/optix/.optix.turing.cu.ptx";
 		else if (cc / 10 == 6) file = "../../lib/RenderCore_Optix7/optix/.optix.pascal.cu.ptx";
 		else if (cc / 10 == 5) file = "../../lib/RenderCore_Optix7/optix/.optix.maxwell.cu.ptx";
@@ -287,6 +287,13 @@ void RenderCore::Init()
 	}
 	cudaEventCreate( &shadowStart );
 	cudaEventCreate( &shadowEnd );
+	// create events for worker thread communication
+	startEvent = CreateEvent( NULL, false, false, NULL );
+	doneEvent = CreateEvent( NULL, false, false, NULL );
+	// create worker thread
+	renderThread = new RenderThread();
+	renderThread->Init( this );
+	renderThread->start();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -438,6 +445,8 @@ void RenderCore::FinalizeInstances()
 		instDescBuffer->CopyToDevice();
 		// instancesDirty = false; // TODO: for now we do this every frame.
 	}
+	// rendering is allowed from now on
+	gpuHasSceneData = true;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -570,57 +579,27 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
+template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData )
+{
+	// helper function for (re)allocating light buffers with staged buffer and pointer update.
+	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
+	{
+		delete lightBuffer;
+		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
+	}
+	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
+	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
+	return lightBuffer->DevPtr();
+}
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
-	{
-		// we need a new or larger buffer; (re)allocate.
-		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE | ON_HOST, areaLights, POLICY_COPY_SOURCE );
-		stageAreaLights( areaLightBuffer->DevPtr() );
-	}
-	else
-	{
-		// existing buffer is large enough; copy new data
-		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
-		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
-	}
-	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
-	{
-		delete pointLightBuffer;
-		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
-		stagePointLights( pointLightBuffer->DevPtr() );
-	}
-	else
-	{
-		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
-		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
-	}
-	if (spotLightBuffer == 0 || spotLightCount > spotLightBuffer->GetSize())
-	{
-		delete spotLightBuffer;
-		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
-		stageSpotLights( spotLightBuffer->DevPtr() );
-	}
-	else
-	{
-		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
-		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
-	}
-	if (directionalLightBuffer == 0 || directionalLightCount > directionalLightBuffer->GetSize())
-	{
-		delete directionalLightBuffer;
-		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
-		stageDirectionalLights( directionalLightBuffer->DevPtr() );
-	}
-	else
-	{
-		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
-		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
-	}
+	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
+	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
+	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
 }
 
@@ -679,7 +658,7 @@ void RenderCore::UpdateToplevel()
 	options.buildFlags = OPTIX_BUILD_FLAG_NONE;
 	options.operation = OPTIX_BUILD_OPERATION_BUILD;
 	static size_t reservedTemp = 0, reservedTop = 0;
-	static CoreBuffer<uchar> *temp, *topBuffer = 0;
+	static CoreBuffer<uchar>* temp, * topBuffer = 0;
 	OptixAccelBufferSizes sizes;
 	CHK_OPTIX( optixAccelComputeMemoryUsage( optixContext, &options, &buildInput, 1, &sizes ) );
 	if (sizes.tempSizeInBytes > reservedTemp)
@@ -699,25 +678,60 @@ void RenderCore::UpdateToplevel()
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  RenderThread::run                                                          |
+//  |  Main function of the render worker thread.                           LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderThread::run()
+{
+	while (1)
+	{
+		WaitForSingleObject( coreState.startEvent, INFINITE );
+		// render a single frame
+		coreState.RenderImpl( view );
+		// we're done, go back to waiting
+		SetEvent( coreState.doneEvent );
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	if (!gpuHasSceneData) return;
 	// wait for OpenGL
 	glFinish();
-	Timer timer;
-	// update acceleration structure
-	UpdateToplevel();
-	// clean accumulator, if requested
+	// finalize staged writes
+	pushStagedCopies();
+	// handle converge restart
 	if (converge == Restart || firstConvergingFrame)
 	{
-		accumulator->Clear( ON_DEVICE );
 		samplesTaken = 0;
 		firstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
 	if (converge == Converge) firstConvergingFrame = false;
+	// do the actual rendering
+	renderTimer.reset();
+	if (async)
+	{
+		asyncRenderInProgress = true;
+		renderThread->Init( this, view );
+		SetEvent( startEvent );
+	}
+	else
+	{
+		RenderImpl( view );
+		FinalizeRender();
+	}
+}
+void RenderCore::RenderImpl( const ViewPyramid& view )
+{
+	// update acceleration structure
+	UpdateToplevel();
+	// clean accumulator, if requested
+	if (samplesTaken == 0) accumulator->Clear( ON_DEVICE );
 	// render an image using OptiX
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
@@ -732,7 +746,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	Counters counters;
 	coreStats.deepRayCount = 0;
 	uint pathCount = scrwidth * scrheight * scrspp;
-	int actualPathLength = 0;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// generate / extend
@@ -767,7 +780,6 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
 		pathCount = counters.extensionRays;
-		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		if (pathCount == 0) break;
 		// trace shadow rays now if the next loop iteration could overflow the buffer.
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
@@ -793,24 +805,55 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
+	// finalize statistics
+	cudaStreamSynchronize( 0 );
+	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
+	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
+	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	coreStats.probedInstid = counters.probedInstid;
+	coreStats.probedTriid = counters.probedTriid;
+	coreStats.probedDist = counters.probedDist;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::WaitForRender                                                  |
+//  |  Wait for the render thread to finish.                                      |
+//  |  Note: will deadlock if we didn't actually start a render.            LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::WaitForRender()
+{
+	// wait for the renderthread to complete
+	if (!asyncRenderInProgress) return;
+	WaitForSingleObject( doneEvent, INFINITE );
+	asyncRenderInProgress = false;
+	// get back the RenderCore state data changed by the thread
+	coreStats = renderThread->coreState.coreStats;
+	camRNGseed = renderThread->coreState.camRNGseed;
+	// copy the accumulator to the OpenGL texture
+	FinalizeRender();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::FinalizeRender                                                 |
+//  |  Fill the OpenGL rendertarget texture.                                LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::FinalizeRender()
+{
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
-	// finalize statistics
-	cudaStreamSynchronize( 0 );
-	coreStats.renderTime = timer.elapsed();
-	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
-	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
-	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
-	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	// timing statistics
+	coreStats.renderTime = renderTimer.elapsed();
+	coreStats.frameOverhead = max( 0.0f, frameTimer.elapsed() - coreStats.renderTime );
+	frameTimer.reset();
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
-	for (int i = 2; i < actualPathLength; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
-	for (int i = 0; i < actualPathLength; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
-	coreStats.probedInstid = counters.probedInstid;
-	coreStats.probedTriid = counters.probedTriid;
-	coreStats.probedDist = counters.probedDist;
+	for (int i = 2; i < MAXPATHLENGTH; i++)
+		coreStats.traceTimeX += CUDATools::Elapsed( renderThread->coreState.traceStart[i], renderThread->coreState.traceEnd[i] );
+	for (int i = 0; i < MAXPATHLENGTH; i++)
+		coreStats.shadeTime += CUDATools::Elapsed( renderThread->coreState.shadeStart[i], renderThread->coreState.shadeEnd[i] );
 }
 
 //  +-----------------------------------------------------------------------------+

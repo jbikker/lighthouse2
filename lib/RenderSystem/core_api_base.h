@@ -46,6 +46,7 @@ struct CoreStats
 	uint totalExtensionRays = 0;		// total extension rays cast
 	uint totalShadowRays = 0;			// total shadow rays cast
 	float renderTime;					// overall render time
+	float frameOverhead = 0;			// frame time not spent rendering
 	uint primaryRayCount;				// # primary rays
 	float traceTime0;					// time spent tracing primary rays
 	uint bounce1RayCount;				// # rays after first bounce

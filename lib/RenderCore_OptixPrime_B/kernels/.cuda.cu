@@ -39,7 +39,7 @@ __constant__ mat4 worldToSky;
 // path tracer settings
 __constant__ __device__ float geometryEpsilon;
 __constant__ __device__ float clampValue;
- 
+
 // staging: copies will be batched and carried out after rendering completes, 
 // to allow the CPU to update the scene concurrently with GPU rendering.
 
@@ -93,11 +93,45 @@ __host__ static void pushInt4Cpy( int id, const int4& v )
 	if (id == LCNTS) cudaMemcpyToSymbol( lightCounts, &v, sizeof( int4 ) );
 }
 
-__host__ static void stagePtrCpy( int id, void* p ) { StagedPtr n = { p, id }; stagedPtr.push_back( n ); }
-__host__ static void stageIntCpy( int id, const int v ) { StagedInt n = { v, id }; stagedInt.push_back( n ); }
-__host__ static void stageF32Cpy( int id, const float v ) { StagedF32 n = { v, id }; stagedF32.push_back( n ); }
+#define MAXVARS	32
+static void* prevPtr[MAXVARS] = {};
+static int prevInt[MAXVARS] = {};
+static float prevFloat[MAXVARS] = {};
+static int4 prevInt4[MAXVARS] = {};
+static bool prevValSet[MAXVARS] = {};
+
+__host__ static void stagePtrCpy( int id, void* p ) 
+{ 
+	if (prevPtr[id] == p) return; // not changed
+	StagedPtr n = { p, id }; 
+	stagedPtr.push_back( n );
+	prevPtr[id] = p;
+}
+__host__ static void stageIntCpy( int id, const int v ) 
+{ 
+	if (prevValSet[id] == true && prevInt[id] == v) return; 
+	StagedInt n = { v, id }; 
+	stagedInt.push_back( n );
+	prevValSet[id] = true;
+	prevInt[id] = v;
+}
+__host__ static void stageF32Cpy( int id, const float v ) 
+{ 
+	if (prevValSet[id] == true && prevFloat[id] == v) return; 
+	StagedF32 n = { v, id }; 
+	stagedF32.push_back( n ); 
+	prevValSet[id] = true;
+	prevFloat[id] = v;
+}
 __host__ static void stageMatCpy( int id, const mat4& m ) { StagedMat n = { m, id }; stagedMat.push_back( n ); }
-__host__ static void stageInt4Cpy( int id, const int4& v ) { StagedInt4 n = { v, id }; stagedInt4.push_back( n ); }
+__host__ static void stageInt4Cpy( int id, const int4& v ) 
+{
+	if (prevValSet[id] == true && prevInt4[id].x == v.x && prevInt4[id].y == v.y && prevInt4[id].z == v.z && prevInt4[id].w == v.w) return; 
+	StagedInt4 n = { v, id }; 
+	stagedInt4.push_back( n ); 
+	prevValSet[id] = true;
+	prevInt4[id] = v;
+}
 
 __host__ void stageMemcpy( void* d, void* s, int n ) { StagedCpy c = { d, s, n }; stagedCpy.push_back( c ); }
 

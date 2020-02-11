@@ -143,6 +143,7 @@ private:
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
 	CoreBuffer<uint>* blueNoise = 0;
+	CoreBuffer<float2>* camSamples = 0;				// aperture sampling
 	// timing
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
 protected:

@@ -1,5 +1,5 @@
 <materials>
-    <material_count>30</material_count>
+    <material_count>33</material_count>
     <material_0>
         <name>Plastic_Wall_Only</name>
         <origin>data/pica/scene.gltf</origin>
@@ -580,4 +580,64 @@
         <transmission>1e-32</transmission>
         <eta>1e-32</eta>
     </material_28>
+    <material_30>
+        <name>Boden</name>
+        <origin>data/drone/scene.gltf</origin>
+        <id>30</id>
+        <flags>5</flags>
+        <color b="1" g="1" r="1"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
+        <metallic>1</metallic>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
+        <roughness>1</roughness>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
+    </material_30>
+    <material_31>
+        <name>body</name>
+        <origin>data/drone/scene.gltf</origin>
+        <id>31</id>
+        <flags>5</flags>
+        <color b="1" g="1" r="1"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
+        <metallic>1</metallic>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
+        <roughness>0</roughness>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
+    </material_31>
+    <material_32>
+        <name>material</name>
+        <origin>data/drone/scene.gltf</origin>
+        <id>32</id>
+        <flags>5</flags>
+        <color b="1" g="1" r="1"/>
+        <absorption b="1e-32" g="1e-32" r="1e-32"/>
+        <metallic>1</metallic>
+        <subsurface>1e-32</subsurface>
+        <specular>1e-32</specular>
+        <roughness>1</roughness>
+        <specularTint>1e-32</specularTint>
+        <anisotropic>1e-32</anisotropic>
+        <sheen>1e-32</sheen>
+        <sheenTint>1e-32</sheenTint>
+        <clearcoat>1e-32</clearcoat>
+        <clearcoatGloss>1e-32</clearcoatGloss>
+        <transmission>1e-32</transmission>
+        <eta>1e-32</eta>
+    </material_32>
 </materials>

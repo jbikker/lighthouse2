@@ -59,6 +59,7 @@ void PrepareScene()
 	int inst = renderer->AddInstance( mesh );
 	renderer->SetNodeTransform( inst, mat4::RotateX( PI / 4 ) * mat4::RotateZ( PI / 2 ) );
 #else
+#if 0
 	// classic scene
 	materialFile = string( "data/pica/pica_materials.xml" );
 	int rootNode = renderer->AddScene( "data/pica/scene.gltf" );
@@ -68,6 +69,15 @@ void PrepareScene()
 	int whiteMat = renderer->AddMaterial( make_float3( 20 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 21, 0 ), 10.9f, 10.9f, whiteMat );
 	renderer->AddInstance( lightQuad );
+	renderer->AddScene( "data/drone/scene.gltf", mat4::Translate( 4.5f, -3.4f, -5.2f ) * mat4::Scale( 0.02f ) );
+#else
+	// book scene
+	materialFile = string( "data/book/materials.xml" );
+	renderer->AddScene( "data/book/scene.gltf" );
+	int whiteMat = renderer->AddMaterial( make_float3( 20 ) );
+	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 21, 0 ), 10.9f, 10.9f, whiteMat );
+	renderer->AddInstance( lightQuad );
+#endif
 #endif
 	// optional animated models
 	// renderer->AddScene( "data/CesiumMan.glb", mat4::Translate( 0, -2, -9 ) );
@@ -199,7 +209,7 @@ int main()
 		glfwPollEvents();
 		if (!running) break;
 		// start renderering in a separate thread
-		renderer->Render( camMoved ? Restart : Converge, true /* async */ );
+		renderer->Render( camMoved ? Restart : Converge, false /* async */ );
 		// camera and user input
 		frameTime = frameTimer.elapsed();
 		frameTimer.reset();

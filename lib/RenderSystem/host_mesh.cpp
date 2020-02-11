@@ -150,7 +150,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 	chdir( directory ); // SetCurrentDirectory( directory );
 	materialList.clear();
 	materialList.reserve( materials.size() );
-	for (auto &mtl : materials)
+	for (auto& mtl : materials)
 	{
 		// initialize
 		HostMaterial* material = new HostMaterial();
@@ -430,7 +430,22 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 					else FATALERROR( "double precision uvs not supported in gltf file" );
 				else FATALERROR( "expected vec4 weights in gltf file" );
 			}
-			else assert( false ); // unkown property
+			else if (attribute.first == "TEXCOORD_2")
+			{
+				// TODO, used in drone
+			}
+			else if (attribute.first == "TEXCOORD_3")
+			{
+				// TODO, used in drone
+			}
+			else if (attribute.first == "TEXCOORD_4")
+			{
+				// TODO, used in drone
+			}
+			else
+			{
+				assert( false ); // unkown property
+			}
 		}
 		// obtain morph targets
 		vector<Pose> tmpPoses;
@@ -550,7 +565,7 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			#if 1
 				// PBRT:
 				// https://github.com/mmp/pbrt-v3/blob/3f94503ae1777cd6d67a7788e06d67224a525ff4/src/shapes/triangle.cpp#L381
-				if ( std::abs( N.x ) > std::abs( N.y ) )
+				if (std::abs( N.x ) > std::abs( N.y ))
 					tri.T = make_float3( -N.z, 0, N.x ) / std::sqrt( N.x * N.x + N.z * N.z );
 				else
 					tri.T = make_float3( 0, N.z, -N.y ) / std::sqrt( N.y * N.y + N.z * N.z );
@@ -593,9 +608,19 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			poses[i].normals.push_back( pose.normals[v0idx] );
 			poses[i].normals.push_back( pose.normals[v1idx] );
 			poses[i].normals.push_back( pose.normals[v2idx] );
-			poses[i].tangents.push_back( pose.tangents[v0idx] );
-			poses[i].tangents.push_back( pose.tangents[v1idx] );
-			poses[i].tangents.push_back( pose.tangents[v2idx] );
+			if (pose.tangents.size() > 0)
+			{
+				poses[i].tangents.push_back( pose.tangents[v0idx] );
+				poses[i].tangents.push_back( pose.tangents[v1idx] );
+				poses[i].tangents.push_back( pose.tangents[v2idx] );
+			}
+			else
+			{
+				// have some dummies for now
+				poses[i].tangents.push_back( make_float3( 0, 1, 0 ) );
+				poses[i].tangents.push_back( make_float3( 0, 1, 0 ) );
+				poses[i].tangents.push_back( make_float3( 0, 1, 0 ) );
+			}
 		}
 	}
 }
@@ -694,7 +719,7 @@ void HostMesh::SetPose( const HostSkin* skin )
 			origNormal.push_back( tri.vN2 );
 		}
 		vertexNormals.resize( vertices.size() );
-	}
+		}
 #if 1
 	// code optimized for INFOMOV by Alysha Bogaers and Naraenda Prasetya
 
@@ -846,6 +871,6 @@ void HostMesh::SetPose( const HostSkin* skin )
 #endif
 	// mark as dirty; changing vector contents doesn't trigger this
 	MarkAsDirty();
-}
+	}
 
 // EOF

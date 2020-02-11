@@ -165,6 +165,8 @@
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
       <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../CUDA/shared_kernel_code;../sharedBSDFs</Include>
       <Include Condition="'$(Configuration)|$(Platform)'=='Release|x64'">../CUDA/shared_kernel_code;../sharedBSDFs</Include>
+      <InterleaveSourceInPTX Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</InterleaveSourceInPTX>
+      <GenerateLineInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GenerateLineInfo>
     </CudaCompile>
     <CudaCompile Include="optix\.optix.cu">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

@@ -38,7 +38,7 @@ __inline __device__ float3 RandomPointOnLens( const float r0, float r1, const fl
 //  +-----------------------------------------------------------------------------+
 __global__  __launch_bounds__( 256 /* max block size */, 1 /* min blocks per sm */ )
 void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
-	const uint R0, const uint* blueNoise, const int pass,
+	const uint R0, const uint* blueNoise, const float2* camSamples, const int pass,
 	const float3 pos, const float3 right, const float3 up, const float aperture,
 	const float3 p1, const float distortion, const int4 screenParams, const int jobCount )
 {
@@ -84,7 +84,25 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 		const float by = (cosf( theta ) * rq + 0.5f) * scrvsize;
 		posOnPixel = p1 + (bx + r0) * (right / (float)scrhsize) + (by + r1) * (up / (float)scrvsize);
 	}
+#if 0
+	// sampling using samples from a 256-tap spiral, distributed over 4x4 pixels,
+	// randomly rotated per 4x4 tile. No improvement over blue noise...
+	if (sampleIndex < 4)
+	{
+		const uint posInTile = (x & 7) + 8 * (y & 7);
+		const uint tileID = (x >> 3) + (y >> 3) * scrhsize;
+		const float2 pos2D = aperture * camSamples[sampleIndex * 64 + posInTile];
+		const float r = WangHash( tileID + 7 ) * 2.3283064365387e-10f * 2 * PI;
+		const float2 rotated2D = make_float2( sinf( r ) * pos2D.x + cosf( r ) * pos2D.y, cosf( r ) * pos2D.x - sinf( r ) * pos2D.y );
+		posOnLens = rotated2D.x * right + rotated2D.y * up + pos;
+	}
+	else
+	{
+		posOnLens = RandomPointOnLens( r2, r3, pos, aperture, right, up );
+	}
+#else
 	posOnLens = RandomPointOnLens( r2, r3, pos, aperture, right, up );
+#endif
 	const float3 rayDir = normalize( posOnPixel - posOnLens );
 	// initialize path state
 	rayBuffer[jobIndex].O4 = make_float4( posOnLens, geometryEpsilon );
@@ -97,15 +115,15 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 //  |  generateEyeRays                                                            |
 //  |  Entry point for the persistent generateEyeRays kernel.               LH2'19|
 //  +-----------------------------------------------------------------------------+
-__host__ void generateEyeRays( Ray4* rayBuffer, float4* pathStateData,
-	const uint R0, const uint* blueNoise, const int pass, const ViewPyramid& view, const int4 screenParams )
+__host__ void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise, 
+	const float2* camSamples, const int pass, const ViewPyramid& view, const int4 screenParams )
 {
 	const int scrwidth = screenParams.x & 0xffff;
 	const int scrheight = screenParams.x >> 16;
 	const int scrspp = screenParams.y & 255;
 	const int pathCount = scrwidth * scrheight * scrspp;
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 256 ) / 256, 1 ), blockDim( 256, 1 );
-	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, pass, view.pos, 
+	generateEyeRaysKernel << < gridDim.x, 256 >> > (rayBuffer, pathStateData, R0, blueNoise, camSamples, pass, view.pos, 
 		view.p2 - view.p1, view.p3 - view.p1, view.aperture, view.p1, view.distortion, screenParams, pathCount);
 }
 

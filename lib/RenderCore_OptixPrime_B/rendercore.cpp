@@ -28,7 +28,7 @@ namespace lh2core
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise,
+void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise, const float2* camSamples,
 	const int pass, const ViewPyramid& view, const int4 screenParams );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
@@ -38,26 +38,6 @@ void shade( const int pathCount, float4* accumulator, const Ray4* extensionRays,
 	const int pathLength, const int w, const int h, const ViewPyramid& view );
 void finalizeConnections( int rayCount, float4* accumulator, uint* hitBuffer, float4* contributions );
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
-
-// staged setters / getters
-void stageInstanceDescriptors( CoreInstanceDesc* p );
-void stageMaterialList( CUDAMaterial* p );
-void stageAreaLights( CoreLightTri* p );
-void stagePointLights( CorePointLight* p );
-void stageSpotLights( CoreSpotLight* p );
-void stageDirectionalLights( CoreDirectionalLight* p );
-void stageARGB32Pixels( uint* p );
-void stageARGB128Pixels( float4* p );
-void stageNRM32Pixels( uint* p );
-void stageSkyPixels( float3* p );
-void stageGeometryEpsilon( float e );
-void stageClampValue( float c );
-void stageLightCounts( int area, int point, int spot, int directional );
-void stageSkySize( int w, int h );
-void stageWorldToSky( const mat4& worldToLight );
-void stageDebugData( float4* p );
-void stageMemcpy( void* d, void* s, int n );
-void pushStagedCopies();
 
 // rendertime getters/setters
 void SetCounters( Counters* p );
@@ -94,6 +74,11 @@ void RenderCore::SetProbePos( int2 pos )
 //  |  RenderCore::Init                                                           |
 //  |  CUDA / Optix / RenderCore initialization.                            LH2'19|
 //  +-----------------------------------------------------------------------------+
+static float2 RandomPointInTriangle( const float2& A, const float2& B, const float2& C, uint& seed )
+{
+	// float3 bary = RandomBarycentrics( r );
+	return (A + B + C) / 3; // bary.x * A + bary.y * B + bary.z * C;
+}
 void RenderCore::Init()
 {
 #ifdef _DEBUG
@@ -140,6 +125,24 @@ void RenderCore::Init()
 	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 3 * 65536] = data8[i];
 	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
 	delete data32;
+	// prepare data for aperture sampling
+	camSamples = new CoreBuffer<float2>( 256, ON_HOST );
+	float golden_angle = PI * (3 - sqrtf( 5 ));
+	for (int i = 0; i < 256; i++)
+	{
+		float theta = i * golden_angle;
+		float r = sqrtf( (float)i ) / sqrtf( 256.0f );
+		camSamples->HostPtr()[i] = make_float2( r * cosf( theta ), r * sinf( theta ) );
+	}
+	for( int i = 0; i < 10240; i++ )
+	{
+		const uint idx0 = RandomUInt() & 255, idx1 = RandomUInt() & 255;
+		swap( camSamples->HostPtr()[idx0], camSamples->HostPtr()[idx1] );
+	}
+	camSamples->CopyToDevice();
+	FILE* f = fopen( "points.dat", "wb" );
+	fwrite( camSamples->HostPtr(), 8, 256, f );
+	fclose( f );
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// timing events
@@ -309,7 +312,7 @@ void RenderCore::FinalizeInstances()
 		stageInstanceDescriptors( instDescBuffer->DevPtr() );
 	}
 	memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
-	stageMemcpy( instDescBuffer->DevPtr(), instDescBuffer->HostPtr(), instDescBuffer->GetSizeInBytes() );
+	instDescBuffer->StageCopyToDevice();
 	// instancesDirty = false;
 	// rendering is allowed from now on
 	gpuHasSceneData = true;
@@ -387,19 +390,19 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 		texelTotal += texDescs[i].pixelCount;
 	}
 	// move to device
-	if (storage == TexelStorage::ARGB32) if (texel32Buffer) texel32Buffer->MoveToDevice();
-	if (storage == TexelStorage::ARGB128) if (texel128Buffer) texel128Buffer->MoveToDevice();
-	if (storage == TexelStorage::NRM32) if (normal32Buffer) normal32Buffer->MoveToDevice();
+	if (storage == TexelStorage::ARGB32) if (texel32Buffer) texel32Buffer->StageCopyToDevice();
+	if (storage == TexelStorage::ARGB128) if (texel128Buffer) texel128Buffer->StageCopyToDevice();
+	if (storage == TexelStorage::NRM32) if (normal32Buffer) normal32Buffer->StageCopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-#define TOCHAR(a) ((uint)((a)*255.0f))
-#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
 void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
+#define TOCHAR(a) ((uint)((a)*255.0f))
+#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
@@ -436,7 +439,8 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
+	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
 }
 
@@ -453,7 +457,7 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
 	}
 	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
-	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
+	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
@@ -585,7 +589,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	coreStats.totalExtensionRays = 0;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
 	generateEyeRays( extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
-		RandomUInt( camRNGseed ), blueNoise->DevPtr(), samplesTaken, view, GetScreenParams() );
+		RandomUInt( camRNGseed ), blueNoise->DevPtr(), camSamples->DevPtr(), samplesTaken, view, GetScreenParams() );
 	// start wavefront loop
 	uint pathCount = scrwidth * scrheight * scrspp, pathLength = 1;
 	Counters& counters = counterBuffer->HostPtr()[0];

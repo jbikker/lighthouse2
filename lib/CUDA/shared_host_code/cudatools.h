@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2 };
+enum { NOT_ALLOCATED = 0, ON_HOST = 1, ON_DEVICE = 2, STAGED = 4 };
 enum { POLICY_DEFAULT = 0, POLICY_COPY_SOURCE };
 
 #define CHK_CUDA( stmt ) do { auto ret = ( stmt ); if ( ret ) {                                      \
@@ -231,7 +231,7 @@ public:
 			{
 				// location is ON_DEVICE only, and we have data, so send the data over
 				hostPtr = (T*)source;
-				CopyToDevice();
+				if ((location & STAGED) == 0) CopyToDevice();
 				hostPtr = 0;
 			}
 		}
@@ -267,7 +267,7 @@ public:
 		}
 		return devPtr;
 	}
-	void* CopyToDeviceAsync( cudaStream_t stream )
+	void* StageCopyToDevice()
 	{
 		if (sizeInBytes > 0)
 		{
@@ -277,7 +277,7 @@ public:
 				location |= ON_DEVICE;
 				owner |= ON_DEVICE;
 			}
-			CHK_CUDA( cudaMemcpyAsync( devPtr, hostPtr, sizeInBytes, cudaMemcpyHostToDevice, stream ) );
+			stageMemcpy( devPtr, hostPtr, sizeInBytes );
 		}
 		return devPtr;
 	}
@@ -301,20 +301,6 @@ public:
 				owner |= ON_HOST;
 			}
 			CHK_CUDA( cudaMemcpy( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost ) );
-		}
-		return hostPtr;
-	}
-	T* CopyToHostAsync( cudaStream_t stream )
-	{
-		if (sizeInBytes > 0)
-		{
-			if (!(location & ON_HOST))
-			{
-				hostPtr = (T*)MALLOC64( sizeInBytes );
-				location |= ON_HOST;
-				owner |= ON_HOST;
-			}
-			CHK_CUDA( cudaMemcpyAsync( hostPtr, devPtr, sizeInBytes, cudaMemcpyDeviceToHost, stream ) );
 		}
 		return hostPtr;
 	}

@@ -145,7 +145,7 @@ public:
 	OptixProgramGroup progGroup[5];
 	OptixTraversableHandle bvhRoot;
 	Params params;
-	CUdeviceptr d_params;
+	CUdeviceptr d_params[3];
 };
 
 //  +-----------------------------------------------------------------------------+

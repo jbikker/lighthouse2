@@ -33,6 +33,7 @@ public:
 	~CoreMesh();
 	// methods
 	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags = 0 );
+	void UpdateAccstruc();
 	// data
 	int triangleCount = 0;					// number of triangles in the mesh
 	CoreBuffer<float4>* positions4 = 0;		// vertex data for intersection
@@ -40,6 +41,8 @@ public:
 	CoreBuffer<uchar>* buildTemp = 0;		// reusable temporary buffer for Optix BVH construction
 	CoreBuffer<uchar>* buildBuffer = 0;		// reusable target buffer for Optix BVH construction
 	// aceleration structure
+	bool allowCompaction = false;			// static geometry will be built using compaction, animation without
+	bool accstrucNeedsUpdate = false;		// set to false when geometry is changed
 	uint32_t inputFlags[1] = { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT /* handled in CUDA shading code instead */ };
 	OptixBuildInput buildInput;				// acceleration structure build parameters
 	OptixAccelBuildOptions buildOptions;	// acceleration structure build options

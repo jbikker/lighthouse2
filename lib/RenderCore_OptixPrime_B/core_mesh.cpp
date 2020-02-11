@@ -60,10 +60,21 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 	// copy new vertex positions and normals
 	for (int i = 0; i < vertexCount; i++) vertex3Data[i] = make_float3( vertexData[i] );
 	triangles->SetHostData( (CoreTri4*)tris );
-	triangles->CopyToDevice();
-	// update accstruc
+	triangles->StageCopyToDevice();
+	// mark this mesh: BVH rebuild needed
+	accstrucNeedsUpdate = true;
+	UpdateAccstruc(); // for now
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  CoreMesh::UpdateAccstruc                                                   |
+//  |  Update the BVH.                                                      LH2'20|
+//  +-----------------------------------------------------------------------------+
+void CoreMesh::UpdateAccstruc()
+{
 	CHK_PRIME( rtpModelSetTriangles( model, indicesDesc, verticesDesc ) );
 	CHK_PRIME( rtpModelUpdate( model, RTP_MODEL_HINT_NONE /* blocking; try RTP_MODEL_HINT_ASYNC + rtpModelFinish for async version. */ ) );
+	accstrucNeedsUpdate = false;
 }
 
 // EOF

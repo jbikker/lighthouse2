@@ -22,12 +22,11 @@
 
 // core-specific settings
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
-#define MAXPATHLENGTH		16
+#define MAXPATHLENGTH		7
 #define CONSISTENTNORMALS	// consistent normal interpolation
 
 // low-level settings
 #define BLUENOISE			// use blue noise instead of uniform random numbers
-#define TAA					// really basic temporal antialiasing
 #define BILINEAR			// enable bilinear interpolation
 // #define NOTEXTURES		// all texture reads will be white
 
@@ -204,6 +203,32 @@ struct CUDAMaterial4
 #include "core_api_base.h"
 #include "rendercore.h"
 #include <cstdint>
+
+namespace lh2core
+{
+
+// setters / getters
+void stageInstanceDescriptors( CoreInstanceDesc* p );
+void stageMaterialList( CUDAMaterial* p );
+void stageAreaLights( CoreLightTri* p );
+void stagePointLights( CorePointLight* p );
+void stageSpotLights( CoreSpotLight* p );
+void stageDirectionalLights( CoreDirectionalLight* p );
+void stageLightCounts( int area, int point, int spot, int directional );
+void stageARGB32Pixels( uint* p );
+void stageARGB128Pixels( float4* p );
+void stageNRM32Pixels( uint* p );
+void stageSkyPixels( float3* p );
+void stageSkySize( int w, int h );
+void stageWorldToSky( const mat4& worldToLight );
+void stageDebugData( float4* p );
+void stageGeometryEpsilon( float e );
+void stageClampValue( float c );
+void stageMemcpy( void* d, void* s, int n );
+void pushStagedCopies();
+void SetCounters( Counters* p );
+
+} // namespace lh2core
 
 // blue noise data, from https://eheitzresearch.wordpress.com/762-2
 

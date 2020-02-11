@@ -121,6 +121,7 @@ private:
 	int SMcount = 0;								// multiprocessor count, used for persistent threads
 	int computeCapability;							// device compute capability
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
+	int blueSlot = 0;								// cycling through blue noise tiles for SVGF
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
 	uint frameCycle = 0;							// keeping track of the frame, for TAA
 	float j0, prevj0 = 0, j1, prevj1 = 0;			// jittering values of the previous frame
@@ -167,7 +168,7 @@ public:
 	OptixProgramGroup progGroup[5];
 	OptixTraversableHandle bvhRoot;
 	Params params;
-	CUdeviceptr d_params;
+	CUdeviceptr d_params[3];
 };
 
 //  +-----------------------------------------------------------------------------+

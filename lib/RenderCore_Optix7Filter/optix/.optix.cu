@@ -160,17 +160,12 @@ extern "C" __global__ void __raygen__rg()
 {
 	const uint stride = params.scrsize.x * params.scrsize.y * params.scrsize.z;
 	const uint3 idx = optixGetLaunchIndex();
+	const uint rayIdx = idx.x + idx.y * params.scrsize.x;
 	switch (params.phase)
 	{
-	case Params::SPAWN_PRIMARY: // primary rays
-		setupPrimaryRay( idx.x + idx.y * params.scrsize.x, stride );
-		break;
-	case Params::SPAWN_SECONDARY: // secondary rays
-		setupSecondaryRay( idx.x + idx.y * params.scrsize.x, stride );
-		break;
-	case Params::SPAWN_SHADOW: // shadow rays
-		generateShadowRay( idx.x + idx.y * params.scrsize.x, stride );
-		break;
+	case Params::SPAWN_PRIMARY: /* primary rays */ setupPrimaryRay( rayIdx, stride ); break;
+	case Params::SPAWN_SECONDARY: /* secondary rays */ setupSecondaryRay( rayIdx, stride ); break;
+	case Params::SPAWN_SHADOW: /* shadow rays */ generateShadowRay( rayIdx, stride ); break;
 	}
 }
 

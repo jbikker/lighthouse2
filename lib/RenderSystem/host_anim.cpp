@@ -208,8 +208,11 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	t += dt;
 	int keyCount = (int)sampler->t.size();
 	float animDuration = sampler->t[keyCount - 1];
-	while (t > animDuration) t -= animDuration, k = 0;
-	while (t > sampler->t[(k + 1) % keyCount]) k++;
+	if (animDuration == 0) t = 0, k = 0; /* happens for the book scene. */ else
+	{
+		while (t > animDuration) t -= animDuration, k = 0;
+		while (t > sampler->t[(k + 1) % keyCount]) k++;
+	}
 	// determine interpolation parameters
 	float t0 = sampler->t[k % keyCount];
 	float t1 = sampler->t[(k + 1) % keyCount];

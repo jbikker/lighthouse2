@@ -60,6 +60,27 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 		stageMemcpy( positions4->DevPtr(), positions4->HostPtr(), positions4->GetSizeInBytes() );
 	}
 	accstrucNeedsUpdate = true;
+	// check the geometry
+	aabb bounds;
+	for( int i = 0; i < vertexCount / 3; i++ ) 
+	{
+		float3 p0 = make_float3( vertexData[i * 3 + 0] );
+		float3 p1 = make_float3( vertexData[i * 3 + 1] );
+		float3 p2 = make_float3( vertexData[i * 3 + 2] );
+		if (length( p0 - p1 ) == 0 || length( p2 - p1 ) == 0 || length( p2 - p0 ) == 0)
+		{
+			int w = 0;
+		}
+		if (isnan( p0.x + p0.y + p0.z ) || isnan( p1.x + p1.y + p1.z ) || isnan( p2.x + p2.y + p2.z ))
+		{
+			int w = 0;
+		}
+		bounds.Grow( p0 );
+		bounds.Grow( p1 );
+		bounds.Grow( p2 );
+	}
+	int w = 0;
+
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -78,8 +99,10 @@ void CoreMesh::UpdateAccstruc()
 	buildInput.triangleArray.flags = inputFlags;
 	buildInput.triangleArray.numSbtRecords = 1;
 	// set acceleration structure build options
+	// NOTE: compacting the first time geometry is handed works well for static geometry but
+	// crashes the bird animation, for unknown reasons. Disabled for now.
 	buildOptions = {};
-	buildOptions.buildFlags = (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+	buildOptions.buildFlags = /* (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | */ OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
 	buildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
 	// determine buffer sizes for the acceleration structure
 	CHK_OPTIX( optixAccelComputeMemoryUsage( RenderCore::optixContext, &buildOptions, &buildInput, 1, &buildSizes ) );
@@ -96,7 +119,7 @@ void CoreMesh::UpdateAccstruc()
 		buildBuffer = new CoreBuffer<uchar>( compactedSizeOffset + 8, ON_DEVICE );
 	}
 	// build
-	if (allowCompaction)
+	if (0) /* see note on compaction above */ // (allowCompaction)
 	{
 		// build with compaction
 		OptixAccelEmitDesc emitProperty = {};

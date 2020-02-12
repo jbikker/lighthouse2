@@ -143,6 +143,7 @@ private:
 	ViewPyramid prevView;							// previous view frustum, for reprojection
 	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
 	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
+	bool noDirectLightsInScene = true;				// no lights specified; don't do NEE in pathtracer
 	Timer renderTimer, frameTimer;					// timers for asynchronous rendering
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.

@@ -578,6 +578,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -746,7 +747,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
-			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
+			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), noDirectLightsInScene ? 0 : connectionBuffer->DevPtr(),
 			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );

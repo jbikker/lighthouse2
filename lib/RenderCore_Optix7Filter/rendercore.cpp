@@ -629,6 +629,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -827,7 +828,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			(features != 0 && vars.filterEnabled) ? features->DevPtr() : 0,
 			worldPos ? worldPos->DevPtr() : 0, deltaDepth ? deltaDepth->DevPtr() : 0,
-			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), connectionBuffer->DevPtr(),
+			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), noDirectLightsInScene ? 0 : connectionBuffer->DevPtr(),
 			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), blueSlot, samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			jitteredView.spreadAngle, jitteredView.p1, jitteredView.p2, jitteredView.p3, jitteredView.pos );

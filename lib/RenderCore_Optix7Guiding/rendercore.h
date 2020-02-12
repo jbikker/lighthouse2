@@ -119,6 +119,7 @@ private:
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
+	bool noDirectLightsInScene = true;				// no lights specified; don't do NEE in pathtracer
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.

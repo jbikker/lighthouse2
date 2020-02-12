@@ -101,7 +101,10 @@ void shadeKernel( float4* accumulator, const uint stride,
 		if (DdotNL > 0) /* lights are not double sided */
 		{
 			float3 contribution = throughput * shadingData.color;
-			if (pathLength == 1 || (FLAGS & S_SPECULAR)) accumulator[pixelIdx] += make_float4( contribution, 0 );
+			if (pathLength == 1 || (FLAGS & S_SPECULAR) || connections == 0)  
+			{
+				accumulator[pixelIdx] += make_float4( contribution, 0 );
+			}
 		}
 		return;
 	}
@@ -117,7 +120,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (faceDir == 1) shadingData.transmittance = make_float3( 0 );
 
 	// next event estimation: connect eye path to light
-	if (!(FLAGS & S_SPECULAR))
+	if ((FLAGS & S_SPECULAR) == 0 && connections != 0)
 	{
 		const float r0 = RandomFloat( seed ), r1 = RandomFloat( seed );
 		float pickProb, lightPdf = 0;

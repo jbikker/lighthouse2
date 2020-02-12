@@ -58,7 +58,7 @@ public:
 	void LoadGeometryFromOBJ( const string& fileName, const char* directory, const mat4& transform, const bool flatShaded = false );
 	void ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride );
 	void BuildFromIndexedData( const vector<int>& tmpIndices, const vector<float3>& tmpVertices,
-		const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<Pose>& tmpPoses,
+		const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<float4>& tmpTs, const vector<Pose>& tmpPoses,
 		const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights, const int materialIdx );
 	void BuildMaterialList();
 	void UpdateAlphaFlags();

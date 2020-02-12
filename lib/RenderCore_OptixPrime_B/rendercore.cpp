@@ -470,6 +470,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -604,7 +605,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( pathCount, accumulator->DevPtr(), extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
 			extensionHitBuffer->DevPtr(), extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
-			shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(), samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(),
+			noDirectLightsInScene ? 0 : shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(), samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(),
 			samplesTaken, probePos, pathLength, scrwidth, scrheight, view );
 		counterBuffer->CopyToHost(); // sadly this is needed; Optix Prime doesn't expose persistent threads
 		cudaEventRecord( shadeEnd[pathLength - 1] );

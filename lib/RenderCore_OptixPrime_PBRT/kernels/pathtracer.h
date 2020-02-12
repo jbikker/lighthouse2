@@ -160,7 +160,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		float3 contribution = make_float3( 0 ); // initialization required.
 		if (material.IsEmissiveTwosided() || DdotNL > 0 /* lights are not double sided */)
 		{
-			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
+			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0 || connections == 0)
 			{
 				// accept light contribution if previous vertex was specular
 				contribution = material.Color();
@@ -218,7 +218,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	throughput *= 1.0f / bsdfPdf;
 
 	// next event estimation: connect eye path to light
-	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
+	if ((FLAGS & S_SPECULAR) == 0 && connections != 0) // skip for specular vertices
 	{
 		float r0, r1, pickProb, lightPdf = 0;
 		if (sampleIdx < 2)

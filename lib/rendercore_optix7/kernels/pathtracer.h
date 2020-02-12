@@ -30,7 +30,7 @@
 #define S_BOUNCED		2	// path encountered a diffuse vertex
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 #define S_BOUNCEDTWICE	8	// this core will stop after two diffuse bounces
-#define ENOUGH_BOUNCES	S_BOUNCED // or S_BOUNCEDTWICE
+#define ENOUGH_BOUNCES	S_BOUNCEDTWICE // or S_BOUNCED
 
 // readability defines; data layout is optimized for 128-bit accesses
 #define PRIMIDX __float_as_int( hitData.z )
@@ -40,7 +40,7 @@
 #define HIT_T hitData.w
 #define RAY_O make_float3( O4 )
 #define FLAGS data
-#define PATHIDX (data >> 8)
+#define PATHIDX (data >> 6)
 
 //  +-----------------------------------------------------------------------------+
 //  |  shadeKernel                                                                |
@@ -127,7 +127,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		float3 contribution = make_float3( 0 ); // initialization required.
 		if (DdotNL > 0 /* lights are not double sided */)
 		{
-			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0)
+			if (pathLength == 1 || (FLAGS & S_SPECULAR) > 0 || connections == 0)
 			{
 				// accept light contribution if previous vertex was specular
 				contribution = shadingData.color;
@@ -162,7 +162,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	throughput *= 1.0f / bsdfPdf;
 
 	// next event estimation: connect eye path to light
-	if (!(FLAGS & S_SPECULAR)) // skip for specular vertices
+	if ((FLAGS & S_SPECULAR) == 0 && connections != 0) // skip for specular vertices
 	{
 		float r0, r1, pickProb, lightPdf = 0;
 		if (sampleIdx < 2)

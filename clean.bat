@@ -102,6 +102,17 @@ del apps\imguiapp\*.pdb /Q
 del apps\imguiapp\*.ilk /Q
 del apps\imguiapp\*.exp /Q
 del apps\imguiapp\*.lib /Q
+rd apps\benchmarkapp\x64 /S /Q
+del apps\benchmarkapp\data\textures\*.bin
+del apps\benchmarkapp\data\mattest\textures\*.bin
+del apps\benchmarkapp\data\sky_15.bin
+del apps\benchmarkapp\*.exe /Q
+del apps\benchmarkapp\*.iobj /Q
+del apps\benchmarkapp\*.ipdb /Q
+del apps\benchmarkapp\*.pdb /Q
+del apps\benchmarkapp\*.ilk /Q
+del apps\benchmarkapp\*.exp /Q
+del apps\benchmarkapp\*.lib /Q
 rd apps\rtxbvhreveng\x64 /S /Q
 del apps\rtxbvhreveng\data\sky_15.bin
 del apps\rtxbvhreveng\*.exe /Q

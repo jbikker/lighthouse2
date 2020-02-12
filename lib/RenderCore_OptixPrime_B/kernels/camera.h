@@ -107,7 +107,7 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 	// initialize path state
 	rayBuffer[jobIndex].O4 = make_float4( posOnLens, geometryEpsilon );
 	rayBuffer[jobIndex].D4 = make_float4( rayDir, 1e34f );
-	pathStateData[jobIndex * 2 + 0] = make_float4( 1, 1, 1, __uint_as_float( ((x + (y + (sampleIndex - pass) * scrvsize) * scrhsize) << 8) + 1 /* S_SPECULAR */ ) );
+	pathStateData[jobIndex * 2 + 0] = make_float4( 1, 1, 1, __uint_as_float( ((x + (y + (sampleIndex - pass) * scrvsize) * scrhsize) << 6) + 1 /* S_SPECULAR */ ) );
 	pathStateData[jobIndex * 2 + 1] = make_float4( 1, 0, 0, 0 );
 }
 

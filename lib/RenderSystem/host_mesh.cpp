@@ -324,7 +324,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 		vector<float3> tmpNormals, tmpVertices;
 		vector<float2> tmpUvs;
 		vector<uint4> tmpJoints;
-		vector<float4> tmpWeights;
+		vector<float4> tmpWeights, tmpTs;
 		switch (accessor.componentType)
 		{
 		case TINYGLTF_COMPONENT_TYPE_BYTE: for (int k = 0; k < count; k++, a += byteStride) tmpIndices.push_back( *((char*)a) ); break;
@@ -386,7 +386,14 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 					else FATALERROR( "double precision normals not supported in gltf file" );
 				else FATALERROR( "expected vec3 normals in gltf file" );
 			}
-			else if (attribute.first == "TANGENT") /* not yet supported */ continue;
+			else if (attribute.first == "TANGENT")
+			{
+				if (attribAccessor.type == TINYGLTF_TYPE_VEC4)
+					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+						for (size_t i = 0; i < count; i++, a += byte_stride) tmpTs.push_back( *((float4*)a) );
+					else FATALERROR( "double precision tangents not supported in gltf file" );
+				else FATALERROR( "expected vec4 uvs in gltf file" );
+			}
 			else if (attribute.first == "TEXCOORD_0")
 			{
 				if (attribAccessor.type == TINYGLTF_TYPE_VEC2)
@@ -478,7 +485,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 			}
 		}
 		// all data has been read; add triangles to the HostMesh
-		BuildFromIndexedData( tmpIndices, tmpVertices, tmpNormals, tmpUvs, tmpPoses,
+		BuildFromIndexedData( tmpIndices, tmpVertices, tmpNormals, tmpUvs, tmpTs, tmpPoses,
 			tmpJoints, tmpWeights, materialOverride == -1 ? (prim.material + matIdxOffset) : materialOverride );
 	}
 }
@@ -490,7 +497,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 //  |  data, which we now convert to the final representation.              LH2'19|
 //  +-----------------------------------------------------------------------------+
 void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector<float3>& tmpVertices,
-	const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<Pose>& tmpPoses,
+	const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<float4>& tmpTs, const vector<Pose>& tmpPoses,
 	const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights, const int materialIdx )
 {
 	// calculate values for consistent normal interpolation
@@ -576,9 +583,14 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			}
 			else
 			{
-				// uvs cannot be used; use edges instead
 				tri.T = normalize( (tri.vertex1 - tri.vertex0) * uv02.y - (tri.vertex2 - tri.vertex0) * uv01.y );
 				tri.B = normalize( (tri.vertex2 - tri.vertex0) * uv01.x - (tri.vertex1 - tri.vertex0) * uv02.x );
+			}
+			// catch bad tangents
+			if (isnan( tri.T.x ) || isnan( tri.T.y ) || isnan( tri.T.z ))
+			{
+				tri.T = normalize( tri.vertex1 - tri.vertex0 );
+				tri.B = normalize( cross( N, tri.T ) );
 			}
 		}
 		else
@@ -719,7 +731,7 @@ void HostMesh::SetPose( const HostSkin* skin )
 			origNormal.push_back( tri.vN2 );
 		}
 		vertexNormals.resize( vertices.size() );
-		}
+	}
 #if 1
 	// code optimized for INFOMOV by Alysha Bogaers and Naraenda Prasetya
 
@@ -871,6 +883,6 @@ void HostMesh::SetPose( const HostSkin* skin )
 #endif
 	// mark as dirty; changing vector contents doesn't trigger this
 	MarkAsDirty();
-	}
+}
 
 // EOF

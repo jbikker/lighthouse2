@@ -219,14 +219,6 @@ void HostTexture::Load( const char* fileName, const uint modFlags, bool normalMa
 	uint pitch = FreeImage_GetPitch( img );
 	BYTE* bytes = (BYTE*)FreeImage_GetBits( img );
 	uint bpp = FreeImage_GetBPP( img );
-	FIBITMAP* alpha = FreeImage_GetChannel( img, FICC_ALPHA );
-	if (alpha)
-	{
-		// set alpha rendering for this texture to true if it contains a meaningful alpha channel
-		DWORD histogram[256];
-		if (FreeImage_GetHistogram( alpha, histogram )) if (histogram[0] > 0) flags |= HASALPHA;
-		FreeImage_Unload( alpha );
-	}
 	// iterate image pixels and write to LightHouse internal format
 	if (bpp == 32) // LDR
 	{

@@ -30,7 +30,7 @@ CoreMesh::~CoreMesh()
 	Cleanup();
 }
 
-void CoreMesh::SetGeometry( const float4 *vertexData, const int vertexCount, const int triCount, const CoreTri *tris, const uint *alphaFlags )
+void CoreMesh::SetGeometry( const float4 *vertexData, const int vertexCount, const int triCount, const CoreTri *tris )
 {
 	const bool sameTriCount = triangles && (triangles->GetSize() / sizeof( CoreTri ) == triCount);
 

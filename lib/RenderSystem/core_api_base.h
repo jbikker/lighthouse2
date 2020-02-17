@@ -110,7 +110,7 @@ public:
 	// SetSkyData: specify the data required for sky dome rendering.
 	virtual void SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight = mat4() ) = 0;
 	// SetGeometry: update the geometry for a single mesh.
-	virtual void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 ) = 0;
+	virtual void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles ) = 0;
 	// SetInstance: update the data on a single instance.
 	virtual void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform = mat4::Identity() ) = 0;
 	// FinalizeInstances: allow the core to do any finalizing work after receiving all geometry and instances.

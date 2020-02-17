@@ -30,7 +30,7 @@ public:
 	~CoreMesh();
 
 	void Cleanup();
-	void SetGeometry( const float4 *vertexData, const int vertexCount, const int triCount, const CoreTri *tris, const uint *alphaFlags = 0 );
+	void SetGeometry( const float4 *vertexData, const int vertexCount, const int triCount, const CoreTri *tris );
 
 	VulkanCoreBuffer<CoreTri> *triangles = nullptr;
 	BottomLevelAS *accelerationStructure = nullptr;

@@ -29,6 +29,7 @@ void UpdateUI()
 	float3 camDir = renderer->GetCamera()->direction;
 	ImGui::Text( "position: %5.2f, %5.2f, %5.2f", camPos.x, camPos.y, camPos.z );
 	ImGui::Text( "viewdir:  %5.2f, %5.2f, %5.2f", camDir.x, camDir.y, camDir.z );
+	ImGui::Text( "fdist:    %5.2f", renderer->GetCamera()->focalDistance );
 	ImGui::SliderFloat( "FOV", &renderer->GetCamera()->FOV, 10, 90 );
 	ImGui::SliderFloat( "aperture", &renderer->GetCamera()->aperture, 0, 0.025f );
 	ImGui::SliderFloat( "distortion", &renderer->GetCamera()->distortion, 0, 0.5f );

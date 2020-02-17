@@ -61,7 +61,6 @@ public:
 		const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<float4>& tmpTs, const vector<Pose>& tmpPoses,
 		const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights, const int materialIdx );
 	void BuildMaterialList();
-	void UpdateAlphaFlags();
 	void SetPose( const vector<float>& weights );
 	void SetPose( const HostSkin* skin );
 	// data members
@@ -73,7 +72,6 @@ public:
 	vector<float3> origNormal;					// skinning: base pose normals
 	vector<HostTri> triangles;					// full triangles
 	vector<int> materialList;					// list of materials used by the mesh; used to efficiently track light changes
-	vector<uint> alphaFlags;					// list containing 1 for each triangle that is flagged as HASALPHA, 0 otherwise 
 	vector<uint4> joints;						// skinning: joints
 	vector<float4> weights;						// skinning: joint weights
 	vector<Pose> poses;							// morph target data

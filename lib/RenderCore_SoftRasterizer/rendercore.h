@@ -56,7 +56,7 @@ public:
 	// a scene is setup by first passing a number of meshes (geometry), then a number of instances.
 	// note that stored meshes can be used zero, one or multiple times in the scene.
 	// also note that, when using alpha flags, materials must be in sync.
-	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags = 0 );
+	void SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles );
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform );
 	void FinalizeInstances() { /* not needed for the software rasterizer */ }
 	void SetProbePos( const int2 pos );

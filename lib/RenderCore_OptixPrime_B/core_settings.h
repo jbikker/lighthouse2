@@ -23,7 +23,7 @@
 // core-specific settings
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
 #define MAXPATHLENGTH		7
-#define CONSISTENTNORMALS	// consistent normal interpolation
+// #define CONSISTENTNORMALS	// consistent normal interpolation
 
 // low-level settings
 #define BLUENOISE			// use blue noise instead of uniform random numbers

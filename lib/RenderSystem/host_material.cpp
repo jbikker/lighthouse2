@@ -44,7 +44,6 @@ void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 	{
 		int diffuseTextureID = color.textureID = HostScene::FindOrCreateTexture( original.diffuse_texname, HostTexture::LINEARIZED | HostTexture::FLIPPED );
 		color.value = make_float3( 1 ); // we have a texture now; default modulation to white
-		if (HostScene::textures[diffuseTextureID]->flags & HASALPHA) flags |= HASALPHA;
 	}
 	if (original.normal_texname != "")
 	{
@@ -158,6 +157,7 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 					{
 						tinygltf::Value v = value.Get( key );
 						color.textureID = v.GetNumberAsInt() + textureBase;
+
 					}
 					if (key == "glossinessFactor" )
 					{

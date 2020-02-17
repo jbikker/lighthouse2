@@ -238,7 +238,7 @@ public:
 	Vec3Value detailColor;						// universal material property: detail texture
 	Vec3Value normals;							// universal material property: normal map
 	Vec3Value detailNormals;					// universal material property: detail normal map			
-	uint flags;									// material flags: 1 = SMOOTH, 2 = HASALPHA
+	uint flags;									// material flags: 1 = SMOOTH
 
 	// Disney BRDF properties
 	// Data for the Disney Principled BRDF.

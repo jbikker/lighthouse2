@@ -32,7 +32,7 @@ public:
 	CoreMesh() = default;
 	~CoreMesh();
 	// methods
-	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags = 0 );
+	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris );
 	// data
 	CoreBuffer<CoreTri4>* triangles = 0;		// original triangle data, as received from RenderSystem
 	uint3* indexData = 0;					// dummy index data; simply increasing numbers

@@ -52,7 +52,7 @@ __global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm 
 __global__  __launch_bounds__( 128 /* max block size */, 8 /* min blocks per sm, PASCAL, VOLTA */ )
 #endif
 void shadeKernel( float4* accumulator, const uint stride,
-	float4* pathStates, const float4* hits, float4* connections,
+	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos, const uint pathCount )
@@ -66,6 +66,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float4 D4 = pathStates[jobIndex + stride];	// ray direction xyz
 	float4 T4 = pathLength == 1 ? make_float4( 1 ) /* faster */ : pathStates[jobIndex + stride * 2]; // path thoughput rgb
 	const float4 hitData = hits[jobIndex];
+	hits[jobIndex].z = int_as_float( -1 ); // reset for next query
 	const float bsdfPdf = T4.w;
 
 	// derived data
@@ -229,8 +230,9 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0)) ? 1 : SurvivalProbability( bsdf );
 	if (p < RandomFloat( seed )) return; else throughput *= 1 / p;
 
-	// write extension ray
-	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
+	// write extension ray, with compaction. Note: nvcc will aggregate automatically, 
+	// https://devblogs.nvidia.com/cuda-pro-tip-optimized-filtering-warp-aggregated-atomics 
+	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 );
 	const uint packedNormal = PackNormal( fN * faceDir );
 	if (!(FLAGS & S_SPECULAR)) FLAGS |= FLAGS & S_BOUNCED ? S_BOUNCEDTWICE : S_BOUNCED; else FLAGS |= S_VIASPECULAR;
 	pathStates[extensionRayIdx] = make_float4( SafeOrigin( I, R, N, geometryEpsilon ), __uint_as_float( FLAGS ) );
@@ -244,7 +246,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 //  |  Host-side access point for the shadeKernel code.                     LH2'19|
 //  +-----------------------------------------------------------------------------+
 __host__ void shade( const int pathCount, float4* accumulator, const uint stride,
-	float4* pathStates, const float4* hits, float4* connections,
+	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )

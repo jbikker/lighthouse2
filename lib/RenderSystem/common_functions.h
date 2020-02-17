@@ -119,4 +119,13 @@ FUNCTYPE float3 UniformSampleCone( const float r0, const float r1, const float c
 	return make_float3( c * term2, s * term2, cosTheta );
 }
 
+FUNCTYPE float3 CatmullRom( const float3& p0, const float3& p1, const float3& p2, const float3& p3, const float t )
+{
+	const float3 a = 2 * p1;
+	const float3 b = p2 - p0;
+	const float3 c = 2 * p0 - 5 * p1 + 4 * p2 - p3;
+	const float3 d = -1 * p0 + 3 * p1 - 3 * p2 + p3;
+	return 0.5f * (a + (b * t) + (c * t * t) + (d * t * t * t));
+}
+
 // EOF

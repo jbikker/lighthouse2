@@ -502,6 +502,19 @@ public:
 		M[2] = z.x, M[6] = z.y, M[10] = z.z;
 		return M;
 	}
+	static mat4 Ortho( const float left, const float right, const float bottom, const float top,
+		const float znear, const float zfar )
+	{
+		// adapted from glm. See: https://stackoverflow.com/a/12230368
+		mat4 r;
+		r[0] = 2.0f / (right - left);
+		r[5] = 2.0f / (top - bottom);
+		r[10] = -2.0f / (zfar - znear);
+		r[12] = -(right + left) / (right - left);
+		r[13] = -(top + bottom) / (top - bottom);
+		r[14] = -(zfar + znear) / (zfar - znear);
+		return r;
+	}
 	static mat4 LookAt( const float3& pos, const float3& look, const float3& up )
 	{
 		// PBRT's lookat

@@ -85,29 +85,16 @@ void RenderSystem::SynchronizeMaterials()
 	bool materialsDirty = false;
 	for (auto material : scene->materials) if (material->Changed())
 	{
-		materialsDirty = true;
-		// if the change is/includes a change of the material alpha flag, mark all
-		// meshes using this material as dirty as well.
-		if (material->AlphaChanged())
-		{
-			for (auto mesh : scene->meshPool) for (int m : mesh->materialList) if (m == material->ID)
-			{
-				mesh->MarkAsDirty();
-				break;
-			}
-		}
-	}
-	if (materialsDirty)
-	{
-		// send material data to core
+		// send all material data to core
 		vector<CoreMaterial> gpuMaterial;
-		for (auto material : scene->materials)
+		for (auto sceneMat : scene->materials)
 		{
 			CoreMaterial m;
-			memcpy( &m, material, sizeof( CoreMaterial ) );
+			memcpy( &m, sceneMat, sizeof( CoreMaterial ) );
 			gpuMaterial.push_back( m );
 		}
 		core->SetMaterials( gpuMaterial.data(), (int)gpuMaterial.size() );
+		break;
 	}
 }
 
@@ -125,9 +112,8 @@ void RenderSystem::SynchronizeMeshes()
 		HostMesh* mesh = scene->meshPool[modelIdx];
 		if (mesh->Changed())
 		{
-			mesh->UpdateAlphaFlags();
-			mesh->MarkAsNotDirty(); // otherwise UpdateAlphaFlags will trigger a second update.
-			core->SetGeometry( modelIdx, mesh->vertices.data(), (int)mesh->vertices.size(), (int)mesh->triangles.size(), (CoreTri*)mesh->triangles.data(), mesh->alphaFlags.data() );
+			mesh->MarkAsNotDirty();
+			core->SetGeometry( modelIdx, mesh->vertices.data(), (int)mesh->vertices.size(), (int)mesh->triangles.size(), (CoreTri*)mesh->triangles.data() );
 			meshesChanged = true; // trigger scene graph update
 		}
 	}

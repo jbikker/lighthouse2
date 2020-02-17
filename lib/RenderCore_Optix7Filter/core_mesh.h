@@ -32,7 +32,7 @@ public:
 	CoreMesh() = default;
 	~CoreMesh();
 	// methods
-	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags = 0 );
+	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris );
 	void UpdateAccstruc();
 	// data
 	int triangleCount = 0;					// number of triangles in the mesh

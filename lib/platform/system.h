@@ -30,6 +30,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <map>
 
 using namespace std;
 using namespace half_float;
@@ -218,6 +219,26 @@ public:
 public:
 	GLuint ID = 0;
 	uint width = 0, height = 0;
+};
+
+class Shader;
+class GLTextRenderer
+{
+	struct Character
+	{
+		uint ID;			// handle of the glyph texture
+		int2 size;			// size of glyph
+		int2 bearing;		// offset from baseline to left/top of glyph
+		uint advance;		// horizontal offset to advance to next glyph
+	};
+public:
+	GLTextRenderer( const int size = 24 );
+	void Render( string text, GLfloat x, GLfloat y, GLfloat scale = 1.0f, const float3 color = make_float3( 1 ) );
+	static int scrwidth, scrheight;
+private:
+	GLuint vbo, vao;
+	Shader* shader;
+	map<char, Character> Characters;
 };
 
 } // namespace lighthouse2

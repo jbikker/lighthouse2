@@ -38,7 +38,6 @@ class HostTexture
 public:
 	enum
 	{
-		HASALPHA = 1,
 		NORMALMAP = 2,
 		LDR = 4,
 		HDR = 8

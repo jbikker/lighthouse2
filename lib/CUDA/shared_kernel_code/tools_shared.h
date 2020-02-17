@@ -221,6 +221,10 @@ LH2_DEVFUNC float FresnelDielectricExact( const float3& wo, const float3& N, flo
 // origin offset
 LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N, const float geoEpsilon )
 {
+#if 1
+	// simply offset along the normal
+	return O + N * geoEpsilon;
+#else
 #if 0
 	// from Ray Tracing Gems 1, chapter 6: does not use geoEpsilon nor ray direction.
 	const float3 _N = dot( N, R ) > 0 ? N : (-N);
@@ -244,6 +248,7 @@ LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N
 	const float side = 1.0f;
 #endif
 	return O + R * geoEpsilon * (1 - v) + N * side * geoEpsilon * v;
+#endif
 #endif
 }
 

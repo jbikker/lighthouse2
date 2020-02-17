@@ -52,7 +52,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderSystem;../taskflow</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderSystem;../taskflow;../FreeType2/include</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -66,8 +66,8 @@
       <IgnoreSpecificDefaultLibraries>MSVCRT</IgnoreSpecificDefaultLibraries>
     </Link>
     <Lib>
-      <AdditionalDependencies>glfw3.lib;freeimage.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../lib/glfw/lib-vc2017;../../lib/freeimage/lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;freeimage.lib;freetype.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../lib/glfw/lib-vc2017;../../lib/freeimage/lib64;../../lib/FreeType2/win64</AdditionalLibraryDirectories>
       <OutputFile>lib\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
@@ -78,7 +78,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderSystem;../taskflow</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);../freeimage/inc;../zlib;../glfw/include;../glad/include;../half2.1.0;../tinyobjloader;../RenderSystem;../taskflow;../FreeType2/include</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <DebugInformationFormat>None</DebugInformationFormat>
@@ -95,8 +95,8 @@
       </IgnoreSpecificDefaultLibraries>
     </Link>
     <Lib>
-      <AdditionalDependencies>glfw3.lib;freeimage.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../lib/glfw/lib-vc2017;../../lib/freeimage/lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;freeimage.lib;freetype.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../lib/glfw/lib-vc2017;../../lib/freeimage/lib64;../../lib/FreeType2/win64;</AdditionalLibraryDirectories>
       <OutputFile>lib\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
   </ItemDefinitionGroup>

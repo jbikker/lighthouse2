@@ -64,7 +64,7 @@ namespace lighthouse2
 
 struct RenderSettings
 {
-	float geometryEpsilon = 1.0e-4f;
+	float geometryEpsilon = 1.0e-3f;
 	float filterDirectClamp = 15.0f;
 	float filterIndirectClamp = 2.5f;
 	uint filterEnabled = 1;

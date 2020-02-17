@@ -68,7 +68,6 @@ public:
 	enum
 	{
 		SMOOTH = 1,								// material uses normal interpolation
-		HASALPHA = 2,							// material textures use alpha channel
 		FROM_MTL = 4,							// changes are persistent for these, not for others
 		EMISSIVE_TWOSIDED = 8,
 	};
@@ -95,7 +94,7 @@ public:
 	Vec3Value detailColor;						// universal material property: detail texture
 	Vec3Value normals;							// universal material property: normal map
 	Vec3Value detailNormals;					// universal material property: detail normal map			
-	uint flags = SMOOTH;						// material flags: 1 = SMOOTH, 2 = HASALPHA
+	uint flags = SMOOTH;						// material flags: 1 = SMOOTH
 
 	// Disney BRDF properties
 	// Data for the Disney Principled BRDF.
@@ -152,16 +151,6 @@ public:
 
 	// field for the BuildMaterialList method of HostMesh
 	bool visited = false;						// last mesh that checked this material
-	bool AlphaChanged()
-	{
-		// A change to the alpha flag should trigger a change to any mesh using this flag as
-		// well. This method allows us to track this.
-		const bool dirty = IsDirty();
-		const bool changed = (flags & HASALPHA) != (prevFlags & HASALPHA);
-		prevFlags = flags;
-		if (!dirty) MarkAsNotDirty(); // checking if alpha changed should not make the object dirty.
-		return changed;
-	}
 
 	// internal
 private:

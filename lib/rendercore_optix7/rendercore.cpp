@@ -25,7 +25,7 @@ const surfaceReference* renderTargetRef();
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
 void shade( const int pathCount, float4* accumulator, const uint stride,
-	float4* pathStates, const float4* hits, float4* connections,
+	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
@@ -315,6 +315,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		connectionBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3 * 2, ON_DEVICE );
 		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
 		hitBuffer = new CoreBuffer<float4>( maxPixels * scrspp, ON_DEVICE );
+		cudaMemset( hitBuffer->DevPtr(), 255, maxPixels * scrspp * sizeof( float4 ) ); // set all hits to -1 for first frame.
 		pathStateBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3, ON_DEVICE );
 		params.connectData = connectionBuffer->DevPtr();
 		params.accumulator = accumulator->DevPtr();
@@ -331,14 +332,14 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 //  |  RenderCore::SetGeometry                                                    |
 //  |  Set the geometry data for a model.                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles, const uint* alphaFlags )
+void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangles )
 {
 	// Note: for first-time setup, meshes are expected to be passed in sequential order.
 	// This will result in new CoreMesh pointers being pushed into the meshes vector.
 	// Subsequent mesh changes will be applied to existing CoreMeshes. This is deliberately
 	// minimalistic; RenderSystem is responsible for a proper (fault-tolerant) interface.
 	if (meshIdx >= meshes.size()) meshes.push_back( new CoreMesh() );
-	meshes[meshIdx]->SetGeometry( vertexData, vertexCount, triangleCount, triangles, alphaFlags );
+	meshes[meshIdx]->SetGeometry( vertexData, vertexCount, triangleCount, triangles );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -545,7 +546,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
 			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
-			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0);
 	}
 	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	materialBuffer->StageCopyToDevice();

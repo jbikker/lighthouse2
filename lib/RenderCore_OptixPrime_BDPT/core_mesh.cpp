@@ -33,7 +33,7 @@ CoreMesh::~CoreMesh()
 //  |  CoreMesh::SetGeometry                                                      |
 //  |  Set the geometry data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags )
+void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris )
 {
 	// copy triangle data to GPU
 	delete triangles;

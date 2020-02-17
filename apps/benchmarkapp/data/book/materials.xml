@@ -1,5 +1,5 @@
 <materials>
-    <material_count>5</material_count>
+    <material_count>3</material_count>
     <material_0>
         <name>Texture-base</name>
         <origin>data/book/scene.gltf</origin>
@@ -27,18 +27,18 @@
         <flags>5</flags>
         <color b="1" g="1" r="1"/>
         <absorption b="1e-32" g="1e-32" r="1e-32"/>
-        <metallic>0</metallic>
+        <metallic>1</metallic>
         <subsurface>1e-32</subsurface>
         <specular>1e-32</specular>
-        <roughness>0</roughness>
+        <roughness>0.16</roughness>
         <specularTint>1e-32</specularTint>
-        <anisotropic>1e-32</anisotropic>
+        <anisotropic>0</anisotropic>
         <sheen>1e-32</sheen>
         <sheenTint>1e-32</sheenTint>
         <clearcoat>1e-32</clearcoat>
         <clearcoatGloss>1e-32</clearcoatGloss>
-        <transmission>1e-32</transmission>
-        <eta>1e-32</eta>
+        <transmission>0</transmission>
+        <eta>0.25</eta>
     </material_1>
     <material_2>
         <name>Book-tittle</name>
@@ -60,44 +60,4 @@
         <transmission>1e-32</transmission>
         <eta>1e-32</eta>
     </material_2>
-    <material_3>
-        <name>MatI_Ride_FengHuang_01a</name>
-        <origin>data/bird/scene.gltf</origin>
-        <id>0</id>
-        <flags>5</flags>
-        <color b="1" g="1" r="1"/>
-        <absorption b="1e-32" g="1e-32" r="1e-32"/>
-        <metallic>0</metallic>
-        <subsurface>1e-32</subsurface>
-        <specular>1e-32</specular>
-        <roughness>1</roughness>
-        <specularTint>1e-32</specularTint>
-        <anisotropic>1e-32</anisotropic>
-        <sheen>1e-32</sheen>
-        <sheenTint>1e-32</sheenTint>
-        <clearcoat>1e-32</clearcoat>
-        <clearcoatGloss>1e-32</clearcoatGloss>
-        <transmission>1e-32</transmission>
-        <eta>1e-32</eta>
-    </material_3>
-    <material_4>
-        <name>MatI_Ride_FengHuang_01b</name>
-        <origin>data/bird/scene.gltf</origin>
-        <id>1</id>
-        <flags>5</flags>
-        <color b="1" g="1" r="1"/>
-        <absorption b="1e-32" g="1e-32" r="1e-32"/>
-        <metallic>0</metallic>
-        <subsurface>1e-32</subsurface>
-        <specular>1e-32</specular>
-        <roughness>1</roughness>
-        <specularTint>1e-32</specularTint>
-        <anisotropic>1e-32</anisotropic>
-        <sheen>1e-32</sheen>
-        <sheenTint>1e-32</sheenTint>
-        <clearcoat>1e-32</clearcoat>
-        <clearcoatGloss>1e-32</clearcoatGloss>
-        <transmission>1e-32</transmission>
-        <eta>1e-32</eta>
-    </material_4>
 </materials>

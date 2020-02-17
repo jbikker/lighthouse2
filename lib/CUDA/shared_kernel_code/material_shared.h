@@ -71,9 +71,9 @@ LH2_DEVFUNC void SetupFrame(
 	N = normalize( N.x * A + N.y * B + N.z * C );
 	iN = normalize( iN.x * A + iN.y * B + iN.z * C );
 	// "Consistent Normal Interpolation", Reshetov et al., 2010
-	const float4 vertexAlpha = tri.alpha4;
 	const bool backSide = dot( D, N ) > 0;
 #ifdef CONSISTENTNORMALS
+	const float4 vertexAlpha = tri.alpha4;
 #ifdef OPTIXPRIMEBUILD
 	const float alpha = u * vertexAlpha.x + v * vertexAlpha.y + w * vertexAlpha.z;
 #else
@@ -147,7 +147,7 @@ LH2_DEVFUNC void GetShadingData(
 		const float2 uvscale = __half22float2( __halves2half2( __ushort_as_half( t0data.y & 0xffff ), __ushort_as_half( t0data.y >> 16 ) ) );
 		const float2 uvoffs = __half22float2( __halves2half2( __ushort_as_half( t0data.z & 0xffff ), __ushort_as_half( t0data.z >> 16 ) ) );
 		const float4 texel = FetchTexelTrilinear( lambda, uvscale * (uvoffs + make_float2( tu, tv )), t0data.w, t0data.x & 0xffff, t0data.x >> 16 );
-		if (MAT_HASALPHA && texel.w < 0.5f)
+		if (texel.w < 0.5f)
 		{
 			retVal.flags |= ALPHA;
 			return;

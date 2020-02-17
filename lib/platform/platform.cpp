@@ -473,6 +473,18 @@ void Shader::SetFloat( const char* name, const float v )
 	CheckGL();
 }
 
+void Shader::SetFloat3( const char* name, const float3 v )
+{
+	glUniform3f( glGetUniformLocation( ID, name ), v.x, v.y, v.z );
+	CheckGL();
+}
+
+void Shader::SetFloat4( const char* name, const float4 v )
+{
+	glUniform4f( glGetUniformLocation( ID, name ), v.x, v.y, v.z, v.w );
+	CheckGL();
+}
+
 void Shader::SetInt( const char* name, const int v )
 {
 	glUniform1i( glGetUniformLocation( ID, name ), v );

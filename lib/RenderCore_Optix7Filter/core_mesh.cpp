@@ -33,7 +33,7 @@ CoreMesh::~CoreMesh()
 //  |  CoreMesh::SetGeometry                                                      |
 //  |  Set the geometry data for the accstruc.                              LH2'19|
 //  +-----------------------------------------------------------------------------+
-void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris, const uint* alphaFlags )
+void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris )
 {
 	// allocate for the first frame, reallocate when the triangle data grows
 	bool reallocate = false;

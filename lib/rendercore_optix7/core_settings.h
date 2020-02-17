@@ -23,7 +23,7 @@
 // core-specific settings
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
 #define MAXPATHLENGTH		7
-#define CONSISTENTNORMALS	// consistent normal interpolation
+// #define CONSISTENTNORMALS	// consistent normal interpolation
 
 // low-level settings
 #define BLUENOISE			// use blue noise instead of uniform random numbers
@@ -124,7 +124,6 @@ struct Params
 	float distortion;
 	int3 scrsize;
 	int pass, phase;
-	Counters counters;
 	float4* accumulator;
 	float4* connectData;
 	float4* hitData;
@@ -169,7 +168,6 @@ struct CUDAMaterial4
 #define HAS2NDNORMALMAP				(1 << 7)
 #define HAS2NDDIFFUSEMAP			(1 << 9)
 #define HASSMOOTHNORMALS			(1 << 11)
-#define HASALPHA					(1 << 12)
 #define HASMETALNESSMAP				(1 << 13)
 #define MAT_ISDIELECTRIC			(flags & ISDIELECTRIC)
 #define MAT_DIFFUSEMAPISHDR			(flags & DIFFUSEMAPISHDR)
@@ -181,7 +179,6 @@ struct CUDAMaterial4
 #define MAT_HAS2NDNORMALMAP			(flags & HAS2NDNORMALMAP)
 #define MAT_HAS2NDDIFFUSEMAP		(flags & HAS2NDDIFFUSEMAP)
 #define MAT_HASSMOOTHNORMALS		(flags & HASSMOOTHNORMALS)
-#define MAT_HASALPHA				(flags & HASALPHA)
 #define MAT_HASMETALNESSMAP			(flags & HASMETALNESSMAP)
 };
 

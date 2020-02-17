@@ -520,9 +520,9 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			vN0 = vN1 = vN2 = N;
 		}
 		// Note: we clamp at approx. 45 degree angles; beyond this the approach fails.
-		tmpAlphas[v0idx] = min( tmpAlphas[v0idx], max( 0.7f, dot( vN0, N ) ) );
-		tmpAlphas[v1idx] = min( tmpAlphas[v0idx], max( 0.7f, dot( vN1, N ) ) );
-		tmpAlphas[v2idx] = min( tmpAlphas[v0idx], max( 0.7f, dot( vN2, N ) ) );
+		tmpAlphas[v0idx] = min( tmpAlphas[v0idx], dot( vN0, N ) );
+		tmpAlphas[v1idx] = min( tmpAlphas[v1idx], dot( vN1, N ) );
+		tmpAlphas[v2idx] = min( tmpAlphas[v2idx], dot( vN2, N ) );
 	}
 	for (size_t s = tmpAlphas.size(), i = 0; i < s; i++)
 	{
@@ -587,7 +587,7 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 				tri.B = normalize( (tri.vertex2 - tri.vertex0) * uv01.x - (tri.vertex1 - tri.vertex0) * uv02.x );
 			}
 			// catch bad tangents
-			if (isnan( tri.T.x ) || isnan( tri.T.y ) || isnan( tri.T.z ))
+			if (isnan( tri.T.x + tri.T.y + tri.T.z + tri.B.x + tri.B.y + tri.B.z ))
 			{
 				tri.T = normalize( tri.vertex1 - tri.vertex0 );
 				tri.B = normalize( cross( N, tri.T ) );
@@ -658,23 +658,6 @@ void HostMesh::BuildMaterialList()
 			materialList.push_back( material->ID );
 		}
 	}
-}
-
-//  +-----------------------------------------------------------------------------+
-//  |  HostMesh::UpdateAlphaFlags                                                 |
-//  |  Create or update the list of alpha flags; one is set to true or fale for   |
-//  |  each triangle in the mesh. This will later be used to mark triangles in    |
-//  |  the core in a core-specific way, and ultimately, to detect triangles that  |
-//  |  may have alpha transparency as efficiently as possible during              |
-//  |  traversal.                                                           LH2'19|
-//  +-----------------------------------------------------------------------------+
-void HostMesh::UpdateAlphaFlags()
-{
-	const uint triCount = (uint)triangles.size();
-	if (alphaFlags.size() != triCount) alphaFlags.resize( triCount, 0 );
-	for (uint i = 0; i < triCount; i++)
-		if (HostScene::materials[triangles[i].material]->flags & HostMaterial::HASALPHA)
-			alphaFlags[i] = 1;
 }
 
 //  +-----------------------------------------------------------------------------+

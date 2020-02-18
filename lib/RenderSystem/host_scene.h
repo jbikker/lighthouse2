@@ -69,6 +69,7 @@ public:
 	static int CreateTexture( const string& origin, const uint modFlags = 0 );
 	static int FindOrCreateMaterial( const string& name );
 	static int FindMaterialID( const char* name );
+	static int FindNextMaterialID( const char* name, const int matID );
 	static int FindNode( const char* name );
 	static void SetNodeTransform( const int nodeId, const mat4& transform );
 	static void ResetAnimation( const int animId );

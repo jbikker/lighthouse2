@@ -74,10 +74,26 @@ void PrepareScene()
 	// book scene
 	materialFile = string( "data/book/materials.xml" );
 	renderer->AddScene( "data/book/scene.gltf" );
+	// dragon statue
+	renderer->AddScene( "data/statue/scene.gltf", mat4::Translate( -14, -0.5f, 25 ) );
+	// gems
+	renderer->AddScene( "data/crystal/scene.gltf", mat4::Translate( 27, -4, 6 ) * mat4::RotateZ( -0.25f ) * mat4::Scale( 0.5f ) );
+	renderer->AddScene( "data/crystal/scene.gltf", mat4::Translate( 31.5f, -4.75f, 6 ) * mat4::Scale( 0.5f ) );
+	// knights
+	renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( -16, 0.75f, -10 ) * mat4::RotateY( -1.2f ) );
+	renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( -17, 0.75f, -18.5f ) * mat4::RotateY( PI / 2 ) );
+	renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( -15, 0.75f, -18.5f ) * mat4::RotateY( PI / 2 ) );
 	// bird
 	// renderer->AddScene( "data/bird/scene.gltf", mat4::Translate( 0, 4, 0 ) * mat4::Scale( 0.005f ) );
+	// light
+	int whiteMat = renderer->AddMaterial( make_float3( 30 ) );
+	int lightQuad = renderer->AddQuad( normalize( make_float3( -183.9f, -44.6f, -60.9f ) ), 
+		make_float3( 183.9f, 44.6f, 60.9f ), 30.0f, 80.0f, whiteMat );
+	renderer->AddInstance( lightQuad );
 	// load changed materials
 	renderer->DeserializeMaterials( materialFile.c_str() );
+	// aggressive clamping
+	renderer->GetCamera()->clampValue = 2.5f;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -90,12 +106,13 @@ bool HandleInput( float frameTime )
 	float tspd = (keystates[GLFW_KEY_LEFT_SHIFT] ? 15.0f : 5.0f) * frameTime, rspd = 2.5f * frameTime;
 	bool changed = false;
 	Camera* camera = renderer->GetCamera();
-	if (keystates[GLFW_KEY_A]) { changed = true; camera->TranslateRelative( make_float3( -tspd, 0, 0 ) ); }
-	if (keystates[GLFW_KEY_D]) { changed = true; camera->TranslateRelative( make_float3( tspd, 0, 0 ) ); }
-	if (keystates[GLFW_KEY_W]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, tspd ) ); }
-	if (keystates[GLFW_KEY_S]) { changed = true; camera->TranslateRelative( make_float3( 0, 0, -tspd ) ); }
-	if (keystates[GLFW_KEY_R]) { changed = true; camera->TranslateRelative( make_float3( 0, tspd, 0 ) ); }
-	if (keystates[GLFW_KEY_F]) { changed = true; camera->TranslateRelative( make_float3( 0, -tspd, 0 ) ); }
+	if (keystates[GLFW_KEY_A]) { changed = true, camTime += frameTime * 0.1f; camera->TranslateRelative( make_float3( -tspd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_D]) { changed = true, camTime += frameTime * 0.1f; camera->TranslateRelative( make_float3( tspd, 0, 0 ) ); }
+	if (keystates[GLFW_KEY_W]) { changed = true, camTime += frameTime * 0.1f; camera->TranslateRelative( make_float3( 0, 0, tspd ) ); }
+	if (keystates[GLFW_KEY_S]) { changed = true, camTime += frameTime * 0.1f; camera->TranslateRelative( make_float3( 0, 0, -tspd ) ); }
+	if (keystates[GLFW_KEY_R]) { changed = true, camTime += frameTime * 0.1f; camera->TranslateRelative( make_float3( 0, tspd, 0 ) ); }
+	if (keystates[GLFW_KEY_F]) { changed = true, camTime += frameTime * 0.1f; camera->TranslateRelative( make_float3( 0, -tspd, 0 ) ); }
+	camTime = fmod( camTime, 1 );
 	if (keystates[GLFW_KEY_B]) changed = true; // force restart
 	if (keystates[GLFW_KEY_UP]) { changed = true; camera->TranslateTarget( make_float3( 0, -rspd, 0 ) ); }
 	if (keystates[GLFW_KEY_DOWN]) { changed = true; camera->TranslateTarget( make_float3( 0, rspd, 0 ) ); }
@@ -380,6 +397,7 @@ int main( int argc, char *argv[] )
 		glfwPollEvents();
 		if (!running) break;
 		// start renderering in a separate thread
+		renderer->Setting( "noiseShift", camTime );
 		renderer->Render( camMoved ? Restart : Converge, true /* async */ );
 		// camera and user input
 		frameTime = frameTimer.elapsed();
@@ -465,6 +483,7 @@ int main( int argc, char *argv[] )
 					errorSum += dr * dr + dg * dg + db * db;
 				}
 				RMSE = (float)sqrt( errorSum / (scrwidth * scrheight) );
+				printf( "RMSE #%i: %6.4f\n", camTrack, RMSE );
 				reportTimer = 3.0f;
 			}
 			if (reportTimer > 0)

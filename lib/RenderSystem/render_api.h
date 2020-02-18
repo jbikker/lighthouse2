@@ -54,6 +54,7 @@ public:
 	void WaitForRender();
 	Camera* GetCamera();
 	RenderSettings* GetSettings();
+	void Setting( const char* name, const float value );
 	int GetTriangleNode( const int coreInstId, const int coreTriId );
 	int GetTriangleMesh( const int coreInstId, const int coreTriId );
 	HostScene* GetScene();

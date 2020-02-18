@@ -116,6 +116,7 @@ private:
 	int computeCapability;							// device compute capability
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
+	float noiseShift = 0;							// used to cycle blue noise values
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData

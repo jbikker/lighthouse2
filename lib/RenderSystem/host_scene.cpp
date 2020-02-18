@@ -133,34 +133,38 @@ void HostScene::DeserializeMaterials( const char* xmlFile )
 		// set the properties
 		const char* materialName = entry->FirstChildElement( "name" )->GetText();
 		const char* materialOrigin = entry->FirstChildElement( "origin" )->GetText();
-		int matID = HostScene::FindMaterialID( materialName );
-		if (matID == -1) continue;
-		HostMaterial* m /* for brevity */ = HostScene::materials[matID];
-		m->origin = string( materialOrigin ? materialOrigin : "" );
-		if (entry->FirstChildElement( "id" )) entry->FirstChildElement( "id" )->QueryIntText( &m->ID );
-		if (entry->FirstChildElement( "flags" )) entry->FirstChildElement( "flags" )->QueryUnsignedText( &m->flags );
-		XMLElement* color = entry->FirstChildElement( "color" );
-		if (color)
-			color->QueryFloatAttribute( "r", &m->color.value.x ),
-			color->QueryFloatAttribute( "g", &m->color.value.y ),
-			color->QueryFloatAttribute( "b", &m->color.value.z );
-		XMLElement* absorption = entry->FirstChildElement( "absorption" );
-		if (absorption)
-			absorption->QueryFloatAttribute( "r", &m->absorption.value.x ),
-			absorption->QueryFloatAttribute( "g", &m->absorption.value.y ),
-			absorption->QueryFloatAttribute( "b", &m->absorption.value.z );
-		if (entry->FirstChildElement( "metallic" )) entry->FirstChildElement( "metallic" )->QueryFloatText( &m->metallic() );
-		if (entry->FirstChildElement( "subsurface" )) entry->FirstChildElement( "subsurface" )->QueryFloatText( &m->subsurface() );
-		if (entry->FirstChildElement( "specular" )) entry->FirstChildElement( "specular" )->QueryFloatText( &m->specular() );
-		if (entry->FirstChildElement( "roughness" )) entry->FirstChildElement( "roughness" )->QueryFloatText( &m->roughness() );
-		if (entry->FirstChildElement( "specularTint" )) entry->FirstChildElement( "specularTint" )->QueryFloatText( &m->specularTint() );
-		if (entry->FirstChildElement( "anisotropic" )) entry->FirstChildElement( "anisotropic" )->QueryFloatText( &m->anisotropic() );
-		if (entry->FirstChildElement( "sheen" )) entry->FirstChildElement( "sheen" )->QueryFloatText( &m->sheen() );
-		if (entry->FirstChildElement( "sheenTint" )) entry->FirstChildElement( "sheenTint" )->QueryFloatText( &m->sheenTint() );
-		if (entry->FirstChildElement( "clearcoat" )) entry->FirstChildElement( "clearcoat" )->QueryFloatText( &m->clearcoat() );
-		if (entry->FirstChildElement( "clearcoatGloss" )) entry->FirstChildElement( "clearcoatGloss" )->QueryFloatText( &m->clearcoatGloss() );
-		if (entry->FirstChildElement( "transmission" )) entry->FirstChildElement( "transmission" )->QueryFloatText( &m->transmission() );
-		if (entry->FirstChildElement( "eta" )) entry->FirstChildElement( "eta" )->QueryFloatText( &m->eta() );
+		int matID = -1;
+		while (1)
+		{
+			matID = HostScene::FindNextMaterialID( materialName, matID );
+			if (matID == -1) break;
+			HostMaterial* m /* for brevity */ = HostScene::materials[matID];
+			m->origin = string( materialOrigin ? materialOrigin : "" );
+			// if (entry->FirstChildElement( "id" )) entry->FirstChildElement( "id" )->QueryIntText( &m->ID );
+			if (entry->FirstChildElement( "flags" )) entry->FirstChildElement( "flags" )->QueryUnsignedText( &m->flags );
+			XMLElement* color = entry->FirstChildElement( "color" );
+			if (color)
+				color->QueryFloatAttribute( "r", &m->color.value.x ),
+				color->QueryFloatAttribute( "g", &m->color.value.y ),
+				color->QueryFloatAttribute( "b", &m->color.value.z );
+			XMLElement* absorption = entry->FirstChildElement( "absorption" );
+			if (absorption)
+				absorption->QueryFloatAttribute( "r", &m->absorption.value.x ),
+				absorption->QueryFloatAttribute( "g", &m->absorption.value.y ),
+				absorption->QueryFloatAttribute( "b", &m->absorption.value.z );
+			if (entry->FirstChildElement( "metallic" )) entry->FirstChildElement( "metallic" )->QueryFloatText( &m->metallic() );
+			if (entry->FirstChildElement( "subsurface" )) entry->FirstChildElement( "subsurface" )->QueryFloatText( &m->subsurface() );
+			if (entry->FirstChildElement( "specular" )) entry->FirstChildElement( "specular" )->QueryFloatText( &m->specular() );
+			if (entry->FirstChildElement( "roughness" )) entry->FirstChildElement( "roughness" )->QueryFloatText( &m->roughness() );
+			if (entry->FirstChildElement( "specularTint" )) entry->FirstChildElement( "specularTint" )->QueryFloatText( &m->specularTint() );
+			if (entry->FirstChildElement( "anisotropic" )) entry->FirstChildElement( "anisotropic" )->QueryFloatText( &m->anisotropic() );
+			if (entry->FirstChildElement( "sheen" )) entry->FirstChildElement( "sheen" )->QueryFloatText( &m->sheen() );
+			if (entry->FirstChildElement( "sheenTint" )) entry->FirstChildElement( "sheenTint" )->QueryFloatText( &m->sheenTint() );
+			if (entry->FirstChildElement( "clearcoat" )) entry->FirstChildElement( "clearcoat" )->QueryFloatText( &m->clearcoat() );
+			if (entry->FirstChildElement( "clearcoatGloss" )) entry->FirstChildElement( "clearcoatGloss" )->QueryFloatText( &m->clearcoatGloss() );
+			if (entry->FirstChildElement( "transmission" )) entry->FirstChildElement( "transmission" )->QueryFloatText( &m->transmission() );
+			if (entry->FirstChildElement( "eta" )) entry->FirstChildElement( "eta" )->QueryFloatText( &m->eta() );
+		}
 	}
 }
 
@@ -537,12 +541,24 @@ int HostScene::FindOrCreateMaterial( const string& name )
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostScene::GetTriangleMaterial                                             |
+//  |  HostScene::FindMaterialID                                                  |
 //  |  Find the ID of a material with the specified name.                   LH2'19|
 //  +-----------------------------------------------------------------------------+
 int HostScene::FindMaterialID( const char* name )
 {
 	for (auto material : materials) if (material->name.compare( name ) == 0) return material->ID;
+	return -1;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::FindNextMaterialID                                              |
+//  |  Find the ID of a material with the specified name, with an ID greater than |
+//  |  the specified one. Used to find materials with the same name.        LH2'20|
+//  +-----------------------------------------------------------------------------+
+int HostScene::FindNextMaterialID( const char* name, const int matID )
+{
+	for ( int s = (int)materials.size(), i = matID + 1; i < s; i++ ) 
+		if (materials[i]->name.compare( name ) == 0) return materials[i]->ID;
 	return -1;
 }
 

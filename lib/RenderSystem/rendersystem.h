@@ -85,6 +85,7 @@ public:
 	void WaitForRender();
 	void SetTarget( GLTexture* target, const uint spp );
 	void SetProbePos( int2 pos ) { if (core) core->SetProbePos( pos ); }
+	void Setting( const char* name, const float value ) { if (core) core->Setting( name, value ); }
 	int GetTriangleMaterial( const int coreInstId, const int coreTriId );
 	int GetTriangleMesh( const int coreInstId, const int coreTriId );
 	int GetTriangleNode( const int coreInstId, const int coreTriId );

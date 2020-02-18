@@ -53,7 +53,7 @@ __global__  __launch_bounds__( 128 /* max block size */, 8 /* min blocks per sm,
 #endif
 void shadeKernel( float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const int pass,
+	const uint R0, const uint* blueNoise, const float noiseShift, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos, const uint pathCount )
 {
@@ -93,9 +93,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 
 	// object picking
 	if (pixelIdx == probePixelIdx && pathLength == 1 && sampleIdx == 0)
-		counters->probedInstid = INSTANCEIDX,	// record instace id at the selected pixel
-		counters->probedTriid = PRIMIDX,		// record primitive id at the selected pixel
+	{
+		counters->probedInstid = INSTANCEIDX;	// record instace id at the selected pixel
+		counters->probedTriid = PRIMIDX;		// record primitive id at the selected pixel
 		counters->probedDist = HIT_T;			// record primary ray hit distance
+	}
 
 	// get shadingData and normals
 	ShadingData shadingData;
@@ -169,8 +171,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 		if (sampleIdx < 2)
 		{
 			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
-			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength );
-			r1 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 + 4 * pathLength );
+			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength, 0 );
+			r1 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 + 4 * pathLength, 0 );
 		}
 		else
 		{
@@ -213,8 +215,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 	if (sampleIdx < 256)
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
-		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 6 + 4 * pathLength );
-		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 7 + 4 * pathLength );
+		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 6 + 4 * pathLength, noiseShift );
+		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 7 + 4 * pathLength, noiseShift );
 	}
 	else
 	{
@@ -247,12 +249,12 @@ void shadeKernel( float4* accumulator, const uint stride,
 //  +-----------------------------------------------------------------------------+
 __host__ void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const int pass,
+	const uint R0, const uint* blueNoise, const float noiseShift, const int pass,
 	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 ), blockDim( 128, 1 );
-	shadeKernel << <gridDim.x, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, blueNoise,
+	shadeKernel << <gridDim.x, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, blueNoise, noiseShift,
 		pass, probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos, pathCount);
 }
 

@@ -56,7 +56,7 @@ public:
 		uint64_t max_perf = 0;
 		cudaDeviceProp deviceProp;
 		cudaGetDeviceCount( &count );
-		if (count == 0) FatalError( "No CUDA devices." );
+		if (count == 0) FatalError( "No CUDA devices found.\nIf you do have an NVIDIA GPU, consider updating your drivers." );
 		while (curdev < count)
 		{
 			cudaGetDeviceProperties( &deviceProp, curdev );

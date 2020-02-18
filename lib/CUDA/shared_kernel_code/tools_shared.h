@@ -223,7 +223,7 @@ LH2_DEVFUNC float3 SafeOrigin( const float3& O, const float3& R, const float3& N
 {
 #if 1
 	// simply offset along the normal
-	return O + N * geoEpsilon;
+	return O + N * (dot( N, R ) > 0 ? geoEpsilon : -geoEpsilon);
 #else
 #if 0
 	// from Ray Tracing Gems 1, chapter 6: does not use geoEpsilon nor ray direction.
@@ -294,7 +294,7 @@ LH2_DEVFUNC float3 GetIndirectFromFloat4( const float4& X )
 	return make_float3( (float)(v2 >> 16) * (1.0f / 2048.0f), (float)(v2 & 65535) * (1.0f / 2048.0f), (float)v3 * (1.0f / 2048.0f) );
 }
 
-LH2_DEVFUNC float blueNoiseSampler( const uint* blueNoise, int x, int y, int sampleIndex, int sampleDimension )
+LH2_DEVFUNC float blueNoiseSampler( const uint* blueNoise, int x, int y, int sampleIndex, int sampleDimension, const float noiseShift = 0 )
 {
 	// Adapated from E. Heitz. Arguments:
 	// sampleIndex: 0..255
@@ -307,7 +307,9 @@ LH2_DEVFUNC float blueNoiseSampler( const uint* blueNoise, int x, int y, int sam
 	// if the dimension is optimized, xor sequence value based on optimized scrambling
 	value ^= blueNoise[(sampleDimension & 7) + (x + y * 128) * 8 + 65536];
 	// convert to float and return
-	return (0.5f + value) * (1.0f / 256.0f);
+	float retVal = (0.5f + value) * (1.0f / 256.0f) + noiseShift;
+	if (retVal >= 1) retVal -= 1;
+	return retVal;
 }
 
 // EOF

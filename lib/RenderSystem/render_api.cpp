@@ -146,6 +146,11 @@ RenderSettings* RenderAPI::GetSettings()
 	return &renderer->settings;
 }
 
+void RenderAPI::Setting( const char* name, const float value )
+{
+	renderer->Setting( name, value );
+}
+
 int RenderAPI::GetTriangleNode( const int coreInstId, const int coreTriId )
 {
 	return renderer->GetTriangleNode( coreInstId, coreTriId );

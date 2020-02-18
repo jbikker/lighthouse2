@@ -59,7 +59,6 @@ void PrepareScene()
 	int inst = renderer->AddInstance( mesh );
 	renderer->SetNodeTransform( inst, mat4::RotateX( PI / 4 ) * mat4::RotateZ( PI / 2 ) );
 #else
-#if 0
 	// classic scene
 	materialFile = string( "data/pica/pica_materials.xml" );
 	int rootNode = renderer->AddScene( "data/pica/scene.gltf" );
@@ -70,14 +69,6 @@ void PrepareScene()
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 21, 0 ), 10.9f, 10.9f, whiteMat );
 	renderer->AddInstance( lightQuad );
 	renderer->AddScene( "data/drone/scene.gltf", mat4::Translate( 4.5f, -3.4f, -5.2f ) * mat4::Scale( 0.02f ) );
-#else
-	// book scene
-	materialFile = string( "data/book/materials.xml" );
-	renderer->AddScene( "data/book/scene.gltf" );
-	int whiteMat = renderer->AddMaterial( make_float3( 20 ) );
-	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 21, 0 ), 10.9f, 10.9f, whiteMat );
-	renderer->AddInstance( lightQuad );
-#endif
 #endif
 	// optional animated models
 	// renderer->AddScene( "data/CesiumMan.glb", mat4::Translate( 0, -2, -9 ) );
@@ -157,8 +148,8 @@ void Initialize()
 
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core

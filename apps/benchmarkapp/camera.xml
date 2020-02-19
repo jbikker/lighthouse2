@@ -1,13 +1,13 @@
 <camera>
-    <position x="-24.694481" y="0.99226105" z="-12.553076"/>
-    <direction x="0.7949301" y="0.11502193" z="-0.59569794"/>
+    <position x="-13.995131" y="0.36149448" z="-15.486432"/>
+    <direction x="0.98257768" y="0.16622588" z="-0.083127037"/>
     <FOV>40</FOV>
     <brightness>0.5</brightness>
     <contrast>0.33199999</contrast>
     <gamma>1.516</gamma>
-    <aperture>0.025</aperture>
+    <aperture>0.0089999996</aperture>
     <distortion>0.066</distortion>
-    <focalDistance>9.1800003</focalDistance>
+    <focalDistance>29.419109</focalDistance>
     <clampValue>2.5</clampValue>
     <tonemapper>3</tonemapper>
 </camera>

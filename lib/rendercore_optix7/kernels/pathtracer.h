@@ -97,6 +97,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 		counters->probedInstid = INSTANCEIDX;	// record instace id at the selected pixel
 		counters->probedTriid = PRIMIDX;		// record primitive id at the selected pixel
 		counters->probedDist = HIT_T;			// record primary ray hit distance
+		const float3 I = RAY_O + HIT_T * D;
+		// printf( "(%5.1f,%5.1f,%5.1f\n", I.x, I.y, I.z );
 	}
 
 	// get shadingData and normals

@@ -129,13 +129,13 @@ Bitmap::Bitmap( const char* f )
 //  +-----------------------------------------------------------------------------+
 int GLTextRenderer::scrwidth = SCRWIDTH;
 int GLTextRenderer::scrheight = SCRHEIGHT;
-GLTextRenderer::GLTextRenderer( const int size )
+GLTextRenderer::GLTextRenderer( const int size, const char* font )
 {
 	// initialize FreeType2, based on https://learnopengl.com/In-Practice/Text-Rendering
 	FT_Library ft;
 	FT_Face face;
 	if (FT_Init_FreeType( &ft )) FatalError( "Could not initialize FreeType2." );
-	if (FT_New_Face( ft, "data/sourcecodepro-regular.ttf", 0, &face )) FatalError( "Could not load font." );
+	if (FT_New_Face( ft, font, 0, &face )) FatalError( "Could not load font." );
 	FT_Set_Pixel_Sizes( face, 0, size );
 	shader = new Shader( "shaders/freetype2.vert", "shaders/freetype2.frag" );
 	// prepare charset textures
@@ -175,7 +175,12 @@ GLTextRenderer::GLTextRenderer( const int size )
 	glBindVertexArray( 0 );
 }
 
-void GLTextRenderer::Render( string text, GLfloat x, GLfloat y, GLfloat scale, const float3 color )
+void GLTextRenderer::RenderR( string text, GLfloat x, GLfloat y, GLfloat scale, const float3 color )
+{
+	Render( text, x, y, scale, color, true );
+}
+
+void GLTextRenderer::Render( string text, GLfloat x, GLfloat y, GLfloat scale, const float3 color, bool rightAlign )
 {
 	// activate corresponding render state	
 	shader->Bind();
@@ -184,8 +189,13 @@ void GLTextRenderer::Render( string text, GLfloat x, GLfloat y, GLfloat scale, c
 	glUniform3f( glGetUniformLocation( shader->ID, "textColor" ), color.x, color.y, color.z );
 	glActiveTexture( GL_TEXTURE0 );
 	glBindVertexArray( vao );
-	// iterate through characters
+	// calculate start x when aligning to the right
 	string::const_iterator c;
+	if (rightAlign) 
+	{
+		for (c = text.begin(); c != text.end(); c++) x -= (Characters[*c].advance >> 6)* scale;
+	}
+	// iterate through characters
 	for (c = text.begin(); c != text.end(); c++)
 	{
 		Character ch = Characters[*c];

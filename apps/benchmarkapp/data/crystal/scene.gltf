@@ -130,11 +130,6 @@
   "extensionsUsed": [
     "KHR_materials_unlit"
   ],
-  "images": [
-    {
-      "uri": "textures/Scene_-_Root_baseColor.png"
-    }
-  ],
   "materials": [
     {
       "doubleSided": false,
@@ -146,7 +141,7 @@
       "extensions": {
         "KHR_materials_unlit": {}
       },
-      "name": "Scene_-_Root",
+      "name": "CrystalRoot",
       "pbrMetallicRoughness": {
         "baseColorFactor": [
           1,
@@ -220,12 +215,6 @@
       "nodes": [
         0
       ]
-    }
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
     }
   ]
 }

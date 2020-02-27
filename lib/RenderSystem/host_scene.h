@@ -66,9 +66,11 @@ public:
 	static void Init();
 	static void SetSkyDome( HostSkyDome* );
 	static int FindOrCreateTexture( const string& origin, const uint modFlags = 0 );
+	static int FindTextureID( const char* name );
 	static int CreateTexture( const string& origin, const uint modFlags = 0 );
 	static int FindOrCreateMaterial( const string& name );
 	static int FindMaterialID( const char* name );
+	static int FindMaterialIDByOrigin( const char* name );
 	static int FindNextMaterialID( const char* name, const int matID );
 	static int FindNode( const char* name );
 	static void SetNodeTransform( const int nodeId, const mat4& transform );

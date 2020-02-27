@@ -80,9 +80,9 @@ HostMesh::HostMesh( const char* file, const char* dir, const float scale, const 
 	LoadGeometry( file, dir, scale, flatShaded );
 }
 
-HostMesh::HostMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride )
+HostMesh::HostMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const vector<int>& matIdx, const int materialOverride )
 {
-	ConvertFromGTLFMesh( gltfMesh, gltfModel, matIdxOffset, materialOverride );
+	ConvertFromGTLFMesh( gltfMesh, gltfModel, matIdx, materialOverride );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -307,7 +307,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 //  |  HostMesh::ConvertFromGTLFMesh                                              |
 //  |  Convert a gltf mesh to a HostMesh.                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const int matIdxOffset, const int materialOverride )
+void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltfModel& gltfModel, const vector<int>& matIdx, const int materialOverride )
 {
 	const int targetCount = (int)gltfMesh.weights.size();
 	for (auto& prim : gltfMesh.primitives)
@@ -486,7 +486,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 		}
 		// all data has been read; add triangles to the HostMesh
 		BuildFromIndexedData( tmpIndices, tmpVertices, tmpNormals, tmpUvs, tmpTs, tmpPoses,
-			tmpJoints, tmpWeights, materialOverride == -1 ? (prim.material + matIdxOffset) : materialOverride );
+			tmpJoints, tmpWeights, materialOverride == -1 ? matIdx[prim.material] : materialOverride );
 	}
 }
 

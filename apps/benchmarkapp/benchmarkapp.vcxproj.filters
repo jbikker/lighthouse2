@@ -61,5 +61,17 @@
     <None Include="shaders\tonemap.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="shaders\freetype2.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\freetype2.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\overlay.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\overlay.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -468,18 +468,18 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 	{
 	case TexelStorage::ARGB32:
 		delete texel32Buffer;
-		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE );
+		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE | STAGED );
 		stageARGB32Pixels( texel32Buffer->DevPtr() );
 		coreStats.argb32TexelCount = texelTotal;
 		break;
 	case TexelStorage::ARGB128:
 		delete texel128Buffer;
-		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE | STAGED ))->DevPtr() );
 		coreStats.argb128TexelCount = texelTotal;
 		break;
 	case TexelStorage::NRM32:
 		delete normal32Buffer;
-		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE | STAGED ))->DevPtr() );
 		coreStats.nrm32TexelCount = texelTotal;
 		break;
 	}
@@ -515,8 +515,6 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
-	delete materialBuffer;
-	delete hostMaterialBuffer;
 	hostMaterialBuffer = new CUDAMaterial[materialCount];
 	for (int i = 0; i < materialCount; i++)
 	{
@@ -548,7 +546,14 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0);
 	}
-	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	if (!materialBuffer) 
+	{
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	}
+	else if (materialCount > materialBuffer->GetSize())
+	{
+		// TODO: realloc
+	}
 	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
 }
@@ -589,7 +594,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
+	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_HOST | ON_DEVICE | STAGED, pixels );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
 	stageWorldToSky( worldToLight );

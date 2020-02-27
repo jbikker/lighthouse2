@@ -748,8 +748,8 @@ public:
 		// from GLM, via blog.magnum.graphics/backstage/the-unnecessarily-short-ways-to-do-a-quaternion-slerp
 		quat r = b;
 		float cosTheta = a.w * r.w + a.x * r.x + a.y * r.y + a.z * r.z;
-		if(cosTheta < 0) r = r * -1.0f, cosTheta = -cosTheta;
-		if(cosTheta > 0.99f)
+		if (cosTheta < 0) r = r * -1.0f, cosTheta = -cosTheta;
+		if (cosTheta > 0.99f)
 		{
 			// Linear interpolation
 			r.w = (1 - t) * a.w + t * r.w;
@@ -774,6 +774,8 @@ public:
 	quat operator * ( float s ) const { return scale( s ); }
 	quat scale( float s ) const { return quat( w * s, x * s, y * s, z * s ); }
 	float w = 1, x = 0, y = 0, z = 0;
-	};
+};
+
+inline float dot( quat a, quat b ) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 
 // EOF

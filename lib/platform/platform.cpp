@@ -265,7 +265,6 @@ void DrawQuad()
 	glBindVertexArray( vao );
 	glDrawArrays( GL_TRIANGLES, 0, 6 );
 	glBindVertexArray( 0 );
-	CheckGL();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -310,6 +309,12 @@ void DrawShapeOnScreen( std::vector<float2> verts, std::vector<float4> colors, u
 //  +-----------------------------------------------------------------------------+
 //  |  OpenGL texture wrapper class.                                        LH2'19|
 //  +-----------------------------------------------------------------------------+
+GLTexture::GLTexture()
+{
+	glGenTextures( 1, &ID );
+	// load later
+}
+
 GLTexture::GLTexture( uint w, uint h, uint type )
 {
 	width = w;
@@ -337,9 +342,13 @@ GLTexture::GLTexture( uint w, uint h, uint type )
 
 GLTexture::GLTexture( const char* fileName, int filter )
 {
-	GLuint textureType = GL_TEXTURE_2D;
 	glGenTextures( 1, &ID );
-	glBindTexture( textureType, ID );
+	Load( fileName, filter );
+}
+
+void GLTexture::Load( const char* fileName, int filter )
+{
+	glBindTexture( GL_TEXTURE_2D, ID );
 	FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
 	fif = FreeImage_GetFileType( fileName, 0 );
 	if (fif == FIF_UNKNOWN) fif = FreeImage_GetFIFFromFilename( fileName );
@@ -357,11 +366,13 @@ GLTexture::GLTexture( const char* fileName, int filter )
 		for (uint x = 0; x < width; x++) data[y * width + x] = (line[x * 3 + 0] << 16) + (line[x * 3 + 1] << 8) + line[x * 3 + 2];
 	}
 	FreeImage_Unload( dib );
-	glTexParameteri( textureType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-	glTexParameteri( textureType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-	glTexParameteri( textureType, GL_TEXTURE_MAG_FILTER, filter );
-	glTexParameteri( textureType, GL_TEXTURE_MIN_FILTER, filter );
-	glTexImage2D( textureType, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+	delete data;
+	delete line;
 	CheckGL();
 }
 

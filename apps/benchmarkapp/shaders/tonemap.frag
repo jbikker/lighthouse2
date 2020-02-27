@@ -5,7 +5,7 @@ uniform float contrast = 0;
 uniform float brightness = 0;
 uniform float gamma = 2.2f;
 uniform int method = 4;
-uniform float vignetting = 0.35f;
+uniform float vignetting = 0.25f;
 
 in vec2 uv;
 out vec3 pixel;

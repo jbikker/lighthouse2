@@ -71,9 +71,9 @@ LH2_DEVFUNC void SetupFrame(
 	N = normalize( N.x * A + N.y * B + N.z * C );
 	iN = normalize( iN.x * A + iN.y * B + iN.z * C );
 	// "Consistent Normal Interpolation", Reshetov et al., 2010
-	const float4 vertexAlpha = tri.alpha4;
 	const bool backSide = dot( D, N ) > 0;
 #ifdef CONSISTENTNORMALS
+	const float4 vertexAlpha = tri.alpha4;
 #ifdef OPTIXPRIMEBUILD
 	const float alpha = u * vertexAlpha.x + v * vertexAlpha.y + w * vertexAlpha.z;
 #else
@@ -138,6 +138,7 @@ LH2_DEVFUNC void GetShadingData(
 		tv = w * TRI_V0 + u * TRI_V1 + v * TRI_V2;
 #endif
 	}
+	if (TRI_MATERIAL < 0 || TRI_MATERIAL > 18) printf( "m" );
 	if (MAT_HASDIFFUSEMAP)
 	{
 		// determine LOD

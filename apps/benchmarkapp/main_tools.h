@@ -30,7 +30,9 @@ void ReshapeWindowCallback( GLFWwindow* window, int w, int h )
 	if ((scrwidth == w && scrheight == h) || w == 0 || h == 0) return;
 	scrwidth = w, scrheight = h;
 	delete renderTarget;
+	delete overlayTarget;
 	renderTarget = new GLTexture( scrwidth, scrheight, GLTexture::FLOAT );
+	overlayTarget = new GLTexture( scrwidth, scrheight );
 	glViewport( 0, 0, scrwidth, scrheight );
 	GLTextRenderer::scrwidth = scrwidth;
 	GLTextRenderer::scrheight = scrheight;
@@ -76,7 +78,7 @@ void InitGLFW()
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 4 );
 	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 5 );
 	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-	glfwWindowHint( GLFW_RESIZABLE, GL_TRUE );
+	glfwWindowHint( GLFW_RESIZABLE, GL_FALSE );
 	if (!(window = glfwCreateWindow( SCRWIDTH, SCRHEIGHT, "LightHouse v2.0", nullptr, nullptr )))
 	{
 		// try again with a more relaxed OpenGL version requirement. This breaks the Vulkan core.
@@ -88,6 +90,7 @@ void InitGLFW()
 		}
 	}
 	glfwMakeContextCurrent( window );
+	glfwSetWindowPos( window, 160, 64 );
 	// register callbacks
 	glfwSetFramebufferSizeCallback( window, ReshapeWindowCallback );
 	glfwSetKeyCallback( window, KeyEventCallback );
@@ -106,6 +109,7 @@ void InitGLFW()
 	glDisable( GL_DEPTH_TEST );
 	glDisable( GL_CULL_FACE );
 	glDisable( GL_BLEND );
+	overlayShader = new Shader( "shaders/overlay.vert", "shaders/overlay.frag" );
 	// logo
 	GLTexture* logo = new GLTexture( "data/system/logo.png", GL_LINEAR );
 	shader = new Shader( "shaders/tonemap.vert", "shaders/tonemap.frag" );

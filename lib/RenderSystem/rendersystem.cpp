@@ -83,7 +83,7 @@ void RenderSystem::SynchronizeTextures()
 void RenderSystem::SynchronizeMaterials()
 {
 	bool materialsDirty = false;
-	for (auto material : scene->materials) if (material->Changed())
+	for (auto material : scene->materials) // if (material->Changed())
 	{
 		// send all material data to core
 		vector<CoreMaterial> gpuMaterial;

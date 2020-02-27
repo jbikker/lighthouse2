@@ -73,7 +73,7 @@ void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 //  |  HostMaterial::ConvertFrom                                                  |
 //  |  Converts a tinygltf material to a HostMaterial.                      LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltfModel& model, const int textureBase )
+void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltfModel& model, const vector<int>& texIdx )
 {
 	name = original.name;
 	flags |= HostMaterial::FROM_MTL; // this material will be serialized on exit.
@@ -81,7 +81,7 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 	if (original.normalTexture.index > -1)
 	{
 		// note: may be overwritten by the "normalTexture" field in additionalValues.
-		normals.textureID = original.normalTexture.index + textureBase;
+		normals.textureID = texIdx[original.normalTexture.index];
 		normals.scale = original.normalTexture.scale;
 		HostScene::textures[normals.textureID]->flags |= HostTexture::NORMALMAP;
 	}
@@ -103,14 +103,14 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 		}
 		if (value.first == "baseColorTexture") for (auto& item : value.second.json_double_value)
 		{
-			if (item.first == "index") color.textureID = (int)item.second + textureBase;
+			if (item.first == "index") color.textureID = texIdx[(int)item.second];
 		}
 		if (value.first == "metallicRoughnessTexture") for (auto& item : value.second.json_double_value)
 		{
 			if (item.first == "index") 
 			{
-				roughness.textureID = (int)item.second + textureBase;	// green channel contains roughness
-				metallic.textureID = (int)item.second + textureBase;	// blue channel contains metalness
+				roughness.textureID = texIdx[(int)item.second];	// green channel contains roughness
+				metallic.textureID = texIdx[(int)item.second];	// blue channel contains metalness
 			}
 		}
 	}
@@ -126,7 +126,7 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 			tinygltf::Parameter p = value.second;
 			for (auto& item : value.second.json_double_value)
 			{
-				if (item.first == "index") normals.textureID = (int)item.second + textureBase;
+				if (item.first == "index") normals.textureID = texIdx[(int)item.second];
 				if (item.first == "scale") normals.scale = item.second;
 				if (item.first == "texCoord") { /* TODO */ };
 			}
@@ -156,7 +156,7 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 					if (key == "diffuseTexture" )
 					{
 						tinygltf::Value v = value.Get( key );
-						color.textureID = v.GetNumberAsInt() + textureBase;
+						color.textureID = texIdx[v.GetNumberAsInt()];
 
 					}
 					if (key == "glossinessFactor" )

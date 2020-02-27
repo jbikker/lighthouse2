@@ -77,7 +77,7 @@ public:
 
 	// methods
 	void ConvertFrom( const tinyobjMaterial& );
-	void ConvertFrom( const tinygltfMaterial&, const tinygltfModel&, const int textureBase );
+	void ConvertFrom( const tinygltfMaterial&, const tinygltfModel&, const vector<int>& texIdx );
 	bool IsEmissive() { float3& c = color(); return c.x > 1 || c.y > 1 || c.z > 1; /* ignores vec3map */ }
 
 	// START OF DATA THAT WILL BE COPIED TO COREMATERIAL

@@ -94,6 +94,8 @@ void HostAnimation::Sampler::ConvertFromGLTFSampler( const tinygltfAnimationSamp
 //  +-----------------------------------------------------------------------------+
 float HostAnimation::Sampler::SampleFloat( float currentTime, int k, int i, int count ) const
 {
+	// handle valid out-of-bounds
+	if (k == 0 && currentTime < t[0]) return interpolation == SPLINE ? floatKey[1] : floatKey[0];
 	// determine interpolation parameters
 	const float t0 = t[k], t1 = t[k + 1];
 	const float f = (currentTime - t0) / (t1 - t0);
@@ -117,6 +119,8 @@ float HostAnimation::Sampler::SampleFloat( float currentTime, int k, int i, int 
 }
 float3 HostAnimation::Sampler::SampleVec3( float currentTime, int k ) const
 {
+	// handle valid out-of-bounds
+	if (k == 0 && currentTime < t[0]) return interpolation == SPLINE ? vec3Key[1] : vec3Key[0];
 	// determine interpolation parameters
 	const float t0 = t[k], t1 = t[k + 1];
 	const float f = (currentTime - t0) / (t1 - t0);
@@ -138,6 +142,8 @@ float3 HostAnimation::Sampler::SampleVec3( float currentTime, int k ) const
 }
 quat HostAnimation::Sampler::SampleQuat( float currentTime, int k ) const
 {
+	// handle valid out-of-bounds
+	if (k == 0 && currentTime < t[0]) return interpolation == SPLINE ? vec4Key[1] : vec4Key[0];
 	// determine interpolation parameters
 	const float t0 = t[k], t1 = t[k + 1];
 	const float f = (currentTime - t0) / (t1 - t0);
@@ -145,6 +151,7 @@ quat HostAnimation::Sampler::SampleQuat( float currentTime, int k ) const
 	quat key;
 	if (f <= 0) return vec4Key[0]; else switch (interpolation)
 	{
+#if 1
 	case SPLINE:
 	{
 		const float t = f, t2 = t * t, t3 = t2 * t;
@@ -153,14 +160,16 @@ quat HostAnimation::Sampler::SampleQuat( float currentTime, int k ) const
 		const quat p1 = vec4Key[(k + 1) * 3 + 1];
 		const quat m1 = vec4Key[(k + 1) * 3] * (t1 - t0);
 		key = m0 * (t3 - 2 * t2 + t) + p0 * (2 * t3 - 3 * t2 + 1) + p1 * (-2 * t3 + 3 * t2) + m1 * (t3 - t2);
+		key.normalize();
 		break;
 	}
+#endif
 	case STEP:
 		key = vec4Key[k];
 		break;
 	default:
 		key = quat::slerp( vec4Key[k], vec4Key[k + 1], f );
-		// key = vec4Key[k] * (1 - f) + vec4Key[k + 1] * f;
+		key.normalize();
 		break;
 	};
 	key.normalize();
@@ -200,7 +209,7 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 	t += dt;
 	int keyCount = (int)sampler->t.size();
 	float animDuration = sampler->t[keyCount - 1];
-	if (animDuration == 0) // happens for the book scene.
+	if (animDuration == 0 /* book scene */ || keyCount == 1 /* bird */)
 	{
 		if (target == 0) // translation
 		{
@@ -232,7 +241,6 @@ void HostAnimation::Channel::Update( const float dt, const Sampler* sampler )
 		// determine interpolation parameters
 		assert( k < keyCount - 1 );
 		assert( t >= 0 && t < animDuration );
-		assert( t >= sampler->t[k] );
 		assert( t < sampler->t[k + 1] );
 		// apply anination key
 		if (target == 0) // translation

@@ -198,6 +198,20 @@ public:
 	Bitmap( uint w, uint h ) : pixels( new uint[w * h] ), width( w ), height( h ) {}
 	~Bitmap() { delete pixels; }
 	void Plot( uint x, uint y, uint c ) { if (x < width && y < height) pixels[x + y * width] = c; }
+	void Box( uint x1, uint y1, uint x2, uint y2, uint c )
+	{
+		uint* t0 = pixels + y1 * width, *t1 = t0 + (y2 - y1) * width;
+		for( uint x = x1; x <= x2; x++ ) t0[x] = t1[x] = c;
+		t1 = t0 + x2, t0 += x1;
+		for( uint y = y1; y <= y2; y++, t0 += width, t1 += width ) *t0 = *t1 = c;
+	}
+	void Bar( uint x1, uint y1, uint x2, uint y2, uint c )
+	{
+		uint* t0 = pixels + y1 * width;
+		for( uint y = y1; y <= y2; y++, t0 += width ) for( uint x = x1; x <= x2; x++ ) t0[x] = c;
+	}
+	void HLine( uint x1, uint y1, uint l, uint c ) { for( uint* t = pixels + x1 + y1 * width, i = 0; i < l; i++ ) t[i] = c; }
+	void VLine( uint x1, uint y1, uint l, uint c ) { for( uint* t = pixels + x1 + y1 * width, i = 0; i < l; i++, t += width ) *t = c; }
 	void Clear() { memset( pixels, 0, width * height * 4 ); }
 	uint* pixels = nullptr;
 	uint width = 0, height = 0;
@@ -208,11 +222,13 @@ class GLTexture
 public:
 	enum { DEFAULT = 0, FLOAT = 1 };
 	// constructor / destructor
+	GLTexture();
 	GLTexture( uint width, uint height, uint type = DEFAULT );
 	GLTexture( const char* fileName, int filter = GL_NEAREST );
 	~GLTexture();
 	// methods
 	void Bind();
+	void Load( const char* fileName, int filter = GL_NEAREST );
 	void CopyFrom( Bitmap* src );
 	void CopyTo( Bitmap* dst );
 	// public data members
@@ -232,8 +248,9 @@ class GLTextRenderer
 		uint advance;		// horizontal offset to advance to next glyph
 	};
 public:
-	GLTextRenderer( const int size = 24 );
-	void Render( string text, GLfloat x, GLfloat y, GLfloat scale = 1.0f, const float3 color = make_float3( 1 ) );
+	GLTextRenderer( const int size, const char* font );
+	void Render( string text, GLfloat x, GLfloat y, GLfloat scale = 1.0f, const float3 color = make_float3( 1 ), bool rightAlign = false );
+	void RenderR( string text, GLfloat x, GLfloat y, GLfloat scale = 1.0f, const float3 color = make_float3( 1 ) );
 	static int scrwidth, scrheight;
 private:
 	GLuint vbo, vao;

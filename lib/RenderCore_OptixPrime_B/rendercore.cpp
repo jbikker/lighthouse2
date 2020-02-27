@@ -74,11 +74,6 @@ void RenderCore::SetProbePos( int2 pos )
 //  |  RenderCore::Init                                                           |
 //  |  CUDA / Optix / RenderCore initialization.                            LH2'19|
 //  +-----------------------------------------------------------------------------+
-static float2 RandomPointInTriangle( const float2& A, const float2& B, const float2& C, uint& seed )
-{
-	// float3 bary = RandomBarycentrics( r );
-	return (A + B + C) / 3; // bary.x * A + bary.y * B + bary.z * C;
-}
 void RenderCore::Init()
 {
 #ifdef _DEBUG
@@ -310,7 +305,7 @@ void RenderCore::FinalizeInstances()
 		delete instDescBuffer;
 		// size of instance list changed beyond capacity.
 		// Allocate a new buffer, with some slack, to prevent excessive reallocs.
-		instDescBuffer = new CoreBuffer<CoreInstanceDesc>( instances.size() * 2, ON_HOST | ON_DEVICE );
+		instDescBuffer = new CoreBuffer<CoreInstanceDesc>( instances.size() * 2, ON_HOST | ON_DEVICE | STAGED );
 		stageInstanceDescriptors( instDescBuffer->DevPtr() );
 	}
 	memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
@@ -361,18 +356,18 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 	{
 	case TexelStorage::ARGB32:
 		delete texel32Buffer;
-		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE );
+		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE | STAGED );
 		stageARGB32Pixels( texel32Buffer->DevPtr() );
 		coreStats.argb32TexelCount = texelTotal;
 		break;
 	case TexelStorage::ARGB128:
 		delete texel128Buffer;
-		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE | STAGED ))->DevPtr() );
 		coreStats.argb128TexelCount = texelTotal;
 		break;
 	case TexelStorage::NRM32:
 		delete normal32Buffer;
-		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE | STAGED ))->DevPtr() );
 		coreStats.nrm32TexelCount = texelTotal;
 		break;
 	}
@@ -408,8 +403,6 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
-	delete materialBuffer;
-	delete hostMaterialBuffer;
 	hostMaterialBuffer = new CUDAMaterial[materialCount];
 	for (int i = 0; i < materialCount; i++)
 	{
@@ -441,7 +434,14 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	if (!materialBuffer) 
+	{
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	}
+	else if (materialCount > materialBuffer->GetSize())
+	{
+		// TODO: realloc
+	}
 	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
 }

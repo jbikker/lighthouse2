@@ -1,0 +1,780 @@
+
+irrKlang 1.6
+
+- stopped support for .NET 1.1, please use the versions for .NET 2 or .NET 4 instead,
+  or an older version of irrKlang if you still need .NET 1 support
+  
+- irrKlang for .NET 4 now needs version 4.5 at miminum
+
+- there is now a new function stopAllSoundsOfSoundSource() to stop all sounds of a specific sound source
+
+- irrKlang.NET for .NET 4 now also has a strong name (it is now a signed assembly)
+
+- irrklang for gcc now supports gcc 5.1
+
+- irrKlang 1.5 for windows was depending on the MSVC runtime dll, this is now 
+  no longer the case with irrKlang 1.6
+
+- fixed a bug causing duplicated DirectSound buffers to share the playbackSpeed sometimes, causing
+  some sounds to have a wrong frequency when played.
+  
+- fixed update() problem in single threaded mode
+  if you run irrKlang in single threaded mode, you can now call irrKlang::update as often and 
+  fast as you want. This was supposed to be called only about once every second prevousliy, and
+  could cause irrklang to stall previously if called too often.
+
+- added support for Visual Studio 2017
+
+
+------------------------------------------------------------------------
+
+irrKlang 1.5
+
+- Added support for unicode file names. 
+  irrKlang now uses UTF8 internally on all operating systems. If you are running it on Windows, and want to use
+  wchar_t types, you can use the irrKlang provided function makeUTF8fromUTF16string() to convert your wchar_t* string to
+  a char* string.
+  In the .NET version of irrKlang, the API hasn't changed, but irrklang now supports unicode 
+  file names there automatically as well.
+  
+- Added 64 bit support. 
+  There is now a separate irrKlang SDK for 64 bit builds
+  
+- Added support for playing back 24 bit flac files
+
+- Uses less resources on linux now: PCM handles are now closed as soon as possible, freeing resources much earlier.
+
+------------------------------------------------------------------------
+
+
+irrKlang 1.4.1
+
+- irrKlang now loads the alsa lib from the correct directory on previously unsupported linux systems.
+
+------------------------------------------------------------------------
+
+irrKlang 1.4.0
+
+- Fixed a potential crash in the windows version, when using DirectSound8
+
+- Improved speed of the Windows version of irrKlang by about 20%
+
+- irrKlang now also works with newer Linux distributions (like Ubuntu 12), 
+  which moved the ALSA lib file into a new directory.
+  
+- Cleared up some inconsistencies in the documentation
+
+- Removed a very small memory leak in Linux and Mac OS X
+  
+---------------------------------------------------------------------
+
+irrKlang 1.3.0b
+
+- Added support for .NET framework 4.
+  
+- Fixed a problem with audio recording: GUIDs were not correctly
+  decoded for some devices, causing manual device selection to fail
+  on Windows.
+  
+---------------------------------------------------------------------
+  
+irrKlang 1.3.0
+
+- There is now the possibility to capture the mixed output audio data
+  from irrKlang, using the ISoundMixedOutputReceiver interface.
+  Can be used to store the sound output as .wav file or for creating 
+  an Oscillograph and similar.
+  
+- The movement speed of 3d sound listeners has been ignored in previous
+  releases for 3d sound doppler effects, this has been corrected now.
+
+- irrKlang now also runs on 64 bit linux systems. It previously
+  looked for the alsa lib in /usr/lib/libasound.so, but on 64 bit
+  system this is located in /usr/lib32/libasound.so. This is fixed now.
+  
+---------------------------------------------------------------------
+
+irrKlang 1.2.0 
+
+- Added .flac file playback support. Implemented as plugin, ikpFlac.dll.
+
+- Fixed a bug causing the volume of 3D sounds not to be set correctly
+  when using DirectSound8 and playing more than one 3D sound of the
+  same file at the same time.
+  
+- File formats with unknown extensions are now loaded by Plugins only
+  if they could not be loaded by the internal decoders.
+
+- Several API documentation updates and improvements.
+
+- C++ documentation now has search functionality
+
+- Replaced .chm documentation files now with plain .html files
+
+-----------------------------------------------------------------------
+
+irrKlang 1.1.3c 
+
+- [This update only changes the implementation, the interfaces all remain the
+   same, so only the irrKlang.dll file needs to be replaced since version 1.1.3.]
+
+- Fixed a bug causing irrKlang to crash when playing looped, streamed sounds in 3D
+  under special circumstances.
+  
+-----------------------------------------------------------------------
+
+irrKlang 1.1.3b 
+
+- [This update only changes the implementation, the interfaces all remain the
+   same, so only the irrKlang.dll file needs to be replaced since version 1.1.3.]
+
+- Small bug fix for the DirectSound drivers: Looped streamed sounds sometimes
+  restarted with a small pause (~10 ms) in between.
+  
+- The ISound and ISoundSource classes in irrKlang.NET now implement the 
+  IDisposable interface, so it is now easily possible to free their resources
+  manually. 
+
+- The .NET version now uses less memory (earlier unmanaged resource disposal).
+  
+-----------------------------------------------------------------------
+
+irrKlang 1.1.3 
+
+- Added support for multichannel audio recording. When starting audio recording using
+  startRecordingBufferedAudio() or startRecordingCustomHandledAudio(),
+  set the new last parameter to the amount of channels you want to record audio data.
+  
+- Reduced latency of the Linux version (ALSA).
+
+- Improved Mac OS X performance (CoreAudio), irrKlang now performs better on computers
+  with slow hardware.
+  
+- Added two VisualBasic.NET examples
+
+- ForcedStreamingThreshold property of ISound now also available in 
+  the .NET verion of irrKlang.
+  
+- IAudioRecoder::IsRecording now returns the correct value in the .NET 
+  version of irrKlang.
+  
+- IAudioRecorder now correctly returns a SampleFormat data with a lenght of 0 if 
+  nothing has been recorded before.
+  
+- In irrKlang.NET, IAudioRecorder.RecordedAudioData does not throw an 
+  OutOfMemoryException anymore if nothing has been recorded yet.
+
+- ISoundSource::getForcedStreamingForceThreshold has been renamed to
+  ISoundSource::getForcedStreamingThreshold
+
+-----------------------------------------------------------------------
+
+irrKlang 1.1.2b 
+
+- Added support for (external) multichannel sound hardware on MacOSX.
+
+-----------------------------------------------------------------------
+
+irrKlang 1.1.2 
+
+- Added support to play back 24 bit wave files.
+
+- The DirectSound drivers now use more aggressive sound buffer sharing,
+  causing irrKlang to use a lot less memory and also speeding it up a lot
+  when playing a lot of big sounds.
+  
+- There is now a way to access the internal used audio interfaces (ALSA, DirectSound,
+  DirectSound8, WinMM, CoreAudio) using ISoundEngine::getInternalAudioInterface().  
+
+- There are now two .NET versions of irrKlang available, one for the .NET CLR 1.1 
+  and one for .NET CLR 2.0 (.NET Framework 2, 3 and 3.5). Of course, you can still
+  use every version with every project, this is mainly to reduce the size of installers.
+  See details in readme.txt
+  
+- It is now possible in the .NET version to access the decoded sample audio data of 
+  non-streamed sounds using ISound.SampleData
+  
+- It is now possible in the .NET version to access the recorded audio data directly
+  using IAudioRecorder.RecordedAudioData
+
+- Fixed a bug in the .NET version of the method EnableCompressorSoundEffect()
+  which totally skrewed up its parameters.
+  
+- Fixed a bug causing the AudioRecorder only to work for one recording session
+  in DirectSound.
+  
+- Fixed a bug causing the irrklang DirectSound driver to start playing the sound when
+  it changing its 'looped' flag when the sound is paused.
+  
+- There is now a new example for C# available which shows how to use irrKlang with
+  Windows.Forms.
+  
+- The forced streaming treshold has been adjusted to 2MB
+
+- Fixed some documentation mistakes in ISoundEngine::addSoundSourceFromPCMData
+
+-----------------------------------------------------------------------
+
+irrKlang 1.1.0 
+
+- Several speed optimizations and memory usage improvments.
+
+- It is now possible to directly access the decoded PCM sample data of 
+  every loaded sound source.
+  Use ISoundSource::getSampleData() for this.
+  
+- Fixed a bug causing the UserData object and other resources not to be garbage 
+  collected when using ISoundStopEventReceiver in the .NET version of irrKlang.
+  
+- Fixed a bug causing the sudden end of sound loops under very rare circumstances.
+
+- The 'Could not init COM' warning was senseless and has been removed.
+
+-----------------------------------------------------------------------
+irrKlang 1.0.4 
+
+- irrKlang is now able to record audio. Use createIrrKlangAudioRecorder() to create an
+  audio recorder object. It currently only works in Windows	and with DirectSound (subject to change).	
+	
+- A new method ISoundEngine::addSoundSourceFromPCMData() now adds to possibility to use sound
+  source from pure PCM data.
+	
+- The three method overloads of addSoundSource() have now been renamed to
+  addSoundSourceFromFile(), addSoundSourceFromMemoryFile(), and addSoundSourceAlias().
+	
+-----------------------------------------------------------------------
+irrKlang 1.0.3
+
+- irrKlang now supports Power PCs (PPC). All features and file formats except 
+  Module playback (.mod, .it, .xm, .s3m) are now supported on this platform.
+  
+- There is now a function to enumerate available audio devices. Select a device ID from this list to 
+  let irrKlang use a specific audio device. You can create this list using
+  irrklang::ISoundDeviceList* list = createSoundDeviceList();
+  or in .NET (C#):
+  IrrKlang.ISoundDeviceList list = new IrrKlang.ISoundDeviceList();
+
+- The sound stop event receiver now has an additional parameter, describing the reason why the
+  sound has been stopped. The signature of the method is now
+  virtual void OnSoundStopped(ISound* sound, E_STOP_EVENT_CAUSE reason, void* userData) = 0;
+  or in .NET (C#):
+  public void OnSoundStopped(IrrKlang.ISound sound, IrrKlang.StopEventCause reason, object userData);
+  
+- irrKlang.NET is now a signed assembly to work around some security hassle Microsoft introduced on Vista.
+  
+- On newer linux versions (such as Ubuntu 7.10), irrKlang sometimes would play sound too fast or with
+  a lot of noise, this is repaired now.
+
+- The Linux version of irrKlang shared object file is now named 
+   libirrKlang.so instead of previously irrKlang.so
+
+- ALSA driver latency highly improved
+   
+- IrrKlang.NET now supports retrieving the audio format of a sound, using ISoundSource::AudioFormat.
+   
+- IrrKlang can now optionally be told which sound device to use for sound output. In addition using
+  this feature, it is now possible to define an ALSA device name to be used for alsa output when calling
+  createIrrKlangDevice().
+  
+- irrKlang ignored the new flag ESEO_PRINT_DEBUG_INFO_TO_STDOUT on unix based operation systems,
+  this is fixed now.
+ 
+-----------------------------------------------------------------------
+irrKlang 1.0.2 
+
+- Breaking interface changes:
+   - All interfaces are now located in one single, new namespace named 'irrklang'.
+   - vector3df is now named vec3df
+   - IReadFile is now named IFileReader
+   - IReferenceCounted is now named IRefCounted and IVirtualReferenceCounted now IVirtualRefCounted 
+   - primitive types now have the prefix ik_
+   - all header files have now the prefix ik_
+   - IFileFactory::createAndOpenFile() is now named createFileReader().
+   These changes where necessary to simplify and clean up the interface, as well as to make irrklang independent
+   of future changes of the Irrlicht Engine. 
+   
+- It is now possible to change the play position of a sound using ISound::setPlayPosition().
+
+- Software devices such as ALSA, WinMM and CoreAudio also support teh setPlaybackSpeed() functionality now.
+   
+- Max values of 3D sound now behave differently: They won't mute the sound anymore when 
+  the max distance is reached. This should not affect if you set your 3D sound min/max values 
+  correctly before: The audible radius of a sound is only influenced by the minimum value, 
+  the maximum should be set to a extremely high value usually (such as 1mio) which is the
+  default. If the maximum value is set to a small value, the sound won't attenuate anymore
+  after this distance and stay audible from then on.
+  In short: In nearly all cases, it is not necessary to change the max value of the sound
+  if not in linear rolloff mode. Details can be found in the documentation.
+
+- It is now possible to retrieve the audio format of sound sources. Informations
+  like channel count (mono/stereo), frame count, sample rate, etc are possible to
+  be retrieved using ISoundSource::getAudioFormat()
+  
+- The internals of irrKlang has been refactored: irrKlang.dll/.so/.dylib files are now smaller, use
+  an improved thread locking mechanism and should run a bit faster.
+  
+- irrKlang now supports a RollOff factor for 3D sounds. Use ISoundEngine::setRolloffFactor() for this.
+
+- it is now possible to get the name of the used sound driver by calling ISoundEngine::getDriverName();
+
+- irrKlang now only prints status messages to stdout if ESEO_PRINT_DEBUG_INFO_TO_STDOUT was set when
+  creating the device (which is the default).
+  
+- There is a new example application included in the SDK: A music player.   
+  
+- ISound::getPlayPosition() didn't return 100% accurate positions in all cases, this is fixed now.
+  
+- irrKlang won't touch files anymore for preloading when streaming was specified.
+
+- ISoundSource::getIsSeekingSupported() now returns if the sound supports seeking using 
+  ISound::setPlayPosition().
+
+- Fixed a problem with 3D sounds: On some sound boards on windows operating systems older than Vista,
+  the 3D sound would not stop at the maximum 3D distance when using DirectSound.
+  
+- Using ISoundEngine::setDefault3DSoundMaxDistance() had a small bug, which caused the max distance
+  not to work in all cases, this is fixed now.
+  
+-----------------------------------------------------------------------
+irrKlang 1.0.1 
+
+- Removed the deprecated header ESoundEffects.h
+
+- Fixed a rarely happening bug causing irrKlang to crash when stopping streamed sounds in the software devices
+  at disadvantageous times.
+  
+- Fixed a rarely happening bug which could have caused a deadlock when stopping a huge
+  amount of streamed at the same time sounds.
+  
+- Documentation fixes
+  
+-----------------------------------------------------------------------
+irrKlang 1.0 
+
+- Added ISound::setIsLooped(), to make it possible to change the loop mode of sounds during runtime.
+
+- It is now possible to preload sounds when using the addSoundSource() method, by
+  setting the parameter 'preload' to true. If this flag is set to false (which is default)
+  the sound engine will not try to load the sound file when calling this method, 
+  but only when play() is called with this sound source as parameter.
+  
+- Plugins can now be loaded manually from a custom path using ISoundEngine::loadPlugins();
+  
+- The listener position is now set to a default value when starting up irrKlang.
+  Previously, when playing 3D sounds without changing or setting the listener position at all,
+  3D sounds would sound differently based on the chosen audio driver.
+  
+- Fixed a bug of the Linux version of irrKlang, causing ALSA to crash on
+  some very few systems (known as the '!snd_interval_empty(i)'-problem).
+
+- Resampling mono sounds in all devices except directSound (it was ok there already)
+  now uses only half the memory as before.
+
+- To reduce name clashes with the windows headers for people not using namespaces,
+  the Interface IUnknown has been renamed to IRefCounted.
+
+- IrrKlang can now be used easily together with the latest 6 versions of
+  Irrlicht (header compatibility).
+  
+- Fixed a small bug in the .NET version which could return 'false' instead of 'true' under
+  special circumstances when calling isCurrentlyPlaying() (Microsoft compiler bug).
+  
+- The documentation has been updated and extended with lots of examples.
+
+- Examples now also include project files for visual studio 6.0
+  
+-----------------------------------------------------------------------
+irrKlang 1.0-RC1 
+
+- irrKlang now supports MacOSX, using CoreAudio. 
+  There is a new sound output driver enumeration literal, named ESOD_CORE_AUDIO, which
+  will be chosen automaticly when using ESOD_AUTO_DETECT on MacOsX.
+  Please note that irrKlang is a universal binary for both x86 and ppc, but
+  only x86 hardware is supported yet, altough some few features might work with the 
+  ppc irrKlang version. 
+
+- This version is release candiate 1 for version 1.0. There are now known bugs in irrKlang 
+  currently, and if no major bugs will be found, version 1.0 will be released after some time.
+  We are already working on new user requested features which will be integrated after the 
+  1.0 release.
+  
+- irrKlang.NET is now able to override the file access just like the C++ version. There is 
+  a tutorial in examples.net\CSharp.04.OverrideFileAccess demonstrating this.
+  Use IFileFactory with ISoundEngine::addFileFactory for this.
+    
+- Added a method to irrKlang.NET, making it possible to add System::IO::Streams as sound
+  sources. Note that the stream is totally read into memory when adding the sound source.
+  If you want irrKlang to dynamically open and close custom file streams without loading
+  everything into memory, use the addFileFactory with your own IFileFactory implementation.
+  
+- Documentation improvements for the .NET version.
+
+-----------------------------------------------------------------------
+irrKlang 0.9.1 
+
+- License change: All of the irrKlang Pro features (except static linking and signed assembly)
+  are now available for non-commercial use too. Please take a closer look at the new
+  license and the website for details.
+  The license was changed because of lots of user requests, so that free and open 
+  source projects are now able to use irrKlang pro's features as well. To compensate this,
+  this means that irrKlang is no more free for commercial use.
+  
+- Mp3 files with ID3 v2 or later tags in it have not been played correctly in irrKlang, this is 
+  fixed now.
+  
+- It is now possible to add sound source aliases for an existing sound source.
+  This is useful if you want to play multiple sounds but each sound isn't necessarily one single file.
+  Also useful if you want to or play the same sound using different names, volumes or min and max 3D distances.
+  Use the now existing third overload of ISoundEngine::addSoundSource() which takes another 
+  sound source as parameter for this.
+   
+- added ISound::PlayLength property to irrKlang.NET to retrieve the length of sounds in milliseconds.
+
+- irrKlang.NET now needs a lower amount of memory every time a sound is played and also
+  frees the memory used by these sounds earlier.
+  
+- irrKlang.NET now supports sound sources just as the irrKlang C++ version does,
+  which means better access and possibility to influence sounds.
+  
+- irrKlang.NET now also supports default 3D min and max distances.
+
+- irrKlang.NET now supports playing sounds directly from custom memory areas, 
+  byte arrays (byte[]). Use ISoundEngine.addSoundSource(yourMemoryArray, someName) for this.
+  
+- Using irrKlang.NET, streamed sound files have not been closed on some systems. This is fixed now.
+  
+- It is now possible to set the wanted stream mode for sound sources using 
+  ISoundSource::setStreamMode().
+  
+- Reduced the file size of the irrKlang library again a bit.
+
+- There are two new tutorials for irrKlang.NET in C# available now.
+	
+-----------------------------------------------------------------------
+
+irrKlang 0.9 
+
+- irrKlang is now available in two editions: 
+   - irrKlang which is still free, also for commercial use
+   - irrKlang Pro, for a small license fee (see details on http://ambiera.com)
+  Some of the new features added in this version are only available in 
+  irrKlang Pro (see website for details). The 'pro' features can be accessed 
+  and tested with the free version as well, but the audio engine will start playing
+  additional sounds (female voice saying 'irrKlang pro') from time to time once
+  a pro feature has been used.
+
+- irrKlang now supports DirectSound8 as additional sound output driver.
+  Note that the E_SOUND_OUTPUT_DRIVER enumeration has a new member now:
+  ESOD_DIRECT_SOUND_8. The ESOD_DIRECT_SOUND is still available.
+  
+- Doppler effects are now supported (with the DirectSound drivers at least).
+  Use ISound::setVelocity to set a sounds velocity, ISoundEngine::setListenerPosition()
+  to set the listeners velocity and ISoundEngine::setDopplerEffectParameters() to
+  adjust two parameters influencing the doppler effects intensity.
+  
+- There are now sound stop events: Events which are called when a sound has finished
+  playback. Use the new interface ISoundStopEventReciever for this.
+  The interface has only one method to be implemented by the user: OnSoundStopped().
+  Implement this interface and set it via ISound::setSoundStopEventReciever().
+  The sound stop event is guaranteed to be called when a sound or sound stream is finished,
+  either because the sound reached its playback end, its sound source was removed,
+  ISoundEngine::stopAllSounds() has been called or the whole engine was deleted.
+  
+- Sound effects are now usable when using the ESOD_DIRECT_SOUND_8 
+  driver (default). Available sound effects are:
+  - Chorus
+  - Compressor
+  - Distortion
+  - Echo
+  - Flanger
+  - Gargle
+  - 3DL2Reverb
+  - ParamEq
+  - WavesReverb
+  Those effects can be accessed via ISound::getSoundEffectControl(), if the
+  'enableSoundEffects' flag was set to true when starting the sound with
+  play2D() or play3D().
+  
+- There is now the option to change the play back speed and the frequency
+  of a sound. Use ISound::setPlaybackSpeed() for this.
+  
+- It is now possible to set a default volume for every sound source via
+  ISoundSource::setDefaultVolume().
+  
+- There is now a statically linkable version of irrKlang available (currently
+  windows and irrKlang pro only). 
+  Just #Define IRRKLANG_STATIC in your project settings or before including the 
+  irrKlang headers to use the static lib version of irrKlang.
+  Note that you need to use multi threaded runtime libraries in your project 
+  when using irrKlang as static lib, other wise you will get linker errors 
+  (like "__getmbcp already defined in LIBC.lib(mbctype.obj)") or random crashes. 
+  In Visual Studio, this setting can be found in 
+  Project Settings -> C++ -> Code Generation -> Runtime Library.
+  
+- Memory sound sources are now copied by default, so the memory block can be discarded after
+  calling ISoundEngine::addSoundSource(). There is a new parameter 'copyMemory' which
+  can be set to false to make the engine use the old, non memory copying behavior.
+  
+- ISoundEngine::getSoundSource() now has a second parameter making it possible
+  to only retrieve a already added sound source without loading it.
+  
+- There is a new example available showing how to use sound effects.
+  
+- Refactored a lot of internal code, reducing the file size of the 
+  irrKlang binaries.
+  
+- Fixed a possible synchronization problem (possible crash)
+
+-----------------------------------------------------------------------
+
+irrKlang 0.8.1 
+
+- There was a serious bug in the WAV file reader which read over the end of files,
+  when streamed, causing a short 'click' sound. Fixed now.
+
+- 8 Bit sound streams don't produce a click when stopped anymore. 
+
+- Audio stream readers which report a wrong amount of frames in the stream now 
+  don't get clipped before playing the end of the sound anymore.
+  
+-----------------------------------------------------------------------
+
+irrKlang 0.8 
+
+- There are now two ways to set default min and max distances for 3D sounds:
+	ISoundEngine::setDefault3DSoundMinDistance(), ISoundEngine::setDefault3DSoundMaxDistance
+  for global min/max control, as well as
+	ISoundSource::setDefaultMinDistance(), ISoundSource::setDefaultMaxDistance().
+  to influence the default min/max value based on the sound source.
+  
+- Some documentation updates
+  
+- The short 'click'/'pop' sound which sometimes has been played on streamed, non looped sounds
+  when using the DirectSound device is now removed.
+
+- The ALSA driver now also works with sound hardware not supporting power of two buffer sizes.
+
+- License change: irrKlang.so file may also be redistributed.
+
+-----------------------------------------------------------------------
+
+irrKlang 0.7 
+
+- Added possibility to remove sound sources (selective or all at once).
+  See ISoundEngine::removeSoundSource() (two overloads) and 
+  ISoundEngine::removeAllSoundSources().
+  
+- There is now the possibility to get the length of any sound source or playing sound.
+  See ISound::getPlayLength() and ISoundSource::getPlayLength().
+  
+- Resources of finished played sounds are now freed much earlier, causing smaller memory usage.
+  
+- When stream playback is paused, the play position returned by ISound::getPlayPosition()
+  won't advance forward anymore in DirectSound, this was a bug which is now fixed.
+
+- Fixed a bug which caused ISound::isFinished() to be returned incorrect values when 
+  using the DirectSound driver.
+  
+- Fixed a bug causing a wrong value being reported using getPlayPosition() when playing
+  very long streams using the WinMM or the ALSA driver.
+
+-----------------------------------------------------------------------
+
+irrKlang 0.6 
+
+- There are some new supported file formats: MOD, XM, IT and S3M. Implemented using the
+  excellent Dynamic Universal Music Bibliotheque.
+
+- irrKlang now is available for .NET languages (C#, VisualBasic.NET, 
+  IronPhyton, Boo, Delphi.NET etc).
+  See /bin/dotnet for the binary, and /examples.net for some examples.
+
+- irrKlang now chooses sound drivers in a more intelligent way when running in
+  driver auto detect mode (ESOD_AUTO_DETECT).
+  For example when DirectSound is available but fails starting up (for whatever reason),
+  irrKlang will select the winMM driver instead of not playing any sound. 
+  
+- It is now possible to influence or disable the threshold where irrKlang desides
+  to stream a file regardless of the user specified setting. 
+  Use ISoundSource::setForcedStreamingThreshold for this.
+  
+- irrKlang is now compatible with Irrlicht 1.3, the IFileReader interface has been
+  updated. Meaning you can use the same IFileReader interfaces between those two 
+  engines and for example make irrKlang read files using Irrlicht's file system.
+
+- irrKlang now needs even less memory when playing a lot of short soundfiles at the same time,
+  achieved through a nicer internal (de)allocation scheme.
+
+- When using software 3d sound (using winMM or ALSA), the left and right speaker were swapped.
+  This is fixed now.
+  
+- Failed COM initialization is now only a warning, and irrKlang will not abort with an error.
+
+- Under some circumstances (bad windows scheduling, cpu intensive applications etc) it could 
+  happen that looped, streamed sound filed played via DirectSound in irrKlang would play
+  strange noises after the first repeat. This has been corrected now.
+
+- On some hardware under Linux, irrKlang wasn't able to set the wanted buffer size, 
+  this has been improved now.
+  
+- Removed a bug causing visual studio 2005 projects not to compile when using irrKlang without
+  a WIN32 define.
+
+-----------------------------------------------------------------------
+
+irrKlang 0.5 
+
+- Linux is now supported as platform. irrKlang uses ALSA as output target here by default.
+
+- irrKlang now supports winMM as output driver next to DirectSound in Windows.
+
+- added a new method to pause/unpause all sounds:
+	ISoundEngine::setAllSoundsPaused( bool bPaused = true )
+
+- The flag ESEO_LOAD_PLUGINS now correctly prevents loading of plugins if 
+  not set. This was not working before.
+  
+- ISoundEngine::stopAllSounds() didn't work with the DirectSound output driver correctly,
+  this has been corrected now.
+
+- irrKlang can now be used as static lib. Just #Define IRRKLANG_STATIC in your project 
+  settings or before including the irrKlang headers to use the static lib version
+  of irrKlang. Note that you need to use multi threaded runtime libraries in your project 
+  when using irrKlang as static lib, other wise you will get linker errors 
+  (like "__getmbcp already defined in LIBC.lib(mbctype.obj)") or random crashes. 
+  In Visual Studio, this setting can be found in 
+  Project Settings -> C++ -> Code Generation -> Runtime Library.
+  (If the static library isn't released in this package it may come as separate archive)
+
+-----------------------------------------------------------------------
+
+irrKlang 0.4 
+
+- Added support for the GCC compiler
+
+- Added the possibility to load sounds directly from memory.
+  For this, two overloaded methods to the ISoundEngine interface have been added:
+    ISoundSource* addSoundSource(void* memory, ik_s32 sizeInBytes, const ik_c8* soundName);
+    ISoundSource* addSoundSource(const ik_c8* fileName, E_STREAM_MODE mode=SM_AUTO_DETECT);
+
+- Added possibility to override file access easily.
+
+- Added two tutorials: MemoryPlayback and OverrideFileAccess.
+
+- Added support for the Code::Blocks IDE
+
+- Removed streamMode parameter from getSoundSource(). If you needed this, please use
+  addSoundSource() now instead.
+
+- Sounds are now loaded correctly independent of their file extension.
+
+- irrKlang no longer crashes if more than one instance of it is created.
+
+-----------------------------------------------------------------------
+
+irrKlang 0.3 
+
+- Added the option to play mp3 files. This functionality is available as plugin and
+  works when the  file ikpMP3.dll is available. Simply remove it if you don't want
+  or need mp3 support for your software. Please note that if you are using mp3
+  files in your application, you might need to pay a license fee to Thompson for
+  their patent (This is nothing irrKlang specific, every application needs to do
+  this today if Thompson wants it to.)
+  The ikpMP3.dll decoder is available as full source in the \plugins directory
+  and licensed under the LGPL.
+
+- Added plugin support. Create a .dll which starts with ikp (for IrrKlangPlugin)
+  including a function looking like this:
+  __declspec(dllexport) void __stdcall irrKlangPluginInit(
+        ISoundEngine* engine, const char* version) { // your code here }
+  irrKlang will load the dll and invoke that function. There is an example plugin
+  with full source code in the \plugins directory which enhances irrKlang
+  to decode mp3 files.
+
+- IrrKlang now supports 3D buffers (enabled by default). Previously, they have been
+  emulated. By not specifying the ESEO_USE_3D_BUFFERS flag when calling
+  createIrrKlangDevice(), irrKlang will not use 3D buffers.
+
+- Added the possibility to write debug info to any windows debugger supporting
+  OutputDebugString() (like VisualStudio). This is pretty useful if your application
+  does not capture any console output. Use ESEO_PRINT_DEBUG_INFO_TO_DEBUGGER to
+  enable this feature when calling createIrrKlangDevice().
+
+- irrKlang now supports multiple rolloff models. 3D sounds are now played back with
+  a logarithmic rolloff by default. In previous versions, irrKlang used a linear rolloff
+  model. Use ESEO_LINEAR_ROLLOFF when calling createIrrKlangDevice() to switch
+  to the linear rolloff model.
+
+- The createIrrKlangDevice() function now accepts several options as flags. Note that
+  the C++ compiler automaticly converts bools to this flags so if you used a previous
+  version of the engine you might want to check if your parameters are correctly set.
+
+- Added the method ISound::getPlayPosition() which returns the current play position of
+  the sound in milliseconds.
+
+- Fixed a possible crash when stopping a streamed sound manually at the same time
+  it also stopped automaticly.
+
+- Fixed playback of looped streamed sounds causing artifacts under several circumstances.
+
+-----------------------------------------------------------------------
+
+irrKlang 0.2 
+
+- Fixed 3d positioning of sounds
+
+- Fixed a bug in ik_ISound.h causing irrKlang header not to compile with some strict compiler settings.
+
+- Added some internal performance improvements
+
+-----------------------------------------------------------------------
+
+irrKlang 0.1 
+
+Initial release.
+
+Although this is the first release, irrKlang already has some features:
+
+- Support for .WAV and .OGG files (MP3, FLAC, SPEEX support planned and
+coming soon)
+
+- Buffered and streamed audio playback
+
+- Seamless 2D and 3D audio: It is possible to play short simple stereo
+sounds as well multiple large streamed sound files in 3D space at the
+same time for example.
+
+- High level autodetection: The engine can do everything for you. Just
+tell it to play a sound file, and it will load, cache and/or stream
+sound data for you automaticly, depending on what is best for
+performance and memory usage. But if you want to specify how the engine
+should handle this, you can specify this as well.
+
+- Extendable: Possibility to write own file format readers/decoders to
+extend the engine with it.
+
+- Multi/Singlethreaded modes: The engine can run both multithreaded or
+singlethreaded in the same thread as your application, to make it
+possible to debug your application easier for example.
+
+- Low level audio output manipulation: Before starting to play a sound
+or even during it is already playing, it is possible of course to alter
+any aspect of it like panning, volume and 3d position.
+
+- Fast 3D audio on low end hardware: Because some low end audio hardware
+is not able to play 3D sounds without significant performance loss or
+some don't support 3d audio buffers at all, irrEdit has a high
+performance 3d sound buffer emulator built-in, causing a sound
+experience nearly as it was a real 3d sound buffer.
+
+- Separate music and sound control: As most applications want to
+separate between sound and music playback, the engine offers to control
+them separately, like for example via a master volume control. No need
+to manage alls your playing sounds just to change the volume of all
+sounds. (The control of the 'music' part in the API is not available in
+version 0.1 yet, but can be used via normal sounds already)
+
+- Full playback control: Play any sound and forget about it if you want.
+Then later, you can query at any time which sound is currently playing
+and influene this if you want.
+

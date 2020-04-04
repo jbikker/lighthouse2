@@ -1,7 +1,7 @@
 rem | This file deletes all files that can be regenerated with 
 rem | a rebuild / run in VS2017. Execute this when archiving, 
 rem | handing in assignments etc.
-rem | Make sure VS2017 is *closed* for best results.
+rem | Make sure VS is *closed* for best results.
 
 del *.suo /Q
 del *.suo /AH /Q
@@ -102,6 +102,17 @@ del apps\imguiapp\*.pdb /Q
 del apps\imguiapp\*.ilk /Q
 del apps\imguiapp\*.exp /Q
 del apps\imguiapp\*.lib /Q
+rd apps\viewerapp\x64 /S /Q
+del apps\viewerapp\data\textures\*.bin
+del apps\viewerapp\data\mattest\textures\*.bin
+del apps\viewerapp\data\sky_15.bin
+del apps\viewerapp\*.exe /Q
+del apps\viewerapp\*.iobj /Q
+del apps\viewerapp\*.ipdb /Q
+del apps\viewerapp\*.pdb /Q
+del apps\viewerapp\*.ilk /Q
+del apps\viewerapp\*.exp /Q
+del apps\viewerapp\*.lib /Q
 rd apps\benchmarkapp\x64 /S /Q
 del apps\benchmarkapp\data\textures\*.bin
 del apps\benchmarkapp\data\mattest\textures\*.bin

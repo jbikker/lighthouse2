@@ -48,33 +48,33 @@ void PrepareScene()
 	// initialize scene
 	auto scene = renderer->GetScene();
 	auto sky = new HostSkyDome();
-	sky->Load( "data/sky_15.hdr" );
+	sky->Load( "../_shareddata/sky_15.hdr" );
 	// Compensate for different evaluation in PBRT
 	sky->worldToLight = mat4::RotateX( -PI / 2 );
 	scene->SetSkyDome( sky );
 #if 1
 	// escher
-	materialFile = string( "data/escher/materials.xml" );
-	int mesh = renderer->AddMesh( "data/escher/escher2010.obj" );
+	materialFile = string( "data/materials.xml" );
+	int mesh = renderer->AddMesh( "../_shareddata/escher/escher2010.obj" );
 	int inst = renderer->AddInstance( mesh );
 	renderer->SetNodeTransform( inst, mat4::RotateX( PI / 4 ) * mat4::RotateZ( PI / 2 ) );
 #else
 	// classic scene
-	materialFile = string( "data/pica/pica_materials.xml" );
-	int rootNode = renderer->AddScene( "data/pica/scene.gltf" );
+	materialFile = string( "data/pica_materials.xml" );
+	int rootNode = renderer->AddScene( "../_shareddata/pica/scene.gltf" );
 	renderer->SetNodeTransform( rootNode, mat4::Translate( 0, -10.2f, 0 ) );
-	rootNode = renderer->AddScene( "data/sphere/scene.gltf" );
+	rootNode = renderer->AddScene( "../_shareddata/sphere/scene.gltf" );
 	renderer->SetNodeTransform( rootNode, mat4::Scale( 0.02f ) );
 	int whiteMat = renderer->AddMaterial( make_float3( 20 ) );
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 21, 0 ), 10.9f, 10.9f, whiteMat );
 	renderer->AddInstance( lightQuad );
-	renderer->AddScene( "data/drone/scene.gltf", mat4::Translate( 4.5f, -3.4f, -5.2f ) * mat4::Scale( 0.02f ) );
+	renderer->AddScene( "../_shareddata/drone/scene.gltf", mat4::Translate( 4.5f, -3.4f, -5.2f ) * mat4::Scale( 0.02f ) );
 #endif
 	// optional animated models
-	// renderer->AddScene( "data/CesiumMan.glb", mat4::Translate( 0, -2, -9 ) );
-	// renderer->AddScene( "data/project_polly.glb", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
+	// renderer->AddScene( "../_shareddata/CesiumMan.glb", mat4::Translate( 0, -2, -9 ) );
+	// renderer->AddScene( "../_shareddata/project_polly.glb", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
 	// test data for PNEE
-	// int lightText = renderer->AddMesh( "data/lh2text.obj", 0.1f );
+	// int lightText = renderer->AddMesh( "../_shareddata/lh2text.obj", 0.1f );
 	// renderer->AddInstance( lightText, mat4::Translate( make_float3( -1, -3.7f, 0 ) ) * mat4::RotateX( PI / 2 ) );
 	// for( int i = 0; i < 5; i++ ) renderer->AddPointLight( make_float3( (i - 2) * 8.0f, 6.0f, -18.82f ), make_float3( 100, 0, 0 ) );
 	// load changed materials

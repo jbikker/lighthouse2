@@ -1,0 +1,29 @@
+newmtl blinn1SG
+Kd 0.00 0.00 0.00
+
+newmtl blinn4SG
+Kd 1 1 1
+map_Kd textures/stroekSimenEscher2010_Main.tga
+%bump textures/stroekSimenEscher2010_Main_Bump_Spec.tga
+%map_Ks textures/stroekSimenEscher2010_Main_Bump_Spec.tga
+
+newmtl blinn5SG
+Kd 1 1 1
+map_Kd textures/stroekSimenEscher2010_Floor.tga
+%bump textures/stroekSimenEscher2010_Floor_Bump_Spec.tga
+%map_Ks textures/stroekSimenEscher2010_Floor_Bump_Spec.tga
+
+newmtl blinn6SG
+Kd 1 1 1
+map_Kd textures/stroekSimenEscher2010_Arches.tga
+%bump textures/stroekSimenEscher2010_Arches_Bump_Spec.tga
+%map_Ks textures/stroekSimenEscher2010_Arches_Bump_Spec.tga
+
+newmtl blinn7SG
+Kd 1 1 1
+map_Kd textures/stroekSimenEscher2010_Details.tga
+%bump textures/stroekSimenEscher2010_Details_Bump_Spec.tga
+%map_Ks textures/stroekSimenEscher2010_Details_Bump_Spec.tga
+
+newmtl lambert2SG
+Kd 30 27 11

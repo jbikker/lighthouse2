@@ -147,11 +147,11 @@ void Initialize()
 	ReshapeWindowCallback( 0, SCRWIDTH, SCRHEIGHT );
 	// initialize scene
 	auto sky = new HostSkyDome();
-	sky->Load( "data/sky_15.hdr" );
+	sky->Load( "../_shareddata/sky_15.hdr" );
 	sky->worldToLight = mat4::RotateX( -PI / 2 ); // compensate for different evaluation in PBRT
 	renderer->GetScene()->SetSkyDome( sky );
-	cloud = renderer->AddScene( "data/cloud3/scene.gltf" );
-	knight = renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( 8, 0, 0 ) * mat4::Scale( 8 ) );
+	cloud = renderer->AddScene( "../_shareddata/cloud3/scene.gltf" );
+	knight = renderer->AddScene( "../_shareddata/knight/scene.gltf", mat4::Translate( 8, 0, 0 ) * mat4::Scale( 8 ) );
 	int floorMat = renderer->AddMaterial( make_float3( 1 ), "floormaterial" );
 	HostMaterial* m = renderer->GetMaterial( floorMat );
 	plane = renderer->AddQuad( make_float3( 0, 1, 0 ), make_float3( 0, -2, 0 ), 100, 100, floorMat );

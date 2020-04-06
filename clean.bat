@@ -53,6 +53,7 @@ rem | Clean up applications
 rd apps\ai_debugger\x64 /S /Q
 del apps\ai_debugger\data\textures\*.bin
 del apps\ai_debugger\data\sky_15.bin
+del apps\_shareddata\sky_15.bin
 del apps\ai_debugger\*.exe /Q
 del apps\ai_debugger\*.iobj /Q
 del apps\ai_debugger\*.ipdb /Q

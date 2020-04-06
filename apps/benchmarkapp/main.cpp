@@ -27,8 +27,8 @@ using namespace irrklang;
 static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0, * overlayTarget = 0, * menuScreen;
 static Shader* shader = 0, * overlayShader = 0;
-static uint scrwidth = 0, scrheight = 0, scrspp = 10;
-static bool spaceDown = false, enterDown = false, tabDown = false, hasFocus = true, running = true, animPaused = true;
+static uint scrwidth = 0, scrheight = 0, scrspp = 2;
+static bool spaceDown = false, enterDown = false, tabDown = false, hasFocus = true, running = true, animPaused = false;
 static std::bitset<1024> keystates;
 static std::bitset<8> mbstates;
 static string materialFile;
@@ -112,28 +112,28 @@ void PrepareScene()
 	// initialize scene
 	auto scene = renderer->GetScene();
 	auto sky = new HostSkyDome();
-	sky->Load( "data/sky_15.hdr" );
+	sky->Load( "../_shareddata/sky_15.hdr" );
 	// Compensate for different evaluation in PBRT
 	sky->worldToLight = mat4::RotateX( -PI / 2 );
 	scene->SetSkyDome( sky );
 	// book scene
-	materialFile = string( "data/book/materials.xml" );
-	renderer->AddScene( "data/book/scene.gltf" );
+	materialFile = string( "data/materials.xml" );
+	renderer->AddScene( "../_shareddata/book/scene.gltf" );
 	// dragon statue
-	renderer->AddScene( "data/statue/scene.gltf", mat4::Translate( -14, -0.5f, 25 ) );
+	renderer->AddScene( "../_shareddata/statue/scene.gltf", mat4::Translate( -14, -0.5f, 25 ) );
 	// gems
-	renderer->AddScene( "data/crystal/scene.gltf", mat4::Translate( 27, -4, 6 ) * mat4::RotateZ( -0.25f ) * mat4::Scale( 0.5f ) );
-	renderer->AddScene( "data/crystal/scene.gltf", mat4::Translate( 31.5f, -4.75f, 6 ) * mat4::Scale( 0.5f ) );
+	renderer->AddScene( "../_shareddata/crystal/scene.gltf", mat4::Translate( 27, -4, 6 ) * mat4::RotateZ( -0.25f ) * mat4::Scale( 0.5f ) );
+	renderer->AddScene( "../_shareddata/crystal/scene.gltf", mat4::Translate( 31.5f, -4.75f, 6 ) * mat4::Scale( 0.5f ) );
 	// knights
-	renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( -16, 0.75f, -10 ) * mat4::RotateY( -1.2f ) );
-	renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( -17, 0.75f, -18.5f ) * mat4::RotateY( PI / 2 ) );
-	renderer->AddScene( "data/knight/scene.gltf", mat4::Translate( -15, 0.75f, -18.5f ) * mat4::RotateY( PI / 2 ) );
+	renderer->AddScene( "../_shareddata/knight/scene.gltf", mat4::Translate( -16, 0.75f, -10 ) * mat4::RotateY( -1.2f ) );
+	renderer->AddScene( "../_shareddata/knight/scene.gltf", mat4::Translate( -17, 0.75f, -18.5f ) * mat4::RotateY( PI / 2 ) );
+	renderer->AddScene( "../_shareddata/knight/scene.gltf", mat4::Translate( -15, 0.75f, -18.5f ) * mat4::RotateY( PI / 2 ) );
 	// bird
-	birb = renderer->AddScene( "data/bird/scene.gltf", mat4::Translate( 0, 14, 0 ) * mat4::Scale( 0.005f ) );
+	birb = renderer->AddScene( "../_shareddata/bird/scene.gltf", mat4::Translate( 0, 14, 0 ) * mat4::Scale( 0.005f ) );
 	// clouds
-	cloud1 = renderer->AddScene( "data/cloud1/scene.gltf", mat4::Translate( 0, 34, 0 ) * mat4::Scale( 4.0f ) );
-	cloud2 = renderer->AddScene( "data/cloud2/scene.gltf", mat4::Translate( 0, 34, 0 ) * mat4::Scale( 4.0f ) );
-	cloud3 = renderer->AddScene( "data/cloud3/scene.gltf", mat4::Translate( 0, 34, 0 ) * mat4::Scale( 4.0f ) );
+	cloud1 = renderer->AddScene( "../_shareddata/cloud1/scene.gltf", mat4::Translate( 0, 34, 0 ) * mat4::Scale( 4.0f ) );
+	cloud2 = renderer->AddScene( "../_shareddata/cloud2/scene.gltf", mat4::Translate( 0, 34, 0 ) * mat4::Scale( 4.0f ) );
+	cloud3 = renderer->AddScene( "../_shareddata/cloud3/scene.gltf", mat4::Translate( 0, 34, 0 ) * mat4::Scale( 4.0f ) );
 	// light
 	int whiteMat = renderer->AddMaterial( make_float3( 30 ) );
 	int lightQuad = renderer->AddQuad( normalize( make_float3( -183.9f, -44.6f, -60.9f ) ),

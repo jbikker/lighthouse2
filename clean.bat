@@ -17,6 +17,10 @@ rd lib\RenderCore_PrimeRef\lib /S /Q
 rd lib\RenderCore_PrimeRef\x64 /S /Q
 rd lib\RenderCore_OptixPrime_B\lib /S /Q
 rd lib\RenderCore_OptixPrime_B\x64 /S /Q
+rd lib\RenderCore_PrimeAdaptive\lib /S /Q
+rd lib\RenderCore_PrimeAdaptive\x64 /S /Q
+rd lib\RenderCore_Optix7Adaptive\lib /S /Q
+rd lib\RenderCore_Optix7Adaptive\x64 /S /Q
 rd lib\RenderCore_OptixRTX_B\lib /S /Q
 rd lib\RenderCore_OptixRTX_B\x64 /S /Q
 del lib\RenderCore_OptixRTX_B\optix\*.ptx /S /Q

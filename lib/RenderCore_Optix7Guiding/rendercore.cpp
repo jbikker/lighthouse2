@@ -1,4 +1,4 @@
-﻿/* rendercore.cpp - Copyright 2019 Utrecht University
+﻿/* rendercore.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ void stageGuidanceData( uint* guidance, float3 bmin, float3 reciExtent );
 void stageARGB32Pixels( uint* p );
 void stageARGB128Pixels( float4* p );
 void stageNRM32Pixels( uint* p );
-void stageSkyPixels( float3* p );
+void stageSkyPixels( float4* p );
 void stageSkySize( int w, int h );
 void stageWorldToSky( const mat4& worldToLight );
 void stagePathStates( PathState* p );
@@ -61,7 +61,7 @@ using namespace lh2core;
 OptixDeviceContext RenderCore::optixContext = 0;
 struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
-const char *ParseOptixError( OptixResult r )
+const char* ParseOptixError( OptixResult r )
 {
 	switch (r)
 	{
@@ -144,7 +144,7 @@ void RenderCore::CreateOptixContext( int cc )
 	}
 	else
 	{
-		const char *file = NULL;
+		const char* file = NULL;
 		if (cc / 10 == 7) file = "../../lib/RenderCore_Optix7Guiding/optix/.optix.turing.cu.ptx";
 		else if (cc / 10 == 6) file = "../../lib/RenderCore_Optix7Guiding/optix/.optix.pascal.cu.ptx";
 		else if (cc / 10 == 5) file = "../../lib/RenderCore_Optix7Guiding/optix/.optix.maxwell.cu.ptx";
@@ -579,7 +579,7 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
 	{
 		delete lightBuffer;
-		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST|ON_DEVICE );
+		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
 	}
 	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
 	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
@@ -605,12 +605,15 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_HOST | ON_DEVICE, 0 );
+	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
 	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
+	// copy sky data to device
+	skyPixelBuffer->CopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -862,8 +865,8 @@ void RenderCore::UpdateGuiding()
 		// bits 2..24: index. bits 0..24 are simply the 'id' we stored for each hit previously.
 		// bits 25..31: relative importance. Minimum is 1; 0 means the slot is not used.
 		// ..
-		int id[256] = { }, count = 0, N = photonCount[i];
-		float power[256] = { };
+		int id[256] = {}, count = 0, N = photonCount[i];
+		float power[256] = {};
 		for (int j = 0; j < N; j++)
 		{
 			const PhotonHit& ph = photonHits[photonSum[i] + j];
@@ -943,7 +946,7 @@ void RenderCore::UpdateToplevel()
 	options.buildFlags = OPTIX_BUILD_FLAG_NONE;
 	options.operation = OPTIX_BUILD_OPERATION_BUILD;
 	static size_t reservedTemp = 0, reservedTop = 0;
-	static CoreBuffer<uchar> *temp, *topBuffer = 0;
+	static CoreBuffer<uchar>* temp, * topBuffer = 0;
 	OptixAccelBufferSizes sizes;
 	CHK_OPTIX( optixAccelComputeMemoryUsage( optixContext, &options, &buildInput, 1, &sizes ) );
 	if (sizes.tempSizeInBytes > reservedTemp)

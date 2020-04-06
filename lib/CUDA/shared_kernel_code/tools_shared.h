@@ -1,4 +1,4 @@
-/* tools_shared.cu - Copyright 2019 Utrecht University
+/* tools_shared.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ LH2_DEVFUNC uint HDRtoRGB32( const float3& c )
 LH2_DEVFUNC float3 RGB32toHDR( const uint c )
 {
 	return make_float3(
-		(float)(c >> 22)  * (1.0f / 1023.0f),
+		(float)(c >> 22) * (1.0f / 1023.0f),
 		(float)((c >> 11) & 2047) * (1.0f / 2047.0f),
 		(float)(c & 2047) * (1.0f / 2047.0f)
 	);
@@ -193,12 +193,21 @@ LH2_DEVFUNC float SphericalPhi( const float3& v )
 	return (p < 0) ? (p + 2 * PI) : p;
 }
 
-LH2_DEVFUNC float4 SampleSkydome( const float3 D, const int pathLength )
+LH2_DEVFUNC float3 SampleSkydome( const float3& D )
 {
-	uint u = (uint)(skywidth * SphericalPhi( D ) * INV2PI - 0.5f),
-		v = (uint)(skyheight * SphericalTheta( D ) * INVPI - 0.5f);
-	uint idx = u + v * skywidth;
-	return idx < skywidth * skyheight ? make_float4( skyPixels[idx], 1.0f ) : make_float4( 0 );
+	const uint u = (uint)(skywidth * SphericalPhi( D ) * INV2PI - 0.5f);
+	const uint v = (uint)(skyheight * SphericalTheta( D ) * INVPI - 0.5f);
+	const uint idx = u + v * skywidth;
+	return idx < skywidth* skyheight ? make_float3( skyPixels[idx] ) : make_float3( 0 );
+}
+
+LH2_DEVFUNC float3 SampleSmallSkydome( const float3& D )
+{
+	const uint w = skywidth >> 6, h = skyheight >> 6;
+	const uint u = (uint)(w * SphericalPhi( D ) * INV2PI - 0.5f);
+	const uint v = (uint)(h * SphericalTheta( D ) * INVPI - 0.5f);
+	const uint idx = u + v * w;
+	return idx < w* h ? make_float3( skyPixels[idx + skywidth * skyheight] ) : make_float3( 0 );
 }
 
 LH2_DEVFUNC float SurvivalProbability( const float3& albedo )
@@ -310,6 +319,21 @@ LH2_DEVFUNC float blueNoiseSampler( const uint* blueNoise, int x, int y, int sam
 	float retVal = (0.5f + value) * (1.0f / 256.0f) + noiseShift;
 	if (retVal >= 1) retVal -= 1;
 	return retVal;
+}
+
+LH2_DEVFUNC float4 blueNoiseSampler4( const uint* blueNoise, int x, int y, int sampleIndex, int sampleDimension )
+{
+	// Optimized retrieval of 4 blue noise samples.
+	const uint4 bn4 = *((uint4*)(blueNoise + sampleDimension + (x + y * 128) * 8 + 65536 * 3));
+	const int rsi1 = (sampleIndex ^ bn4.x) & 255, rsi2 = (sampleIndex ^ bn4.y) & 255;
+	const int rsi3 = (sampleIndex ^ bn4.z) & 255, rsi4 = (sampleIndex ^ bn4.w) & 255;
+	const int v1 = blueNoise[sampleDimension + 0 + rsi1 * 256];
+	const int v2 = blueNoise[sampleDimension + 1 + rsi2 * 256];
+	const int v3 = blueNoise[sampleDimension + 2 + rsi3 * 256];
+	const int v4 = blueNoise[sampleDimension + 3 + rsi4 * 256];
+	const uint4 bx4 = *((uint4*)(blueNoise + (sampleDimension & 7) + (x + y * 128) * 8 + 65536));
+	return make_float4( (0.5f + (v1 ^ bx4.x)) * (1.0f / 256.0f), (0.5f + (v2 ^ bx4.y)) * (1.0f / 256.0f),
+		(0.5f + (v3 ^ bx4.z)) * (1.0f / 256.0f), (0.5f + (v4 ^ bx4.w)) * (1.0f / 256.0f) );
 }
 
 // EOF

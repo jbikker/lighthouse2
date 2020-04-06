@@ -1,4 +1,4 @@
-/* system.cpp - Copyright 2019 Utrecht University
+/* system.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -127,8 +127,6 @@ Bitmap::Bitmap( const char* f )
 //  +-----------------------------------------------------------------------------+
 //  |  GLTextRenderer implementation.                                       LH2'20|
 //  +-----------------------------------------------------------------------------+
-int GLTextRenderer::scrwidth = SCRWIDTH;
-int GLTextRenderer::scrheight = SCRHEIGHT;
 GLTextRenderer::GLTextRenderer( const int size, const char* font )
 {
 	// initialize FreeType2, based on https://learnopengl.com/In-Practice/Text-Rendering

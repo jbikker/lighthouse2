@@ -34,7 +34,22 @@
       <Filter>CUDA</Filter>
     </ClInclude>
     <ClInclude Include="kernels\bsdf.h">
-      <Filter>CUDA</Filter>
+      <Filter>CUDA\bsdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sharedBSDFs\disney.h">
+      <Filter>CUDA\bsdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sharedBSDFs\frosted.h">
+      <Filter>CUDA\bsdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sharedBSDFs\ggxmdf.h">
+      <Filter>CUDA\bsdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sharedBSDFs\lambert.h">
+      <Filter>CUDA\bsdf</Filter>
+    </ClInclude>
+    <ClInclude Include="..\sharedBSDFs\compatibility.h">
+      <Filter>CUDA\bsdf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +58,9 @@
     </Filter>
     <Filter Include="OptiX">
       <UniqueIdentifier>{b91dcd04-3df0-422a-be98-6979814d19d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CUDA\bsdf">
+      <UniqueIdentifier>{35a6faa8-06a6-4c14-984a-7da0746cbaee}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

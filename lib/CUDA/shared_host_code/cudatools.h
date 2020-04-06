@@ -1,4 +1,4 @@
-/* cudatools.h - Copyright 2019 Utrecht University
+/* cudatools.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public:
 		case CUDA_ERROR_MISALIGNED_ADDRESS:             return "Misaligned address";
 		}
 	}
-	static void compileToPTX( string &ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )
+	static void compileToPTX( string& ptx, const char* cuSource, const char* sourceDir, const int cc, const int optixVer )
 	{
 		// create program
 		nvrtcProgram prog = 0;

@@ -1,4 +1,4 @@
-/* host_scene.cpp - Copyright 2019 Utrecht University
+/* host_scene.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -14,22 +14,6 @@
 */
 
 #include "rendersystem.h"
-
-// static scene data
-HostSkyDome* HostScene::sky = 0;
-vector<int> HostScene::rootNodes;
-vector<HostNode*> HostScene::nodePool;
-vector<HostMesh*> HostScene::meshPool;
-vector<HostSkin*> HostScene::skins;
-vector<HostAnimation*> HostScene::animations;
-vector<HostMaterial*> HostScene::materials;
-vector<HostTexture*> HostScene::textures;
-vector<HostAreaLight*> HostScene::areaLights;
-vector<HostPointLight*> HostScene::pointLights;
-vector<HostSpotLight*> HostScene::spotLights;
-vector<HostDirectionalLight*> HostScene::directionalLights;
-Camera* HostScene::camera = 0;
-int HostScene::nodeListHoles = 0;
 
 // forward declaration of the PBRT scene loader functions
 void PBRTInit();
@@ -187,7 +171,7 @@ int HostScene::AddMesh( HostMesh* mesh )
 {
 	auto res = std::find( meshPool.begin(), meshPool.end(), mesh );
 
-	if ( res != meshPool.end() )
+	if (res != meshPool.end())
 		return std::distance( meshPool.begin(), res );
 
 	mesh->ID = (int)meshPool.size();
@@ -205,7 +189,7 @@ int HostScene::AddMesh( const char* objFile, const float scale, const bool flatS
 	// extract directory from specified file name
 	char* tmp = new char[strlen( objFile ) + 1];
 	memcpy( tmp, objFile, strlen( objFile ) + 1 );
-	char* lastSlash = tmp, *pos = tmp;
+	char* lastSlash = tmp, * pos = tmp;
 	while (*pos) { if (*pos == '/' || *pos == '\\') lastSlash = pos; pos++; }
 	*lastSlash = 0;
 	return AddMesh( lastSlash + 1, tmp, scale, flatShaded );
@@ -259,7 +243,7 @@ int HostScene::AddScene( const char* sceneFile, const mat4& transform )
 	// extract directory from specified file name
 	char* tmp = new char[strlen( sceneFile ) + 1];
 	memcpy( tmp, sceneFile, strlen( sceneFile ) + 1 );
-	char* lastSlash = tmp, *pos = tmp;
+	char* lastSlash = tmp, * pos = tmp;
 	while (*pos) { if (*pos == '/' || *pos == '\\') lastSlash = pos; pos++; }
 	*lastSlash = 0;
 	int retVal = 0;
@@ -369,7 +353,7 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 		meshPool.push_back( newMesh );
 	}
 	// push an extra node that holds a transform for the gltf scene
-	HostNode* newNode = new HostNode(); 
+	HostNode* newNode = new HostNode();
 	newNode->localTransform = transform;
 	newNode->ID = nodeBase - 1;
 	nodePool.push_back( newNode );
@@ -387,7 +371,7 @@ int HostScene::AddScene( const char* sceneFile, const char* dir, const mat4& tra
 		HostAnimation* anim = new HostAnimation( gltfAnim, gltfModel, nodeBase );
 		animations.push_back( anim );
 	}
-	for (tinygltf::Skin &source : gltfModel.skins)
+	for (tinygltf::Skin& source : gltfModel.skins)
 	{
 		HostSkin* newSkin = new HostSkin( source, gltfModel, nodeBase );
 		skins.push_back( newSkin );
@@ -445,6 +429,8 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 	tri2.vertex0 = make_float3( newMesh->vertices[vertBase + 3] );
 	tri2.vertex1 = make_float3( newMesh->vertices[vertBase + 4] );
 	tri2.vertex2 = make_float3( newMesh->vertices[vertBase + 5] );
+	tri1.T = tri2.T = T / (0.5 * height);
+	tri1.B = tri2.B = B / (0.5 * width);
 	newMesh->triangles.push_back( tri1 );
 	newMesh->triangles.push_back( tri2 );
 	// if the mesh was newly created, add it to scene mesh list
@@ -570,6 +556,39 @@ int HostScene::FindOrCreateMaterial( const string& name )
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  HostScene::FindOrCreateMaterialCopy                                        |
+//  |  Create an untextured material, based on an existing material. This copy is |
+//  |  to be used for a triangle that only reads a single texel from a texture;   |
+//  |  using a single color is more efficient.                              LH2'20|
+//  +-----------------------------------------------------------------------------+
+int HostScene::FindOrCreateMaterialCopy( const int matID, const uint color )
+{
+	// search list for existing material copy
+	const int r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
+	const float3 c = make_float3( b * (1.0f / 255.0f), g * (1.0f / 255.0f), r * (1.0f / 255.0f ) );
+	for (auto material : materials) 
+	{
+		if (material->flags & HostMaterial::SINGLE_COLOR_COPY && 
+			material->color.value.x == c.x && material->color.value.y == c.y && material->color.value.z == c.z)
+		{
+			material->refCount++;
+			return material->ID;
+		}
+	}
+	// nothing found, create a new material copy
+	const int newID = AddMaterial( make_float3( 0 ) );
+	*materials[newID] = *materials[matID];
+	materials[newID]->color.textureID = -1;
+	materials[newID]->color.value = c;
+	materials[newID]->flags |= HostMaterial::SINGLE_COLOR_COPY;
+	materials[newID]->ID = newID;
+	char t[256];
+	sprintf( t, "copied_mat_%i", newID );
+	materials[newID]->name = t;
+	return newID;
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  HostScene::FindMaterialID                                                  |
 //  |  Find the ID of a material with the specified name.                   LH2'19|
 //  +-----------------------------------------------------------------------------+
@@ -596,7 +615,7 @@ int HostScene::FindMaterialIDByOrigin( const char* name )
 //  +-----------------------------------------------------------------------------+
 int HostScene::FindNextMaterialID( const char* name, const int matID )
 {
-	for ( int s = (int)materials.size(), i = matID + 1; i < s; i++ ) 
+	for (int s = (int)materials.size(), i = matID + 1; i < s; i++)
 		if (materials[i]->name.compare( name ) == 0) return materials[i]->ID;
 	return -1;
 }
@@ -619,6 +638,17 @@ void HostScene::SetNodeTransform( const int nodeId, const mat4& transform )
 {
 	if (nodeId < 0 || nodeId >= nodePool.size()) return;
 	nodePool[nodeId]->localTransform = transform;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  HostScene::GetNodeTransform                                                |
+//  |  Set the local transform for the specified node.                      LH2'19|
+//  +-----------------------------------------------------------------------------+
+const mat4& HostScene::GetNodeTransform( const int nodeId )
+{
+	static mat4 dummyIdentity;
+	if (nodeId < 0 || nodeId >= nodePool.size()) return dummyIdentity;
+	return nodePool[nodeId]->localTransform;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -662,10 +692,7 @@ int HostScene::CreateTexture( const string& origin, const uint modFlags )
 int HostScene::AddMaterial( HostMaterial* material )
 {
 	auto res = std::find( materials.begin(), materials.end(), material );
-
-	if ( res != materials.end() )
-		return std::distance( materials.begin(), res );
-
+	if (res != materials.end()) return std::distance( materials.begin(), res );
 	int matid = (int)materials.size();
 	materials.push_back( material );
 	return matid;
@@ -675,10 +702,11 @@ int HostScene::AddMaterial( HostMaterial* material )
 //  |  HostScene::AddMaterial                                                     |
 //  |  Create a material, with a limited set of parameters.                 LH2'19|
 //  +-----------------------------------------------------------------------------+
-int HostScene::AddMaterial( const float3 color )
+int HostScene::AddMaterial( const float3 color, const char* name )
 {
 	HostMaterial* material = new HostMaterial();
 	material->color = color;
+	if (name) material->name = name;
 	return material->ID = AddMaterial( material );
 }
 

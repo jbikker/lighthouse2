@@ -1,4 +1,4 @@
-/* .cuda.cu - Copyright 2019 Utrecht University
+/* .cuda.cu - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ __constant__ int4 lightCounts; // area, point, spot, directional
 __constant__ uchar4* argb32;
 __constant__ float4* argb128;
 __constant__ uchar4* nrm32;
-__constant__ float3* skyPixels;
+__constant__ float4* skyPixels;
 __constant__ int skywidth;
 __constant__ int skyheight;
 __constant__ float4* debugData;
@@ -58,7 +58,7 @@ __host__ void stageLightCounts( int area, int point, int spot, int directional )
 __host__ void stageARGB32Pixels( uint* p ) { stagedcpy( argb32, p ); }
 __host__ void stageARGB128Pixels( float4* p ) { stagedcpy( argb128, p ); }
 __host__ void stageNRM32Pixels( uint* p ) { stagedcpy( nrm32, p ); }
-__host__ void stageSkyPixels( float3* p ) { stagedcpy( skyPixels, p ); }
+__host__ void stageSkyPixels( float4* p ) { stagedcpy( skyPixels, p ); }
 __host__ void stageSkySize( int w, int h ) { stagedcpy( skywidth, w ); stagedcpy( skyheight, h ); }
 __host__ void stageWorldToSky( const mat4& worldToLight ) { stagedcpy( worldToSky, worldToLight ); }
 __host__ void stageDebugData( float4* p ) { stagedcpy( debugData, p ); }

@@ -146,6 +146,11 @@
     <ClInclude Include="..\CUDA\shared_kernel_code\material_shared.h" />
     <ClInclude Include="..\CUDA\shared_kernel_code\sampling_shared.h" />
     <ClInclude Include="..\CUDA\shared_kernel_code\tools_shared.h" />
+    <ClInclude Include="..\sharedBSDFs\compatibility.h" />
+    <ClInclude Include="..\sharedBSDFs\disney.h" />
+    <ClInclude Include="..\sharedBSDFs\frosted.h" />
+    <ClInclude Include="..\sharedBSDFs\ggxmdf.h" />
+    <ClInclude Include="..\sharedBSDFs\lambert.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="core_mesh.h" />
     <ClInclude Include="kernels\.cuda.h" />
@@ -158,9 +163,9 @@
   <ItemGroup>
     <CudaCompile Include="kernels\.cuda.cu">
       <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
-      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50;compute_75,sm_75</CodeGeneration>
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50;compute_60,sm_60</CodeGeneration>
       <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,pathtracer.h,.cuda.h;lambert.h;ggxmdf.h;disney.h;compatibility.h</AdditionalDeps>
-      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,pathtracer.h,.cuda.h;lambert.h;ggxmdf.h;disney.h;compatibility.h</AdditionalDeps>
+      <AdditionalDeps Condition="'$(Configuration)|$(Platform)'=='Release|x64'">pathtracer.h,bsdf.h,finalize_shared.h,lights_shared.h,material_shared.h,sampling_shared.h,tools_shared.h,.cuda.h;lambert.h;ggxmdf.h;disney.h;compatibility.h</AdditionalDeps>
       <GPUDebugInfo Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</GPUDebugInfo>
       <MaxRegCount Condition="'$(Configuration)|$(Platform)'=='Release|x64'">0</MaxRegCount>
       <Include Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">../CUDA/shared_kernel_code;../sharedBSDFs</Include>

@@ -1,4 +1,4 @@
-/* host_material.h - Copyright 2019 Utrecht University
+/* host_material.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -69,7 +69,8 @@ public:
 	{
 		SMOOTH = 1,								// material uses normal interpolation
 		FROM_MTL = 4,							// changes are persistent for these, not for others
-		EMISSIVE_TWOSIDED = 8,
+		EMISSIVE_TWOSIDED = 8,					// depricated
+		SINGLE_COLOR_COPY = 16					// material was created for a tri that uses a single texel
 	};
 
 	// constructor / destructor

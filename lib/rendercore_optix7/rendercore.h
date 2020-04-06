@@ -1,4 +1,4 @@
-/* rendercore.h - Copyright 2019 Utrecht University
+/* rendercore.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ private:
 	CoreBuffer<CoreDirectionalLight>* directionalLightBuffer;	// directional lights
 	CoreBuffer<float4>* texel128Buffer = 0;			// texel buffer 1: hdr ARGB128 texture data
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
-	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
+	CoreBuffer<float4>* skyPixelBuffer = 0;			// skydome texture data
 	CoreBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
 	CoreBuffer<Counters>* counterBuffer = 0;		// counters for wavefront path tracing
 	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array
@@ -116,6 +116,7 @@ private:
 	int computeCapability;							// device compute capability
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
+	uint shiftSeed = 0x11331445;					// seed for the RNG that feeds the blue noise shift
 	float noiseShift = 0;							// used to cycle blue noise values
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
@@ -139,7 +140,7 @@ protected:
 	RenderThread* renderThread;
 public:
 	CoreStats coreStats;							// rendering statistics
-	static OptixDeviceContext optixContext;			// static, for access from CoreMesh
+	static inline OptixDeviceContext optixContext;	// static, for access from CoreMesh
 	enum { RAYGEN = 0, RAD_MISS, OCC_MISS, RAD_HIT, OCC_HIT };
 	OptixShaderBindingTable sbt;
 	OptixModule ptxModule;

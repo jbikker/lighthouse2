@@ -1,4 +1,4 @@
-/* .cuda.cu - Copyright 2019 Utrecht University
+/* .cuda.cu - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ __constant__ int4 lightCounts; // area, point, spot, directional
 __constant__ uchar4* argb32;
 __constant__ float4* argb128;
 __constant__ uchar4* nrm32;
-__constant__ float3* skyPixels;
+__constant__ float4* skyPixels;
 __constant__ int skywidth;
 __constant__ int skyheight;
 __constant__ PathState* pathStates;
@@ -101,35 +101,35 @@ static float prevFloat[MAXVARS] = {};
 static int4 prevInt4[MAXVARS] = {};
 static bool prevValSet[MAXVARS] = {};
 
-__host__ static void stagePtrCpy( int id, void* p ) 
-{ 
+__host__ static void stagePtrCpy( int id, void* p )
+{
 	if (prevPtr[id] == p) return; // not changed
-	StagedPtr n = { p, id }; 
+	StagedPtr n = { p, id };
 	stagedPtr.push_back( n );
 	prevPtr[id] = p;
 }
-__host__ static void stageIntCpy( int id, const int v ) 
-{ 
-	if (prevValSet[id] == true && prevInt[id] == v) return; 
-	StagedInt n = { v, id }; 
+__host__ static void stageIntCpy( int id, const int v )
+{
+	if (prevValSet[id] == true && prevInt[id] == v) return;
+	StagedInt n = { v, id };
 	stagedInt.push_back( n );
 	prevValSet[id] = true;
 	prevInt[id] = v;
 }
-__host__ static void stageF32Cpy( int id, const float v ) 
-{ 
-	if (prevValSet[id] == true && prevFloat[id] == v) return; 
-	StagedF32 n = { v, id }; 
-	stagedF32.push_back( n ); 
+__host__ static void stageF32Cpy( int id, const float v )
+{
+	if (prevValSet[id] == true && prevFloat[id] == v) return;
+	StagedF32 n = { v, id };
+	stagedF32.push_back( n );
 	prevValSet[id] = true;
 	prevFloat[id] = v;
 }
 __host__ static void stageMatCpy( int id, const mat4& m ) { StagedMat n = { m, id }; stagedMat.push_back( n ); }
-__host__ static void stageInt4Cpy( int id, const int4& v ) 
+__host__ static void stageInt4Cpy( int id, const int4& v )
 {
-	if (prevValSet[id] == true && prevInt4[id].x == v.x && prevInt4[id].y == v.y && prevInt4[id].z == v.z && prevInt4[id].w == v.w) return; 
-	StagedInt4 n = { v, id }; 
-	stagedInt4.push_back( n ); 
+	if (prevValSet[id] == true && prevInt4[id].x == v.x && prevInt4[id].y == v.y && prevInt4[id].z == v.z && prevInt4[id].w == v.w) return;
+	StagedInt4 n = { v, id };
+	stagedInt4.push_back( n );
 	prevValSet[id] = true;
 	prevInt4[id] = v;
 }
@@ -145,7 +145,7 @@ __host__ void stageDirectionalLights( CoreDirectionalLight* p ) { stagePtrCpy( D
 __host__ void stageARGB32Pixels( uint* p ) { stagePtrCpy( RGB32 /* argb32 */, p ); }
 __host__ void stageARGB128Pixels( float4* p ) { stagePtrCpy( RGBH /* argb128 */, p ); }
 __host__ void stageNRM32Pixels( uint* p ) { stagePtrCpy( NRMLS /* nrm32 */, p ); }
-__host__ void stageSkyPixels( float3* p ) { stagePtrCpy( SKYPIX /* skyPixels */, p ); }
+__host__ void stageSkyPixels( float4* p ) { stagePtrCpy( SKYPIX /* skyPixels */, p ); }
 __host__ void stageSkySize( int w, int h ) { stageIntCpy( SKYW /* skywidth */, w ); stageIntCpy( SKYH /* skyheight */, h ); }
 __host__ void stageWorldToSky( const mat4& worldToLight ) { stageMatCpy( SMAT /* worldToSky */, worldToLight ); }
 __host__ void stageDebugData( float4* p ) { stagePtrCpy( DBGDAT /* debugData */, p ); }

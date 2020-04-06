@@ -1,4 +1,4 @@
-/* host_scene.h - Copyright 2019 Utrecht University
+/* host_scene.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -69,11 +69,13 @@ public:
 	static int FindTextureID( const char* name );
 	static int CreateTexture( const string& origin, const uint modFlags = 0 );
 	static int FindOrCreateMaterial( const string& name );
+	static int FindOrCreateMaterialCopy( const int matID, const uint color );
 	static int FindMaterialID( const char* name );
 	static int FindMaterialIDByOrigin( const char* name );
 	static int FindNextMaterialID( const char* name, const int matID );
 	static int FindNode( const char* name );
 	static void SetNodeTransform( const int nodeId, const mat4& transform );
+	static const mat4& GetNodeTransform( const int nodeId );
 	static void ResetAnimation( const int animId );
 	static void UpdateAnimation( const int animId, const float dt );
 	static int AnimationCount() { return (int)animations.size(); }
@@ -90,26 +92,26 @@ public:
 	static int AddInstance( const int meshId, const mat4& transform );
 	static void RemoveNode( const int instId );
 	static int AddMaterial( HostMaterial* material );
-	static int AddMaterial( const float3 color );
+	static int AddMaterial( const float3 color, const char* name = 0 );
 	static int AddPointLight( const float3 pos, const float3 radiance, bool enabled = true );
 	static int AddSpotLight( const float3 pos, const float3 direction, const float inner, const float outer, const float3 radiance, bool enabled = true );
 	static int AddDirectionalLight( const float3 direction, const float3 radiance, bool enabled = true );
 	// data members
-	static vector<int> rootNodes;
-	static vector<HostNode*> nodePool;
-	static vector<HostMesh*> meshPool;
-	static vector<HostSkin*> skins;
-	static vector<HostAnimation*> animations;
-	static vector<HostMaterial*> materials;
-	static vector<HostTexture*> textures;
-	static vector<HostAreaLight*> areaLights;
-	static vector<HostPointLight*> pointLights;
-	static vector<HostSpotLight*> spotLights;
-	static vector<HostDirectionalLight*> directionalLights;
-	static HostSkyDome* sky;
-	static Camera* camera;
+	static inline vector<int> rootNodes;
+	static inline vector<HostNode*> nodePool;
+	static inline vector<HostMesh*> meshPool;
+	static inline vector<HostSkin*> skins;
+	static inline vector<HostAnimation*> animations;
+	static inline vector<HostMaterial*> materials;
+	static inline vector<HostTexture*> textures;
+	static inline vector<HostAreaLight*> areaLights;
+	static inline vector<HostPointLight*> pointLights;
+	static inline vector<HostSpotLight*> spotLights;
+	static inline vector<HostDirectionalLight*> directionalLights;
+	static inline HostSkyDome* sky;
+	static inline Camera* camera;
 private:
-	static int nodeListHoles;		// zero if no instance deletions occurred; adding instances will be faster.
+	static inline int nodeListHoles;	// zero if no instance deletions occurred; adding instances will be faster.
 };
 
 } // namespace lighthouse2

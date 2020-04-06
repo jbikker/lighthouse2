@@ -1,4 +1,4 @@
-/* main.cpp - Copyright 2019 Utrecht University
+/* main.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ using namespace irrklang;
 static RenderAPI* renderer = 0;
 static GLTexture* renderTarget = 0, * overlayTarget = 0, * menuScreen;
 static Shader* shader = 0, * overlayShader = 0;
-static uint scrwidth = 0, scrheight = 0, scrspp = 2;
-static bool spaceDown = false, enterDown = false, tabDown = false, hasFocus = true, running = true, animPaused = false;
+static uint scrwidth = 0, scrheight = 0, scrspp = 10;
+static bool spaceDown = false, enterDown = false, tabDown = false, hasFocus = true, running = true, animPaused = true;
 static std::bitset<1024> keystates;
 static std::bitset<8> mbstates;
 static string materialFile;
@@ -182,16 +182,15 @@ bool HandleInput( float frameTime )
 	}
 	if (!keystates[GLFW_KEY_TAB]) tabDown = false; else if (!tabDown) // add a spline point
 	{
-		camPos.push_back( camera->position );
-		camTarget.push_back( camera->position + camera->direction );
+		camPos.push_back( camera->transform.GetTranslation() );
+		camTarget.push_back( camera->transform.GetTranslation() + camera->transform.GetForward() );
 		printf( "points in path: %i\n", (int)camPos.size() );
 		tabDown = true;
 	}
 	if (keystates[GLFW_KEY_BACKSPACE] && camPos.size() > 0)
 	{
 		// reset spline path data
-		camera->position = camPos[0];
-		camera->direction = normalize( camTarget[0] - camPos[0] );
+		camera->LookAt( camPos[0], camTarget[0] );
 		camPos.clear();
 		camTarget.clear();
 		camPlaying = false;
@@ -223,18 +222,17 @@ bool HandleInput( float frameTime )
 			float3 p1 = camPos[camSegment], p2 = camPos[camSegment + 1];
 			float3 p0 = camSegment ? camPos[camSegment - 1] : (p1 - 0.01f * (p2 - p1));
 			float3 p3 = camSegment < (camPos.size() - 2) ? camPos[camSegment + 2] : (p2 + 0.01f * (p2 - 1));
-			camera->position = CatmullRom( p0, p1, p2, p3, camTime );
+			float3 pos = CatmullRom( p0, p1, p2, p3, camTime );
 			p1 = camTarget[camSegment], p2 = camTarget[camSegment + 1];
 			p0 = camSegment ? camTarget[camSegment - 1] : (p1 - 0.01f * (p2 - p1));
 			p3 = camSegment < (camTarget.size() - 2) ? camTarget[camSegment + 2] : (p2 + 0.01f * (p2 - 1));
 			float3 target = CatmullRom( p0, p1, p2, p3, camTime );
-			camera->direction = normalize( target - camera->position );
+			camera->LookAt( pos, target );
 		}
 		else
 		{
 			// end of line
-			camera->position = camPos[camPos.size() - 1];
-			camera->direction = normalize( camTarget[camPos.size() - 1] - camera->position );
+			camera->LookAt( camPos[camPos.size() - 1], camTarget[camPos.size() - 1] );
 		}
 		printf( "playback: segment %i, t=%5.3f\n", camSegment, camTime );
 		changed = true;
@@ -283,7 +281,7 @@ bool Playback( float frameTime )
 		float3 p2 = track[camTrack].camPos[camSegment + 1];
 		float3 p0 = camSegment ? track[camTrack].camPos[camSegment - 1] : (p1 - 0.01f * (p2 - p1));
 		float3 p3 = camSegment < (track[camTrack].camPos.size() - 2) ? track[camTrack].camPos[camSegment + 2] : (p2 + 0.01f * (p2 - 1));
-		camera->position = CatmullRom( p0, p1, p2, p3, camTime );
+		float3 pos = CatmullRom( p0, p1, p2, p3, camTime );
 		camera->focalDistance = (1 - camTime) * track[camTrack].focal[camSegment].x + camTime * track[camTrack].focal[camSegment + 1].x;
 		camera->aperture = (1 - camTime) * track[camTrack].focal[camSegment].y + camTime * track[camTrack].focal[camSegment + 1].y;
 		p1 = track[camTrack].camTarget[camSegment];
@@ -291,12 +289,12 @@ bool Playback( float frameTime )
 		p0 = camSegment ? track[camTrack].camTarget[camSegment - 1] : (p1 - 0.01f * (p2 - p1));
 		p3 = camSegment < (track[camTrack].camTarget.size() - 2) ? track[camTrack].camTarget[camSegment + 2] : (p2 + 0.01f * (p2 - 1));
 		float3 target = CatmullRom( p0, p1, p2, p3, camTime );
-		camera->direction = normalize( target - camera->position );
+		camera->LookAt( pos, target );
 	}
 	else
 	{
-		camera->position = track[camTrack].camPos[track[camTrack].camPos.size() - 1];
-		camera->direction = normalize( track[camTrack].camTarget[track[camTrack].camPos.size() - 1] - camera->position );
+		camera->LookAt( track[camTrack].camPos[track[camTrack].camPos.size() - 1],
+			track[camTrack].camTarget[track[camTrack].camPos.size() - 1] );
 		delay -= frameTime;
 		if (delay < 0)
 		{
@@ -374,19 +372,21 @@ void Initialize()
 	InitImGui();
 
 	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	#ifndef OPTIX5FALLBACK
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );	// OPTIX7 core, with filtering (static scenes only for now)
+#ifndef OPTIX5FALLBACK
 	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	#else
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Adaptive" );	// OPTIX7 core, with adaptive sampling (not worth it, yet)
+#else
 	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
-	#endif
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_BDPT" );	// Peter's OptixPrime / BDPT core
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_PBRT" );	// Marijn's PBRT core
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Guiding" );		// OPTIX7 core with path guiding for next event estimation (under construction)
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeAdaptive" );	// OPTIX PRIME, with adaptive sampling
+#endif
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_BDPT" );	// Peter's OptixPrime / BDPT core
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_PBRT" );	// Marijn's PBRT core
+// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Guiding" );		// OPTIX7 core with path guiding for next event estimation (under construction)
 
 	renderer->DeserializeCamera( "camera.xml" );
 	// set initial window size
@@ -472,7 +472,7 @@ void DrawOverlay()
 	// text
 	SystemStats systemStats = renderer->GetSystemStats();
 	int x1 = 6 + (scrwidth - 28) / 3, y1 = (scrheight - 46) / 3 - 22;
-	float3 camPos = renderer->GetCamera()->position;
+	float3 camPos = renderer->GetCamera()->transform.GetTranslation();
 	if (delay < 1.8f) { sprintf( t, "Scene update: %6.2fms", systemStats.sceneUpdateTime * 1000 ); tinyText->RenderR( t, x1, y1 ); y1 += 13; }
 	if (delay < 1.6f) { sprintf( t, "Primary ray time: %6.2fms", coreStats.traceTime0 * 1000 ); tinyText->RenderR( t, x1, y1 ); y1 += 13; }
 	if (delay < 1.5f) { sprintf( t, "Secondary ray time: %6.2fms", coreStats.traceTime1 * 1000 ); tinyText->RenderR( t, x1, y1 ); y1 += 13; }
@@ -668,7 +668,7 @@ void TitleState( bool results )
 			// load results backdrop
 			menuScreen->Load( "data/results.png", GL_LINEAR );
 		}
-		else 
+		else
 		{
 			// load menu backdrop
 			menuScreen->Load( "data/menu.png", GL_LINEAR );
@@ -805,7 +805,7 @@ void TitleState( bool results )
 			}
 			fprintf( f, "Average RMSE: %5.3f\n--------------------------------\n", rmseSum / 6 );
 			fprintf( f, "#frames recorded:    %5i\n", frameCount );
-			fprintf( f, "Demo version: Feb 26, 2020\n" );
+			fprintf( f, "Demo version: March 31, 2020\n" );
 			fclose( f );
 		}
 	}

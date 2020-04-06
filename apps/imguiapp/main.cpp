@@ -1,4 +1,4 @@
-/* main.cpp - Copyright 2019 Utrecht University
+/* main.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ void PrepareScene()
 	// Compensate for different evaluation in PBRT
 	sky->worldToLight = mat4::RotateX( -PI / 2 );
 	scene->SetSkyDome( sky );
-#if 0
+#if 1
 	// escher
 	materialFile = string( "data/escher/materials.xml" );
 	int mesh = renderer->AddMesh( "data/escher/escher2010.obj" );
@@ -148,8 +148,8 @@ void Initialize()
 
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core
@@ -206,7 +206,10 @@ int main()
 		frameTimer.reset();
 		camMoved = renderer->GetCamera()->Changed();
 		if (hasFocus) if (HandleInput( frameTime )) camMoved = true;
-		if (HandleMaterialChange()) camMoved = true;
+		if (HandleMaterialChange()) 
+		{
+			camMoved = true;
+		}
 		// update animations
 		if (!animPaused) for (int i = 0; i < renderer->AnimationCount(); i++)
 		{

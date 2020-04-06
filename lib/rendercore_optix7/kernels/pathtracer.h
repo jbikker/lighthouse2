@@ -1,4 +1,4 @@
-/* pathtracer.cu - Copyright 2019 Utrecht University
+/* pathtracer.cu - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@
 #define S_BOUNCED		2	// path encountered a diffuse vertex
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 #define S_BOUNCEDTWICE	8	// this core will stop after two diffuse bounces
-#define ENOUGH_BOUNCES	S_BOUNCEDTWICE // or S_BOUNCED
+#define ENOUGH_BOUNCES	S_BOUNCED // or S_BOUNCEDTWICE
 
 // readability defines; data layout is optimized for 128-bit accesses
 #define PRIMIDX __float_as_int( hitData.z )
@@ -47,15 +47,15 @@
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
 #if __CUDA_ARCH__ > 700 // Volta deliberately excluded
-__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm TURING */ )
+__global__  __launch_bounds__( 256 /* max block size */, 2 /* min blocks per sm TURING */ )
 #else
-__global__  __launch_bounds__( 128 /* max block size */, 8 /* min blocks per sm, PASCAL, VOLTA */ )
+__global__  __launch_bounds__( 256 /* max block size */, 2 /* min blocks per sm, PASCAL, VOLTA */ )
 #endif
 void shadeKernel( float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const float noiseShift, const int pass,
+	const uint R0, const uint shift, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos, const uint pathCount )
+	const uint pathCount )
 {
 	// respect boundaries
 	int jobIndex = threadIdx.x + blockIdx.x * blockDim.x;
@@ -79,12 +79,14 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const uint sampleIdx = pathIdx / (w * h) + pass;
 
 	// initialize depth in accumulator for DOF shader
-	if (pathLength == 1) accumulator[pixelIdx].w += PRIMIDX == NOHIT ? 10000 : HIT_T;
+	// if (pathLength == 1) accumulator[pixelIdx].w += PRIMIDX == NOHIT ? 10000 : HIT_T;
 
 	// use skydome if we didn't hit any geometry
 	if (PRIMIDX == NOHIT)
 	{
-		float3 contribution = throughput * make_float3( SampleSkydome( -worldToSky.TransformVector( D ), pathLength ) ) * (1.0f / bsdfPdf);
+		float3 tD = -worldToSky.TransformVector( D );
+		float3 skyPixel = FLAGS & S_BOUNCED ? SampleSmallSkydome( tD ) : SampleSkydome( tD );
+		float3 contribution = throughput * skyPixel * (1.0f / bsdfPdf);
 		CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
 		FIXNAN_FLOAT3( contribution );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
@@ -92,13 +94,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 	}
 
 	// object picking
-	if (pixelIdx == probePixelIdx && pathLength == 1 && sampleIdx == 0)
+	if (pixelIdx == probePixelIdx && pathLength == 1)
 	{
 		counters->probedInstid = INSTANCEIDX;	// record instace id at the selected pixel
 		counters->probedTriid = PRIMIDX;		// record primitive id at the selected pixel
 		counters->probedDist = HIT_T;			// record primary ray hit distance
-		const float3 I = RAY_O + HIT_T * D;
-		// printf( "(%5.1f,%5.1f,%5.1f\n", I.x, I.y, I.z );
 	}
 
 	// get shadingData and normals
@@ -121,9 +121,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 		}
 		return;
 	}
-
-	// path regularization
-	// if (FLAGS & S_BOUNCED) shadingData.roughness2 = max( 0.7f, shadingData.roughness2 );
 
 	// stop on light
 	if (shadingData.IsEmissive() /* r, g or b exceeds 1 */)
@@ -153,11 +150,11 @@ void shadeKernel( float4* accumulator, const uint stride,
 		return;
 	}
 
-	// detect specular surfaces
-	if (ROUGHNESS <= 0.001f || TRANSMISSION > 0.999f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
+	// path regularization
+	if (FLAGS & S_BOUNCED) shadingData.parameters.x |= 255u << 24; // set roughness to 1 after a bounce
 
-	// initialize seed based on pixel index
-	uint seed = WangHash( pathIdx * 17 + R0 /* well-seeded xor32 is all you need */ );
+	// detect specular surfaces
+	if (ROUGHNESS <= 0.001f || TRANSMISSION > 0.5f) FLAGS |= S_SPECULAR; /* detect pure speculars; skip NEE for these */ else FLAGS &= ~S_SPECULAR;
 
 	// normal alignment for backfacing polygons
 	const float faceDir = (dot( D, N ) > 0) ? -1 : 1;
@@ -166,22 +163,26 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// apply postponed bsdf pdf
 	throughput *= 1.0f / bsdfPdf;
 
+	// prepare random numbers
+	uint seed = WangHash( pathIdx * 17 + R0 /* well-seeded xor32 is all you need */ );
+	float4 r4;
+	if (sampleIdx < 64)
+	{
+		const uint x = ((pathIdx % w) + (shift & 127)) & 127;
+		const uint y = ((pathIdx / w) + (shift >> 24)) & 127;
+		r4 = blueNoiseSampler4( blueNoise, x, y, sampleIdx, 4 * pathLength - 4 );
+	}
+	else
+	{
+		r4.x = RandomFloat( seed ), r4.y = RandomFloat( seed );
+		r4.z = RandomFloat( seed ), r4.w = RandomFloat( seed );
+	}
+
 	// next event estimation: connect eye path to light
 	if ((FLAGS & S_SPECULAR) == 0 && connections != 0) // skip for specular vertices
 	{
-		float r0, r1, pickProb, lightPdf = 0;
-		if (sampleIdx < 2)
-		{
-			const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
-			r0 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 4 + 4 * pathLength, 0 );
-			r1 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 5 + 4 * pathLength, 0 );
-		}
-		else
-		{
-			r0 = RandomFloat( seed );
-			r1 = RandomFloat( seed );
-		}
-		float3 lightColor, L = RandomPointOnLight( r0, r1, I, fN * faceDir, pickProb, lightPdf, lightColor ) - I;
+		float pickProb, lightPdf = 0;
+		float3 lightColor, L = RandomPointOnLight( r4.x, r4.y, I, fN * faceDir, pickProb, lightPdf, lightColor ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
 		const float NdotL = dot( L, fN * faceDir );
@@ -213,24 +214,13 @@ void shadeKernel( float4* accumulator, const uint stride,
 
 	// evaluate bsdf to obtain direction for next path segment
 	float3 R;
-	float newBsdfPdf, r3, r4;
-	if (sampleIdx < 256)
-	{
-		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
-		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 6 + 4 * pathLength, noiseShift );
-		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx, 7 + 4 * pathLength, noiseShift );
-	}
-	else
-	{
-		r3 = RandomFloat( seed );
-		r4 = RandomFloat( seed );
-	}
+	float newBsdfPdf;
 	bool specular = false;
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, R, newBsdfPdf, specular );
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r4.z, r4.w, RandomFloat( seed ), R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
 	if (specular) FLAGS |= S_SPECULAR;
 
-	// russian roulette (TODO: greatly increases variance.)
+	// russian roulette
 	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0)) ? 1 : SurvivalProbability( bsdf );
 	if (p < RandomFloat( seed )) return; else throughput *= 1 / p;
 
@@ -251,13 +241,13 @@ void shadeKernel( float4* accumulator, const uint stride,
 //  +-----------------------------------------------------------------------------+
 __host__ void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const float noiseShift, const int pass,
+	const uint R0, const uint shift, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
 {
-	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 ), blockDim( 128, 1 );
-	shadeKernel << <gridDim.x, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, blueNoise, noiseShift,
-		pass, probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, p1, p2, p3, pos, pathCount);
+	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 );
+	shadeKernel << <gridDim.x, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, shift, blueNoise,
+		pass, probePixelIdx, pathLength, scrwidth, scrheight, spreadAngle, pathCount);
 }
 
 // EOF

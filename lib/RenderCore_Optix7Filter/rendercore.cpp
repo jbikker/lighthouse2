@@ -1,4 +1,4 @@
-﻿/* rendercore.cpp - Copyright 2019 Utrecht University
+﻿/* rendercore.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -639,12 +639,15 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_HOST | ON_DEVICE, 0 );
+	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
 	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
+	// copy sky data to device
+	skyPixelBuffer->CopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -683,7 +686,7 @@ void RenderCore::Setting( const char* name, const float value )
 void RenderCore::UpdateToplevel()
 {
 	// build accstructs for modified meshes
-	for( CoreMesh* m : meshes ) if (m->accstrucNeedsUpdate) m->UpdateAccstruc();
+	for (CoreMesh* m : meshes) if (m->accstrucNeedsUpdate) m->UpdateAccstruc();
 	// build the top-level tree
 	OptixBuildInput buildInput = {};
 	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
@@ -864,9 +867,10 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
 	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
 	coreStats.filterTime = CUDATools::Elapsed( filterStart, filterEnd );
-	coreStats.probedInstid = counters.probedInstid;
-	coreStats.probedTriid = counters.probedTriid;
-	coreStats.probedDist = counters.probedDist;
+	coreStats.SetProbeInfo( counters.probedInstid, counters.probedTriid, counters.probedDist );
+	const float3 P = RayTarget( probePos.x, probePos.y, 0.5f, 0.5f, make_int2( scrwidth, scrheight ), view.distortion, view.p1, right, up );
+	const float3 D = normalize( P - view.pos );
+	coreStats.probedWorldPos = view.pos + counters.probedDist * D;
 }
 
 //  +-----------------------------------------------------------------------------+

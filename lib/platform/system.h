@@ -1,4 +1,4 @@
-/* system.h - Copyright 2019 Utrecht University
+/* system.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -251,7 +251,7 @@ public:
 	GLTextRenderer( const int size, const char* font );
 	void Render( string text, GLfloat x, GLfloat y, GLfloat scale = 1.0f, const float3 color = make_float3( 1 ), bool rightAlign = false );
 	void RenderR( string text, GLfloat x, GLfloat y, GLfloat scale = 1.0f, const float3 color = make_float3( 1 ) );
-	static int scrwidth, scrheight;
+	static inline int scrwidth = SCRWIDTH, scrheight = SCRHEIGHT;
 private:
 	GLuint vbo, vao;
 	Shader* shader;

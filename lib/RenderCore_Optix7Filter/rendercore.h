@@ -1,4 +1,4 @@
-/* rendercore.h - Copyright 2019 Utrecht University
+/* rendercore.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ private:
 	int currentSPP = 0;								// spp count which will be accomodated without a realloc
 	int2 probePos = make_int2( 0 );					// triangle picking; primary ray for this pixel copies its triid to coreStats.probedTriid
 	vector<CoreMesh*> meshes;						// list of meshes, to be referenced by the instances
-	vector<CoreInstance*> instances;					// list of instances: model id plus transform
+	vector<CoreInstance*> instances;				// list of instances: model id plus transform
 	bool instancesDirty = true;						// we need to sync the instance array to the device
 	InteropTexture renderTarget;					// CUDA will render to this texture
 	CoreBuffer<CUDAMaterial>* materialBuffer = 0;	// material array
@@ -106,7 +106,7 @@ private:
 	CoreBuffer<CoreDirectionalLight>* directionalLightBuffer;	// directional lights
 	CoreBuffer<float4>* texel128Buffer = 0;			// texel buffer 1: hdr ARGB128 texture data
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
-	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
+	CoreBuffer<float4>* skyPixelBuffer = 0;			// skydome texture data
 	CoreBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer
 	CoreBuffer<Counters>* counterBuffer = 0;		// counters for wavefront path tracing
 	CoreBuffer<CoreInstanceDesc>* instDescBuffer = 0; // instance descriptor array

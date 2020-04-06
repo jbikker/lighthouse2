@@ -1,4 +1,4 @@
-/* rendercore.h - Copyright 2019 Utrecht University
+/* rendercore.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ private:
 	CoreBuffer<CoreDirectionalLight>* directionalLightBuffer;	// directional lights
 	CoreBuffer<float4>* texel128Buffer = 0;			// texel buffer 1: hdr ARGB128 texture data
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals
-	CoreBuffer<float3>* skyPixelBuffer = 0;			// skydome texture data
+	CoreBuffer<float4>* skyPixelBuffer = 0;			// skydome texture data
 	RTPmodel* topLevel = 0;							// the top-level node; combines all instances and is the entry point for ray queries
 	RTPquery shadowQuery, extendQuery;				// queries for shadow rays and extension rays
 	CoreBuffer<float4>* accumulator = 0;			// accumulator buffer for the path tracer

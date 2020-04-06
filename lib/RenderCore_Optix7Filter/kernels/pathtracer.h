@@ -1,4 +1,4 @@
-/* pathtracer.cu - Copyright 2019 Utrecht University
+/* pathtracer.cu - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// use skydome if we didn't hit any geometry
 	if (PRIMIDX == NOHIT)
 	{
-		float3 contribution = throughput * make_float3( SampleSkydome( -worldToSky.TransformVector( D ), pathLength ) ) * (1.0f / bsdfPdf);
+		float3 contribution = throughput * SampleSkydome( -worldToSky.TransformVector( D ) ) * (1.0f / bsdfPdf);
 		CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
 		FIXNAN_FLOAT3( contribution );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
@@ -239,7 +239,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	throughput *= 1.0f / bsdfPdf;
 
 	// next event estimation: connect eye path to light
-	if ((FLAGS & S_SPECULAR) ==0 && connections != 0) // skip for specular vertices
+	if ((FLAGS & S_SPECULAR) == 0 && connections != 0) // skip for specular vertices
 	{
 		float r0, r1, pickProb, lightPdf = 0;
 		if (sampleIdx < 2)
@@ -304,7 +304,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	{
 		const uint x = (pixelIdx % w) & 127, y = (pixelIdx / w) & 127;
 		r3 = blueNoiseSampler( blueNoise, x, y, sampleIdx + blueSlot, 6 + 4 * pathLength );
-		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx + blueSlot, 7 + 4 * pathLength );	
+		r4 = blueNoiseSampler( blueNoise, x, y, sampleIdx + blueSlot, 7 + 4 * pathLength );
 	}
 	else
 	{
@@ -312,7 +312,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		r4 = RandomFloat( seed );
 	}
 	bool specular = false;
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, R, newBsdfPdf, specular );
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, RandomFloat( seed ), R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
 	if (specular) FLAGS |= S_SPECULAR;
 

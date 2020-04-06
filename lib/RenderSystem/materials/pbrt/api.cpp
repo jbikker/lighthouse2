@@ -1,4 +1,4 @@
-/* api.cpp - Copyright 2019 Utrecht University
+/* api.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -513,8 +513,9 @@ void pbrtCamera( const std::string& name, const ParamSet& params )
 		params.Print( catIndentCount );
 		printf( "\n" );
 	}
-	HostScene::camera->position = make_float3( CameraToWorld[0] * make_float4( 0, 0, 0, 1 ) );
-	HostScene::camera->direction = make_float3( CameraToWorld[0] * make_float4( 0, 0, 1, 0 ) );
+	// HostScene::camera->position = make_float3( CameraToWorld[0] * make_float4( 0, 0, 0, 1 ) );
+	// HostScene::camera->direction = make_float3( CameraToWorld[0] * make_float4( 0, 0, 1, 0 ) );
+	// HostScene::camera->transform = CameraToWorld; TODO
 	HostScene::camera->FOV = params.FindOneFloat( "fov", 90.f );
 	HostScene::camera->focalDistance = params.FindOneFloat( "focaldistance", 1e6f );
 	// This should be `aperturediameter', but is hardly ever used.

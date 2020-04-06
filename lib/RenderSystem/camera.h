@@ -1,4 +1,4 @@
-/* camera.h - Copyright 2019 Utrecht University
+/* camera.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,8 +30,7 @@ public:
 	Camera( const char* xmlFile );
 	~Camera();
 	// data members
-	float3 position = make_float3( 0 );				// position of the centre of the lens
-	float3 direction = make_float3( 0, 0, 1 );		// camera target
+	mat4 transform;									// 4x4 camera matrix
 	float focalDistance = 5.0f;						// distance of the focal plane
 	float aperture = EPSILON;						// aperture size
 	float distortion = 0.05f;						// barrel distortion
@@ -48,7 +47,11 @@ public:
 	void TranslateRelative( float3 T );				// move camera relative to orientation
 	void TranslateTarget( float3 T );				// move camera target; used for rotating camera
 	ViewPyramid GetView() const;					// calculate a view based on the setup
+	mat4 GetMatrix() const;							// calculate a matrix for the camera
+	void SetMatrix( mat4& T );						// set the camera view using a matrix
+	int2 WorldToScreenPos( const float3& P );		// determine the screen space coordinate of a world space position
 	void WorldToScreenPos( const float3* W, float2* S, int count ) const;	// convert world pos to screen pos
+	float3 PrimaryHitPos( int2 pos, float dist );	// calculate hit pos along a ray through a pixel
 	void Serialize( const char* xmlFile = 0 );		// save the camera to an xml file
 	void Deserialize( const char* xmlFile );		// load the camera from an xml file
 	// private methods

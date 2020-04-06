@@ -1,0 +1,16 @@
+﻿  Compiling CUDA source file kernels\.cuda.cu...
+  
+  C:\Lighthouse2\lib\RenderCore_PrimeAdaptive>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\bin\nvcc.exe" -gencode=arch=compute_50,code=\"sm_50,compute_50\" -gencode=arch=compute_60,code=\"sm_60,compute_60\" --use-local-env -ccbin "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.25.28610\bin\HostX86\x64" -x cu  -I../CUDA/shared_kernel_code -I../sharedBSDFs -I../freeimage/inc -I../zlib -I../glfw/include -I../glad/include -I../Optix/include -I../CUDA -I../CUDA/shared_kernel_code -I../sharedBSDFs -I../half2.1.0 -I../tinyobjloader -I../OptiX7/include -I../platform -I. -I../RenderSystem -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include" -I../taskflow -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v10.2\include"     --keep-dir x64\Release -maxrregcount=0  --machine 64 --compile -cudart static    -use_fast_math -DCOREDLL_EXPORTS -DWIN32 -DWIN64 -DNDEBUG -D_CONSOLE -D_WINDLL -D_MBCS -Xcompiler "/EHsc /W3 /nologo /O2 /Fdx64\Release\vc142.pdb /FS /Zi  /MD " -o x64\Release\.cuda.cu.obj "C:\Lighthouse2\lib\RenderCore_PrimeAdaptive\kernels\.cuda.cu" 
+  .cuda.cu
+  rendercore.cpp
+C:\Lighthouse2\lib\RenderCore_PrimeAdaptive\rendercore.cpp(777,13): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  interoptexture.cpp
+  core_api.cpp
+  core_mesh.cpp
+     Creating library ..\..\coredlls\Release\RenderCore_PrimeAdaptive.lib and object ..\..\coredlls\Release\RenderCore_PrimeAdaptive.exp
+  Generating code
+  0 of 635 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  rendercore_primeadaptive.vcxproj -> C:\Lighthouse2\lib\RenderCore_PrimeAdaptive\..\..\coredlls\Release\RenderCore_PrimeAdaptive.dll

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -149,6 +149,11 @@
     <ClInclude Include="..\CUDA\shared_kernel_code\material_shared.h" />
     <ClInclude Include="..\CUDA\shared_kernel_code\sampling_shared.h" />
     <ClInclude Include="..\CUDA\shared_kernel_code\tools_shared.h" />
+    <ClInclude Include="..\sharedBSDFs\compatibility.h" />
+    <ClInclude Include="..\sharedBSDFs\disney.h" />
+    <ClInclude Include="..\sharedBSDFs\frosted.h" />
+    <ClInclude Include="..\sharedBSDFs\ggxmdf.h" />
+    <ClInclude Include="..\sharedBSDFs\lambert.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="core_mesh.h" />
     <ClInclude Include="kernels\.cuda.h" />

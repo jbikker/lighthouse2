@@ -1,4 +1,4 @@
-/* core_api_base.h - Copyright 2019 Utrecht University
+/* core_api_base.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -58,8 +58,9 @@ struct CoreStats
 	float filterTime = 0;				// time spent in filter code
 	// probe
 	int probedInstid;					// id of the instance at probe position
-	int probedTriid;					// id of triangle at probe position
+	int probedTriid = -1;				// id of triangle at probe position
 	float probedDist;					// distance of triangle at probe position
+	float3 probedWorldPos;				// world pos of first hit for probed pixel
 };
 
 //  +-----------------------------------------------------------------------------+

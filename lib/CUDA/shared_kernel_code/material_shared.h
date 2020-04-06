@@ -1,4 +1,4 @@
-/* material_shared.cu - Copyright 2019 Utrecht University
+/* material_shared.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -130,15 +130,14 @@ LH2_DEVFUNC void GetShadingData(
 	{
 		const float4 tdata0 = tri.u4;
 		const float w = 1 - (u + v);
-#ifdef OPTIXPRIMEBUILD
+	#ifdef OPTIXPRIMEBUILD
 		tu = u * TRI_U0 + v * TRI_U1 + w * TRI_U2;
 		tv = u * TRI_V0 + v * TRI_V1 + w * TRI_V2;
-#else
+	#else
 		tu = w * TRI_U0 + u * TRI_U1 + v * TRI_U2;
 		tv = w * TRI_V0 + u * TRI_V1 + v * TRI_V2;
-#endif
+	#endif
 	}
-	if (TRI_MATERIAL < 0 || TRI_MATERIAL > 18) printf( "m" );
 	if (MAT_HASDIFFUSEMAP)
 	{
 		// determine LOD

@@ -1,4 +1,4 @@
-/* finalize_shared.cu - Copyright 2019 Utrecht University
+/* finalize_shared.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,6 +42,121 @@ __host__ void finalizeRender( const float4* accumulator, const int w, const int 
 	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
 	// https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment
 	finalizeRenderKernel << < gridDim, blockDim >> > (accumulator, w, h, pixelValueScale);
+}
+
+__global__ void finalizeFeaturesKernel( const float4* features, const int scrwidth, const int scrheight, const int spp )
+{
+	// get x and y for pixel
+	const int x = threadIdx.x + blockIdx.x * blockDim.x;
+	const int y = threadIdx.y + blockIdx.y * blockDim.y;
+	if ((x >= scrwidth) || (y >= scrheight)) return;
+	// plot scaled feature
+	float3 p = make_float3( 0 );
+	for (int i = 0; i < spp; i++) p += make_float3( features[x + y * scrwidth + i * scrwidth * scrheight] );
+	p *= 1.0f / spp;
+	surf2Dwrite<float4>( make_float4( p, 1 ), renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
+}
+__host__ void finalizeFeatures( const float4* features, const int w, const int h, const int spp )
+{
+	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
+	// https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment
+	finalizeFeaturesKernel << < gridDim, blockDim >> > (features, w, h, spp);
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  finalizeASRenderKernel                                                     |
+//  |  Presenting the accumulator. Gamma, brightness and contrast will be done    |
+//  |  in postprocessing.                                                   LH2'20|
+//  +-----------------------------------------------------------------------------+
+__global__ void finalizeASRenderKernel( const float4* frameAcc, float4* accumulator, const int scrwidth, const int scrheight, const int spp, const float pixelValueScale )
+{
+	// get x and y for pixel
+	const int x = threadIdx.x + blockIdx.x * blockDim.x;
+	const int y = threadIdx.y + blockIdx.y * blockDim.y;
+	if ((x >= scrwidth) || (y >= scrheight)) return;
+	// add averaged pixel from frameAcc to accumulator
+	float4 p = make_float4( 0 );
+	for (int i = 0; i < spp; i++) p += frameAcc[x + y * scrwidth + i * scrwidth * scrheight];
+	accumulator[x + y * scrwidth] += p * (1.0f / p.w /* w contains sample count */);
+	// plot scaled pixel
+	float4 value = accumulator[x + y * scrwidth] * pixelValueScale;
+	surf2Dwrite<float4>( value, renderTarget, x * sizeof( float4 ), y, cudaBoundaryModeClamp );
+}
+__host__ void finalizeASRender( const float4* frameAcc, float4* accumulator, const int w, const int h, const int samplesTaken, const int spp )
+{
+	const int frame = samplesTaken / spp;
+	const float pixelValueScale = 1.0f / (float)frame;
+	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
+	// https://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment
+	finalizeASRenderKernel << < gridDim, blockDim >> > (frameAcc, accumulator, w, h, spp, pixelValueScale);
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  estimateVarianceKernel                                                     |
+//  |  Use the samples in the accumulator to estimate the variance. This is the   |
+//  |  input for the second wave of samples, which will be distributed according  |
+//  |  to the variance estimate.                                            LH2'20|
+//  +-----------------------------------------------------------------------------+
+__global__ void estimateVarianceKernel( const float4* accumulator, const float4* features,
+	float* deviation, const float scale, const int scrwidth, const int scrheight, const int spp )
+{
+	// get x and y for pixel
+	const int x = threadIdx.x + blockIdx.x * blockDim.x;
+	const int y = threadIdx.y + blockIdx.y * blockDim.y;
+	if ((x >= scrwidth) || (y >= scrheight)) return;
+	// calculate average illumination for the pixel
+	const float x1 = max( 0, x - 4 ), y1 = max( 0, y - 4 ), x2 = min( scrwidth - 1, x + 4 ), y2 = min( scrheight - 1, y + 4 );
+	float3 total = make_float3( 0 );
+	float weightSum = 0;
+	for (int i = 0; i < spp; i++)
+	{
+		const float3 Nlocal = UnpackNormal2( __float_as_uint( features[x + y * scrwidth + i * scrwidth * scrheight].w ) );
+		for (int v = y1; v <= y2; v++) for (int u = x1; u <= x2; u++)
+		{
+			const uint pixelAddress = u + v * scrwidth + i * scrwidth * scrheight;
+			const float4 feature = features[pixelAddress];
+			const float3 normal = UnpackNormal2( __float_as_uint( feature.w ) );
+			const float3 albedo = make_float3( feature );
+			const float3 sample = make_float3( accumulator[pixelAddress] );
+			const float3 lighting = make_float3(
+				sample.x / max( albedo.x, 0.001f ),
+				sample.y / max( albedo.y, 0.001f ),
+				sample.z / max( albedo.z, 0.001f )
+			);
+			const uint dx = abs( x - u ), dy = abs( y - v );
+			const float xweight = dx == 1 ? 0.9f : (dx == 2 ? 0.75f : (dx == 3 ? 0.55f : (dx == 4 ? 0.35f : 1.0f)));
+			const float yweight = dy == 1 ? 0.9f : (dy == 2 ? 0.75f : (dy == 3 ? 0.55f : (dy == 4 ? 0.35f : 1.0f)));
+			const float weight = xweight * yweight * powf( max( 0.0001f, dot( normal, Nlocal ) ), 2 );
+			weightSum += weight;
+			total += lighting * weight;
+		}
+	}
+	const float3 average = total * (1.0f / weightSum);
+	// calculate variance for the pixel
+	float variance = 0;
+	for (int u = x, v = y, i = 0; i < spp; i++)
+	{
+		const uint pixelAddress = u + v * scrwidth + i * scrwidth * scrheight;
+		const float3 albedo = make_float3( features[pixelAddress] );
+		const float3 sample = make_float3( accumulator[pixelAddress] );
+		const float3 lighting = make_float3(
+			sample.x / max( albedo.x, 0.001f ),
+			sample.y / max( albedo.y, 0.001f ),
+			sample.z / max( albedo.z, 0.001f )
+		);
+		const float sampleVar = sqr( Luminance( lighting ) - Luminance( average ) );
+		variance += sampleVar;
+	}
+	variance /= 3.0f * spp;
+	const float d = (variance + EPSILON) / (Luminance( average ) + EPSILON);
+	// write deviation to buffer
+	deviation[x + y * scrwidth] = d * scale;
+}
+__host__ void estimateVariance( const float4* accumulator, const float4* features,
+	float* deviation, const float scale, const int w, const int h, const int spp )
+{
+	const dim3 gridDim( NEXTMULTIPLEOF( w, 32 ) / 32, NEXTMULTIPLEOF( h, 8 ) / 8 ), blockDim( 32, 8 );
+	estimateVarianceKernel << < gridDim, blockDim >> > (accumulator, features, deviation, scale, w, h, spp);
 }
 
 //  +-----------------------------------------------------------------------------+

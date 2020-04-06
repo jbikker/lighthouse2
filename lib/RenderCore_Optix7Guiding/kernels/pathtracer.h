@@ -1,4 +1,4 @@
-/* pathtracer.cu - Copyright 2019 Utrecht University
+/* pathtracer.cu - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -274,7 +274,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// use skydome if we didn't hit any geometry
 	if (PRIMIDX == NOHIT)
 	{
-		float3 contribution = throughput * make_float3( SampleSkydome( -worldToSky.TransformVector( D ), pathLength ) ) * (1.0f / bsdfPdf);
+		float3 contribution = throughput * SampleSkydome( -worldToSky.TransformVector( D ) ) * (1.0f / bsdfPdf);
 		CLAMPINTENSITY; // limit magnitude of thoughput vector to combat fireflies
 		FIXNAN_FLOAT3( contribution );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
@@ -426,7 +426,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 		r4 = RandomFloat( seed );
 	}
 	bool specular = false;
-	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, R, newBsdfPdf, specular );
+	const float3 bsdf = SampleBSDF( shadingData, fN, N, T, D * -1.0f, HIT_T, r3, r4, RandomFloat( seed ), R, newBsdfPdf, specular );
 	if (newBsdfPdf < EPSILON || isnan( newBsdfPdf )) return;
 	if (specular) FLAGS |= S_SPECULAR;
 

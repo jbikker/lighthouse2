@@ -1,4 +1,4 @@
-﻿/* rendercore.cpp - Copyright 2019 Utrecht University
+﻿/* rendercore.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ void InitCountersSubsequent();
 void shade( const int pathCount, float4* accumulator, const Ray4* extensionRays, const float4* extensionData,
 	const Intersection* hits, Ray4* extensionRaysOut, float4* extensionDataOut, Ray4* shadowRays,
 	float4* connectionT4, const uint R0, const uint* blueNoise, const int pass, const int2 probePos,
-	const int pathLength, const int w, const int h, const ViewPyramid& view );
+	const int pathLength, const int w, const int h, const ViewPyramid& view, const uint camR0 );
 void finalizeConnections( int rayCount, float4* accumulator, uint* hitBuffer, float4* contributions );
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 
@@ -129,7 +129,7 @@ void RenderCore::Init()
 		float r = sqrtf( (float)i ) / sqrtf( 256.0f );
 		camSamples->HostPtr()[i] = make_float2( r * cosf( theta ), r * sinf( theta ) );
 	}
-	for( int i = 0; i < 10240; i++ )
+	for (int i = 0; i < 10240; i++)
 	{
 		const uint idx0 = RandomUInt() & 255, idx1 = RandomUInt() & 255;
 		swap( camSamples->HostPtr()[idx0], camSamples->HostPtr()[idx1] );
@@ -175,7 +175,8 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 	bool reallocate = false;
 	if (scrwidth * scrheight > maxPixels || spp != currentSPP)
 	{
-		maxPixels = scrwidth * scrheight + maxPixels / 16; // reserve a bit extra to prevent frequent reallocs
+		maxPixels = scrwidth * scrheight;
+		maxPixels += maxPixels / 16; // reserve a bit extra to prevent frequent reallocs
 		currentSPP = spp;
 		reallocate = true;
 	}
@@ -403,7 +404,11 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
-	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	if (materialBuffer == 0 || materialCount > materialBuffer->GetSize())
+	{
+		delete hostMaterialBuffer;
+		hostMaterialBuffer = new CUDAMaterial[materialCount];
+	}
 	for (int i = 0; i < materialCount; i++)
 	{
 		// perform conversion to internal material format
@@ -434,11 +439,16 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	if (!materialBuffer) 
+	if (!materialBuffer)
 	{
 		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
-	else if (materialCount > materialBuffer->GetSize())
+	else if (materialCount <= materialBuffer->GetSize())
+	{
+		// just set the new material data
+		materialBuffer->SetHostData( hostMaterialBuffer );
+	}
+	else /* if (materialCount > materialBuffer->GetSize()) */
 	{
 		// TODO: realloc
 	}
@@ -482,12 +492,27 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_DEVICE | ON_HOST, 0 );
+	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
 	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
+	// calculate scaled-down version of the sky
+	const uint w = width >> 6, h = height >> 6;
+	float4* orig = skyPixelBuffer->HostPtr();
+	float4* scaled = skyPixelBuffer->HostPtr() + width * height;
+	for (uint y = 0; y < h; y++) for (uint x = 0; x < w; x++)
+	{
+		// average 64 * 64 pixels
+		float4 total = make_float4( 0 );
+		float4* tile = orig + x * 64 + y * 64 * width;
+		for (int v = 0; v < 64; v++) for (int u = 0; u < 64; u++) total += tile[u + v * width];
+		scaled[x + y * w] = total * (1.0f / (64 * 64));
+	}
+	// copy sky data to device
+	skyPixelBuffer->CopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -591,8 +616,9 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	// render image
 	coreStats.totalExtensionRays = 0;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
+	const uint camR0 = RandomUInt( camRNGseed );
 	generateEyeRays( extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
-		RandomUInt( camRNGseed ), blueNoise->DevPtr(), camSamples->DevPtr(), samplesTaken, view, GetScreenParams() );
+		camR0, blueNoise->DevPtr(), camSamples->DevPtr(), samplesTaken, view, GetScreenParams() );
 	// start wavefront loop
 	uint pathCount = scrwidth * scrheight * scrspp, pathLength = 1;
 	Counters& counters = counterBuffer->HostPtr()[0];
@@ -608,7 +634,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		shade( pathCount, accumulator->DevPtr(), extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
 			extensionHitBuffer->DevPtr(), extensionRayBuffer[outBuffer]->DevPtr(), extensionRayExBuffer[outBuffer]->DevPtr(),
 			noDirectLightsInScene ? 0 : shadowRayBuffer->DevPtr(), shadowRayPotential->DevPtr(), samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(),
-			samplesTaken, probePos, pathLength, scrwidth, scrheight, view );
+			samplesTaken, probePos, pathLength, scrwidth, scrheight, view, camR0 );
 		counterBuffer->CopyToHost(); // sadly this is needed; Optix Prime doesn't expose persistent threads
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		if (pathLength < MAXPATHLENGTH) // code below is not needed for the last path segment
@@ -642,6 +668,10 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
 	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 	coreStats.SetProbeInfo( counters.probedInstid, counters.probedTriid, counters.probedDist );
+	const float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
+	const float3 P = RayTarget( probePos.x, probePos.y, 0.5f, 0.5f, make_int2( scrwidth, scrheight ), view.distortion, view.p1, right, up );
+	const float3 D = normalize( P - view.pos );
+	coreStats.probedWorldPos = view.pos + counters.probedDist * D;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -672,6 +702,16 @@ void RenderCore::FinalizeRender()
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
+#if 0
+	accumulator->CopyToHost();
+	double sum = 0;
+	for (int y = 0; y < scrheight; y++) for (int x = 0; x < scrwidth; x++)
+	{
+		float4 p = accumulator->HostPtr()[x + y * scrwidth];
+		sum += p.x + p.y + p.z;
+	}
+	printf( "average pixel value: %6.4f\n", (float)(sum / (double)(scrwidth * scrheight * 3 * samplesTaken)) );
+#endif
 	renderTarget.UnbindSurface();
 	// timing statistics
 	coreStats.renderTime = renderTimer.elapsed();

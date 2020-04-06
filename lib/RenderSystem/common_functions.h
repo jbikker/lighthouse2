@@ -1,4 +1,4 @@
-/* common_functions.h - Copyright 2019 Utrecht University
+/* common_functions.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,6 +25,29 @@
 static inline void sincosf( const float a, float* s, float* c ) { *s = sinf( a ); *c = cosf( a ); }
 #endif
 #endif
+
+FUNCTYPE float3 RayTarget( const int sx, const int sy, const float r0, const float r1,
+	const int2 scrSize, const float distortion, const float3 p1, const float3 right, const float3 up )
+{
+	float3 posOnPixel;
+	if (distortion == 0)
+	{
+		const float u = ((float)sx + r0) * (1.0f / scrSize.x);
+		const float v = ((float)sy + r1) * (1.0f / scrSize.y);
+		posOnPixel = p1 + u * right + v * up;
+	}
+	else
+	{
+		const float tx = sx / (float)scrSize.x - 0.5f, ty = sy / (float)scrSize.y - 0.5f;
+		const float rr = tx * tx + ty * ty;
+		const float rq = sqrtf( rr ) * (1.0f + distortion * rr + distortion * rr * rr);
+		const float theta = atan2f( tx, ty );
+		const float bx = (sinf( theta ) * rq + 0.5f) * scrSize.x;
+		const float by = (cosf( theta ) * rq + 0.5f) * scrSize.y;
+		posOnPixel = p1 + (bx + r0) * (right / (float)scrSize.x) + (by + r1) * (up / (float)scrSize.y);
+	}
+	return posOnPixel;
+}
 
 FUNCTYPE float3 RandomBarycentrics( const float r0 )
 {
@@ -90,6 +113,14 @@ FUNCTYPE float3 DiffuseReflectionCosWeighted( const float r0, const float r1 )
 	float s, c;
 	sincosf( term1, &s, &c );
 	return make_float3( c * term2, s * term2, sqrtf( r1 ) );
+}
+
+FUNCTYPE float3 DiffuseReflectionCosWeighted( const float r0, const float r1, const float3& N, const float3& T, const float3& B )
+{
+	const float term1 = TWOPI * r0, term2 = sqrtf( 1 - r1 );
+	float s, c;
+	sincosf( term1, &s, &c );
+	return (c * term2 * T) + (s * term2) * B + sqrtf( r1 ) * N;
 }
 
 FUNCTYPE float3 DiffuseReflectionUniform( const float r0, const float r1 )

@@ -59,7 +59,7 @@ class MaterialIntf : public HasPlacementNewOperator
 										float& pdf ) const = 0;
 	__device__ virtual float3 Sample( float3 iN, const float3 N, const float3 T,
 									  const float3 woWorld, const float distance,
-									  const float r3, const float r4,
+									  const float r3, const float r4, const float r5,
 									  const BxDFType flags,
 									  float3& wiWorld, float& pdf,
 									  BxDFType& sampledType ) const = 0;

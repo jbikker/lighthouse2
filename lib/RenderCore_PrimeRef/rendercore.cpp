@@ -1,4 +1,4 @@
-﻿/* rendercore.cpp - Copyright 2019 Utrecht University
+﻿/* rendercore.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ void stageLightCounts( int area, int point, int spot, int directional );
 void stageARGB32Pixels( uint* p );
 void stageARGB128Pixels( float4* p );
 void stageNRM32Pixels( uint* p );
-void stageSkyPixels( float3* p );
+void stageSkyPixels( float4* p );
 void stageWorldToSky( const mat4& worldToLight );
 void stageSkySize( int w, int h );
 void stageDebugData( float4* p );
@@ -414,10 +414,10 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 	{
 		// we need a new or larger buffer; (re)allocate.
 		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE|ON_HOST, areaLights, POLICY_COPY_SOURCE );
+		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE | ON_HOST, areaLights, POLICY_COPY_SOURCE );
 		stageAreaLights( areaLightBuffer->DevPtr() );
 	}
-	else 
+	else
 	{
 		// existing buffer is large enough; copy new data
 		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
@@ -429,7 +429,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
 		stagePointLights( pointLightBuffer->DevPtr() );
 	}
-	else 
+	else
 	{
 		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
 		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
@@ -440,7 +440,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
 		stageSpotLights( spotLightBuffer->DevPtr() );
 	}
-	else 
+	else
 	{
 		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
 		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
@@ -451,7 +451,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
 		stageDirectionalLights( directionalLightBuffer->DevPtr() );
 	}
-	else 
+	else
 	{
 		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
 		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
@@ -466,12 +466,15 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_DEVICE, pixels );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height, ON_DEVICE | ON_HOST, 0 );
+	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
 	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
+	// copy sky data to device
+	skyPixelBuffer->CopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -673,7 +676,7 @@ void RenderCore::Shutdown()
 //  |  RenderCore::GetCoreStats                                                   |
 //  |  Get a copy of the counters.                                          LH2'19|
 //  +-----------------------------------------------------------------------------+
-CoreStats RenderCore::GetCoreStats() const 
+CoreStats RenderCore::GetCoreStats() const
 {
 	return coreStats;
 }

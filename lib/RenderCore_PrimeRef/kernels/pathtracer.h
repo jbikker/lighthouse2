@@ -1,4 +1,4 @@
-/* pathtracer.cu - Copyright 2019 Utrecht University
+/* pathtracer.cu - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// use skydome if we didn't hit any geometry
 	if (PRIMIDX == NOHIT)
 	{
-		float3 contribution = throughput * make_float3( SampleSkydome( -worldToSky.TransformVector( D ), pathLength ) );
+		float3 contribution = throughput * SampleSkydome( -worldToSky.TransformVector( D ) );
 		accumulator[pixelIdx] += make_float4( contribution, 0 );
 		return;
 	}

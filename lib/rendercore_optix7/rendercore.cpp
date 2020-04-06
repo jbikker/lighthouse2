@@ -1,4 +1,4 @@
-﻿/* rendercore.cpp - Copyright 2019 Utrecht University
+﻿/* rendercore.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const float noiseShift, const int pass,
+	const uint R0, const uint shift, const uint* blueNoise, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
@@ -35,7 +35,6 @@ void finalizeRender( const float4* accumulator, const int w, const int h, const 
 
 using namespace lh2core;
 
-OptixDeviceContext RenderCore::optixContext = 0;
 struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
 const char* ParseOptixError( OptixResult r )
@@ -244,7 +243,7 @@ void RenderCore::Init()
 	// render settings
 	stageClampValue( 10.0f );
 	// prepare counters for persistent threads
-	counterBuffer = new CoreBuffer<Counters>( 1, ON_HOST | ON_DEVICE );
+	counterBuffer = new CoreBuffer<Counters>( 1, ON_DEVICE | ON_HOST );
 	SetCounters( counterBuffer->DevPtr() );
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
@@ -546,7 +545,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0);
 	}
-	if (!materialBuffer) 
+	if (!materialBuffer)
 	{
 		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
@@ -594,12 +593,27 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float3>( width * height, ON_HOST | ON_DEVICE | STAGED, pixels );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_HOST | ON_DEVICE, 0 );
+	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
 	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
+	// calculate scaled-down version of the sky
+	const uint w = width >> 6, h = height >> 6;
+	float4* orig = skyPixelBuffer->HostPtr();
+	float4* scaled = skyPixelBuffer->HostPtr() + width * height;
+	for (uint y = 0; y < h; y++) for (uint x = 0; x < w; x++)
+	{
+		// average 64 * 64 pixels
+		float4 total = make_float4( 0 );
+		float4* tile = orig + x * 64 + y * 64 * width;
+		for (int v = 0; v < 64; v++) for (int u = 0; u < 64; u++) total += tile[u + v * width];
+		scaled[x + y * w] = total * (1.0f / (64 * 64));
+	}
+	// copy sky data to device
+	skyPixelBuffer->CopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -630,7 +644,7 @@ void RenderCore::Setting( const char* name, const float value )
 void RenderCore::UpdateToplevel()
 {
 	// build accstructs for modified meshes
-	for( CoreMesh* m : meshes ) if (m->accstrucNeedsUpdate) m->UpdateAccstruc();
+	for (CoreMesh* m : meshes) if (m->accstrucNeedsUpdate) m->UpdateAccstruc();
 	// build the top-level tree
 	OptixBuildInput buildInput = {};
 	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
@@ -715,10 +729,12 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	// clean accumulator, if requested
 	if (samplesTaken == 0) accumulator->Clear( ON_DEVICE );
 	// render an image using OptiX
+	RandomUInt( shiftSeed );
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	params.posLensSize = make_float4( view.pos.x, view.pos.y, view.pos.z, view.aperture );
 	params.distortion = view.distortion;
+	params.shift = shiftSeed;
 	params.right = make_float3( right.x, right.y, right.z );
 	params.up = make_float3( up.x, up.y, up.z );
 	params.p1 = make_float3( view.p1.x, view.p1.y, view.p1.z );
@@ -758,7 +774,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), noDirectLightsInScene ? 0 : connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), noiseShift, samplesTaken,
+			RandomUInt( camRNGseed ) + pathLength * 91771, shiftSeed, blueNoise->DevPtr(), samplesTaken,
 			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
 			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
 		cudaEventRecord( shadeEnd[pathLength - 1] );
@@ -792,9 +808,11 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
 	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
 	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
-	coreStats.probedInstid = counters.probedInstid;
-	coreStats.probedTriid = counters.probedTriid;
-	coreStats.probedDist = counters.probedDist;
+	// probe information
+	coreStats.SetProbeInfo( counters.probedInstid, counters.probedTriid, counters.probedDist );
+	const float3 P = RayTarget( probePos.x, probePos.y, 0.5f, 0.5f, make_int2( scrwidth, scrheight ), view.distortion, view.p1, right, up );
+	const float3 D = normalize( P - view.pos );
+	coreStats.probedWorldPos = view.pos + counters.probedDist * D;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -811,6 +829,7 @@ void RenderCore::WaitForRender()
 	// get back the RenderCore state data changed by the thread
 	coreStats = renderThread->coreState.coreStats;
 	camRNGseed = renderThread->coreState.camRNGseed;
+	shiftSeed = renderThread->coreState.shiftSeed;
 	// copy the accumulator to the OpenGL texture
 	FinalizeRender();
 }

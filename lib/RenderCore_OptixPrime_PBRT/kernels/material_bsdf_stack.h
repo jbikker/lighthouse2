@@ -129,7 +129,7 @@ class BSDFStackMaterial : public MaterialIntf
 
 	__device__ float3 Sample( float3 iN, const float3 /* N */, const float3 Tinit,
 							  const float3 woWorld, const float distance,
-							  float r3, float r4,
+							  float r3, float r4, const float r5,
 							  const BxDFType type,
 							  float3& wiWorld, float& pdf,
 							  BxDFType& sampledType ) const override

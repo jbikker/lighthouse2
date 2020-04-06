@@ -1,4 +1,4 @@
-/* host_mesh.cpp - Copyright 2019 Utrecht University
+/* host_mesh.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -538,6 +538,7 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 	for (size_t i = 0; i < newTriangleCount; i++, triIdx++)
 	{
 		HostTri& tri = triangles[triIdx];
+		tri.material = materialIdx;
 		const uint v0idx = tmpIndices[i * 3 + 0];
 		const uint v1idx = tmpIndices[i * 3 + 1];
 		const uint v2idx = tmpIndices[i * 3 + 2];
@@ -564,6 +565,20 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			tri.u0 = tmpUvs[v0idx].x, tri.v0 = tmpUvs[v0idx].y;
 			tri.u1 = tmpUvs[v1idx].x, tri.v1 = tmpUvs[v1idx].y;
 			tri.u2 = tmpUvs[v2idx].x, tri.v2 = tmpUvs[v2idx].y;
+			if (tri.u0 == tri.u1 && tri.u1 == tri.u2 && tri.v0 == tri.v1 && tri.v1 == tri.v2)
+			{
+				// this triangle uses only a single point on the texture; replace by single color material.
+				int textureID = HostScene::materials[materialIdx]->color.textureID;
+				if (textureID != -1)
+				{
+					HostTexture* texture = HostScene::textures[textureID];
+					uint u = (uint)(tri.u0 * texture->width) % texture->width;
+					uint v = (uint)(tri.v0 * texture->height) % texture->height;
+					uint texel = ((uint*)texture->idata)[u + v * texture->width] & 0xffffff;
+					tri.material = HostScene::FindOrCreateMaterialCopy( materialIdx, texel );
+					int w = 0;
+				}
+			}
 			// calculate tangent vector based on uvs
 			float2 uv01 = make_float2( tri.u1 - tri.u0, tri.v1 - tri.v0 );
 			float2 uv02 = make_float2( tri.u2 - tri.u0, tri.v2 - tri.v0 );
@@ -599,7 +614,6 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			tri.T = normalize( tri.vertex1 - tri.vertex0 );
 			tri.B = normalize( cross( N, tri.T ) );
 		}
-		tri.material = materialIdx;
 		// process joints / weights
 		if (tmpJoints.size() > 0)
 		{

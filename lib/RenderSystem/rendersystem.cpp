@@ -1,4 +1,4 @@
-﻿/* rendersystem.cpp - Copyright 2019 Utrecht University
+﻿/* rendersystem.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ void RenderSystem::SynchronizeTextures()
 void RenderSystem::SynchronizeMaterials()
 {
 	bool materialsDirty = false;
-	for (auto material : scene->materials) // if (material->Changed())
+	for (auto material : scene->materials) if (material->Changed())
 	{
 		// send all material data to core
 		vector<CoreMaterial> gpuMaterial;

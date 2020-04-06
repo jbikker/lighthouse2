@@ -1,4 +1,4 @@
-/* common_types.h - Copyright 2019 Utrecht University
+/* common_types.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -470,7 +470,9 @@ public:
 	{
 		for (int i = 0; i < 16; i++) if (m.cell[i] != cell[i]) return false; return true;
 	}
-	float3 GetTranslation() { return make_float3( cell[3], cell[7], cell[11] ); }
+	float3 GetTranslation() const { return make_float3( cell[3], cell[7], cell[11] ); }
+	float3 GetForward() const { return make_float3( cell[0], cell[4], cell[8] ); }
+	void SetTranslation( const float3 T ) { cell[3] = T.x, cell[7] = T.y, cell[11] = T.z; }
 	constexpr static mat4 Identity() { return mat4{}; }
 	static mat4 ZeroMatrix() { mat4 r; memset( r.cell, 0, 64 ); return r; }
 	static mat4 RotateX( const float a ) { mat4 r; r.cell[5] = cosf( a ); r.cell[6] = -sinf( a ); r.cell[9] = sinf( a ); r.cell[10] = cosf( a ); return r; };
@@ -491,16 +493,16 @@ public:
 		m[12] = m[13] = m[14] = 0, m[15] = 1;
 		return m;
 	}
-	static mat4 LookAt( const float3 P, const float3 T )
+	static mat4 Orthonormalize( mat4& M )
 	{
-		const float3 z = normalize( T - P );
-		const float3 x = normalize( cross( z, make_float3( 0, 1, 0 ) ) );
-		const float3 y = cross( x, z );
-		mat4 M = Translate( P );
-		M[0] = x.x, M[4] = x.y, M[8] = x.z;
-		M[1] = y.x, M[5] = y.y, M[9] = y.z;
-		M[2] = z.x, M[6] = z.y, M[10] = z.z;
-		return M;
+		const float3 x = normalize( make_float3( M[0], M[4], M[8] ) );
+		const float3 z = normalize( cross( x, make_float3( M[1], M[5], M[9] ) ) );
+		const float3 y = normalize( cross( z, x ) );
+		mat4 R = M;
+		R[0] = x.x, R[4] = x.y, R[8] = x.z;
+		R[1] = y.x, R[5] = y.y, R[9] = y.z;
+		R[2] = z.x, R[6] = z.y, R[10] = z.z;
+		return R;
 	}
 	static mat4 Ortho( const float left, const float right, const float bottom, const float top,
 		const float znear, const float zfar )
@@ -515,43 +517,29 @@ public:
 		r[14] = -(zfar + znear) / (zfar - znear);
 		return r;
 	}
-	static mat4 LookAt( const float3& pos, const float3& look, const float3& up )
+	static mat4 LookAt( const float3& pos, const float3& look, const float3 up = make_float3( 0, 1, 0 )  )
 	{
-		// PBRT's lookat
-		mat4 cameraToWorld;
-		// initialize fourth column of viewing matrix
-		cameraToWorld( 0, 3 ) = pos.x;
-		cameraToWorld( 1, 3 ) = pos.y;
-		cameraToWorld( 2, 3 ) = pos.z;
-		cameraToWorld( 3, 3 ) = 1;
-
-		// initialize first three columns of viewing matrix
-		float3 dir = normalize( look - pos );
-		float3 right = cross( normalize( up ), dir );
-		if (dot( right, right ) == 0)
-		{
-			printf(
-				"\"up\" vector (%f, %f, %f) and viewing direction (%f, %f, %f) "
-				"passed to LookAt are pointing in the same direction.  Using "
-				"the identity transformation.\n",
-				up.x, up.y, up.z, dir.x, dir.y, dir.z );
-			return mat4();
-		}
-		right = normalize( right );
-		float3 newUp = cross( dir, right );
-		cameraToWorld( 0, 0 ) = right.x;
-		cameraToWorld( 1, 0 ) = right.y;
-		cameraToWorld( 2, 0 ) = right.z;
-		cameraToWorld( 3, 0 ) = 0.;
-		cameraToWorld( 0, 1 ) = newUp.x;
-		cameraToWorld( 1, 1 ) = newUp.y;
-		cameraToWorld( 2, 1 ) = newUp.z;
-		cameraToWorld( 3, 1 ) = 0.;
-		cameraToWorld( 0, 2 ) = dir.x;
-		cameraToWorld( 1, 2 ) = dir.y;
-		cameraToWorld( 2, 2 ) = dir.z;
-		cameraToWorld( 3, 2 ) = 0.;
-		return cameraToWorld.Inverted();
+		mat4 T;
+		T( 0, 3 ) = pos.x;
+		T( 1, 3 ) = pos.y;
+		T( 2, 3 ) = pos.z;
+		T( 3, 3 ) = 1;
+		float3 z = normalize( look - pos );
+		float3 x = normalize( cross( z, normalize( up ) ) );
+		float3 y = cross( x, z );
+		T( 0, 0 ) = x.x;
+		T( 1, 0 ) = x.y;
+		T( 2, 0 ) = x.z;
+		T( 3, 0 ) = 0;
+		T( 0, 1 ) = y.x;
+		T( 1, 1 ) = y.y;
+		T( 2, 1 ) = y.z;
+		T( 3, 1 ) = 0;
+		T( 0, 2 ) = z.x;
+		T( 1, 2 ) = z.y;
+		T( 2, 2 ) = z.z;
+		T( 3, 2 ) = 0;
+		return T; //.Inverted(); we're not a rasterizer.
 	}
 	static mat4 Translate( const float x, const float y, const float z ) { mat4 r; r.cell[3] = x; r.cell[7] = y; r.cell[11] = z; return r; };
 	static mat4 Translate( const float3 P ) { mat4 r; r.cell[3] = P.x; r.cell[7] = P.y; r.cell[11] = P.z; return r; };

@@ -1,4 +1,4 @@
-/* core_api.cpp - Copyright 2019 Utrecht University
+/* core_api.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 
 #include "core_settings.h"
 
-extern "C" COREDLL_API CoreAPI_Base* CreateCore()
+extern "C" COREDLL_API CoreAPI_Base * CreateCore()
 {
 	gladLoadGL(); // the dll needs its own OpenGL function pointers
 	return new RenderCore();

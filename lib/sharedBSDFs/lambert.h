@@ -1,4 +1,4 @@
-/* lambert.h - Copyright 2019 Utrecht University
+/* lambert.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ LH2_DEVFUNC bool Refract_L( const float3 wi, const float3 n, const float eta, RE
 LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN, const float3 T,
 	const float3 wo, const float3 wi, REFERENCE_OF( float ) pdf )
 {
-	if (TRANSMISSION > 0.999f || ROUGHNESS <=0.001f)
+	if (TRANSMISSION > 0.999f || ROUGHNESS <= 0.001f)
 	{
 		// no transport via explicit connections for specular vertices
 		pdf = 0;
@@ -69,7 +69,7 @@ LH2_DEVFUNC float3 EvaluateBSDF( const ShadingData shadingData, const float3 iN,
 }
 
 LH2_DEVFUNC float3 SampleBSDF( const ShadingData shadingData, float3 iN, const float3 N, const float3 T, const float3 wo, const float distance,
-	const float r3, const float r4, REFERENCE_OF( float3 ) wi, REFERENCE_OF( float ) pdf, REFERENCE_OF( bool ) specular
+	const float r3, const float r4, const float r5, REFERENCE_OF( float3 ) wi, REFERENCE_OF( float ) pdf, REFERENCE_OF( bool ) specular
 #ifdef __CUDACC__
 	, bool adjoint = false
 #endif

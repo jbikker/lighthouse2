@@ -58,13 +58,13 @@ class DisneyMaterial : public MaterialIntf
 
 	__device__ float3 Sample( float3 iN, const float3 N, const float3 T,
 							  const float3 wo, const float distance,
-							  const float r3, const float r4,
+							  const float r3, const float r4, const float r5,
 							  const BxDFType flags,
 							  float3& wi, float& pdf,
 							  BxDFType& sampledType ) const override
 	{
 		bool specular = false;
-		auto f = SampleBSDF( shadingData, iN, N, T, wo, distance, r3, r4, wi, pdf, specular );
+		auto f = SampleBSDF( shadingData, iN, N, T, wo, distance, r3, r4, r5, wi, pdf, specular );
 
 		sampledType = specular
 						  ? BxDFType::BSDF_SPECULAR

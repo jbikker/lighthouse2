@@ -20,29 +20,6 @@
 
 #include "compatibility.h"
 
-LH2_DEVFUNC float stretched_roughness( const float3 m, const float sin_theta, const float alpha_x, const float alpha_y )
-{
-	if (alpha_x == alpha_y || sin_theta == 0.0f) return 1.0f / sqr( alpha_x );
-	const float cos_phi_2_ax_2 = sqr( m.x / (sin_theta * alpha_x) );
-	const float sin_phi_2_ay_2 = sqr( m.y / (sin_theta * alpha_y) );
-	return cos_phi_2_ax_2 + sin_phi_2_ay_2;
-}
-
-LH2_DEVFUNC float projected_roughness( const float3 m, const float sin_theta, const float alpha_x, const float alpha_y )
-{
-	if (alpha_x == alpha_y || sin_theta == 0.0f) return alpha_x;
-	const float cos_phi_2_ax_2 = sqr( (m.x * alpha_x) / sin_theta );
-	const float sin_phi_2_ay_2 = sqr( (m.y * alpha_y) / sin_theta );
-	return sqrtf( cos_phi_2_ax_2 + sin_phi_2_ay_2 );
-}
-
-LH2_DEVFUNC void sample_phi( const float s, REFERENCE_OF( float ) cos_phi, REFERENCE_OF( float ) sin_phi )
-{
-	const float phi = TWOPI * s;
-	cos_phi = cosf( phi );
-	sin_phi = sinf( phi );
-}
-
 LH2_DEVFUNC float3 make_unit_vector( const float cos_theta, const float sin_theta, const float cos_phi, const float sin_phi )
 {
 	return make_float3( cos_phi * sin_theta, sin_phi * sin_theta, cos_theta );
@@ -61,26 +38,26 @@ LH2_DEVFUNC float3 make_unit_vector( const float cos_theta, const float sin_thet
 
 LH2_DEVFUNC float GGXMDF_D( const float3 m, const float alpha_x, const float alpha_y )
 {
-	const float cos_theta = m.z;
-	if (cos_theta == 0.0f) return sqr( alpha_x ) * INVPI;
-	const float cos_theta_2 = sqr( cos_theta );
-	const float sin_theta = sqrtf( max( 0.0f, 1.0f - cos_theta_2 ) );
-	const float cos_theta_4 = sqr( cos_theta_2 );
+	if (m.z == 0) return sqr( alpha_x ) * INVPI;
+	const float cos_theta_2 = sqr( m.z );
+	const float sin_theta = sqrtf( max( 0.0f, 1 - cos_theta_2 ) );
 	const float tan_theta_2 = (1.0f - cos_theta_2) / cos_theta_2;
-	const float A = stretched_roughness( m, sin_theta, alpha_x, alpha_y );
-	const float tmp = 1.0f + tan_theta_2 * A;
-	return 1.0f / (PI * alpha_x * alpha_y * cos_theta_4 * sqr( tmp ));
+	float stretched_roughness;
+	if (alpha_x == alpha_y || sin_theta == 0.0f) stretched_roughness = 1.0f / sqr( alpha_x );
+	else stretched_roughness = sqr( m.x / (sin_theta * alpha_x) ) + sqr( m.y / (sin_theta * alpha_y) );
+	return 1.0f / (PI * alpha_x * alpha_y * sqr( cos_theta_2 ) * sqr( 1.0f + tan_theta_2 * stretched_roughness ));
 }
 
 LH2_DEVFUNC float GGXMDF_lambda( const float3 v, const float alpha_x, const float alpha_y )
 {
-	const float cos_theta = v.z;
-	if (cos_theta == 0.0f) return 0.0f;
-	const float cos_theta_2 = sqr( cos_theta );
-	const float sin_theta = sqrtf( max( 0.0f, 1.0f - cos_theta_2 ) );
-	const float alpha = projected_roughness( v, sin_theta, alpha_x, alpha_y );
+	if (v.z == 0) return 0;
+	const float cos_theta_2 = v.z * v.z;
+	const float sin_theta = sqrtf( max( 0.0f, 1 - cos_theta_2 ) );
+	float projected_roughness;
+	if (alpha_x == alpha_y || sin_theta == 0.0f) projected_roughness = alpha_x;
+	else projected_roughness = sqrtf( sqr( (v.x * alpha_x) / sin_theta ) + sqr( (v.y * alpha_y) / sin_theta ) );
 	const float tan_theta_2 = sqr( sin_theta ) / cos_theta_2;
-	const float a2_rcp = sqr( alpha ) * tan_theta_2;
+	const float a2_rcp = sqr( projected_roughness ) * tan_theta_2;
 	return (-1.0f + sqrtf( 1.0f + a2_rcp )) * 0.5f;
 }
 
@@ -98,46 +75,45 @@ LH2_DEVFUNC float3 GGXMDF_sample( const float3 v, const float r0, const float r1
 {
 	// stretch incident
 	const float sign_cos_vn = v.z < 0.0f ? -1.0f : 1.0f;
-	float3 stretched = make_float3( sign_cos_vn * v.x * alpha_x, sign_cos_vn * v.y * alpha_y, sign_cos_vn * v.z );
-	stretched = normalize( stretched );
+	const float3 stretched = normalize( make_float3( sign_cos_vn * v.x * alpha_x, sign_cos_vn * v.y * alpha_y, sign_cos_vn * v.z ) );
 	// build an orthonormal basis
 	const float3 t1 = v.z < 0.9999f ? normalize( cross( stretched, make_float3( 0, 0, 1 ) ) ) : make_float3( 1, 0, 0 );
 	const float3 t2 = cross( t1, stretched );
 	// sample point with polar coordinates (r, phi)
 	const float a = 1.0f / (1.0f + stretched.z);
 	const float r = sqrtf( r0 );
-	const float phi = r1 < a ? r1 / a * PI : PI + (r1 - a) / (1.0f - a) * PI;
+	const float phi = r1 < a ? (r1 / a * PI) : (PI + (r1 - a) / (1.0f - a) * PI);
+#if defined(__CUDACC__)
+	float p1, p2;
+	sincosf( phi, &p2, &p1 );
+	p1 *= r;
+	p2 *= r * (r1 < a ? 1.0f : stretched.z);
+#else
 	const float p1 = r * cosf( phi );
 	const float p2 = r * sinf( phi ) * (r1 < a ? 1.0f : stretched.z);
+#endif
 	// compute normal
 	const float3 h = p1 * t1 + p2 * t2 + sqrtf( max( 0.0f, 1.0f - p1 * p1 - p2 * p2 ) ) * stretched;
 	// unstretch and normalize
-	const float3 m = make_float3( h.x * alpha_x, h.y * alpha_y, max( 0.0f, h.z ) );
-	return normalize( m );
+	return normalize( make_float3( h.x * alpha_x, h.y * alpha_y, max( 0.0f, h.z ) ) );
 }
 
 LH2_DEVFUNC float GGXMDF_D( const float3 m, const float alpha )
 {
-	const float cos_theta = m.z;
-	if (cos_theta == 0.0f) return sqr( alpha ) * INVPI;
+	if (m.z == 0) return sqr( alpha ) * INVPI;
 	const float a2 = sqr( alpha );
-	const float cos_theta_2 = sqr( cos_theta );
-	const float cos_theta_4 = sqr( cos_theta_2 );
+	const float cos_theta_2 = sqr( m.z );
 	const float tan_theta_2 = (1.0f - cos_theta_2) / cos_theta_2;
-	const float A = 1.0f / a2;
-	const float tmp = 1.0f + tan_theta_2 * A;
-	return 1.0f / (PI * a2 * cos_theta_4 * sqr( tmp ));
+	return 1.0f / (PI * a2 * sqr( cos_theta_2 ) * sqr( 1.0f + tan_theta_2 / a2 ));
 }
 
 LH2_DEVFUNC float GGXMDF_lambda( const float3 v, const float alpha )
 {
-	const float cos_theta = v.z;
-	if (cos_theta == 0.0f) return 0;
-	const float cos_theta_2 = sqr( cos_theta );
+	if (v.z == 0) return 0;
+	const float cos_theta_2 = sqr( v.z );
 	const float sin_theta = sqrtf( max( 0.0f, 1 - cos_theta_2 ) );
 	const float tan_theta_2 = sqr( sin_theta ) / cos_theta_2;
-	const float a2_rcp = sqr( alpha ) * tan_theta_2;
-	return (-1.0f + sqrtf( 1.0f + a2_rcp )) * 0.5f;
+	return (-1.0f + sqrtf( 1.0f + sqr( alpha ) * tan_theta_2 )) * 0.5f;
 }
 
 LH2_DEVFUNC float GGXMDF_G( const float3 wi, const float3 wo, const float3 m, const float alpha )
@@ -185,25 +161,22 @@ LH2_DEVFUNC float GTR1MDF_D( const float3 m, const float alpha_x, const float al
 {
 	const float alpha = clamp( alpha_x, 0.001f, 0.999f );
 	const float alpha_x_2 = sqr( alpha );
-	const float cos_theta_2 = sqr( m.z );
 	const float a = (alpha_x_2 - 1.0f) / (PI * logf( alpha_x_2 ));
-	const float b = (1 / (1 + (alpha_x_2 - 1) * cos_theta_2));
+	const float b = (1 / (1 + (alpha_x_2 - 1) * sqr( m.z )));
 	return a * b;
 }
 
 LH2_DEVFUNC float GTR1MDF_lambda( const float3 v, const float alpha_x, const float alpha_y )
 {
-	const float cos_theta = v.z;
-	if (cos_theta == 0) return 0;
+	if (v.z == 0) return 0;
 	// [2] section 3.2
-	const float cos_theta_2 = sqr( cos_theta );
+	const float cos_theta_2 = sqr( v.z );
 	const float sin_theta = sqrtf( max( 0.0f, 1.0f - cos_theta_2 ) );
 	// normal incidence; no shadowing
-	if (sin_theta == 0.0f) return 0.0f;
+	if (sin_theta == 0) return 0;
 	const float cot_theta_2 = cos_theta_2 / sqr( sin_theta );
 	const float cot_theta = sqrtf( cot_theta_2 );
-	const float alpha = clamp( alpha_x, 0.001f, 0.999f );
-	const float alpha_2 = sqr( alpha );
+	const float alpha_2 = sqr( clamp( alpha_x, 0.001f, 0.999f ) );
 	const float a = sqrtf( cot_theta_2 + alpha_2 );
 	const float b = sqrtf( cot_theta_2 + 1.0f );
 	const float c = logf( cot_theta + b );
@@ -225,18 +198,30 @@ LH2_DEVFUNC float3 GTR1MDF_sample( const float r0, const float r1, const float a
 {
 	const float alpha = clamp( alpha_x, 0.001f, 0.999f );
 	const float alpha_2 = sqr( alpha );
-	const float a = 1.0f - powf( alpha_2, 1.0f - r0 );
-	const float cos_theta_2 = a / (1.0f - alpha_2);
-	const float cos_theta = sqrtf( cos_theta_2 );
+	const float cos_theta_2 = (1.0f - powf( alpha_2, 1.0f - r0 )) / (1.0f - alpha_2);
 	const float sin_theta = sqrtf( max( 0.0f, 1.0f - cos_theta_2 ) );
 	float cos_phi, sin_phi;
-	sample_phi( r1, cos_phi, sin_phi );
-	return make_unit_vector( cos_theta, sin_theta, cos_phi, sin_phi );
+	const float phi = TWOPI * r1;
+#if defined(__CUDACC__)
+	sincosf( phi, &sin_phi, &cos_phi );
+#else
+	cos_phi = cosf( phi ), sin_phi = sinf( phi );
+#endif
+	return make_unit_vector( sqrtf( cos_theta_2 ), sin_theta, cos_phi, sin_phi );
 }
 
 LH2_DEVFUNC float GTR1MDF_pdf( const float3 v, const float3 m, const float alpha_x, const float alpha_y )
 {
 	return GTR1MDF_D( m, alpha_x, alpha_y ) * fabs( m.z );
+}
+
+LH2_DEVFUNC float microfacet_alpha_from_roughness( const float roughness ) { return max( 0.001f, roughness * roughness ); }
+LH2_DEVFUNC void microfacet_alpha_from_roughness( const float roughness, const float anisotropy, REFERENCE_OF( float ) alpha_x, REFERENCE_OF( float ) alpha_y )
+{
+	const float square_roughness = roughness * roughness;
+	const float aspect = sqrtf( 1.0f + anisotropy * (anisotropy < 0 ? 0.9f : -0.9f) );
+	alpha_x = max( 0.001f, square_roughness / aspect );
+	alpha_y = max( 0.001f, square_roughness * aspect );
 }
 
 #endif

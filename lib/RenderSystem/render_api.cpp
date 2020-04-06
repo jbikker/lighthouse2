@@ -1,4 +1,4 @@
-/* render_api.cpp - Copyright 2019 Utrecht University
+/* render_api.cpp - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -106,6 +106,11 @@ void RenderAPI::SetNodeTransform( const int nodeId, const mat4& transform )
 	renderer->scene->SetNodeTransform( nodeId, transform );
 }
 
+const mat4& RenderAPI::GetNodeTransform( const int nodeId )
+{
+	return renderer->scene->GetNodeTransform( nodeId );
+}
+
 void RenderAPI::ResetAnimation( const int animId )
 {
 	renderer->scene->ResetAnimation( animId );
@@ -197,9 +202,9 @@ int RenderAPI::FindNode( const char* name )
 	return renderer->scene->FindNode( name );
 }
 
-int RenderAPI::AddMaterial( const float3 color )
+int RenderAPI::AddMaterial( const float3 color, const char* name )
 {
-	return renderer->scene->AddMaterial( color );
+	return renderer->scene->AddMaterial( color, name );
 }
 
 int RenderAPI::AddPointLight( const float3 pos, const float3 radiance, bool enabled )

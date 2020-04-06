@@ -136,7 +136,7 @@ __device__ void setupSecondaryRay( const uint rayIdx, const uint stride )
 	uint u0, u1 = 0, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
-	if (pixelIdx < stride /* OptiX bug workaround? */) if (u2 != 0xffffffff) /* bandwidth reduction */
+	if (rayIdx < stride /* OptiX bug workaround? */) if (u2 != 0xffffffff) /* bandwidth reduction */
 		params.hitData[rayIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
 }
 

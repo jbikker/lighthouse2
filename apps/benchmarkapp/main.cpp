@@ -374,8 +374,8 @@ void Initialize()
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );	// OPTIX7 core, with filtering (static scenes only for now)
 #ifndef OPTIX5FALLBACK
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Adaptive" );	// OPTIX7 core, with adaptive sampling (not worth it, yet)
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7Adaptive" );	// OPTIX7 core, with adaptive sampling (not worth it, yet)
 #else
 	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeAdaptive" );	// OPTIX PRIME, with adaptive sampling

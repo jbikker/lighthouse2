@@ -950,7 +950,7 @@ void RenderCore::FinalizeRender()
 		exit( 0 );
 	}
 #endif
-#if 1
+#if 0
 	if (!reference)
 	{
 		FILE* f = fopen( "reference.dat", "rb" );

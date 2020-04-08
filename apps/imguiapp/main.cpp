@@ -52,13 +52,6 @@ void PrepareScene()
 	// Compensate for different evaluation in PBRT
 	sky->worldToLight = mat4::RotateX( -PI / 2 );
 	scene->SetSkyDome( sky );
-#if 1
-	// escher
-	materialFile = string( "data/materials.xml" );
-	int mesh = renderer->AddMesh( "../_shareddata/escher/escher2010.obj" );
-	int inst = renderer->AddInstance( mesh );
-	renderer->SetNodeTransform( inst, mat4::RotateX( PI / 4 ) * mat4::RotateZ( PI / 2 ) );
-#else
 	// classic scene
 	materialFile = string( "data/pica_materials.xml" );
 	int rootNode = renderer->AddScene( "../_shareddata/pica/scene.gltf" );
@@ -69,7 +62,6 @@ void PrepareScene()
 	int lightQuad = renderer->AddQuad( make_float3( 0, -1, 0 ), make_float3( 0, 21, 0 ), 10.9f, 10.9f, whiteMat );
 	renderer->AddInstance( lightQuad );
 	renderer->AddScene( "../_shareddata/drone/scene.gltf", mat4::Translate( 4.5f, -3.4f, -5.2f ) * mat4::Scale( 0.02f ) );
-#endif
 	// optional animated models
 	// renderer->AddScene( "../_shareddata/CesiumMan.glb", mat4::Translate( 0, -2, -9 ) );
 	// renderer->AddScene( "../_shareddata/project_polly.glb", mat4::Translate( 4.5f, -5.45f, -5.2f ) * mat4::Scale( 2 ) );
@@ -148,8 +140,8 @@ void Initialize()
 
 	// initialize renderer: pick one
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
+	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_PrimeRef" );			// REFERENCE, for image validation
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Minimal" );			// MINIMAL example, to get you started on your own core

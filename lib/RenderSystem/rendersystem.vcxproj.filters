@@ -109,6 +109,9 @@
     <ClInclude Include="materials\pbrt\pbrtparser.h">
       <Filter>scene\pbrt</Filter>
     </ClInclude>
+    <ClInclude Include="common_bluenoise.h">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="scene">

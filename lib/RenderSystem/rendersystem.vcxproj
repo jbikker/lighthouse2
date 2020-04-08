@@ -138,6 +138,7 @@
   <ItemGroup>
     <ClInclude Include="..\tinyxml2\tinyxml2.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="common_bluenoise.h" />
     <ClInclude Include="common_classes.h" />
     <ClInclude Include="common_functions.h" />
     <ClInclude Include="common_settings.h" />

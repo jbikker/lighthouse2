@@ -28,7 +28,7 @@ namespace lh2core
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise, const float2* camSamples,
+void generateEyeRays( Ray4* rayBuffer, float4* pathStateData, const uint R0, const uint* blueNoise,
 	const int pass, const ViewPyramid& view, const int4 screenParams );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
@@ -120,26 +120,6 @@ void RenderCore::Init()
 	for (int i = 0; i < (128 * 128 * 8); i++) data32[i + 3 * 65536] = data8[i];
 	blueNoise = new CoreBuffer<uint>( 65536 * 5, ON_DEVICE, data32 );
 	delete data32;
-	// prepare data for aperture sampling
-	camSamples = new CoreBuffer<float2>( 256, ON_HOST );
-	float golden_angle = PI * (3 - sqrtf( 5 ));
-	for (int i = 0; i < 256; i++)
-	{
-		float theta = i * golden_angle;
-		float r = sqrtf( (float)i ) / sqrtf( 256.0f );
-		camSamples->HostPtr()[i] = make_float2( r * cosf( theta ), r * sinf( theta ) );
-	}
-	for (int i = 0; i < 10240; i++)
-	{
-		const uint idx0 = RandomUInt() & 255, idx1 = RandomUInt() & 255;
-		swap( camSamples->HostPtr()[idx0], camSamples->HostPtr()[idx1] );
-	}
-	camSamples->CopyToDevice();
-#if 0
-	FILE* f = fopen( "points.dat", "wb" );
-	fwrite( camSamples->HostPtr(), 8, 256, f );
-	fclose( f );
-#endif
 	// allow CoreMeshes to access the core
 	CoreMesh::renderCore = this;
 	// timing events
@@ -538,7 +518,6 @@ void RenderCore::Setting( const char* name, const float value )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::UpdateToplevel()
 {
-	// creates the top-level BVH over the supplied models.
 	RTPbufferdesc instancesBuffer, transformBuffer;
 	vector<RTPmodel> modelList;
 	vector<mat4> transformList;
@@ -618,7 +597,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
 	const uint camR0 = RandomUInt( camRNGseed );
 	generateEyeRays( extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
-		camR0, blueNoise->DevPtr(), camSamples->DevPtr(), samplesTaken, view, GetScreenParams() );
+		camR0, blueNoise->DevPtr(), samplesTaken, view, GetScreenParams() );
 	// start wavefront loop
 	uint pathCount = scrwidth * scrheight * scrspp, pathLength = 1;
 	Counters& counters = counterBuffer->HostPtr()[0];

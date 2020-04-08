@@ -22,12 +22,11 @@
 
 // core-specific settings
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
-#define MAXPATHLENGTH		12
-#define CONSISTENTNORMALS	// consistent normal interpolation
+#define MAXPATHLENGTH		7
+// #define CONSISTENTNORMALS	// consistent normal interpolation
 
 // low-level settings
 #define BLUENOISE			// use blue noise instead of uniform random numbers
-#define TAA					// really basic temporal antialiasing
 #define BILINEAR			// enable bilinear interpolation
 // #define NOTEXTURES		// all texture reads will be white
 
@@ -139,7 +138,7 @@ struct Params
 	float geometryEpsilon;
 	float distortion;
 	int3 scrsize;
-	int pass, phase;
+	int pass, phase, shift;
 	Counters counters;
 	float4* accumulator;
 	float4* connectData;
@@ -186,7 +185,6 @@ struct CUDAMaterial4
 #define HAS2NDNORMALMAP				(1 << 7)
 #define HAS2NDDIFFUSEMAP			(1 << 9)
 #define HASSMOOTHNORMALS			(1 << 11)
-#define HASALPHA					(1 << 12)
 #define HASMETALNESSMAP				(1 << 13)
 #define MAT_ISDIELECTRIC			(flags & ISDIELECTRIC)
 #define MAT_DIFFUSEMAPISHDR			(flags & DIFFUSEMAPISHDR)
@@ -198,7 +196,6 @@ struct CUDAMaterial4
 #define MAT_HAS2NDNORMALMAP			(flags & HAS2NDNORMALMAP)
 #define MAT_HAS2NDDIFFUSEMAP		(flags & HAS2NDDIFFUSEMAP)
 #define MAT_HASSMOOTHNORMALS		(flags & HASSMOOTHNORMALS)
-#define MAT_HASALPHA				(flags & HASALPHA)
 #define MAT_HASMETALNESSMAP			(flags & HASMETALNESSMAP)
 };
 
@@ -220,6 +217,33 @@ struct CUDAMaterial4
 #include "core_api_base.h"
 #include "rendercore.h"
 #include <cstdint>
+
+namespace lh2core
+{
+
+// setters / getters
+void stageInstanceDescriptors( CoreInstanceDesc* p );
+void stageMaterialList( CUDAMaterial* p );
+void stageAreaLights( CoreLightTri* p );
+void stagePointLights( CorePointLight* p );
+void stageSpotLights( CoreSpotLight* p );
+void stageDirectionalLights( CoreDirectionalLight* p );
+void stageLightCounts( int area, int point, int spot, int directional );
+void stageGuidanceData( uint* guidance, float3 bmin, float3 reciExtent );
+void stageARGB32Pixels( uint* p );
+void stageARGB128Pixels( float4* p );
+void stageNRM32Pixels( uint* p );
+void stageSkyPixels( float4* p );
+void stageSkySize( int w, int h );
+void stageWorldToSky( const mat4& worldToLight );
+void stageDebugData( float4* p );
+void stageGeometryEpsilon( float e );
+void stageClampValue( float c );
+void stageMemcpy( void* d, void* s, int n );
+void pushStagedCopies();
+void SetCounters( Counters* p );
+
+} // namespace lh2core
 
 #include "../RenderSystem/common_bluenoise.h"
 

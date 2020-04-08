@@ -18,6 +18,8 @@
 namespace lh2core
 {
 
+class RenderThread;
+
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |
 //  |  Copy of device-side variables, to detect changes.                    LH2'19|
@@ -35,11 +37,12 @@ struct DeviceVars
 //  +-----------------------------------------------------------------------------+
 class RenderCore : public CoreAPI_Base
 {
+	friend class RenderThread;
 public:
 	// methods
 	void Init();
 	void Render( const ViewPyramid& view, const Convergence converge, bool async );
-	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
+	void WaitForRender();
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
@@ -63,9 +66,10 @@ public:
 	CoreStats GetCoreStats() const override;
 	// internal methods
 private:
+	void RenderImpl( const ViewPyramid& view );
+	void FinalizeRender();
 	template <class T> T* StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData );
 	void UpdateToplevel();
-	void UpdateInstances();
 	void SpawnPhotonsForAreaLight( const CoreLightTri& light, const int id, const float lightContribution, int firstIdx, int count );
 	void UpdateGuiding();
 	void SyncStorageType( const TexelStorage storage );
@@ -116,10 +120,14 @@ private:
 	int computeCapability;							// device compute capability
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
+	uint shiftSeed = 0x11331445;					// seed for the RNG that feeds the blue noise shift
+	float noiseShift = 0;							// used to cycle blue noise values
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
+	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
 	bool noDirectLightsInScene = true;				// no lights specified; don't do NEE in pathtracer
+	Timer renderTimer, frameTimer;					// timers for asynchronous rendering
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
@@ -129,9 +137,14 @@ private:
 	cudaEvent_t traceStart[MAXPATHLENGTH], traceEnd[MAXPATHLENGTH];
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];
 	cudaEvent_t shadowStart, shadowEnd;
+protected:
+	// events
+	HANDLE startEvent, doneEvent;
+	// worker thread
+	RenderThread* renderThread;
 public:
 	CoreStats coreStats;							// rendering statistics
-	static OptixDeviceContext optixContext;			// static, for access from CoreMesh
+	static inline OptixDeviceContext optixContext;	// static, for access from CoreMesh
 	enum { RAYGEN = 0, RAD_MISS, OCC_MISS, RAD_HIT, OCC_HIT };
 	OptixShaderBindingTable sbt;
 	OptixModule ptxModule;
@@ -139,7 +152,28 @@ public:
 	OptixProgramGroup progGroup[5];
 	OptixTraversableHandle bvhRoot;
 	Params params;
-	CUdeviceptr d_params;
+	CUdeviceptr d_params[3];
+};
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderThread                                                               |
+//  |  Worker thread for asynchronous rendering.                            LH2'20|
+//  +-----------------------------------------------------------------------------+
+class RenderThread : public WinThread
+{
+public:
+	void Init( RenderCore* core )
+	{
+		coreState = *core;
+	}
+	void Init( RenderCore* core, const ViewPyramid& pyramid )
+	{
+		coreState = *core;
+		view = pyramid;
+	}
+	void run();
+	RenderCore coreState; // frozen copy of the state at render start
+	ViewPyramid view;
 };
 
 } // namespace lh2core

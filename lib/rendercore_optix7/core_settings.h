@@ -24,7 +24,6 @@
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
 #define MAXPATHLENGTH		7
 // #define CONSISTENTNORMALS	// consistent normal interpolation
-#define USE_MIS
 
 // low-level settings
 #define BLUENOISE			// use blue noise instead of uniform random numbers

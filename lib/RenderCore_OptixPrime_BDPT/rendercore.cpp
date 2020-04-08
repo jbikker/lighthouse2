@@ -124,6 +124,11 @@ void RenderCore::SetProbePos( int2 pos )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
+#ifdef _DEBUG
+	printf( "Initializing OptixPrime_BDPT core - DEBUG build.\n" );
+#else
+	printf( "Initializing OptixPrime_BDPT core - RELEASE build.\n" );
+#endif
 	// select the fastest device
 	uint device = CUDATools::FastestDevice();
 	cudaSetDevice( device );
@@ -147,7 +152,7 @@ void RenderCore::Init()
 	topLevel = new RTPmodel();
 	CHK_PRIME( rtpModelCreate( context, topLevel ) );
 	// prepare counters for persistent threads
-	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE );
+	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE | ON_HOST );
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
 	stageClampValue( 10.0f );
@@ -169,6 +174,13 @@ void RenderCore::Init()
 		cudaEventCreate( &shadeStart[i] );
 		cudaEventCreate( &shadeEnd[i] );
 	}
+	// create events for worker thread communication
+	startEvent = CreateEvent( NULL, false, false, NULL );
+	doneEvent = CreateEvent( NULL, false, false, NULL );
+	// create worker thread
+	renderThread = new RenderThread();
+	renderThread->Init( this );
+	renderThread->start();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -190,7 +202,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 	if (scrwidth * scrheight > maxPixels || spp != currentSPP)
 	{
 		maxPixels = scrwidth * scrheight;
-		maxPixels += maxPixels >> 4; // reserve a bit extra to prevent frequent reallocs
+		maxPixels += maxPixels / 16; // reserve a bit extra to prevent frequent reallocs
 		currentSPP = spp;
 		reallocate = true;
 	}
@@ -296,7 +308,6 @@ void RenderCore::SetInstance( const int instanceIdx, const int meshIdx, const ma
 //  +-----------------------------------------------------------------------------+
 void RenderCore::FinalizeInstances()
 {
-	// update instance descriptor array on device
 	if (!instancesDirty) return;
 	// prepare CoreInstanceDesc array. For any sane number of instances this should
 	// be efficient while yielding supreme flexibility.
@@ -320,6 +331,8 @@ void RenderCore::FinalizeInstances()
 	memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
 	instDescBuffer->CopyToDevice();
 	// instancesDirty = false;
+	// rendering is allowed from now on
+	gpuHasSceneData = true;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -338,13 +351,13 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 	SyncStorageType( TexelStorage::ARGB32 );
 	SyncStorageType( TexelStorage::ARGB128 );
 	SyncStorageType( TexelStorage::NRM32 );
-	// Notes: 
+	// Notes:
 	// - the three types are copied from the original HostTexture pixel data (to which the
 	//   descriptors point) straight to the GPU. There is no pixel storage on the host
-	//   in the RenderCore.
+	//   in this RenderCore.
 	// - the types are copied one by one. Copying involves creating a temporary host-side
 	//   buffer; doing this one by one allows us to delete host-side data for one type
-	//   before allocating space for the next, thus reducing storage requirements.
+	//   before allocating space for the next, thus reducing runtime storage.
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -403,16 +416,18 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 //  |  RenderCore::SetMaterials                                                   |
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
-#define TOCHAR(a) ((uint)((a)*255.0f))
-#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
 void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 {
+#define TOCHAR(a) ((uint)((a)*255.0f))
+#define TOUINT4(a,b,c,d) (TOCHAR(a)+(TOCHAR(b)<<8)+(TOCHAR(c)<<16)+(TOCHAR(d)<<24))
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
-	delete materialBuffer;
+	if (materialBuffer == 0 || materialCount > materialBuffer->GetSize())
+	{
 	delete hostMaterialBuffer;
 	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	}
 	for (int i = 0; i < materialCount; i++)
 	{
 		// perform conversion to internal material format
@@ -429,7 +444,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 		if (m.detailColor.textureID != -1) gpuMat.tex1 = Map<CoreMaterial::Vec3Value>( m.detailColor );
 		if (m.normals.textureID != -1) gpuMat.nmap0 = Map<CoreMaterial::Vec3Value>( m.normals );
 		if (m.detailNormals.textureID != -1) gpuMat.nmap1 = Map<CoreMaterial::Vec3Value>( m.detailNormals );
-		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness );
+		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness ); /* also means metallic is mapped */
 		if (m.specular.textureID != -1) gpuMat.smap = Map<CoreMaterial::ScalarValue>( m.specular );
 		bool hdr = false;
 		if (m.color.textureID != -1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
@@ -443,7 +458,20 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
+	if (!materialBuffer)
+	{
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	}
+	else if (materialCount <= materialBuffer->GetSize())
+	{
+		// just set the new material data
+		materialBuffer->SetHostData( hostMaterialBuffer );
+	}
+	else /* if (materialCount > materialBuffer->GetSize()) */
+	{
+		// TODO: realloc
+	}
+	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
 }
 
@@ -451,58 +479,29 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
+template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData )
+{
+	// helper function for (re)allocating light buffers with staged buffer and pointer update.
+	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
+	{
+		delete lightBuffer;
+		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
+	}
+	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
+	lightBuffer->StageCopyToDevice();
+	return lightBuffer->DevPtr();
+}
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
-	{
-		// we need a new or larger buffer; (re)allocate.
-		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE|ON_HOST, areaLights, POLICY_COPY_SOURCE );
-		stageAreaLights( areaLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		// existing buffer is large enough; copy new data
-		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
-		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
-	}
-	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
-	{
-		delete pointLightBuffer;
-		pointLightBuffer = new CoreBuffer<CorePointLight>( pointLightCount, ON_DEVICE, pointLights, POLICY_COPY_SOURCE );
-		stagePointLights( pointLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( pointLightBuffer->HostPtr(), pointLights, pointLightCount * sizeof( CorePointLight ) );
-		stageMemcpy( pointLightBuffer->DevPtr(), pointLightBuffer->HostPtr(), pointLightBuffer->GetSizeInBytes() );
-	}
-	if (spotLightBuffer == 0 || spotLightCount > spotLightBuffer->GetSize())
-	{
-		delete spotLightBuffer;
-		spotLightBuffer = new CoreBuffer<CoreSpotLight>( spotLightCount, ON_DEVICE, spotLights, POLICY_COPY_SOURCE );
-		stageSpotLights( spotLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( spotLightBuffer->HostPtr(), spotLights, spotLightCount * sizeof( CoreSpotLight ) );
-		stageMemcpy( spotLightBuffer->DevPtr(), spotLightBuffer->HostPtr(), spotLightBuffer->GetSizeInBytes() );
-	}
-	if (directionalLightBuffer == 0 || directionalLightCount > directionalLightBuffer->GetSize())
-	{
-		delete directionalLightBuffer;
-		directionalLightBuffer = new CoreBuffer<CoreDirectionalLight>( directionalLightCount, ON_DEVICE, directionalLights, POLICY_COPY_SOURCE );
-		stageDirectionalLights( directionalLightBuffer->DevPtr() );
-	}
-	else 
-	{
-		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
-		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
-	}
+	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
+	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
+	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
 	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -512,7 +511,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_HOST | ON_DEVICE, 0 );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height, ON_DEVICE | ON_HOST, 0 );
 	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
@@ -531,19 +530,11 @@ void RenderCore::Setting( const char* name, const float value )
 {
 	if (!strcmp( name, "epsilon" ))
 	{
-		if (vars.geometryEpsilon != value)
-		{
-			vars.geometryEpsilon = value;
-			stageGeometryEpsilon( value );
-		}
+		if (vars.geometryEpsilon != value) stageGeometryEpsilon( vars.geometryEpsilon = value );
 	}
 	else if (!strcmp( name, "clampValue" ))
 	{
-		if (vars.clampValue != value)
-		{
-			vars.clampValue = value;
-			stageClampValue( value );
-		}
+		if (vars.clampValue != value) stageClampValue( vars.clampValue = value );
 	}
 }
 
@@ -554,7 +545,6 @@ void RenderCore::Setting( const char* name, const float value )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::UpdateToplevel()
 {
-	// this creates the top-level BVH over the supplied models.
 	RTPbufferdesc instancesBuffer, transformBuffer;
 	vector<RTPmodel> modelList;
 	vector<mat4> transformList;
@@ -575,71 +565,92 @@ void RenderCore::UpdateToplevel()
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  RenderThread::run                                                          |
+//  |  Main function of the render worker thread.                           LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderThread::run()
+{
+	while (1)
+	{
+		WaitForSingleObject( coreState.startEvent, INFINITE );
+		// render a single frame
+		coreState.RenderImpl( view );
+		// we're done, go back to waiting
+		SetEvent( coreState.doneEvent );
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
+	if (!gpuHasSceneData) return;
 	// wait for OpenGL
 	glFinish();
-	Timer timer;
+	// finalize staged writes
+	// pushStagedCopies();
+	// handle converge restart
+	if (converge == Restart || firstConvergingFrame)
+	{
+		samplesTaken = 0;
+		firstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
+		camRNGseed = 0x12345678; // same seed means same noise.
+	}
+	if (converge == Converge) firstConvergingFrame = false;
+	// do the actual rendering
+	renderTimer.reset();
+	/* if (async)
+	{
+		asyncRenderInProgress = true;
+		renderThread->Init( this, view );
+		SetEvent( startEvent );
+	}
+	else */
+	{
+		RenderImpl( view );
+		FinalizeRender();
+	}
+}
+
+void RenderCore::RenderImpl( const ViewPyramid& view )
+{
 	// update acceleration structure
 	UpdateToplevel();
 	// clean accumulator, if requested
-	if (converge == Restart)
+	if (samplesTaken == 0)
 	{
 		accumulatorOnePass->Clear( ON_DEVICE );
 		contributions->Clear( ON_DEVICE );
 		pathDataBuffer->Clear( ON_DEVICE );
-
-		//InitCountersForExtend(scrwidth * scrheight * scrspp);
-		//InitIndexForConstructionLight(scrwidth * scrheight * scrspp, constructLightBuffer->DevPtr());
-
-		camRNGseed = 0x12345678; // same seed means same noise.
-		samplesTaken = 0;
 	}
-
-	// BDPT
-	///////////////////////////////////
-	//if (!bInit)
-	{
-		InitCountersForExtend( scrwidth * scrheight * scrspp );
-		//InitIndexForConstructionLight(scrwidth * scrheight * scrspp, constructLightBuffer->DevPtr());
-		InitCountersForPixels();
-		//bInit = true;
-	}
-	//////////////////////////////////////
-
+	// render image
+	InitCountersForExtend( scrwidth * scrheight * scrspp );
+	InitCountersForPixels();
 	uint pathCount = scrwidth * scrheight * scrspp;
 	uint visNum = 0;
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	float3 forward = cross( right, up );
-	// render image
 	RTPquery queryVisibility, queryRandomWalk;
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &queryVisibility ) );
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &queryRandomWalk ) );
-
 	uint extendEyePathNum = pathCount;
 	uint extendLightPathNum = pathCount;
-
 	coreStats.totalExtensionRays = 0;
 	coreStats.totalShadowRays = 0;
-
 	coreStats.shadowTraceTime = 0;
-
+	Timer timer;
 	constructionLightPos( pathCount,
 		pathDataBuffer->DevPtr(),
 		RandomUInt( camRNGseed ), blueNoise->DevPtr(), GetScreenParams(),
 		randomWalkRayBuffer->DevPtr(), accumulatorOnePass->DevPtr(),
 		probePos.x + scrwidth * probePos.y, constructEyeBuffer->DevPtr() );
-
 	int pathLength = 1;
 	uint checkCount = extendEyePathNum + extendLightPathNum;
 	coreStats.traceTime0 = 0;
-
 	counterBuffer->CopyToHost();
 	Counters& counters = counterBuffer->HostPtr()[0];
-
 	while (true)
 	{
 		constructionEyePos( pathCount, constructEyeBuffer->DevPtr(),
@@ -647,13 +658,11 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			randomWalkRayBuffer->DevPtr(), samplesTaken * 7907 + pathLength * 91771,
 			view.aperture, view.imagePlane, view.pos, right, up, forward, view.p1,
 			GetScreenParams(), blueNoise->DevPtr() );
-
 		extendEyePath( pathCount, pathDataBuffer->DevPtr(),
 			visibilityRayBuffer->DevPtr(), randomWalkRayBuffer->DevPtr(),
 			samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), view.spreadAngle, GetScreenParams(),
 			probePos.x + scrwidth * probePos.y, eyePathBuffer->DevPtr(),
 			contributions->DevPtr(), accumulatorOnePass->DevPtr() );
-
 		extendLightPath( pathCount, pathDataBuffer->DevPtr(),
 			visibilityRayBuffer->DevPtr(), randomWalkRayBuffer->DevPtr(),
 			samplesTaken * 7907 + pathLength * 91771, blueNoise->DevPtr(), view.pos,
@@ -661,47 +670,28 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			contributions->DevPtr(),
 			view.aperture, view.imagePlane, forward,
 			view.focalDistance, view.p1, right, up );
-
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
 		uint queryNum = counters.randomWalkRays;// checkCount == 0 ? pathCount * 2 : extendLightPathNum * 2 + extendEyePathNum;
-
 		visNum = counters.contribution_count;
 		extendLightPathNum = counters.extendLightPath;
 		extendEyePathNum = counters.extendEyePath;
-
 		checkCount = extendLightPathNum + extendEyePathNum;
 		coreStats.totalExtensionRays += queryNum;
-
-		if (queryNum == 0)
-			break;
-
+		if (queryNum == 0) break;
 		Timer t;
 		CHK_PRIME( rtpBufferDescSetRange( randomWalkRaysDesc, 0, queryNum ) );
 		CHK_PRIME( rtpBufferDescSetRange( randomWalkHitsDesc, 0, queryNum ) );
 		CHK_PRIME( rtpQuerySetRays( queryRandomWalk, randomWalkRaysDesc ) );
 		CHK_PRIME( rtpQuerySetHits( queryRandomWalk, randomWalkHitsDesc ) );
 		CHK_PRIME( rtpQueryExecute( queryRandomWalk, RTP_QUERY_HINT_NONE ) );
-
 		if (pathLength == 1) coreStats.traceTime0 = t.elapsed(), coreStats.primaryRayCount = counters.randomWalkRays;
 		else if (pathLength == 2)  coreStats.traceTime1 = t.elapsed(), coreStats.bounce1RayCount = counters.randomWalkRays;
 		else coreStats.traceTimeX = t.elapsed(), coreStats.deepRayCount = counters.randomWalkRays;
-
 		pathLength++;
-
-		//printf("%d\n", queryNum);
-
 		InitCountersForExtend( 0 );
-
-		//float scene_area = 5989.0f;
 		connectionPath( pathCount, pathDataBuffer->DevPtr(), randomWalkHitBuffer->DevPtr(),
-			accumulatorOnePass->DevPtr(),
-			GetScreenParams(),
-			constructEyeBuffer->DevPtr(), eyePathBuffer->DevPtr() );
-
-		//counterBuffer->CopyToHost();
-		//counters = counterBuffer->HostPtr()[0];
-
+			accumulatorOnePass->DevPtr(), GetScreenParams(), constructEyeBuffer->DevPtr(), eyePathBuffer->DevPtr() );
 		if (visNum + checkCount > maxVisNum)
 		{
 			CHK_PRIME( rtpBufferDescSetRange( visibilityRaysDesc, 0, visNum ) );
@@ -709,22 +699,15 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 			CHK_PRIME( rtpQuerySetRays( queryVisibility, visibilityRaysDesc ) );
 			CHK_PRIME( rtpQuerySetHits( queryVisibility, visibilityHitsDesc ) );
 			CHK_PRIME( rtpQueryExecute( queryVisibility, RTP_QUERY_HINT_NONE ) );
-
-			finalizeContribution( visNum, visibilityHitBuffer->DevPtr(),
-				accumulatorOnePass->DevPtr(), contributions->DevPtr() );
-
+			finalizeContribution( visNum, visibilityHitBuffer->DevPtr(), accumulatorOnePass->DevPtr(), contributions->DevPtr() );
 			coreStats.totalShadowRays += visNum;
-
 			InitCountersForPixels();
 			visNum = 0;
 		}
-
 		coreStats.probedInstid = counters.probedInstid;
 		coreStats.probedTriid = counters.probedTriid;
 		coreStats.probedDist = counters.probedDist;
-
 	} // while (extendLightPathNum + extendEyePathNum > 0);
-
 	Timer t;
 	CHK_PRIME( rtpBufferDescSetRange( visibilityRaysDesc, 0, visNum ) );
 	CHK_PRIME( rtpBufferDescSetRange( visibilityHitsDesc, 0, visNum ) );
@@ -732,31 +715,43 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	CHK_PRIME( rtpQuerySetHits( queryVisibility, visibilityHitsDesc ) );
 	CHK_PRIME( rtpQueryExecute( queryVisibility, RTP_QUERY_HINT_NONE ) );
 	coreStats.shadowTraceTime = t.elapsed();
-
-	finalizeContribution( visNum, visibilityHitBuffer->DevPtr(),
-		accumulatorOnePass->DevPtr(), contributions->DevPtr() );
-
+	finalizeContribution( visNum, visibilityHitBuffer->DevPtr(), accumulatorOnePass->DevPtr(), contributions->DevPtr() );
 	coreStats.totalShadowRays += visNum;
-
-	samplesTaken++;
-	renderTarget.BindSurface();
-	finalizeRender( accumulatorOnePass->DevPtr(), scrwidth, scrheight, samplesTaken );
-	renderTarget.UnbindSurface();
-
-	coreStats.renderTime = timer.elapsed();
-	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
-
 	CHK_PRIME( rtpQueryDestroy( queryVisibility ) );
 	CHK_PRIME( rtpQueryDestroy( queryRandomWalk ) );
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  RenderCore::GetCoreStats                                                   |
-//  |  Get a copy of the counters.                                          LH2'19|
+//  |  RenderCore::WaitForRender                                                  |
+//  |  Wait for the render thread to finish.                                      |
+//  |  Note: will deadlock if we didn't actually start a render.            LH2'20|
 //  +-----------------------------------------------------------------------------+
-CoreStats RenderCore::GetCoreStats() const
+void RenderCore::WaitForRender()
 {
-	return coreStats;
+	// wait for the renderthread to complete
+	if (!asyncRenderInProgress) return;
+	WaitForSingleObject( doneEvent, INFINITE );
+	asyncRenderInProgress = false;
+	// get back the RenderCore state data changed by the thread
+	coreStats = renderThread->coreState.coreStats;
+	camRNGseed = renderThread->coreState.camRNGseed;
+	// copy the accumulator to the OpenGL texture
+	FinalizeRender();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::FinalizeRender                                                 |
+//  |  Fill the OpenGL rendertarget texture.                                LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::FinalizeRender()
+{
+	// present accumulator to final buffer
+	samplesTaken++;
+	renderTarget.BindSurface();
+	finalizeRender( accumulatorOnePass->DevPtr(), scrwidth, scrheight, samplesTaken );
+	renderTarget.UnbindSurface();
+	coreStats.renderTime = renderTimer.elapsed();
+	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -767,16 +762,12 @@ void RenderCore::Shutdown()
 {
 	// delete ray buffers
 	delete constructEyeBuffer;
-
 	delete eyePathBuffer;
-
 	delete pathDataBuffer;
-
 	delete visibilityRayBuffer;
 	delete visibilityHitBuffer;
 	delete randomWalkRayBuffer;
 	delete randomWalkHitBuffer;
-
 	// delete internal data
 	delete accumulatorOnePass;
 	delete counterBuffer;
@@ -802,6 +793,15 @@ void RenderCore::Shutdown()
 	rtpBufferDescDestroy( randomWalkRaysDesc );
 	rtpBufferDescDestroy( randomWalkHitsDesc );
 	rtpContextDestroy( context );
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::GetCoreStats                                                   |
+//  |  Get a copy of the counters.                                          LH2'19|
+//  +-----------------------------------------------------------------------------+
+CoreStats RenderCore::GetCoreStats() const
+{
+	return coreStats;
 }
 
 // EOF

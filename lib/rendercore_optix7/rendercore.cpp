@@ -27,8 +27,7 @@ void InitCountersSubsequent();
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint shift, const uint* blueNoise, const int pass,
-	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
+	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle );
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 
 } // namespace lh2core
@@ -775,8 +774,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), noDirectLightsInScene ? 0 : connectionBuffer->DevPtr(),
 			RandomUInt( camRNGseed ) + pathLength * 91771, shiftSeed, blueNoise->DevPtr(), samplesTaken,
-			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
-			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
+			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle );
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];

@@ -58,27 +58,6 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 		stageMemcpy( positions4->DevPtr(), positions4->HostPtr(), positions4->GetSizeInBytes() );
 	}
 	accstrucNeedsUpdate = true;
-	// check the geometry
-	aabb bounds;
-	for (int i = 0; i < vertexCount / 3; i++)
-	{
-		float3 p0 = make_float3( vertexData[i * 3 + 0] );
-		float3 p1 = make_float3( vertexData[i * 3 + 1] );
-		float3 p2 = make_float3( vertexData[i * 3 + 2] );
-		if (length( p0 - p1 ) == 0 || length( p2 - p1 ) == 0 || length( p2 - p0 ) == 0)
-		{
-			int w = 0;
-		}
-		if (isnan( p0.x + p0.y + p0.z ) || isnan( p1.x + p1.y + p1.z ) || isnan( p2.x + p2.y + p2.z ))
-		{
-			int w = 0;
-		}
-		bounds.Grow( p0 );
-		bounds.Grow( p1 );
-		bounds.Grow( p2 );
-	}
-	int w = 0;
-
 }
 
 //  +-----------------------------------------------------------------------------+

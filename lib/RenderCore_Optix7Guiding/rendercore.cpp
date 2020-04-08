@@ -22,43 +22,19 @@ namespace lh2core
 
 // forward declaration of cuda code
 const surfaceReference* renderTargetRef();
-void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
-void shade( const int pathCount, float4* accumulator, const uint stride,
-	float4* pathStates, const float4* hits, float4* connections,
-	const uint R0, const uint* blueNoise, const int pass,
-	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos );
-void ProcessPhotonHits( float4* photonData, const uint photonCount );
 void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
-
-// setters / getters
-void stageInstanceDescriptors( CoreInstanceDesc* p );
-void stageMaterialList( CUDAMaterial* p );
-void stageAreaLights( CoreLightTri* p );
-void stagePointLights( CorePointLight* p );
-void stageSpotLights( CoreSpotLight* p );
-void stageDirectionalLights( CoreDirectionalLight* p );
-void stageLightCounts( int area, int point, int spot, int directional );
-void stageGuidanceData( uint* guidance, float3 bmin, float3 reciExtent );
-void stageARGB32Pixels( uint* p );
-void stageARGB128Pixels( float4* p );
-void stageNRM32Pixels( uint* p );
-void stageSkyPixels( float4* p );
-void stageSkySize( int w, int h );
-void stageWorldToSky( const mat4& worldToLight );
-void stagePathStates( PathState* p );
-void stageDebugData( float4* p );
-void stageGeometryEpsilon( float e );
-void stageClampValue( float c );
-void SetCounters( Counters* p );
-void stageMemcpy( void* d, void* s, int n );
+void shade( const int pathCount, float4* accumulator, const uint stride,
+	float4* pathStates, float4* hits, float4* connections,
+	const uint R0, const uint shift, const uint* blueNoise, const int pass,
+	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle );
+void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
+void ProcessPhotonHits( float4* photonData, const uint photonCount );
 
 } // namespace lh2core
 
 using namespace lh2core;
 
-OptixDeviceContext RenderCore::optixContext = 0;
 struct SBTRecord { __align__( OPTIX_SBT_RECORD_ALIGNMENT ) char header[OPTIX_SBT_RECORD_HEADER_SIZE]; };
 
 const char* ParseOptixError( OptixResult r )
@@ -130,7 +106,12 @@ void RenderCore::CreateOptixContext( int cc )
 	contextOptions.logCallbackFunction = &context_log_cb;
 	contextOptions.logCallbackLevel = 4;
 	CHK_OPTIX( optixDeviceContextCreate( cu_ctx, &contextOptions, &optixContext ) );
-	cudaMalloc( (void**)(&d_params), sizeof( Params ) );
+	cudaMalloc( (void**)(&d_params[0]), sizeof( Params ) );
+	cudaMalloc( (void**)(&d_params[1]), sizeof( Params ) );
+	cudaMalloc( (void**)(&d_params[2]), sizeof( Params ) );
+	// Note: we set up three sets of params, with the only difference being the 'phase' variable.
+	// During wavefront path tracing this allows us to select the phase without a copyToDevice,
+	// by passing the right param set for the Optix call. A bit ugly but it works.
 
 	// load and compile PTX
 	string ptx;
@@ -262,7 +243,7 @@ void RenderCore::Init()
 	// render settings
 	stageClampValue( 10.0f );
 	// prepare counters for persistent threads
-	counterBuffer = new CoreBuffer<Counters>( 1, ON_HOST | ON_DEVICE );
+	counterBuffer = new CoreBuffer<Counters>( 1, ON_DEVICE | ON_HOST );
 	SetCounters( counterBuffer->DevPtr() );
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
@@ -289,6 +270,13 @@ void RenderCore::Init()
 	}
 	cudaEventCreate( &shadowStart );
 	cudaEventCreate( &shadowEnd );
+	// create events for worker thread communication
+	startEvent = CreateEvent( NULL, false, false, NULL );
+	doneEvent = CreateEvent( NULL, false, false, NULL );
+	// create worker thread
+	renderThread = new RenderThread();
+	renderThread->Init( this );
+	renderThread->start();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -326,6 +314,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		connectionBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3 * 2, ON_DEVICE );
 		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
 		hitBuffer = new CoreBuffer<float4>( maxPixels * scrspp, ON_DEVICE );
+		cudaMemset( hitBuffer->DevPtr(), 255, maxPixels * scrspp * sizeof( float4 ) ); // set all hits to -1 for first frame.
 		pathStateBuffer = new CoreBuffer<float4>( maxPixels * scrspp * 3, ON_DEVICE );
 		photonBuffer = new CoreBuffer<float4>( PHOTONCOUNT * 3, ON_DEVICE | ON_HOST );
 		params.connectData = connectionBuffer->DevPtr();
@@ -399,7 +388,7 @@ void RenderCore::FinalizeInstances()
 	if (instances.size() > (size_t)instanceArray->GetSize())
 	{
 		delete instanceArray;
-		instanceArray = new CoreBuffer<OptixInstance>( instances.size() + 4, ON_HOST | ON_DEVICE );
+		instanceArray = new CoreBuffer<OptixInstance>( instances.size() + 4, ON_HOST | ON_DEVICE | STAGED );
 	}
 	// copy instance descriptors to the array, sync with device
 	for (int s = (int)instances.size(), i = 0; i < s; i++)
@@ -407,7 +396,7 @@ void RenderCore::FinalizeInstances()
 		instances[i]->instance.traversableHandle = meshes[instances[i]->mesh]->gasHandle;
 		instanceArray->HostPtr()[i] = instances[i]->instance;
 	}
-	instanceArray->CopyToDevice();
+	instanceArray->StageCopyToDevice();
 	// pass instance descriptors to the device; will be used during shading.
 	if (instancesDirty)
 	{
@@ -438,7 +427,7 @@ void RenderCore::FinalizeInstances()
 			stageInstanceDescriptors( instDescBuffer->DevPtr() );
 		}
 		memcpy( instDescBuffer->HostPtr(), instDescArray.data(), instDescArray.size() * sizeof( CoreInstanceDesc ) );
-		instDescBuffer->CopyToDevice();
+		instDescBuffer->StageCopyToDevice();
 		// instancesDirty = false; // TODO: for now we do this every frame.
 	}
 	// rendering is allowed from now on
@@ -461,13 +450,6 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 	SyncStorageType( TexelStorage::ARGB32 );
 	SyncStorageType( TexelStorage::ARGB128 );
 	SyncStorageType( TexelStorage::NRM32 );
-	// Notes:
-	// - the three types are copied from the original HostTexture pixel data (to which the
-	//   descriptors point) straight to the GPU. There is no pixel storage on the host
-	//   in the RenderCore.
-	// - the types are copied one by one. Copying involves creating a temporary host-side
-	//   buffer; doing this one by one allows us to delete host-side data for one type
-	//   before allocating space for the next, thus reducing storage requirements.
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -486,18 +468,18 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 	{
 	case TexelStorage::ARGB32:
 		delete texel32Buffer;
-		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE );
+		texel32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE | STAGED );
 		stageARGB32Pixels( texel32Buffer->DevPtr() );
 		coreStats.argb32TexelCount = texelTotal;
 		break;
 	case TexelStorage::ARGB128:
 		delete texel128Buffer;
-		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageARGB128Pixels( (texel128Buffer = new CoreBuffer<float4>( texelTotal, ON_HOST | ON_DEVICE | STAGED ))->DevPtr() );
 		coreStats.argb128TexelCount = texelTotal;
 		break;
 	case TexelStorage::NRM32:
 		delete normal32Buffer;
-		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE ))->DevPtr() );
+		stageNRM32Pixels( (normal32Buffer = new CoreBuffer<uint>( texelTotal, ON_HOST | ON_DEVICE | STAGED ))->DevPtr() );
 		coreStats.nrm32TexelCount = texelTotal;
 		break;
 	}
@@ -517,9 +499,9 @@ void RenderCore::SyncStorageType( const TexelStorage storage )
 		texelTotal += texDescs[i].pixelCount;
 	}
 	// move to device
-	if (storage == TexelStorage::ARGB32) if (texel32Buffer) texel32Buffer->MoveToDevice();
-	if (storage == TexelStorage::ARGB128) if (texel128Buffer) texel128Buffer->MoveToDevice();
-	if (storage == TexelStorage::NRM32) if (normal32Buffer) normal32Buffer->MoveToDevice();
+	if (storage == TexelStorage::ARGB32) if (texel32Buffer) texel32Buffer->StageCopyToDevice();
+	if (storage == TexelStorage::ARGB128) if (texel128Buffer) texel128Buffer->StageCopyToDevice();
+	if (storage == TexelStorage::NRM32) if (normal32Buffer) normal32Buffer->StageCopyToDevice();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -533,8 +515,6 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
-	delete materialBuffer;
-	delete hostMaterialBuffer;
 	hostMaterialBuffer = new CUDAMaterial[materialCount];
 	for (int i = 0; i < materialCount; i++)
 	{
@@ -552,7 +532,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 		if (m.detailColor.textureID != -1) gpuMat.tex1 = Map<CoreMaterial::Vec3Value>( m.detailColor );
 		if (m.normals.textureID != -1) gpuMat.nmap0 = Map<CoreMaterial::Vec3Value>( m.normals );
 		if (m.detailNormals.textureID != -1) gpuMat.nmap1 = Map<CoreMaterial::Vec3Value>( m.detailNormals );
-		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness );
+		if (m.roughness.textureID != -1) gpuMat.rmap = Map<CoreMaterial::ScalarValue>( m.roughness ); /* also means metallic is mapped */
 		if (m.specular.textureID != -1) gpuMat.smap = Map<CoreMaterial::ScalarValue>( m.specular );
 		bool hdr = false;
 		if (m.color.textureID != -1) if (texDescs[m.color.textureID].flags & 8 /* HostTexture::HDR */) hdr = true;
@@ -564,9 +544,17 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
 			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
-			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0);
 	}
-	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_DEVICE | ON_HOST /* on_host: for alpha mapped tris */, hostMaterialBuffer );
+	if (!materialBuffer)
+	{
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	}
+	else if (materialCount > materialBuffer->GetSize())
+	{
+		// TODO: realloc
+	}
+	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
 }
 
@@ -576,13 +564,14 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  +-----------------------------------------------------------------------------+
 template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData )
 {
+	// helper function for (re)allocating light buffers with staged buffer and pointer update.
 	if (lightBuffer == 0 || newCount > lightBuffer->GetSize())
 	{
 		delete lightBuffer;
 		lightBuffer = new CoreBuffer<T>( newCount, ON_HOST | ON_DEVICE );
 	}
 	memcpy( lightBuffer->HostPtr(), sourceData, newCount * sizeof( T ) );
-	stageMemcpy( lightBuffer->DevPtr(), lightBuffer->HostPtr(), lightBuffer->GetSizeInBytes() );
+	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
 void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
@@ -612,6 +601,18 @@ void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint 
 	stageWorldToSky( worldToLight );
 	skywidth = width;
 	skyheight = height;
+	// calculate scaled-down version of the sky
+	const uint w = width >> 6, h = height >> 6;
+	float4* orig = skyPixelBuffer->HostPtr();
+	float4* scaled = skyPixelBuffer->HostPtr() + width * height;
+	for (uint y = 0; y < h; y++) for (uint x = 0; x < w; x++)
+	{
+		// average 64 * 64 pixels
+		float4 total = make_float4( 0 );
+		float4* tile = orig + x * 64 + y * 64 * width;
+		for (int v = 0; v < 64; v++) for (int u = 0; u < 64; u++) total += tile[u + v * width];
+		scaled[x + y * w] = total * (1.0f / (64 * 64));
+	}
 	// copy sky data to device
 	skyPixelBuffer->CopyToDevice();
 }
@@ -624,19 +625,15 @@ void RenderCore::Setting( const char* name, const float value )
 {
 	if (!strcmp( name, "epsilon" ))
 	{
-		if (vars.geometryEpsilon != value)
-		{
-			vars.geometryEpsilon = value;
-			stageGeometryEpsilon( value );
-		}
+		if (vars.geometryEpsilon != value) stageGeometryEpsilon( vars.geometryEpsilon = value );
 	}
 	else if (!strcmp( name, "clampValue" ))
 	{
-		if (vars.clampValue != value)
-		{
-			vars.clampValue = value;
-			stageClampValue( value );
-		}
+		if (vars.clampValue != value) stageClampValue( vars.clampValue = value );
+	}
+	else if (!strcmp( name, "noiseShift" ))
+	{
+		noiseShift = fmod( value, 1.0f );
 	}
 }
 
@@ -773,8 +770,8 @@ void RenderCore::UpdateGuiding()
 	params.scrsize.x = photonIdx;
 	params.scrsize.y = params.scrsize.z = 1;
 	InitCountersForExtend( photonIdx ); // this will reset all values and set activePaths to 1,000,000
-	cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-	CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, photonIdx, 1, 1 ) );
+	cudaMemcpyAsync( (void*)(&d_params[3]), &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+	CHK_OPTIX( optixLaunch( pipeline, 0, d_params[3], sizeof( Params ), &sbt, photonIdx, 1, 1 ) );
 
 	// finalize photon hits
 	ProcessPhotonHits( photonBuffer->DevPtr(), photonIdx );
@@ -937,6 +934,8 @@ void RenderCore::UpdateGuiding()
 //  +-----------------------------------------------------------------------------+
 void RenderCore::UpdateToplevel()
 {
+	// build accstructs for modified meshes
+	for (CoreMesh* m : meshes) if (m->accstrucNeedsUpdate) m->UpdateAccstruc();
 	// build the top-level tree
 	OptixBuildInput buildInput = {};
 	buildInput.type = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
@@ -966,6 +965,22 @@ void RenderCore::UpdateToplevel()
 }
 
 //  +-----------------------------------------------------------------------------+
+//  |  RenderThread::run                                                          |
+//  |  Main function of the render worker thread.                           LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderThread::run()
+{
+	while (1)
+	{
+		WaitForSingleObject( coreState.startEvent, INFINITE );
+		// render a single frame
+		coreState.RenderImpl( view );
+		// we're done, go back to waiting
+		SetEvent( coreState.doneEvent );
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Render                                                         |
 //  |  Produce one image.                                                   LH2'19|
 //  +-----------------------------------------------------------------------------+
@@ -974,36 +989,60 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	if (!gpuHasSceneData) return;
 	// wait for OpenGL
 	glFinish();
-	Timer timer;
-	// update acceleration structure
-	UpdateToplevel();
-	// clean accumulator, if requested
+	// finalize staged writes
+	pushStagedCopies();
+	// handle converge restart
 	if (converge == Restart || firstConvergingFrame)
 	{
-		accumulator->Clear( ON_DEVICE );
 		samplesTaken = 0;
 		firstConvergingFrame = true; // if we switch to converging, it will be the first converging frame.
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
 	if (converge == Converge) firstConvergingFrame = false;
-	// prepare data for guided NEE
-	static int frameIdx = 0;
-	if (frameIdx < 3) if (frameIdx++ == 1) UpdateGuiding();
+	// do the actual rendering
+	renderTimer.reset();
+	if (async)
+	{
+		asyncRenderInProgress = true;
+		renderThread->Init( this, view );
+		SetEvent( startEvent );
+	}
+	else
+	{
+		RenderImpl( view );
+		FinalizeRender();
+	}
+}
+void RenderCore::RenderImpl( const ViewPyramid& view )
+{
+	// update acceleration structure
+	UpdateToplevel();
+	// clean accumulator, if requested
+	if (samplesTaken == 0) accumulator->Clear( ON_DEVICE );
 	// render an image using OptiX
+	RandomUInt( shiftSeed );
 	coreStats.totalExtensionRays = coreStats.totalShadowRays = 0;
 	float3 right = view.p2 - view.p1, up = view.p3 - view.p1;
 	params.posLensSize = make_float4( view.pos.x, view.pos.y, view.pos.z, view.aperture );
 	params.distortion = view.distortion;
+	params.shift = shiftSeed;
 	params.right = make_float3( right.x, right.y, right.z );
 	params.up = make_float3( up.x, up.y, up.z );
 	params.p1 = make_float3( view.p1.x, view.p1.y, view.p1.z );
 	params.pass = samplesTaken;
-	// loop
 	params.bvhRoot = bvhRoot;
+	// sync params to device
+	params.phase = Params::SPAWN_PRIMARY;
+	cudaMemcpyAsync( (void*)d_params[0], &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+	params.phase = Params::SPAWN_SECONDARY;
+	cudaMemcpyAsync( (void*)d_params[1], &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+	params.phase = Params::SPAWN_SHADOW;
+	cudaMemcpyAsync( (void*)d_params[2], &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+	// loop
 	Counters counters;
-	coreStats.deepRayCount = 0;
 	uint pathCount = scrwidth * scrheight * scrspp;
-	int actualPathLength = 0;
+	coreStats.deepRayCount = 0;
+	coreStats.primaryRayCount = pathCount;
 	for (int pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// generate / extend
@@ -1011,42 +1050,33 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		if (pathLength == 1)
 		{
 			// spawn and extend camera rays
-			params.phase = Params::SPAWN_PRIMARY;
-			coreStats.primaryRayCount = pathCount;
 			InitCountersForExtend( pathCount );
-			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, params.scrsize.x, params.scrsize.y * scrspp, 1 ) );
+			CHK_OPTIX( optixLaunch( pipeline, 0, d_params[0], sizeof( Params ), &sbt, params.scrsize.x, params.scrsize.y * scrspp, 1 ) );
 		}
 		else
 		{
 			// extend bounced paths
 			if (pathLength == 2) coreStats.bounce1RayCount = pathCount; else coreStats.deepRayCount += pathCount;
-			params.phase = Params::SPAWN_SECONDARY;
 			InitCountersSubsequent();
-			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, pathCount, 1, 1 ) );
+			CHK_OPTIX( optixLaunch( pipeline, 0, d_params[1], sizeof( Params ), &sbt, pathCount, 1, 1 ) );
 		}
 		cudaEventRecord( traceEnd[pathLength - 1] );
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), noDirectLightsInScene ? 0 : connectionBuffer->DevPtr(),
-			RandomUInt( camRNGseed ) + pathLength * 91771, blueNoise->DevPtr(), samplesTaken,
-			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight,
-			view.spreadAngle, view.p1, view.p2, view.p3, view.pos );
+			RandomUInt( camRNGseed ) + pathLength * 91771, shiftSeed, blueNoise->DevPtr(), samplesTaken,
+			probePos.x + scrwidth * probePos.y, pathLength, scrwidth, scrheight, view.spreadAngle );
 		cudaEventRecord( shadeEnd[pathLength - 1] );
 		counterBuffer->CopyToHost();
 		counters = counterBuffer->HostPtr()[0];
 		pathCount = counters.extensionRays;
-		actualPathLength = pathLength; // prevent timing loop iterations that we didn't execute
 		if (pathCount == 0) break;
 		// trace shadow rays now if the next loop iteration could overflow the buffer.
 		uint maxShadowRays = connectionBuffer->GetSize() / 3;
 		if ((pathCount + counters.shadowRays) >= maxShadowRays) if (counters.shadowRays > 0)
 		{
-			params.phase = Params::SPAWN_SHADOW;
-			cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-			CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
+			CHK_OPTIX( optixLaunch( pipeline, 0, d_params[2], sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 			counterBuffer->HostPtr()[0].shadowRays = 0;
 			counterBuffer->CopyToDevice();
 			printf( "WARNING: connection buffer overflowed.\n" ); // we should not have to do this; handled here to be conservative.
@@ -1056,32 +1086,64 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 	cudaEventRecord( shadowStart );
 	if (counters.shadowRays > 0)
 	{
-		params.phase = Params::SPAWN_SHADOW;
-		cudaMemcpyAsync( (void*)d_params, &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-		CHK_OPTIX( optixLaunch( pipeline, 0, d_params, sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
+		CHK_OPTIX( optixLaunch( pipeline, 0, d_params[2], sizeof( Params ), &sbt, counters.shadowRays, 1, 1 ) );
 	}
 	cudaEventRecord( shadowEnd );
 	// gather ray tracing statistics
 	coreStats.totalShadowRays = counters.shadowRays;
 	coreStats.totalExtensionRays = counters.totalExtensionRays;
+	// finalize statistics
+	cudaStreamSynchronize( 0 );
+	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
+	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
+	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
+	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	// probe information
+	coreStats.SetProbeInfo( counters.probedInstid, counters.probedTriid, counters.probedDist );
+	const float3 P = RayTarget( probePos.x, probePos.y, 0.5f, 0.5f, make_int2( scrwidth, scrheight ), view.distortion, view.p1, right, up );
+	const float3 D = normalize( P - view.pos );
+	coreStats.probedWorldPos = view.pos + counters.probedDist * D;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::WaitForRender                                                  |
+//  |  Wait for the render thread to finish.                                      |
+//  |  Note: will deadlock if we didn't actually start a render.            LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::WaitForRender()
+{
+	// wait for the renderthread to complete
+	if (!asyncRenderInProgress) return;
+	WaitForSingleObject( doneEvent, INFINITE );
+	asyncRenderInProgress = false;
+	// get back the RenderCore state data changed by the thread
+	coreStats = renderThread->coreState.coreStats;
+	camRNGseed = renderThread->coreState.camRNGseed;
+	shiftSeed = renderThread->coreState.shiftSeed;
+	// copy the accumulator to the OpenGL texture
+	FinalizeRender();
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::FinalizeRender                                                 |
+//  |  Fill the OpenGL rendertarget texture.                                LH2'20|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::FinalizeRender()
+{
 	// present accumulator to final buffer
 	renderTarget.BindSurface();
 	samplesTaken += scrspp;
 	finalizeRender( accumulator->DevPtr(), scrwidth, scrheight, samplesTaken );
 	renderTarget.UnbindSurface();
-	// finalize statistics
-	cudaStreamSynchronize( 0 );
-	coreStats.renderTime = timer.elapsed();
-	coreStats.totalRays = coreStats.totalExtensionRays + coreStats.totalShadowRays;
-	coreStats.traceTime0 = CUDATools::Elapsed( traceStart[0], traceEnd[0] );
-	coreStats.traceTime1 = CUDATools::Elapsed( traceStart[1], traceEnd[1] );
-	coreStats.shadowTraceTime = CUDATools::Elapsed( shadowStart, shadowEnd );
+	// timing statistics
+	coreStats.renderTime = renderTimer.elapsed();
+	coreStats.frameOverhead = max( 0.0f, frameTimer.elapsed() - coreStats.renderTime );
+	frameTimer.reset();
 	coreStats.traceTimeX = coreStats.shadeTime = 0;
-	for (int i = 2; i < actualPathLength; i++) coreStats.traceTimeX += CUDATools::Elapsed( traceStart[i], traceEnd[i] );
-	for (int i = 0; i < actualPathLength; i++) coreStats.shadeTime += CUDATools::Elapsed( shadeStart[i], shadeEnd[i] );
-	coreStats.probedInstid = counters.probedInstid;
-	coreStats.probedTriid = counters.probedTriid;
-	coreStats.probedDist = counters.probedDist;
+	for (int i = 2; i < MAXPATHLENGTH; i++)
+		coreStats.traceTimeX += CUDATools::Elapsed( renderThread->coreState.traceStart[i], renderThread->coreState.traceEnd[i] );
+	for (int i = 0; i < MAXPATHLENGTH; i++)
+		coreStats.shadeTime += CUDATools::Elapsed( renderThread->coreState.shadeStart[i], renderThread->coreState.shadeEnd[i] );
 }
 
 //  +-----------------------------------------------------------------------------+

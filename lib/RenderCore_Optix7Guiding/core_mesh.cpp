@@ -15,8 +15,6 @@
 
 #include "core_settings.h"
 
-RenderCore* CoreMesh::renderCore = 0;
-
 template<typename T> T roundUp( T x, T y ) { return ((x + y - 1) / y) * y; }
 
 //  +-----------------------------------------------------------------------------+
@@ -31,7 +29,7 @@ CoreMesh::~CoreMesh()
 
 //  +-----------------------------------------------------------------------------+
 //  |  CoreMesh::SetGeometry                                                      |
-//  |  Set the geometry data and build / update the OptiX BVH.              LH2'19|
+//  |  Set the geometry data for the accstruc.                              LH2'19|
 //  +-----------------------------------------------------------------------------+
 void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris )
 {
@@ -40,23 +38,34 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 	if (triangles == 0) reallocate = true; else if (triCount > triangles->GetSize()) reallocate = true;
 	// BVH compaction is done for the first frame only.
 	// If we get here a second time we will assume this is an animation and compaction is not worthwhile.
-	bool allowCompaction = (triangles == 0);
+	allowCompaction = (triangles == 0);
 	// allocate and copy triangle data to GPU
 	triangleCount = triCount;
 	if (reallocate)
 	{
 		delete triangles;
 		delete positions4;
-		triangles = new CoreBuffer<CoreTri4>( triCount, ON_DEVICE, tris );
-		positions4 = new CoreBuffer<float4>( triangleCount * 3, ON_DEVICE, vertexData );
+		triangles = new CoreBuffer<CoreTri4>( triCount, ON_HOST | ON_DEVICE | STAGED, tris, POLICY_COPY_SOURCE );
+		positions4 = new CoreBuffer<float4>( triangleCount * 3, ON_HOST | ON_DEVICE | STAGED, vertexData, POLICY_COPY_SOURCE );
+		stageMemcpy( triangles->DevPtr(), triangles->HostPtr(), triangles->GetSizeInBytes() );
+		stageMemcpy( positions4->DevPtr(), positions4->HostPtr(), positions4->GetSizeInBytes() );
 	}
 	else
 	{
 		triangles->SetHostData( (CoreTri4*)tris );
-		triangles->CopyToDevice();
 		positions4->SetHostData( (float4*)vertexData );
-		positions4->CopyToDevice();
+		stageMemcpy( triangles->DevPtr(), triangles->HostPtr(), triangles->GetSizeInBytes() );
+		stageMemcpy( positions4->DevPtr(), positions4->HostPtr(), positions4->GetSizeInBytes() );
 	}
+	accstrucNeedsUpdate = true;
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  CoreMesh::UpdateAccstruc                                                   |
+//  |  Update the Optix BVH for modified geometry.                          LH2'20|
+//  +-----------------------------------------------------------------------------+
+void CoreMesh::UpdateAccstruc()
+{
 	// prepare acceleration structure build parameters
 	buildInput = {};
 	buildInput.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
@@ -67,8 +76,10 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 	buildInput.triangleArray.flags = inputFlags;
 	buildInput.triangleArray.numSbtRecords = 1;
 	// set acceleration structure build options
+	// NOTE: compacting the first time geometry is handed works well for static geometry but
+	// crashes the bird animation, for unknown reasons. Disabled for now.
 	buildOptions = {};
-	buildOptions.buildFlags = (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+	buildOptions.buildFlags = /* (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | */ OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
 	buildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
 	// determine buffer sizes for the acceleration structure
 	CHK_OPTIX( optixAccelComputeMemoryUsage( RenderCore::optixContext, &buildOptions, &buildInput, 1, &buildSizes ) );
@@ -85,7 +96,7 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 		buildBuffer = new CoreBuffer<uchar>( compactedSizeOffset + 8, ON_DEVICE );
 	}
 	// build
-	if (allowCompaction)
+	if (0) /* see note on compaction above */ // (allowCompaction)
 	{
 		// build with compaction
 		OptixAccelEmitDesc emitProperty = {};
@@ -103,22 +114,6 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 			CHK_OPTIX( optixAccelCompact( RenderCore::optixContext, 0, gasHandle, gasData, compacted_gas_size, &gasHandle ) );
 			delete buildBuffer;
 			buildBuffer = compacted;
-		#if 0
-			// store compacted bvh data to file
-			if (triCount > 2) // not the light
-			{
-				buildBuffer->CopyToHost();
-				uint size = (uint)compacted_gas_size;
-				char n[128];
-				sprintf( n, "bvhdata_%i-%i_compacted.txt", triCount, size );
-				FILE* f = fopen( n, "w" );
-				float* fdata = (float*)buildBuffer->HostPtr();
-				uint* idata = (uint*)buildBuffer->HostPtr();
-				size /= 4;
-				for( uint i = 0; i < size; i++ ) fprintf( f, "%04id\t%.02Xh\t%.02Xh\t%.02Xh\t%.02Xh\t%10i\t%f\n", i * 4, idata[i] & 255, (idata[i] >> 8) & 255, (idata[i] >> 16) & 255, idata[i] >> 24, idata[i], fdata[i] );
-				fclose( f );
-			}
-		#endif
 		}
 		else gasData = (CUdeviceptr)buildBuffer->DevPtr();
 	}
@@ -130,6 +125,7 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 			buildSizes.outputSizeInBytes, &gasHandle, 0, 0 ) );
 		gasData = (CUdeviceptr)buildBuffer->DevPtr();
 	}
+	accstrucNeedsUpdate = false;
 }
 
 // EOF

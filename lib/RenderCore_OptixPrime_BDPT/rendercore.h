@@ -18,9 +18,12 @@
 namespace lh2core
 {
 
-// from OptiX SDK, putil.h
-#define CHK_PRIME(c){RTPresult r=c;if(r){const char*e;rtpContextGetLastErrorString(RenderCore::context,&e);\
-FatalError( "Error at line %i of %s: %s", __LINE__,__FILE__,e);}}
+#define CHK_PRIME( stmt ) { RTPresult r = ( stmt ); if ( r ) { const char* e;  \
+rtpContextGetLastErrorString( RenderCore::context, &e );                       \
+FatalError( #stmt " returned error '%s' at %s:%d\n", e, __FILE__, __LINE__ );  \
+} } while ( 0 )
+
+class RenderThread;
 
 //  +-----------------------------------------------------------------------------+
 //  |  DeviceVars                                                                 |
@@ -39,11 +42,12 @@ struct DeviceVars
 //  +-----------------------------------------------------------------------------+
 class RenderCore : public CoreAPI_Base
 {
+	friend class RenderThread;
 public:
 	// methods
 	void Init();
 	void Render( const ViewPyramid& view, const Convergence converge, bool async );
-	void WaitForRender() { /* this core does not support asynchronous rendering yet */ }
+	void WaitForRender();
 	void Setting( const char* name, const float value );
 	void SetTarget( GLTexture* target, const uint spp );
 	void Shutdown();
@@ -67,7 +71,11 @@ public:
 	void SetProbePos( const int2 pos );
 	CoreStats GetCoreStats() const override;
 	// internal methods
+protected:
+	void RenderImpl( const ViewPyramid& view );
+	void FinalizeRender();
 private:
+	template <class T> T* StagedBufferResize( CoreBuffer<T>*& buffer, const int newCount, const T* sourceData );
 	void UpdateToplevel();
 	void SyncStorageType( const TexelStorage storage );
 	// helpers
@@ -137,6 +145,11 @@ private:
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
 	uint seed = 0x23456789;							// generic seed
 	DeviceVars vars;								// copy of device-side variables, to detect changes
+	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
+	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
+	bool gpuHasSceneData = false;					// to block renders before first SynchronizeSceneData
+	bool noDirectLightsInScene = true;				// no lights specified; don't do NEE in pathtracer
+	Timer renderTimer;								// timer for asynchronous rendering
 	// blue noise table: contains the three tables distributed by Heitz.
 	// Offset 0: an Owen-scrambled Sobol sequence of 256 samples of 256 dimensions.
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
@@ -144,9 +157,35 @@ private:
 	CoreBuffer<uint>* blueNoise = 0;
 	// timing
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
+protected:
+	// events
+	HANDLE startEvent, doneEvent;
+	// worker thread
+	RenderThread* renderThread;
 public:
 	static RTPcontext context;						// the OptiX prime context
 	CoreStats coreStats;							// rendering statistics
+};
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderThread                                                               |
+//  |  Worker thread for asynchronous rendering.                            LH2'20|
+//  +-----------------------------------------------------------------------------+
+class RenderThread : public WinThread
+{
+public:
+	void Init( RenderCore* core )
+	{
+		coreState = *core;
+	}
+	void Init( RenderCore* core, const ViewPyramid& pyramid )
+	{
+		coreState = *core;
+		view = pyramid;
+	}
+	void run();
+	RenderCore coreState; // frozen copy of the state at render start
+	ViewPyramid view;
 };
 
 } // namespace lh2core

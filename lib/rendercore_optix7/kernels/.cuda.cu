@@ -25,7 +25,7 @@ __constant__ CoreLightTri* areaLights;
 __constant__ CorePointLight* pointLights;
 __constant__ CoreSpotLight* spotLights;
 __constant__ CoreDirectionalLight* directionalLights;
-__constant__ int4 lightCounts; // area, point, spot, directional
+__constant__ int4 lightCounts;			// area, point, spot, directional
 __constant__ uchar4* argb32;
 __constant__ float4* argb128;
 __constant__ uchar4* nrm32;
@@ -51,12 +51,14 @@ enum { INSTS = 0, MATS, ALGHTS, PLGHTS, SLGHTS, DLGHTS, LCNTS, RGB32, RGBH, NRML
 struct StagedPtr { void* p; int id; };
 struct StagedInt { int v; int id; };
 struct StagedInt4 { int4 v; int id; };
+struct StagedFloat3 { float3 v; int id; };
 struct StagedMat { mat4 v; int id; };
 struct StagedF32 { float v; int id; };
 struct StagedCpy { void* d; void* s; int n; };
 static std::vector<StagedPtr> stagedPtr;
 static std::vector<StagedInt> stagedInt;
 static std::vector<StagedInt4> stagedInt4;
+static std::vector<StagedFloat3> stagedFloat3;
 static std::vector<StagedMat> stagedMat;
 static std::vector<StagedF32> stagedF32;
 static std::vector<StagedCpy> stagedCpy;
@@ -93,12 +95,17 @@ __host__ static void pushInt4Cpy( int id, const int4& v )
 {
 	if (id == LCNTS) cudaMemcpyToSymbol( lightCounts, &v, sizeof( int4 ) );
 }
+__host__ static void pushFloat3Cpy( int id, const float3& v )
+{
+	// nothing here yet
+}
 
 #define MAXVARS	32
 static void* prevPtr[MAXVARS] = {};
 static int prevInt[MAXVARS] = {};
 static float prevFloat[MAXVARS] = {};
 static int4 prevInt4[MAXVARS] = {};
+static float3 prevFloat3[MAXVARS] = {};
 static bool prevValSet[MAXVARS] = {};
 
 __host__ static void stagePtrCpy( int id, void* p )
@@ -133,6 +140,14 @@ __host__ static void stageInt4Cpy( int id, const int4& v )
 	prevValSet[id] = true;
 	prevInt4[id] = v;
 }
+__host__ static void stageFloat3Cpy( int id, const float3& v )
+{
+	if (prevValSet[id] == true && prevFloat3[id].x == v.x && prevFloat3[id].y == v.y && prevFloat3[id].z == v.z) return;
+	StagedFloat3 n = { v, id };
+	stagedFloat3.push_back( n );
+	prevValSet[id] = true;
+	prevFloat3[id] = v;
+}
 
 __host__ void stageMemcpy( void* d, void* s, int n ) { StagedCpy c = { d, s, n }; stagedCpy.push_back( c ); }
 
@@ -163,6 +178,7 @@ __host__ void pushStagedCopies()
 	for (auto n : stagedPtr) pushPtrCpy( n.id, n.p ); stagedPtr.clear();
 	for (auto n : stagedInt) pushIntCpy( n.id, n.v ); stagedInt.clear();
 	for (auto n : stagedInt4) pushInt4Cpy( n.id, n.v ); stagedInt4.clear();
+	for (auto n : stagedFloat3) pushFloat3Cpy( n.id, n.v ); stagedFloat3.clear();
 	for (auto n : stagedF32) pushF32Cpy( n.id, n.v ); stagedF32.clear();
 	for (auto n : stagedMat) pushMatCpy( n.id, n.v ); stagedMat.clear();
 }

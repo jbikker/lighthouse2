@@ -47,7 +47,7 @@
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
 #if __CUDA_ARCH__ > 700 // Volta deliberately excluded
-__global__  __launch_bounds__( 256 /* max block size */, 2 /* min blocks per sm TURING */ )
+__global__  __launch_bounds__( 128 /* max block size */, 2 /* min blocks per sm TURING */ )
 #else
 __global__  __launch_bounds__( 256 /* max block size */, 2 /* min blocks per sm, PASCAL, VOLTA */ )
 #endif
@@ -236,14 +236,13 @@ void shadeKernel( float4* accumulator, const uint stride,
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  shadeKernel                                                                |
+//  |  shade                                                                      |
 //  |  Host-side access point for the shadeKernel code.                     LH2'19|
 //  +-----------------------------------------------------------------------------+
 __host__ void shade( const int pathCount, float4* accumulator, const uint stride,
 	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint shift, const uint* blueNoise, const int pass,
-	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
-	const float3 p1, const float3 p2, const float3 p3, const float3 pos )
+	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle )
 {
 	const dim3 gridDim( NEXTMULTIPLEOF( pathCount, 128 ) / 128, 1 );
 	shadeKernel << <gridDim.x, 128 >> > (accumulator, stride, pathStates, hits, connections, R0, shift, blueNoise,

@@ -19,8 +19,12 @@
 #include "../kernels/noerrors.h"
 #include "helper_math.h"
 
+// function defintion helper
+#define LH2_DEVFUNC	static __forceinline__ __device__
+
 // global include files
 #include "../../RenderSystem/common_settings.h"
+#include "../../RenderSystem/common_functions.h"
 #include "../../RenderSystem/common_types.h"
 #define OPTIX_CU // skip CUDAMaterial definition in core_settings.h; not needed here 
 #include "../core_settings.h"
@@ -49,6 +53,21 @@ static __inline __device__ float blueNoiseSampler( int x, int y, int sampleIndex
 	return (0.5f + value) * (1.0f / 256.0f);
 }
 
+LH2_DEVFUNC float4 blueNoiseSampler4( int x, int y, int sampleIndex, int sampleDimension )
+{
+	// Optimized retrieval of 4 blue noise samples.
+	const uint4 bn4 = *((uint4*)(params.blueNoise + sampleDimension + (x + y * 128) * 8 + 65536 * 3));
+	const int rsi1 = (sampleIndex ^ bn4.x) & 255, rsi2 = (sampleIndex ^ bn4.y) & 255;
+	const int rsi3 = (sampleIndex ^ bn4.z) & 255, rsi4 = (sampleIndex ^ bn4.w) & 255;
+	const int v1 = params.blueNoise[sampleDimension + 0 + rsi1 * 256];
+	const int v2 = params.blueNoise[sampleDimension + 1 + rsi2 * 256];
+	const int v3 = params.blueNoise[sampleDimension + 2 + rsi3 * 256];
+	const int v4 = params.blueNoise[sampleDimension + 3 + rsi4 * 256];
+	const uint4 bx4 = *((uint4*)(params.blueNoise + (sampleDimension & 7) + (x + y * 128) * 8 + 65536));
+	return make_float4( (0.5f + (v1 ^ bx4.x)) * (1.0f / 256.0f), (0.5f + (v2 ^ bx4.y)) * (1.0f / 256.0f),
+		(0.5f + (v3 ^ bx4.z)) * (1.0f / 256.0f), (0.5f + (v4 ^ bx4.w)) * (1.0f / 256.0f) );
+}
+
 static __inline __device__ float3 RandomPointOnLens( const float r0, float r1 )
 {
 	const float blade = (int)(r0 * 9);
@@ -68,33 +87,19 @@ static __inline __device__ void generateEyeRay( float3& O, float3& D, const uint
 	// random point on pixel and lens
 	int sx = pixelIdx % params.scrsize.x;
 	int sy = pixelIdx / params.scrsize.x;
-	float r0, r1, r2, r3;
-	if (sampleIdx < 256)
-		r0 = blueNoiseSampler( sx, sy, sampleIdx, 0 ),
-		r1 = blueNoiseSampler( sx, sy, sampleIdx, 1 ),
-		r2 = blueNoiseSampler( sx, sy, sampleIdx, 2 ),
-		r3 = blueNoiseSampler( sx, sy, sampleIdx, 3 );
-	else
-		r0 = RandomFloat( seed ), r1 = RandomFloat( seed ),
-		r2 = RandomFloat( seed ), r3 = RandomFloat( seed );
-	O = RandomPointOnLens( r2, r3 );
-	float3 posOnPixel;
-	if (params.distortion == 0)
+	int shift = params.shift;
+	float4 r4;
+	if (sampleIdx < 64)
 	{
-		const float u = ((float)sx + r0) * (1.0f / params.scrsize.x);
-		const float v = ((float)sy + r1) * (1.0f / params.scrsize.y);
-		posOnPixel = params.p1 + u * params.right + v * params.up;
+		r4 = blueNoiseSampler4( (sx + (shift & 127)) & 127, (sy + (shift >> 24)) & 127, sampleIdx, 0 );
 	}
 	else
 	{
-		const float tx = sx / (float)params.scrsize.x - 0.5f, ty = sy / (float)params.scrsize.y - 0.5f;
-		const float rr = tx * tx + ty * ty;
-		const float rq = sqrtf( rr ) * (1.0f + params.distortion * rr + params.distortion * rr * rr);
-		const float theta = atan2f( tx, ty );
-		const float bx = (sinf( theta ) * rq + 0.5f) * params.scrsize.x;
-		const float by = (cosf( theta ) * rq + 0.5f) * params.scrsize.y;
-		posOnPixel = params.p1 + (bx + r0) * (params.right / (float)params.scrsize.x) + (by + r1) * (params.up / (float)params.scrsize.y);
+		r4.x = RandomFloat( seed ), r4.y = RandomFloat( seed );
+		r4.z = RandomFloat( seed ), r4.w = RandomFloat( seed );
 	}
+	O = RandomPointOnLens( r4.x, r4.z );
+	float3 posOnPixel = RayTarget( sx, sy, r4.y, r4.w, make_int2( params.scrsize ), params.distortion, params.p1, params.right, params.up );
 	D = normalize( posOnPixel - O );
 }
 
@@ -113,12 +118,13 @@ __device__ void setupPrimaryRay( const uint pathIdx, const uint stride )
 	float3 O, D;
 	generateEyeRay( O, D, pixelIdx, sampleIdx, seed );
 	// populate path state array
-	params.pathStates[pathIdx] = make_float4( O, __uint_as_float( (pathIdx << 8) + 1 /* S_SPECULAR in CUDA code */ ) );
+	params.pathStates[pathIdx] = make_float4( O, __uint_as_float( (pathIdx << 6) + 1 /* S_SPECULAR in CUDA code */ ) );
 	params.pathStates[pathIdx + stride] = make_float4( D, 0 );
 	// trace eye ray
 	uint u0, u1 = 0, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, O, D, params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
+	if (pixelIdx < stride /* OptiX bug workaround? */) if (u2 != 0xffffffff) /* bandwidth reduction */
 	params.hitData[pathIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
 }
 
@@ -127,10 +133,10 @@ __device__ void setupSecondaryRay( const uint rayIdx, const uint stride )
 	const float4 O4 = params.pathStates[rayIdx];
 	const float4 D4 = params.pathStates[rayIdx + stride];
 	float4 result = make_float4( 0, 0, __int_as_float( -1 ), 0 );
-	uint pixelIdx = __float_as_uint( O4.w ) >> 8;
 	uint u0, u1 = 0, u2 = 0xffffffff, u3 = __float_as_uint( 1e34f );
 	optixTrace( params.bvhRoot, make_float3( O4 ), make_float3( D4 ), params.geometryEpsilon, 1e34f, 0.0f /* ray time */, OptixVisibilityMask( 1 ),
 		OPTIX_RAY_FLAG_NONE, 0, 2, 0, u0, u1, u2, u3 );
+	if (rayIdx < stride /* OptiX bug workaround? */) if (u2 != 0xffffffff) /* bandwidth reduction */
 	params.hitData[rayIdx] = make_float4( __uint_as_float( u0 ), __uint_as_float( u1 ), __uint_as_float( u2 ), __uint_as_float( u3 ) );
 }
 
@@ -165,6 +171,7 @@ extern "C" __global__ void __raygen__rg()
 {
 	const uint stride = params.scrsize.x * params.scrsize.y * params.scrsize.z;
 	const uint3 idx = optixGetLaunchIndex();
+	const uint rayIdx = idx.x + idx.y * params.scrsize.x;
 	switch (params.phase)
 	{
 	case Params::SPAWN_PRIMARY: // primary rays

@@ -185,9 +185,15 @@ int main()
 			ImGui::Text( "# deep rays:  %6ik (%6.1fM/s)", coreStats.deepRayCount / 1000, coreStats.deepRayCount / (max( 1.0f, coreStats.traceTimeX * 1000000 )) );
 			ImGui::Text( "# shadw rays: %6ik (%6.1fM/s)", coreStats.totalShadowRays / 1000, coreStats.totalShadowRays / (max( 1.0f, coreStats.shadowTraceTime * 1000000 )) );
 			ImGui::End();
+			ImGui::Begin("Tips", 0);
+			ImGui::Text("Use W,S,A,D to move");
+			ImGui::Text("Use R,F to up or down");
+			ImGui::Text("Use up down left right to turn round");
+			ImGui::Text("Use B to refresh");
+			ImGui::End();
 			ImGui::Begin( "Camera parameters", 0 );
-			float3 camPos = renderer->GetCamera()->position;
-			float3 camDir = renderer->GetCamera()->direction;
+			float3 camPos = renderer->GetCamera()->transform.GetTranslation();
+			float3 camDir = renderer->GetCamera()->transform.GetForward();
 			ImGui::Text( "position: %5.2f, %5.2f, %5.2f", camPos.x, camPos.y, camPos.z );
 			ImGui::Text( "viewdir:  %5.2f, %5.2f, %5.2f", camDir.x, camDir.y, camDir.z );
 			ImGui::SliderFloat( "FOV", &renderer->GetCamera()->FOV, 10, 90 );

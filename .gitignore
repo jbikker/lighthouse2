@@ -1,0 +1,16 @@
+/.vs/
+/coredlls/Dubug/
+*.exe
+*.log
+*.pch
+*.tlog
+*.pdb
+*.exp
+*.ilk
+*.dll
+*.obj
+*.cache
+*.deps
+*.lib
+*.idb
+*.txt

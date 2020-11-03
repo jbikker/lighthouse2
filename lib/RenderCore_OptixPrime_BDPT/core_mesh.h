@@ -33,13 +33,15 @@ public:
 	~CoreMesh();
 	// methods
 	void SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris );
+	void UpdateAccstruc();
 	// data
 	CoreBuffer<CoreTri4>* triangles = 0;		// original triangle data, as received from RenderSystem
 	uint3* indexData = 0;					// dummy index data; simply increasing numbers
 	float3* vertex3Data = 0;				// vertex data in float3 format
+	bool accstrucNeedsUpdate = false;		// acceleration structure requires rebuild
 	RTPmodel model;							// model descriptor
 	RTPbufferdesc indicesDesc, verticesDesc; // OptiX buffer descriptors
-	static RenderCore* renderCore;			// for access to material list, in case of alpha mapped triangles
+	static inline RenderCore* renderCore = 0; // for access to material list, in case of alpha mapped triangles
 };
 
 //  +-----------------------------------------------------------------------------+

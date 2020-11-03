@@ -20,7 +20,7 @@
    number of threads fights for food by atomically decreasing a counter.
 
    The implemented path tracer is deliberately simple.
-   This file is as similar as possible to the one in OptixRTX_B.
+   This file is as similar as possible to the one in Optix7.
 */
 
 #include "noerrors.h"
@@ -30,7 +30,7 @@
 #define S_BOUNCED		2	// path encountered a diffuse vertex
 #define S_VIASPECULAR	4	// path has seen at least one specular vertex
 #define S_BOUNCEDTWICE	8	// this core will stop after two diffuse bounces
-#define ENOUGH_BOUNCES	S_BOUNCED // S_BOUNCEDTWICE
+#define ENOUGH_BOUNCES	S_BOUNCED // or S_BOUNCEDTWICE
 
 // readability defines; data layout is optimized for 128-bit accesses
 #define PRIMIDX __float_as_int( hitData.z )
@@ -47,7 +47,7 @@
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
 #if __CUDA_ARCH__ > 700 // Volta deliberately excluded
-__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm TURING */ )
+__global__  __launch_bounds__( 128 /* max block size */, 2 /* min blocks per sm TURING */ )
 #else
 __global__  __launch_bounds__( 256 /* max block size */, 2 /* min blocks per sm, PASCAL, VOLTA */ )
 #endif
@@ -223,7 +223,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float p = ((FLAGS & S_SPECULAR) || ((FLAGS & S_BOUNCED) == 0)) ? 1 : SurvivalProbability( bsdf );
 	if (p < RandomFloat( seed )) return; else throughput *= 1 / p;
 
-	// write extension ray
+	// write extension ray, with compaction. Note: nvcc will aggregate automatically, 
+	// https://devblogs.nvidia.com/cuda-pro-tip-optimized-filtering-warp-aggregated-atomics 
 	const uint extensionRayIdx = atomicAdd( &counters->extensionRays, 1 ); // compact
 	const uint packedNormal = PackNormal( fN * faceDir );
 	if (!(FLAGS & S_SPECULAR)) FLAGS |= FLAGS & S_BOUNCED ? S_BOUNCEDTWICE : S_BOUNCED; else FLAGS |= S_VIASPECULAR;

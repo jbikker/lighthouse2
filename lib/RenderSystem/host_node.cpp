@@ -53,7 +53,7 @@ HostNode::HostNode( const int meshIdx, const mat4& transform )
 //  +-----------------------------------------------------------------------------+
 HostNode::~HostNode()
 {
-	if ((meshID > -1) && hasLTris)
+	if ((meshID > -1) && hasLights)
 	{
 		// this node is an instance and has emissive materials;
 		// remove the relevant area lights.
@@ -64,7 +64,7 @@ HostNode::~HostNode()
 			if (material->IsEmissive())
 			{
 				// mesh contains an emissive material; remove related area lights
-				vector<HostAreaLight*>& lightList = HostScene::areaLights;
+				vector<HostTriLight*>& lightList = HostScene::triLights;
 				for (int s = (int)lightList.size(), i = 0; i < s; i++)
 					if (lightList[i]->instIdx == ID) lightList.erase( lightList.begin() + i-- );
 			}
@@ -169,7 +169,7 @@ bool HostNode::Update( mat4& T, vector<int>& instances, int& posInInstanceArray 
 			HostScene::meshPool[meshID]->SetPose( weights );
 			morphed = false;
 		}
-		if (thisWasModified && hasLTris) UpdateLights();
+		if (thisWasModified && hasLights) UpdateLights();
 		if (instanceID != posInInstanceArray)
 		{
 			instancesChanged = true;
@@ -213,10 +213,10 @@ void HostNode::PrepareLights()
 			{
 				tri->UpdateArea();
 				HostTri transformedTri = TransformedHostTri( tri, localTransform );
-				HostAreaLight* light = new HostAreaLight( &transformedTri, i, ID );
-				tri->ltriIdx = (int)HostScene::areaLights.size(); // TODO: can't duplicate a light due to this.
-				HostScene::areaLights.push_back( light );
-				hasLTris = true;
+				HostTriLight* light = new HostTriLight( &transformedTri, i, ID );
+				tri->ltriIdx = (int)HostScene::triLights.size(); // TODO: can't duplicate a light due to this.
+				HostScene::triLights.push_back( light );
+				hasLights = true;
 				// Note: TODO: 
 				// 1. if a mesh is deleted it should scan the list of area lights
 				//    to delete those that no longer exist.
@@ -239,15 +239,18 @@ void HostNode::PrepareLights()
 //  +-----------------------------------------------------------------------------+
 void HostNode::UpdateLights()
 {
-	if (!hasLTris) return;
+	if (!hasLights) return;
 	HostMesh* mesh = HostScene::meshPool[meshID];
 	for (int s = (int)mesh->triangles.size(), i = 0; i < s; i++)
 	{
 		HostTri* tri = &mesh->triangles[i];
-		if (tri->ltriIdx == -1) continue;
+		if (tri->ltriIdx > -1)
+		{
+			// triangle is light emitting; update it
 		tri->UpdateArea();
 		HostTri transformedTri = TransformedHostTri( tri, combinedTransform );
-		*HostScene::areaLights[tri->ltriIdx] = HostAreaLight( &transformedTri, i, ID );
+			*HostScene::triLights[tri->ltriIdx] = HostTriLight( &transformedTri, i, ID );
+		}
 	}
 }
 

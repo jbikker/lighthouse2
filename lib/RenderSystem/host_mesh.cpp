@@ -94,7 +94,7 @@ HostMesh::~HostMesh()
 	// TODO: warn if instances using this mesh still exist?
 	// And in general, do we want a two-way link between related objects?
 	// - Materials and meshes;
-	// - HostAreaLights and HostTris;
+	// - HostTriLights and HostTris;
 	// - Meshes and instances;
 	// - Materials and textures;
 	// - ...
@@ -322,7 +322,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 		// allocate the index array in the pointer-to-base declared in the parent scope
 		vector<int> tmpIndices;
 		vector<float3> tmpNormals, tmpVertices;
-		vector<float2> tmpUvs;
+		vector<float2> tmpUvs, tmpUv2s /* texture layer 2 */;
 		vector<uint4> tmpJoints;
 		vector<float4> tmpWeights, tmpTs;
 		switch (accessor.componentType)
@@ -404,7 +404,11 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 			}
 			else if (attribute.first == "TEXCOORD_1")
 			{
-				// TODO; ignored for now.
+				if (attribAccessor.type == TINYGLTF_TYPE_VEC2)
+					if (attribAccessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+						for (size_t i = 0; i < count; i++, a += byte_stride) tmpUv2s.push_back( *((float2*)a) );
+					else FATALERROR( "double precision uvs not supported in gltf file" );
+				else FATALERROR( "expected vec2 uvs in gltf file" );
 			}
 			else if (attribute.first == "COLOR_0")
 			{
@@ -485,7 +489,7 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 			}
 		}
 		// all data has been read; add triangles to the HostMesh
-		BuildFromIndexedData( tmpIndices, tmpVertices, tmpNormals, tmpUvs, tmpTs, tmpPoses,
+		BuildFromIndexedData( tmpIndices, tmpVertices, tmpNormals, tmpUvs, tmpUv2s, tmpTs, tmpPoses,
 			tmpJoints, tmpWeights, materialOverride == -1 ? matIdx[prim.material] : materialOverride );
 	}
 }
@@ -497,7 +501,8 @@ void HostMesh::ConvertFromGTLFMesh( const tinygltfMesh& gltfMesh, const tinygltf
 //  |  data, which we now convert to the final representation.              LH2'19|
 //  +-----------------------------------------------------------------------------+
 void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector<float3>& tmpVertices,
-	const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<float4>& tmpTs, const vector<Pose>& tmpPoses,
+	const vector<float3>& tmpNormals, const vector<float2>& tmpUvs, const vector<float2>& tmpUv2s,
+	const vector<float4>& tmpTs, const vector<Pose>& tmpPoses,
 	const vector<uint4>& tmpJoints, const vector<float4>& tmpWeights, const int materialIdx )
 {
 	// calculate values for consistent normal interpolation
@@ -613,6 +618,13 @@ void HostMesh::BuildFromIndexedData( const vector<int>& tmpIndices, const vector
 			// no uv information; use edges to calculate tangent vectors
 			tri.T = normalize( tri.vertex1 - tri.vertex0 );
 			tri.B = normalize( cross( N, tri.T ) );
+		}
+		// handle second and third set of uv coordinates, if available
+		if (tmpUv2s.size() > 0)
+		{
+			tri.u1_0 = tmpUv2s[v0idx].x, tri.v1_0 = tmpUv2s[v0idx].y;
+			tri.u1_1 = tmpUv2s[v1idx].x, tri.v1_1 = tmpUv2s[v1idx].y;
+			tri.u1_2 = tmpUv2s[v2idx].x, tri.v1_2 = tmpUv2s[v2idx].y;
 		}
 		// process joints / weights
 		if (tmpJoints.size() > 0)

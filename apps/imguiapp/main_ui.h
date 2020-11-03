@@ -16,7 +16,9 @@ void UpdateUI()
 	ImGui::Text( "Secondary:    %6.2fms", coreStats.traceTime1 * 1000 );
 	ImGui::Text( "Deep rays:    %6.2fms", coreStats.traceTimeX * 1000 );
 	ImGui::Text( "Shadow rays:  %6.2fms", coreStats.shadowTraceTime * 1000 );
-	ImGui::Text( "Shading time: %6.2fms", coreStats.shadeTime * 1000 );
+	static float smoothedShadingTime = 49.5f;
+	smoothedShadingTime = 0.95f * smoothedShadingTime + 0.05f * coreStats.shadeTime * 1000;
+	ImGui::Text( "Shading time: %6.2fms", smoothedShadingTime );
 	ImGui::Text( "Filter time:  %6.2fms", coreStats.filterTime * 1000 );
 	ImGui::Text( "Overhead:     %6.2fms", coreStats.frameOverhead * 1000 );
 	ImGui::Text( "# primary:    %6ik (%6.1fM/s)", coreStats.primaryRayCount / 1000, coreStats.primaryRayCount / (max( 1.0f, coreStats.traceTime0 * 1000000 )) );

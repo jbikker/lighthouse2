@@ -177,7 +177,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )

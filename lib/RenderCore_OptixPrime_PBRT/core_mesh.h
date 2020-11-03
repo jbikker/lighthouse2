@@ -39,7 +39,7 @@ public:
 	float3* vertex3Data = 0;				// vertex data in float3 format
 	RTPmodel model;							// model descriptor
 	RTPbufferdesc indicesDesc, verticesDesc; // OptiX buffer descriptors
-	static RenderCore* renderCore;			// for access to material list, in case of alpha mapped triangles
+	static inline RenderCore* renderCore = 0; // for access to material list, in case of alpha mapped triangles
 };
 
 //  +-----------------------------------------------------------------------------+

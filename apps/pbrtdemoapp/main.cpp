@@ -186,10 +186,10 @@ int main()
 			ImGui::Text( "# shadw rays: %6ik (%6.1fM/s)", coreStats.totalShadowRays / 1000, coreStats.totalShadowRays / (max( 1.0f, coreStats.shadowTraceTime * 1000000 )) );
 			ImGui::End();
 			ImGui::Begin( "Camera parameters", 0 );
-			float3 camPos = renderer->GetCamera()->position;
+			/* float3 camPos = renderer->GetCamera()->position;
 			float3 camDir = renderer->GetCamera()->direction;
 			ImGui::Text( "position: %5.2f, %5.2f, %5.2f", camPos.x, camPos.y, camPos.z );
-			ImGui::Text( "viewdir:  %5.2f, %5.2f, %5.2f", camDir.x, camDir.y, camDir.z );
+			ImGui::Text( "viewdir:  %5.2f, %5.2f, %5.2f", camDir.x, camDir.y, camDir.z ); */
 			ImGui::SliderFloat( "FOV", &renderer->GetCamera()->FOV, 10, 90 );
 			ImGui::SliderFloat( "aperture", &renderer->GetCamera()->aperture, 0, 0.025f );
 			ImGui::SliderFloat( "distortion", &renderer->GetCamera()->distortion, 0, 0.5f );

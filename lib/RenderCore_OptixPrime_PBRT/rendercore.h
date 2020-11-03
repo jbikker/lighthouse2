@@ -19,8 +19,8 @@ namespace lh2core
 {
 
 #define CHK_PRIME( stmt ) { RTPresult r = ( stmt ); if ( r ) { const char* e;  \
-			rtpContextGetLastErrorString( RenderCore::context, &e );                      \
-			FatalError( #stmt " returned error '%s' at %s:%d\n", e, __FILE__, __LINE__ ); \
+rtpContextGetLastErrorString( RenderCore::context, &e );                       \
+FatalError( #stmt " returned error '%s' at %s:%d\n", e, __FILE__, __LINE__ );  \
 } } while ( 0 )
 
 //  +-----------------------------------------------------------------------------+
@@ -52,7 +52,7 @@ public:
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
 	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
-	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+	void SetLights( const CoreLightTri* triLights, const int triLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount );
@@ -95,7 +95,7 @@ private:
 	CUDAMaterial* hostMaterialBuffer = 0;			// core-managed copy of the materials
 	CoreBuffer<CoreMaterialDesc>* materialDescBuffer = 0; // material descriptors
 	CoreBuffer<CoreMaterial>* pbrtMaterialBuffer = 0; // pbrt materials (currently expressed as fat CoreMaterial)
-	CoreBuffer<CoreLightTri>* areaLightBuffer;		// area lights
+	CoreBuffer<CoreLightTri>* triLightBuffer;		// tri lights
 	CoreBuffer<CorePointLight>* pointLightBuffer;	// point lights
 	CoreBuffer<CoreSpotLight>* spotLightBuffer;		// spot lights
 	CoreBuffer<CoreDirectionalLight>* directionalLightBuffer;	// directional lights

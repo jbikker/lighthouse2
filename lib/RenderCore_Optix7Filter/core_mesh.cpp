@@ -15,8 +15,6 @@
 
 #include "core_settings.h"
 
-RenderCore* CoreMesh::renderCore = 0;
-
 template<typename T> T roundUp( T x, T y ) { return ((x + y - 1) / y) * y; }
 
 //  +-----------------------------------------------------------------------------+
@@ -78,8 +76,10 @@ void CoreMesh::UpdateAccstruc()
 	buildInput.triangleArray.flags = inputFlags;
 	buildInput.triangleArray.numSbtRecords = 1;
 	// set acceleration structure build options
+	// NOTE: compacting the first time geometry is handed works well for static geometry but
+	// crashes the bird animation, for unknown reasons. Disabled for now.
 	buildOptions = {};
-	buildOptions.buildFlags = (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
+	buildOptions.buildFlags = /* (allowCompaction ? OPTIX_BUILD_FLAG_ALLOW_COMPACTION : 0) | */ OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
 	buildOptions.operation = OPTIX_BUILD_OPERATION_BUILD;
 	// determine buffer sizes for the acceleration structure
 	CHK_OPTIX( optixAccelComputeMemoryUsage( RenderCore::optixContext, &buildOptions, &buildInput, 1, &buildSizes ) );
@@ -96,7 +96,7 @@ void CoreMesh::UpdateAccstruc()
 		buildBuffer = new CoreBuffer<uchar>( compactedSizeOffset + 8, ON_DEVICE );
 	}
 	// build
-	if (allowCompaction)
+	if (0) /* see note on compaction above */ // (allowCompaction)
 	{
 		// build with compaction
 		OptixAccelEmitDesc emitProperty = {};

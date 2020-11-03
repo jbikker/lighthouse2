@@ -104,7 +104,7 @@ public:
 	static inline vector<HostAnimation*> animations;
 	static inline vector<HostMaterial*> materials;
 	static inline vector<HostTexture*> textures;
-	static inline vector<HostAreaLight*> areaLights;
+	static inline vector<HostTriLight*> triLights;
 	static inline vector<HostPointLight*> pointLights;
 	static inline vector<HostSpotLight*> spotLights;
 	static inline vector<HostDirectionalLight*> directionalLights;

@@ -38,7 +38,7 @@ void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 	name = original.name;
 	color.value = make_float3( original.diffuse[0], original.diffuse[1], original.diffuse[2] ); // Kd
 	absorption.value = make_float3( original.transmittance[0], original.transmittance[1], original.transmittance[2] ); // Kt
-	roughness = max( 0.0f, min( 1 - original.shininess, 1.0f ) );
+	roughness = 1.0f;
 	// maps
 	if (original.diffuse_texname != "")
 	{
@@ -93,25 +93,42 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 			tinygltf::Parameter p = value.second;
 			color.value = make_float3( p.number_array[0], p.number_array[1], p.number_array[2] );
 		}
-		if (value.first == "metallicFactor") if (value.second.has_number_value)
+		else if (value.first == "metallicFactor") 
+		{
+			if (value.second.has_number_value)
 		{
 			metallic.value = (float)value.second.number_value;
 		}
-		if (value.first == "roughnessFactor") if (value.second.has_number_value)
+		}
+		else if (value.first == "roughnessFactor") 
+		{
+			if (value.second.has_number_value)
 		{
 			roughness.value = (float)value.second.number_value;
 		}
-		if (value.first == "baseColorTexture") for (auto& item : value.second.json_double_value)
+		}
+		else if (value.first == "baseColorTexture") 
+		{
+			for (auto& item : value.second.json_double_value)
 		{
 			if (item.first == "index") color.textureID = texIdx[(int)item.second];
 		}
-		if (value.first == "metallicRoughnessTexture") for (auto& item : value.second.json_double_value)
+		}
+		else if (value.first == "metallicRoughnessTexture") 
+		{
+			for (auto& item : value.second.json_double_value)
 		{
 			if (item.first == "index") 
 			{
 				roughness.textureID = texIdx[(int)item.second];	// green channel contains roughness
 				metallic.textureID = texIdx[(int)item.second];	// blue channel contains metalness
 			}
+		}
+	}
+		else
+		{
+			// waddawegot
+			int w = 0;
 		}
 	}
 	// process additionalValues list
@@ -121,7 +138,7 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 		{
 			// ignored; all faces are double sided in LH2.
 		}
-		if (value.first == "normalTexture")
+		else if (value.first == "normalTexture")
 		{
 			tinygltf::Parameter p = value.second;
 			for (auto& item : value.second.json_double_value)
@@ -131,9 +148,26 @@ void HostMaterial::ConvertFrom( const tinygltfMaterial& original, const tinygltf
 				if (item.first == "texCoord") { /* TODO */ };
 			}
 		}
-		if (value.first == "occlusionTexture")
+		else if (value.first == "occlusionTexture")
 		{
 			// ignored; the occlusion map stores baked AO, but LH2 is a path tracer.
+		}
+		else if (value.first == "emissiveFactor")
+		{
+			// TODO (used in drone)
+		}
+		else if (value.first == "emissiveTexture")
+		{
+			// TODO (used in drone)
+		}
+		else if (value.first == "alphaMode" )
+		{
+			// TODO (used in drone)
+		}
+		else
+		{
+			// capture unexpected values
+			int w = 0;
 		}
 	}
 	// process extensions

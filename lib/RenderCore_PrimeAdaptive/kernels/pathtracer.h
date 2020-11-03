@@ -47,7 +47,7 @@
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
 #if __CUDA_ARCH__ > 700 // Volta deliberately excluded
-__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm TURING */ )
+__global__  __launch_bounds__( 128 /* max block size */, 2 /* min blocks per sm TURING */ )
 #else
 __global__  __launch_bounds__( 256 /* max block size */, 2 /* min blocks per sm, PASCAL, VOLTA */ )
 #endif

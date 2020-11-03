@@ -50,7 +50,7 @@ public:
 	OptixTraversableHandle gasHandle;		// handle to the mesh BVH
 	CUdeviceptr gasData;					// acceleration structure data
 	// global access
-	static RenderCore* renderCore;			// for access to material list, in case of alpha mapped triangles
+	static inline RenderCore* renderCore = 0; // for access to material list, in case of alpha mapped triangles
 };
 
 //  +-----------------------------------------------------------------------------+

@@ -21,7 +21,7 @@ namespace lh2core
 // path tracing buffers and global variables
 __constant__ CoreInstanceDesc* instanceDescriptors;
 __constant__ CUDAMaterial* materials;
-__constant__ CoreLightTri* areaLights;
+__constant__ CoreLightTri* triLights;
 __constant__ CorePointLight* pointLights;
 __constant__ CoreSpotLight* spotLights;
 __constant__ CoreDirectionalLight* directionalLights;
@@ -43,7 +43,7 @@ __constant__ __device__ float clampValue;
 // staging: copies will be batched and carried out after rendering completes, 
 // to allow the CPU to update the scene concurrently with GPU rendering.
 
-enum { INSTS = 0, MATS, ALGHTS, PLGHTS, SLGHTS, DLGHTS, LCNTS, RGB32, RGBH, NRMLS, SKYPIX, SKYW, SKYH, SMAT, DBGDAT, GEPS, CLMPV };
+enum { INSTS = 0, MATS, TLGHTS, PLGHTS, SLGHTS, DLGHTS, LCNTS, RGB32, RGBH, NRMLS, SKYPIX, SKYW, SKYH, SMAT, DBGDAT, GEPS, CLMPV };
 
 // device pointers are not real pointers for nvcc, so we need a bit of a hack.
 
@@ -64,7 +64,7 @@ __host__ static void pushPtrCpy( int id, void* p )
 {
 	if (id == INSTS) cudaMemcpyToSymbol( instanceDescriptors, &p, sizeof( void* ) );
 	if (id == MATS) cudaMemcpyToSymbol( materials, &p, sizeof( void* ) );
-	if (id == ALGHTS) cudaMemcpyToSymbol( areaLights, &p, sizeof( void* ) );
+	if (id == TLGHTS) cudaMemcpyToSymbol( triLights, &p, sizeof( void* ) );
 	if (id == PLGHTS) cudaMemcpyToSymbol( pointLights, &p, sizeof( void* ) );
 	if (id == SLGHTS) cudaMemcpyToSymbol( spotLights, &p, sizeof( void* ) );
 	if (id == DLGHTS) cudaMemcpyToSymbol( directionalLights, &p, sizeof( void* ) );
@@ -100,35 +100,35 @@ static float prevFloat[MAXVARS] = {};
 static int4 prevInt4[MAXVARS] = {};
 static bool prevValSet[MAXVARS] = {};
 
-__host__ static void stagePtrCpy( int id, void* p ) 
-{ 
+__host__ static void stagePtrCpy( int id, void* p )
+{
 	if (prevPtr[id] == p) return; // not changed
-	StagedPtr n = { p, id }; 
+	StagedPtr n = { p, id };
 	stagedPtr.push_back( n );
 	prevPtr[id] = p;
 }
-__host__ static void stageIntCpy( int id, const int v ) 
-{ 
-	if (prevValSet[id] == true && prevInt[id] == v) return; 
-	StagedInt n = { v, id }; 
+__host__ static void stageIntCpy( int id, const int v )
+{
+	if (prevValSet[id] == true && prevInt[id] == v) return;
+	StagedInt n = { v, id };
 	stagedInt.push_back( n );
 	prevValSet[id] = true;
 	prevInt[id] = v;
 }
-__host__ static void stageF32Cpy( int id, const float v ) 
-{ 
-	if (prevValSet[id] == true && prevFloat[id] == v) return; 
-	StagedF32 n = { v, id }; 
-	stagedF32.push_back( n ); 
+__host__ static void stageF32Cpy( int id, const float v )
+{
+	if (prevValSet[id] == true && prevFloat[id] == v) return;
+	StagedF32 n = { v, id };
+	stagedF32.push_back( n );
 	prevValSet[id] = true;
 	prevFloat[id] = v;
 }
 __host__ static void stageMatCpy( int id, const mat4& m ) { StagedMat n = { m, id }; stagedMat.push_back( n ); }
-__host__ static void stageInt4Cpy( int id, const int4& v ) 
+__host__ static void stageInt4Cpy( int id, const int4& v )
 {
-	if (prevValSet[id] == true && prevInt4[id].x == v.x && prevInt4[id].y == v.y && prevInt4[id].z == v.z && prevInt4[id].w == v.w) return; 
-	StagedInt4 n = { v, id }; 
-	stagedInt4.push_back( n ); 
+	if (prevValSet[id] == true && prevInt4[id].x == v.x && prevInt4[id].y == v.y && prevInt4[id].z == v.z && prevInt4[id].w == v.w) return;
+	StagedInt4 n = { v, id };
+	stagedInt4.push_back( n );
 	prevValSet[id] = true;
 	prevInt4[id] = v;
 }
@@ -137,7 +137,7 @@ __host__ void stageMemcpy( void* d, void* s, int n ) { StagedCpy c = { d, s, n }
 
 __host__ void stageInstanceDescriptors( CoreInstanceDesc* p ) { stagePtrCpy( INSTS /* instanceDescriptors */, p ); }
 __host__ void stageMaterialList( CUDAMaterial* p ) { stagePtrCpy( MATS /* materials */, p ); }
-__host__ void stageAreaLights( CoreLightTri* p ) { stagePtrCpy( ALGHTS /* areaLights */, p ); }
+__host__ void stageTriLights( CoreLightTri* p ) { stagePtrCpy( TLGHTS /* triLights */, p ); }
 __host__ void stagePointLights( CorePointLight* p ) { stagePtrCpy( PLGHTS /* pointLights */, p ); }
 __host__ void stageSpotLights( CoreSpotLight* p ) { stagePtrCpy( SLGHTS /* spotLights */, p ); }
 __host__ void stageDirectionalLights( CoreDirectionalLight* p ) { stagePtrCpy( DLGHTS /* directionalLights */, p ); }
@@ -150,9 +150,9 @@ __host__ void stageWorldToSky( const mat4& worldToLight ) { stageMatCpy( SMAT /*
 __host__ void stageDebugData( float4* p ) { stagePtrCpy( DBGDAT /* debugData */, p ); }
 __host__ void stageGeometryEpsilon( float e ) { stageF32Cpy( GEPS /* geometryEpsilon */, e ); }
 __host__ void stageClampValue( float c ) { stageF32Cpy( CLMPV /* clampValue */, c ); }
-__host__ void stageLightCounts( int area, int point, int spot, int directional )
+__host__ void stageLightCounts( int tri, int point, int spot, int directional )
 {
-	const int4 counts = make_int4( area, point, spot, directional );
+	const int4 counts = make_int4( tri, point, spot, directional );
 	stageInt4Cpy( LCNTS /* lightCounts */, counts );
 }
 

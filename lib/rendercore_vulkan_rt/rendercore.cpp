@@ -302,7 +302,7 @@ void RenderCore::CreateDescriptorSets()
 	shadeDescriptorSet->AddBinding( cTEXTURE_ARGB128, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
 	shadeDescriptorSet->AddBinding( cTEXTURE_NRM32, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
 	shadeDescriptorSet->AddBinding( cACCUMULATION_BUFFER, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
-	shadeDescriptorSet->AddBinding( cAREALIGHT_BUFFER, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
+	shadeDescriptorSet->AddBinding( cTRILIGHT_BUFFER, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
 	shadeDescriptorSet->AddBinding( cPOINTLIGHT_BUFFER, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
 	shadeDescriptorSet->AddBinding( cSPOTLIGHT_BUFFER, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
 	shadeDescriptorSet->AddBinding( cDIRECTIONALLIGHT_BUFFER, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute );
@@ -396,7 +396,7 @@ void RenderCore::CreateBuffers()
 	m_CombinedStateBuffer[1] = new VulkanCoreBuffer<float4>( m_Device, NEXTMULTIPLEOF( m_ScrWidth * m_ScrHeight * 4, limits.minUniformBufferOffsetAlignment ), vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer );
 
 	// Light buffers
-	m_AreaLightBuffer = new VulkanCoreBuffer<CoreLightTri>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
+	m_TriLightBuffer = new VulkanCoreBuffer<CoreLightTri>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 	m_PointLightBuffer = new VulkanCoreBuffer<CorePointLight>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 	m_SpotLightBuffer = new VulkanCoreBuffer<CoreSpotLight>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 	m_DirectionalLightBuffer = new VulkanCoreBuffer<CoreDirectionalLight>( m_Device, 1, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
@@ -833,7 +833,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'19|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetLights( const CoreLightTri *areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri *triLights, const int triLightCount,
 	const CorePointLight *pointLights, const int pointLightCount,
 	const CoreSpotLight *spotLights, const int spotLightCount,
 	const CoreDirectionalLight *directionalLights, const int directionalLightCount )
@@ -844,15 +844,15 @@ void RenderCore::SetLights( const CoreLightTri *areaLights, const int areaLightC
 	static_assert(sizeof( CoreDirectionalLight ) == sizeof( CoreDirectionalLight4 ));
 
 	m_LightCounts = make_uint4(
-		std::max( areaLightCount, 1 ),
+		std::max( triLightCount, 1 ),
 		std::max( pointLightCount, 1 ),
 		std::max( spotLightCount, 1 ),
 		std::max( directionalLightCount, 1 ) );
 
-	if (m_AreaLightBuffer->GetSize() < (areaLightCount * sizeof( CoreLightTri4 )))
+	if (m_TriLightBuffer->GetSize() < (triLightCount * sizeof( CoreLightTri4 )))
 	{
-		delete m_AreaLightBuffer;
-		m_AreaLightBuffer = new VulkanCoreBuffer<CoreLightTri>( m_Device, m_LightCounts.x, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
+		delete m_TriLightBuffer;
+		m_TriLightBuffer = new VulkanCoreBuffer<CoreLightTri>( m_Device, m_LightCounts.x, vk::MemoryPropertyFlagBits::eDeviceLocal, vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst );
 	}
 	if (m_PointLightBuffer->GetSize() < (pointLightCount * sizeof( CorePointLight4 )))
 	{
@@ -871,13 +871,13 @@ void RenderCore::SetLights( const CoreLightTri *areaLights, const int areaLightC
 	}
 
 	// Copy to device in case lights exist
-	if (areaLightCount > 0) m_AreaLightBuffer->CopyToDevice( areaLights, m_AreaLightBuffer->GetSize() );
+	if (triLightCount > 0) m_TriLightBuffer->CopyToDevice( triLights, m_TriLightBuffer->GetSize() );
 	if (pointLightCount > 0) m_PointLightBuffer->CopyToDevice( pointLights, m_PointLightBuffer->GetSize() );
 	if (spotLightCount > 0) m_SpotLightBuffer->CopyToDevice( spotLights, m_SpotLightBuffer->GetSize() );
 	if (directionalLightCount > 0) m_DirectionalLightBuffer->CopyToDevice( directionalLights, m_DirectionalLightBuffer->GetSize() );
 
 	// Update descriptor set
-	shadeDescriptorSet->Bind( cAREALIGHT_BUFFER, { m_AreaLightBuffer->GetDescriptorBufferInfo() } );
+	shadeDescriptorSet->Bind( cTRILIGHT_BUFFER, { m_TriLightBuffer->GetDescriptorBufferInfo() } );
 	shadeDescriptorSet->Bind( cPOINTLIGHT_BUFFER, { m_PointLightBuffer->GetDescriptorBufferInfo() } );
 	shadeDescriptorSet->Bind( cSPOTLIGHT_BUFFER, { m_SpotLightBuffer->GetDescriptorBufferInfo() } );
 	shadeDescriptorSet->Bind( cDIRECTIONALLIGHT_BUFFER, { m_DirectionalLightBuffer->GetDescriptorBufferInfo() } );
@@ -1175,7 +1175,7 @@ void RenderCore::Shutdown()
 
 	if (m_InvTransformsBuffer) delete m_InvTransformsBuffer;
 
-	if (m_AreaLightBuffer) delete m_AreaLightBuffer;
+	if (m_TriLightBuffer) delete m_TriLightBuffer;
 	if (m_PointLightBuffer) delete m_PointLightBuffer;
 	if (m_SpotLightBuffer) delete m_SpotLightBuffer;
 	if (m_DirectionalLightBuffer) delete m_DirectionalLightBuffer;

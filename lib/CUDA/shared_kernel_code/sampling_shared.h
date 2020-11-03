@@ -72,9 +72,13 @@ LH2_DEVFUNC float4 FetchTexel( const float2 texCoord, const int o, const int w, 
 
 LH2_DEVFUNC float4 FetchTexelTrilinear( const float lambda, const float2 texCoord, const int offset, const int width, const int height )
 {
-	const int level0 = min( MIPLEVELCOUNT - 1, (int)lambda );
-	const int level1 = min( MIPLEVELCOUNT - 1, level0 + 1 );
-	const float f = lambda - floor( lambda );
+	int level0 = 0, level1 = 0;
+	float f = 0;
+	if (lambda >= 0)
+		level0 = min( MIPLEVELCOUNT - 1, (int)lambda ),
+		level1 = min( MIPLEVELCOUNT - 1, level0 + 1 ),
+		f = lambda - floor( lambda );
+#if 0
 	// select first MIP level
 	int o0 = offset, w0 = width, h0 = height;
 	for (int i = 0; i < level0; i++) o0 += w0 * h0, w0 >>= 1, h0 >>= 1;
@@ -84,6 +88,17 @@ LH2_DEVFUNC float4 FetchTexelTrilinear( const float lambda, const float2 texCoor
 	// read actual data
 	const float4 p0 = FetchTexel( texCoord, o0, w0, h0 );
 	const float4 p1 = FetchTexel( texCoord, o1, w1, h1 );
+#else
+	// as proposed by Marvin Reza, slightly faster
+	const float scale = (float)(width * height) * 1.3333333333f;
+	// const int o0 = offset + (int)(mip0Size * (1.0f - exp2f( -2.0f * level0 )) * 1.333333333f);
+	// const int o1 = offset + (int)(mip0Size * (1.0f - exp2f( -2.0f * level1 )) * 1.333333333f);
+	const int o0 = offset + (int)(scale * (1 - __uint_as_float( (127 - 2 * level0) << 23 )));
+	const int o1 = offset + (int)(scale * (1 - __uint_as_float( (127 - 2 * level1) << 23 )));
+	// read actual data
+	const float4 p0 = FetchTexel( texCoord, o0, width >> level0, height >> level0 );
+	const float4 p1 = FetchTexel( texCoord, o1, width >> level1, height >> level1 );
+#endif
 	// final interpolation
 	return (1 - f) * p0 + f * p1;
 }

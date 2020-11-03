@@ -253,7 +253,7 @@ public:
 			}
 		}
 	}
-	void* CopyToDevice()
+	T* CopyToDevice()
 	{
 		if (sizeInBytes > 0)
 		{
@@ -267,7 +267,7 @@ public:
 		}
 		return devPtr;
 	}
-	void* StageCopyToDevice()
+	T* StageCopyToDevice()
 	{
 		if (sizeInBytes > 0)
 		{
@@ -281,7 +281,7 @@ public:
 		}
 		return devPtr;
 	}
-	void* MoveToDevice()
+	T* MoveToDevice()
 	{
 		CopyToDevice();
 		if (sizeInBytes > 0) FREE64( hostPtr );

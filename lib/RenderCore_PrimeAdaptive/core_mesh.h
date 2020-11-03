@@ -41,7 +41,7 @@ public:
 	bool accstrucNeedsUpdate = false;		// acceleration structure requires rebuild
 	RTPmodel model;							// model descriptor
 	RTPbufferdesc indicesDesc, verticesDesc; // OptiX buffer descriptors
-	static RenderCore* renderCore;			// for access to material list, in case of alpha mapped triangles
+	static inline RenderCore* renderCore = 0; // for access to material list, in case of alpha mapped triangles
 };
 
 //  +-----------------------------------------------------------------------------+

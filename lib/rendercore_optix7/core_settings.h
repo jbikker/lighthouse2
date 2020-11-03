@@ -22,7 +22,7 @@
 
 // core-specific settings
 #define CLAMPFIREFLIES		// suppress fireflies by clamping
-#define MAXPATHLENGTH		7
+#define MAXPATHLENGTH		3
 // #define CONSISTENTNORMALS	// consistent normal interpolation
 
 // low-level settings
@@ -168,6 +168,7 @@ struct CUDAMaterial4
 #define HAS2NDNORMALMAP				(1 << 7)
 #define HAS2NDDIFFUSEMAP			(1 << 9)
 #define HASSMOOTHNORMALS			(1 << 11)
+#define HASALPHA					(1 << 12)
 #define HASMETALNESSMAP				(1 << 13)
 #define MAT_ISDIELECTRIC			(flags & ISDIELECTRIC)
 #define MAT_DIFFUSEMAPISHDR			(flags & DIFFUSEMAPISHDR)
@@ -179,6 +180,7 @@ struct CUDAMaterial4
 #define MAT_HAS2NDNORMALMAP			(flags & HAS2NDNORMALMAP)
 #define MAT_HAS2NDDIFFUSEMAP		(flags & HAS2NDDIFFUSEMAP)
 #define MAT_HASSMOOTHNORMALS		(flags & HASSMOOTHNORMALS)
+#define MAT_HASALPHA				(flags & HASALPHA)
 #define MAT_HASMETALNESSMAP			(flags & HASMETALNESSMAP)
 };
 
@@ -207,11 +209,11 @@ namespace lh2core
 // setters / getters
 void stageInstanceDescriptors( CoreInstanceDesc* p );
 void stageMaterialList( CUDAMaterial* p );
-void stageAreaLights( CoreLightTri* p );
+void stageTriLights( CoreLightTri* p );
 void stagePointLights( CorePointLight* p );
 void stageSpotLights( CoreSpotLight* p );
 void stageDirectionalLights( CoreDirectionalLight* p );
-void stageLightCounts( int area, int point, int spot, int directional );
+void stageLightCounts( int tris, int point, int spot, int directional );
 void stageARGB32Pixels( uint* p );
 void stageARGB128Pixels( float4* p );
 void stageNRM32Pixels( uint* p );

@@ -24,7 +24,7 @@ __constant__ CUDAMaterial* materials;
 __constant__ CoreMaterialDesc* materialDescriptors;
 // For simplicity PBRT materials receive the full-fat CoreMaterial instead of a slimmed-down CUDAMaterial
 __constant__ CoreMaterial* pbrtMaterials;
-__constant__ CoreLightTri* areaLights;
+__constant__ CoreLightTri* triLights;
 __constant__ CorePointLight* pointLights;
 __constant__ CoreSpotLight* spotLights;
 __constant__ CoreDirectionalLight* directionalLights;
@@ -51,13 +51,13 @@ __host__ void stageInstanceDescriptors( CoreInstanceDesc* p ) { stagedcpy( insta
 __host__ void stageMaterialList( CUDAMaterial* p ) { stagedcpy( materials, p ); }
 __host__ void stageMaterialDescList( CoreMaterialDesc* p ) { stagedcpy( materialDescriptors, p ); }
 __host__ void stagePbrtMaterialList( CoreMaterial* p ) { stagedcpy( pbrtMaterials, p ); }
-__host__ void stageAreaLights( CoreLightTri* p ) { stagedcpy( areaLights, p ); }
+__host__ void stageTriLights( CoreLightTri* p ) { stagedcpy( triLights, p ); }
 __host__ void stagePointLights( CorePointLight* p ) { stagedcpy( pointLights, p ); }
 __host__ void stageSpotLights( CoreSpotLight* p ) { stagedcpy( spotLights, p ); }
 __host__ void stageDirectionalLights( CoreDirectionalLight* p ) { stagedcpy( directionalLights, p ); }
-__host__ void stageLightCounts( int area, int point, int spot, int directional )
+__host__ void stageLightCounts( int tri, int point, int spot, int directional )
 {
-	const int4 counts = make_int4( area, point, spot, directional );
+	const int4 counts = make_int4( tri, point, spot, directional );
 	stagedcpy( lightCounts, counts );
 }
 __host__ void stageARGB32Pixels( uint* p ) { stagedcpy( argb32, p ); }

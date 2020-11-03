@@ -51,7 +51,7 @@ public:
 	inline void Setting( const char* name, float value ) override {}
 	inline void SetTextures( const CoreTexDesc* tex, const int textureCount ) override {}
 	inline void SetMaterials( CoreMaterial* mat, const int materialCount ) override {}
-	inline void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+	inline void SetLights( const CoreLightTri* triLights, const int triLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount ) override

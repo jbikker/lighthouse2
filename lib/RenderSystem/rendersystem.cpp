@@ -142,7 +142,7 @@ void RenderSystem::UpdateSceneGraph()
 	// synchronize instances to device if anything changed
 	if (instancesChanged || meshesChanged || instances.size() != instanceCount)
 	{
-		// resize vector (this is free if the size didn't change)
+		// resize vector (free if the size didn't change)
 		instances.resize( instanceCount );
 		// send instances to core
 		for (int instanceIdx = 0; instanceIdx < instanceCount; instanceIdx++)
@@ -167,22 +167,22 @@ void RenderSystem::UpdateSceneGraph()
 void RenderSystem::SynchronizeLights()
 {
 	bool lightsDirty = false;
-	for (auto light : scene->areaLights) if (light->Changed()) lightsDirty = true;
+	for (auto light : scene->triLights) if (light->Changed()) lightsDirty = true;
 	for (auto light : scene->pointLights) if (light->Changed()) lightsDirty = true;
 	for (auto light : scene->spotLights) if (light->Changed()) lightsDirty = true;
 	for (auto light : scene->directionalLights) if (light->Changed()) lightsDirty = true;
 	if (lightsDirty)
 	{
-		// send delta lights to core
-		vector<CoreLightTri> gpuAreaLights;
+		// send lights to core
+		vector<CoreLightTri> gpuTriLights;
 		vector<CorePointLight> gpuPointLights;
 		vector<CoreSpotLight> gpuSpotLights;
 		vector<CoreDirectionalLight> gpuDirectionalLights;
-		for (auto light : scene->areaLights) if (light->enabled) gpuAreaLights.push_back( light->ConvertToCoreLightTri() );
+		for (auto light : scene->triLights) if (light->enabled) gpuTriLights.push_back( light->ConvertToCoreLightTri() );
 		for (auto light : scene->pointLights) if (light->enabled) gpuPointLights.push_back( light->ConvertToCorePointLight() );
 		for (auto light : scene->spotLights) if (light->enabled) gpuSpotLights.push_back( light->ConvertToCoreSpotLight() );
 		for (auto light : scene->directionalLights) if (light->enabled) gpuDirectionalLights.push_back( light->ConvertToCoreDirectionalLight() );
-		core->SetLights( gpuAreaLights.data(), (int)gpuAreaLights.size(),
+		core->SetLights( gpuTriLights.data(), (int)gpuTriLights.size(),
 			gpuPointLights.data(), (int)gpuPointLights.size(),
 			gpuSpotLights.data(), (int)gpuSpotLights.size(),
 			gpuDirectionalLights.data(), (int)gpuDirectionalLights.size() );

@@ -109,7 +109,8 @@ void RenderCore::CreateOptixContext( int cc )
 	cudaMalloc( (void**)(&d_params[0]), sizeof( Params ) );
 	cudaMalloc( (void**)(&d_params[1]), sizeof( Params ) );
 	cudaMalloc( (void**)(&d_params[2]), sizeof( Params ) );
-	// Note: we set up three sets of params, with the only difference being the 'phase' variable.
+	cudaMalloc( (void**)(&d_params[3]), sizeof( Params ) );
+	// Note: we set up four sets of params, with the only difference being the 'phase' variable.
 	// During wavefront path tracing this allows us to select the phase without a copyToDevice,
 	// by passing the right param set for the Optix call. A bit ugly but it works.
 
@@ -574,17 +575,17 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stageTriLights( StagedBufferResize<CoreLightTri>( triLightBuffer, triLightCount, triLights ) );
 	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
-	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
-	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
+	stageLightCounts( triLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (triLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -647,13 +648,13 @@ void RenderCore::UpdateGuiding()
 {
 	// calculate the sum of all lights, for cdf normalization
 	float totalLight = 0;
-	areaLightBuffer->CopyToHost();
+	triLightBuffer->CopyToHost();
 	pointLightBuffer->CopyToHost();
 	spotLightBuffer->CopyToHost();
 	directionalLightBuffer->CopyToHost();
-	for (int i = 0; i < areaLightBuffer->GetSize(); i++)
+	for (int i = 0; i < triLightBuffer->GetSize(); i++)
 	{
-		const float3 E = areaLightBuffer->HostPtr()[i].radiance;
+		const float3 E = triLightBuffer->HostPtr()[i].radiance;
 		totalLight += (E.x + E.y + E.z) * 0.02f;
 	}
 	for (int i = 0; i < pointLightBuffer->GetSize(); i++)
@@ -677,9 +678,9 @@ void RenderCore::UpdateGuiding()
 	int photonIdx = 0;
 	float photonsCast = 0, reciTotalLight = 1.0f / totalLight;
 	float4* photonData = photonBuffer->HostPtr();
-	for (int i = 0; i < areaLightBuffer->GetSize(); i++)
+	for (int i = 0; i < triLightBuffer->GetSize(); i++)
 	{
-		CoreLightTri* light = &areaLightBuffer->HostPtr()[i];
+		CoreLightTri* light = &triLightBuffer->HostPtr()[i];
 		float power = light->radiance.x + light->radiance.y + light->radiance.z;
 		int photonCount = (int)(power * 0.02f * PHOTONCOUNT * reciTotalLight);
 		while (photonCount > 0)
@@ -719,7 +720,7 @@ void RenderCore::UpdateGuiding()
 			// spawn a photon for a point light source
 			do { D = make_float3( RandomFloat() * 2 - 1, RandomFloat() * 2 - 1, RandomFloat() * 2 - 1 ); } while (length( D ) > 1);
 			D = normalize( D );
-			int id = i + areaLightBuffer->GetSize();
+			int id = i + triLightBuffer->GetSize();
 			photonData[photonIdx * 3 + 0] = make_float4( O + D * EPSILON, 0 );
 			photonData[photonIdx * 3 + 1] = make_float4( D, *(float*)&id );
 			photonData[photonIdx * 3 + 2] = make_float4( power, 0, 0, 0 );
@@ -739,7 +740,7 @@ void RenderCore::UpdateGuiding()
 				do { D = make_float3( RandomFloat() * 2 - 1, RandomFloat() * 2 - 1, RandomFloat() * 2 - 1 ); } while (length( D ) > 1);
 				D = normalize( D );
 			} while (dot( D, light.direction ) > light.cosOuter); // TODO: very inefficient.
-			int id = i + areaLightBuffer->GetSize() + pointLightBuffer->GetSize();
+			int id = i + triLightBuffer->GetSize() + pointLightBuffer->GetSize();
 			photonData[photonIdx * 3 + 0] = make_float4( O + D * EPSILON, 0 );
 			photonData[photonIdx * 3 + 1] = make_float4( D, *(float*)&id );
 			photonData[photonIdx * 3 + 2] = make_float4( lightContribution, 0, 0, 0 );
@@ -765,12 +766,9 @@ void RenderCore::UpdateGuiding()
 	// trace the photon paths to the first intersection
 	timer.reset();
 	params.phase = Params::SPAWN_PHOTONS;
-	photonBuffer->CopyToDevice();
-	params.pathStates = photonBuffer->DevPtr();
-	params.scrsize.x = photonIdx;
-	params.scrsize.y = params.scrsize.z = 1;
-	InitCountersForExtend( photonIdx ); // this will reset all values and set activePaths to 1,000,000
-	cudaMemcpyAsync( (void*)(&d_params[3]), &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
+	params.pathStates = photonBuffer->CopyToDevice();
+	params.bvhRoot = bvhRoot;
+	cudaMemcpyAsync( (void*)d_params[3], &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 	CHK_OPTIX( optixLaunch( pipeline, 0, d_params[3], sizeof( Params ), &sbt, photonIdx, 1, 1 ) );
 
 	// finalize photon hits
@@ -999,6 +997,9 @@ void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bo
 		camRNGseed = 0x12345678; // same seed means same noise.
 	}
 	if (converge == Converge) firstConvergingFrame = false;
+	// prepare data for guided NEE
+	static int frameIdx = 0;
+	if (frameIdx < 4) if (frameIdx++ == 3) UpdateGuiding();
 	// do the actual rendering
 	renderTimer.reset();
 	if (async)
@@ -1030,6 +1031,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	params.up = make_float3( up.x, up.y, up.z );
 	params.p1 = make_float3( view.p1.x, view.p1.y, view.p1.z );
 	params.pass = samplesTaken;
+	params.geometryEpsilon = vars.geometryEpsilon;
 	params.bvhRoot = bvhRoot;
 	// sync params to device
 	params.phase = Params::SPAWN_PRIMARY;
@@ -1038,7 +1040,6 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	cudaMemcpyAsync( (void*)d_params[1], &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
 	params.phase = Params::SPAWN_SHADOW;
 	cudaMemcpyAsync( (void*)d_params[2], &params, sizeof( Params ), cudaMemcpyHostToDevice, 0 );
-	// loop
 	Counters counters;
 	uint pathCount = scrwidth * scrheight * scrspp;
 	coreStats.deepRayCount = 0;
@@ -1063,6 +1064,7 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 		cudaEventRecord( traceEnd[pathLength - 1] );
 		// shade
 		cudaEventRecord( shadeStart[pathLength - 1] );
+		static int counter = 0;
 		shade( pathCount, accumulator->DevPtr(), scrwidth * scrheight * scrspp,
 			pathStateBuffer->DevPtr(), hitBuffer->DevPtr(), noDirectLightsInScene ? 0 : connectionBuffer->DevPtr(),
 			RandomUInt( camRNGseed ) + pathLength * 91771, shiftSeed, blueNoise->DevPtr(), samplesTaken,

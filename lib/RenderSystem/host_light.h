@@ -19,15 +19,15 @@ namespace lighthouse2
 {
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostAreaLight                                                              |
-//  |  Host-side light tri.                                                 LH2'19|
+//  |  HostTriLight                                                               |
+//  |  Host-side light triangle.                                            LH2'20|
 //  +-----------------------------------------------------------------------------+
-class HostAreaLight
+class HostTriLight
 {
 public:
 	// constructor / destructor
-	HostAreaLight() = default;
-	HostAreaLight( HostTri* origTri, int origIdx, int origInstance );
+	HostTriLight() = default;
+	HostTriLight( HostTri* origTri, int origIdx, int origInstance );
 	// methods
 	CoreLightTri ConvertToCoreLightTri();
 	// data members

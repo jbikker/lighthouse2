@@ -1,0 +1,14 @@
+# 3ds Max Wavefront OBJ Exporter v0.97b - (c)2007 guruware
+# File Created: 16.04.2020 15:35:10
+
+newmtl InnerWalls
+Kd 0.15467 0.15467 0.15467
+
+newmtl default
+Kd 0.58800 0.58800 0.58800
+
+newmtl LCasing
+Kd 0.2 0.2 0.4
+
+newmtl Emitter
+Kd 1 1 1

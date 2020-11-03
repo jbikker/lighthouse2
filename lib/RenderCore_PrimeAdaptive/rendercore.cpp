@@ -102,11 +102,11 @@ void RenderCore::Init()
 	CHK_PRIME( rtpModelCreate( context, topLevel ) );
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &shadowQuery ) );
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &extendQuery ) );
-	// render settings
-	stageClampValue( 10.0f );
 	// prepare counters for persistent threads
 	counterBuffer = new CoreBuffer<Counters>( 1, ON_DEVICE | ON_HOST );
 	SetCounters( counterBuffer->DevPtr() );
+	// render settings
+	stageClampValue( 10.0f );
 	// prepare the bluenoise data
 	const uchar* data8 = (const uchar*)sob256_64; // tables are 8 bit per entry
 	uint* data32 = new uint[65536 * 5]; // we want a full uint per entry
@@ -155,7 +155,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 	if (scrwidth * scrheight > maxPixels || spp != currentSPP)
 	{
 		maxPixels = scrwidth * scrheight;
-		maxPixels += maxPixels >> 4; // reserve a bit extra to prevent frequent reallocs
+		maxPixels += maxPixels / 16; // reserve a bit extra to prevent frequent reallocs
 		currentSPP = spp;
 		reallocate = true;
 	}
@@ -422,7 +422,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
 			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
-			((m.flags & 1) ? HASSMOOTHNORMALS : 0);
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
 	if (!materialBuffer)
 	{
@@ -457,17 +457,17 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stageTriLights( StagedBufferResize<CoreLightTri>( triLightBuffer, triLightCount, triLights ) );
 	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
-	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
-	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
+	stageLightCounts( triLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (triLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -527,7 +527,6 @@ void RenderCore::Setting( const char* name, const float value )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::UpdateToplevel()
 {
-	// creates the top-level BVH over the supplied models.
 	RTPbufferdesc instancesBuffer, transformBuffer;
 	vector<RTPmodel> modelList;
 	vector<mat4> transformList;
@@ -831,7 +830,7 @@ void RenderCore::Shutdown()
 	delete skyPixelBuffer;
 	delete instDescBuffer;
 	// delete light data
-	delete areaLightBuffer;
+	delete triLightBuffer;
 	delete pointLightBuffer;
 	delete spotLightBuffer;
 	delete directionalLightBuffer;

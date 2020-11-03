@@ -1,0 +1,11 @@
+newmtl InnerWalls
+Kd 0.78800 0.78800 0.78800
+
+newmtl default
+Kd 0.15467 0.15467 0.15467
+
+newmtl LCasing
+Kd 0.2 0.2 0.4
+
+newmtl Emitter
+Kd 10 10 10

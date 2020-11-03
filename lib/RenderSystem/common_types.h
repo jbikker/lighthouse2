@@ -346,6 +346,10 @@ inline float length( float2 v ) { return sqrtf( dot( v, v ) ); }
 inline float length( float3 v ) { return sqrtf( dot( v, v ) ); }
 inline float length( float4 v ) { return sqrtf( dot( v, v ) ); }
 
+inline float sqrlength( float2 v ) { return dot( v, v ); }
+inline float sqrlength( float3 v ) { return dot( v, v ); }
+inline float sqrlength( float4 v ) { return dot( v, v ); }
+
 inline float2 normalize( float2 v ) { float invLen = rsqrtf( dot( v, v ) );	return v * invLen; }
 inline float3 normalize( float3 v ) { float invLen = rsqrtf( dot( v, v ) );	return v * invLen; }
 inline float4 normalize( float4 v ) { float invLen = rsqrtf( dot( v, v ) );	return v * invLen; }
@@ -443,7 +447,7 @@ public:
 			union { __m128 bmin4; float bmin[4]; struct { float3 bmin3; }; };
 			union { __m128 bmax4; float bmax[4]; struct { float3 bmax3; }; };
 		};
-		__m128 bounds[2] = { _mm_set_ps( 1e34f, 1e34f, 1e34f, 0 ), _mm_set_ps( -1e34f, -1e34f, -1e34f, 0 ) };
+		__m128 bounds[2] = { _mm_set_ps( 0, 1e34f, 1e34f, 1e34f ), _mm_set_ps( 0, -1e34f, -1e34f, -1e34f ) };
 	};
 	__inline void SetBounds( const __m128 min4, const __m128 max4 ) { bmin4 = min4; bmax4 = max4; }
 	__inline __m128 Center() const { return _mm_mul_ps( _mm_add_ps( bmin4, bmax4 ), _mm_set_ps1( 0.5f ) ); }

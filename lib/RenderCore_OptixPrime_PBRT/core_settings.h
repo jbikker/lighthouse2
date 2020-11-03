@@ -174,6 +174,34 @@ struct Intersection { float t; int triid, instid; float u, v; };
 #include "rendercore.h"
 #include <cstdint>
 
+namespace lh2core
+{
+
+// setters / getters
+void stageInstanceDescriptors( CoreInstanceDesc* p );
+void stageMaterialList( CUDAMaterial* p );
+void stageMaterialDescList( CoreMaterialDesc* p );
+void stagePbrtMaterialList( CoreMaterial* p );
+void stageTriLights( CoreLightTri* p );
+void stagePointLights( CorePointLight* p );
+void stageSpotLights( CoreSpotLight* p );
+void stageDirectionalLights( CoreDirectionalLight* p );
+void stageLightCounts( int tris, int point, int spot, int directional );
+void stageARGB32Pixels( uint* p );
+void stageARGB128Pixels( float4* p );
+void stageNRM32Pixels( uint* p );
+void stageSkyPixels( float4* p );
+void stageSkySize( int w, int h );
+void stageWorldToSky( const mat4& worldToLight );
+void stageDebugData( float4* p );
+void stageGeometryEpsilon( float e );
+void stageClampValue( float c );
+void stageMemcpy( void* d, void* s, int n );
+void pushStagedCopies();
+void SetCounters( Counters* p );
+
+} // namespace lh2core
+
 #include "../RenderSystem/common_bluenoise.h"
 
 #endif

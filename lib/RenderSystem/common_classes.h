@@ -79,7 +79,13 @@ public:
 	float LOD;				// for MIP mapping
 	float3 vertex0; float dummy0;
 	float3 vertex1; float dummy1;
-	float3 vertex2; float dummy2; // total 11 * 16 = 176 bytes.
+	float3 vertex2; float dummy2; 
+	// 2nd set of uv coordinates
+	float u1_0, u1_1, u1_2;
+	float dummy3;			
+	float v1_0, v1_1, v1_2;
+	float dummy4;
+	// total 13 * 16 = 208 bytes.
 	void UpdateArea()
 	{
 		const float a = length( vertex1 - vertex0 );
@@ -106,6 +112,7 @@ struct CoreTri
 	float3 vertex0;			// 12 + 4, w: dummy1
 	float3 vertex1;			// 12 + 4, w: dummy2
 	float3 vertex2;			// 12 + 4, w: dummy3, total 11 * 16 = 176 bytes.
+	float3 ulayer2, vlayer2;
 };
 void UpdateArea( struct CoreTri* tri )
 {
@@ -134,6 +141,8 @@ struct CoreTri4
 	float4 B4;				// w: invArea			tdata6
 	float4 alpha4;			// w: triLOD
 	float4 vertex[3];		// 48					tdata7, tdata8, tdata9
+	float4 u1_4;
+	float4 v1_4;		
 #define TRI_U0			tdata0.x
 #define TRI_U1			tdata0.y
 #define TRI_U2			tdata0.z
@@ -350,7 +359,7 @@ struct CoreTexDesc
 };
 
 //  +-----------------------------------------------------------------------------+
-//  |  CoreLightTri - see HostLightTri for host-side version.                     |
+//  |  CoreLightTri - see HostTriLight for host-side version.                     |
 //  |  Data layout for a light emitting triangle.                           LH2'19|
 //  +-----------------------------------------------------------------------------+
 struct CoreLightTri
@@ -470,5 +479,53 @@ typedef CoreTri HostTri; // these are identical
 } // namespace lighthouse2
 using namespace lighthouse2;
 #endif
+
+//  +-----------------------------------------------------------------------------+
+//  |  LightCluster                                                               |
+//  |  Light tree node for stochastic lightcuts.                            LH2'19|
+//  +-----------------------------------------------------------------------------+
+struct LightCluster
+{
+#ifndef __CUDACC__
+	LightCluster() = default;
+	LightCluster( const CoreLightTri& tri, int idx ) : light( idx ) 
+	{
+		bounds.Grow( tri.vertex0 );
+		bounds.Grow( tri.vertex1 );
+		bounds.Grow( tri.vertex2 );
+		intensity = tri.energy;
+	}
+	LightCluster( const CorePointLight& light, int idx ) : light( idx | (1 << 30) )
+	{
+		bounds.Grow( light.position - make_float3( 0.001f, 0.001f, 0.001f ) );
+		bounds.Grow( light.position + make_float3( 0.001f, 0.001f, 0.001f ) );
+		intensity = light.energy;
+	}
+	LightCluster( const CoreSpotLight& light, int idx ) : light( idx | (1 << 29) )
+	{
+		bounds.Grow( light.position - make_float3( 0.001f, 0.001f, 0.001f ) );
+		bounds.Grow( light.position + make_float3( 0.001f, 0.001f, 0.001f ) );
+		intensity = light.radiance.x + light.radiance.y + light.radiance.z;
+	}
+	float Cost()
+	{
+		float3 diag = bounds.bmax3 - bounds.bmin3;
+		return intensity * dot( diag, diag ); // leaving out the bounding cone
+	}
+	// member data
+	int light = -1;					// 4
+	int left = -1, right = -1;		// 8
+	float intensity = 0;			// 4
+	aabb bounds;					// 32
+	float3 N = make_float3( 0 );	// 12
+	int parent = -1;				// 4, total: 64 bytes		
+#else
+	int light;
+	int left, right;
+	float intensity;
+	float4 bmin, bmax;
+	float4 N;
+#endif
+};
 
 // EOF

@@ -530,7 +530,11 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
+	if (materialBuffer == 0 || materialCount > materialBuffer->GetSize())
+	{
+		delete hostMaterialBuffer;
 	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	}
 	for (int i = 0; i < materialCount; i++)
 	{
 		// perform conversion to internal material format
@@ -559,13 +563,18 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.roughness.textureID != -1 ? HASROUGHNESSMAP : 0) +
 			(m.detailNormals.textureID != -1 ? HAS2NDNORMALMAP : 0) +
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
-			((m.flags & 1) ? HASSMOOTHNORMALS : 0);
+			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
 	if (!materialBuffer)
 	{
 		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
-	else if (materialCount > materialBuffer->GetSize())
+	else if (materialCount <= materialBuffer->GetSize())
+	{
+		// just set the new material data
+		materialBuffer->SetHostData( hostMaterialBuffer );
+	}
+	else /* if (materialCount > materialBuffer->GetSize()) */
 	{
 		// TODO: realloc
 	}
@@ -589,17 +598,17 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stageTriLights( StagedBufferResize<CoreLightTri>( triLightBuffer, triLightCount, triLights ) );
 	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
-	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
-	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
+	stageLightCounts( triLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (triLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+

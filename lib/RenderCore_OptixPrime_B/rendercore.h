@@ -55,7 +55,7 @@ public:
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
 	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
-	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+	void SetLights( const CoreLightTri* triLights, const int triLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount );
@@ -68,7 +68,7 @@ public:
 	void SetInstance( const int instanceIdx, const int modelIdx, const mat4& transform );
 	void FinalizeInstances();
 	int4 GetScreenParams();
-	void SetProbePos( const int2 pos );
+	void SetProbePos( const int2 pos ) { probePos = pos; }
 	CoreStats GetCoreStats() const override;
 	// internal methods
 protected:
@@ -102,7 +102,7 @@ private:
 	InteropTexture renderTarget;					// CUDA will render to this texture
 	CoreBuffer<CUDAMaterial>* materialBuffer = 0;	// material array
 	CUDAMaterial* hostMaterialBuffer = 0;			// core-managed copy of the materials
-	CoreBuffer<CoreLightTri>* areaLightBuffer;		// area lights
+	CoreBuffer<CoreLightTri>* triLightBuffer;		// tri lights
 	CoreBuffer<CorePointLight>* pointLightBuffer;	// point lights
 	CoreBuffer<CoreSpotLight>* spotLightBuffer;		// spot lights
 	CoreBuffer<CoreDirectionalLight>* directionalLightBuffer;	// directional lights
@@ -132,7 +132,8 @@ private:
 	int samplesTaken = 0;							// number of accumulated samples in accumulator
 	int inBuffer = 0, outBuffer = 1;				// extension ray buffers are double buffered
 	uint camRNGseed = 0x12345678;					// seed for the RNG that feeds the renderer
-	uint seed = 0x23456789;							// generic seed
+	uint shiftSeed = 0x11331445;					// seed for the RNG that feeds the blue noise shift
+	float noiseShift = 0;							// used to cycle blue noise values
 	DeviceVars vars;								// copy of device-side variables, to detect changes
 	bool firstConvergingFrame = false;				// to reset accumulator for first converging frame
 	bool asyncRenderInProgress = false;				// to prevent deadlock in WaitForRender
@@ -144,7 +145,6 @@ private:
 	// Offset 65536: scrambling tile of 128x128 pixels; 128 * 128 * 8 values.
 	// Offset 65536 * 3: ranking tile of 128x128 pixels; 128 * 128 * 8 values. Total: 320KB.
 	CoreBuffer<uint>* blueNoise = 0;
-	CoreBuffer<float2>* camSamples = 0;				// aperture sampling
 	// timing
 	cudaEvent_t shadeStart[MAXPATHLENGTH], shadeEnd[MAXPATHLENGTH];	// events for timing CUDA code
 protected:

@@ -16,13 +16,13 @@
 #include "rendersystem.h"
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostAreaLight::HostAreaLight                                               |
-//  |  Constructor. An area light is just a regular triangle in LH2, but we do    |
+//  |  HostTriLight::HostTriLight                                                 |
+//  |  Constructor. A 'tri light' is just a regular triangle in LH2, but we do    |
 //  |  store some additional data:                                                |
 //  |  - For efficient sampling, we store the vertices, normal and radiace;       |
-//  |  - For MIS, we store the original triangle (idx and instance idx).    LH2'19|
+//  |  - For MIS, we store the original triangle (idx and instance idx).    LH2'20|
 //  +-----------------------------------------------------------------------------+
-HostAreaLight::HostAreaLight( HostTri* origTri, int origIdx, int origInstance )
+HostTriLight::HostTriLight( HostTri* origTri, int origIdx, int origInstance )
 {
 	triIdx = origIdx;
 	instIdx = origInstance;
@@ -42,10 +42,10 @@ HostAreaLight::HostAreaLight( HostTri* origTri, int origIdx, int origInstance )
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  HostAreaLight::ConvertToCoreLightTri                                       |
-//  |  Prepare an area light for the core.                                  LH2'19|
+//  |  HostTriLight::ConvertToCoreLightTri                                        |
+//  |  Prepare a triangle area light for the core.                          LH2'19|
 //  +-----------------------------------------------------------------------------+
-CoreLightTri HostAreaLight::ConvertToCoreLightTri()
+CoreLightTri HostTriLight::ConvertToCoreLightTri()
 {
 	CoreLightTri light;
 	light.triIdx = triIdx;

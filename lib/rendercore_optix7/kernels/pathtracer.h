@@ -107,6 +107,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float3 I = RAY_O + HIT_T * D;
 	const float coneWidth = spreadAngle * HIT_T;
 	GetShadingData( D, HIT_U, HIT_V, coneWidth, instanceTriangles[PRIMIDX], INSTANCEIDX, shadingData, N, iN, fN, T );
+	uint seed = WangHash( pathIdx * 17 + R0 /* well-seeded xor32 is all you need */ );
 
 	// we need to detect alpha in the shading code.
 	if (shadingData.flags & 1)
@@ -164,7 +165,6 @@ void shadeKernel( float4* accumulator, const uint stride,
 	throughput *= 1.0f / bsdfPdf;
 
 	// prepare random numbers
-	uint seed = WangHash( pathIdx * 17 + R0 /* well-seeded xor32 is all you need */ );
 	float4 r4;
 	if (sampleIdx < 64)
 	{

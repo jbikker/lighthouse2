@@ -15,7 +15,7 @@
 
 #include "core_settings.h"
 
-extern "C" COREDLL_API CoreAPI_Base * CreateCore()
+extern "C" COREDLL_API CoreAPI_Base* CreateCore()
 {
 	gladLoadGL(); // the dll needs its own OpenGL function pointers
 	return new RenderCore();

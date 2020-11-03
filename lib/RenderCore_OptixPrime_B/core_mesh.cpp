@@ -15,8 +15,6 @@
 
 #include "core_settings.h"
 
-RenderCore* CoreMesh::renderCore = 0;
-
 //  +-----------------------------------------------------------------------------+
 //  |  CoreMesh::~CoreMesh                                                        |
 //  |  Destructor.                                                          LH2'19|

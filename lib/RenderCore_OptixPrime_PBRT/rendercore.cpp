@@ -43,28 +43,7 @@ void shade( const int pathCount, float4* accumulator, const uint stride,
 void finalizeConnections( int rayCount, float4* accumulator, uint* hitBuffer, float4* contributions );
 void finalizeRender( const float4* accumulator, const int w, const int h, const int spp );
 
-// staged setters / getters
-void stageInstanceDescriptors( CoreInstanceDesc* p );
-void stageMaterialList( CUDAMaterial* p );
-void stageMaterialDescList( CoreMaterialDesc* p );
-void stagePbrtMaterialList( CoreMaterial* p );
-void stageAreaLights( CoreLightTri* p );
-void stagePointLights( CorePointLight* p );
-void stageSpotLights( CoreSpotLight* p );
-void stageDirectionalLights( CoreDirectionalLight* p );
-void stageLightCounts( int area, int point, int spot, int directional );
-void stageARGB32Pixels( uint* p );
-void stageARGB128Pixels( float4* p );
-void stageNRM32Pixels( uint* p );
-void stageSkyPixels( float4* p );
-void stageSkySize( int w, int h );
-void stageWorldToSky( const mat4& worldToLight );
-void stageDebugData( float4* p );
-void stageGeometryEpsilon( float e );
-void stageClampValue( float c );
-void stageMemcpy( void* d, void* s, int n );
-
-// setters/getters
+// rendertime getters/setters
 void SetCounters( Counters* p );
 
 } // namespace lh2core
@@ -172,7 +151,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 	if (scrwidth * scrheight > maxPixels || spp != currentSPP)
 	{
 		maxPixels = scrwidth * scrheight;
-		maxPixels += maxPixels >> 4; // reserve a bit extra to prevent frequent reallocs
+		maxPixels += maxPixels / 16; // reserve a bit extra to prevent frequent reallocs
 		currentSPP = spp;
 		reallocate = true;
 	}
@@ -205,7 +184,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint spp )
 		accumulator = new CoreBuffer<float4>( maxPixels, ON_DEVICE );
 		for (int i = 0; i < 2; i++)
 		{
-			extensionRayBuffer[i] = new CoreBuffer<Ray4>( maxPixels * spp, ON_DEVICE ),
+			extensionRayBuffer[i] = new CoreBuffer<Ray4>( maxPixels * spp, ON_DEVICE );
 				extensionRayExBuffer[i] = new CoreBuffer<float4>( maxPixels * 2 * spp, ON_DEVICE );
 			CHK_PRIME( rtpBufferDescCreate( context, RTP_BUFFER_FORMAT_RAY_ORIGIN_TMIN_DIRECTION_TMAX, RTP_BUFFER_TYPE_CUDA_LINEAR, extensionRayBuffer[i]->DevPtr(), &extensionRaysDesc[i] ) );
 		}
@@ -307,10 +286,10 @@ void RenderCore::SetTextures( const CoreTexDesc* tex, const int textures )
 	// Notes:
 	// - the three types are copied from the original HostTexture pixel data (to which the
 	//   descriptors point) straight to the GPU. There is no pixel storage on the host
-	//   in the RenderCore.
+	//   in this RenderCore.
 	// - the types are copied one by one. Copying involves creating a temporary host-side
 	//   buffer; doing this one by one allows us to delete host-side data for one type
-	//   before allocating space for the next, thus reducing storage requirements.
+	//   before allocating space for the next, thus reducing runtime storage.
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -490,23 +469,23 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 //  |  RenderCore::SetLights                                                      |
 //  |  Set the light data.                                                  LH2'20|
 //  +-----------------------------------------------------------------------------+
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	if (areaLightBuffer == 0 || areaLightCount > areaLightBuffer->GetSize())
+	if (triLightBuffer == 0 || triLightCount > triLightBuffer->GetSize())
 	{
 		// we need a new or larger buffer; (re)allocate.
-		delete areaLightBuffer;
-		areaLightBuffer = new CoreBuffer<CoreLightTri>( areaLightCount, ON_DEVICE | ON_HOST, areaLights, POLICY_COPY_SOURCE );
-		stageAreaLights( areaLightBuffer->DevPtr() );
+		delete triLightBuffer;
+		triLightBuffer = new CoreBuffer<CoreLightTri>( triLightCount, ON_DEVICE | ON_HOST, triLights, POLICY_COPY_SOURCE );
+		stageTriLights( triLightBuffer->DevPtr() );
 	}
 	else
 	{
 		// existing buffer is large enough; copy new data
-		memcpy( areaLightBuffer->HostPtr(), areaLights, areaLightCount * sizeof( CoreLightTri ) );
-		stageMemcpy( areaLightBuffer->DevPtr(), areaLightBuffer->HostPtr(), areaLightBuffer->GetSizeInBytes() );
+		memcpy( triLightBuffer->HostPtr(), triLights, triLightCount * sizeof( CoreLightTri ) );
+		stageMemcpy( triLightBuffer->DevPtr(), triLightBuffer->HostPtr(), triLightBuffer->GetSizeInBytes() );
 	}
 	if (pointLightBuffer == 0 || pointLightCount > pointLightBuffer->GetSize())
 	{
@@ -541,7 +520,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 		memcpy( directionalLightBuffer->HostPtr(), directionalLights, directionalLightCount * sizeof( CoreDirectionalLight ) );
 		stageMemcpy( directionalLightBuffer->DevPtr(), directionalLightBuffer->HostPtr(), directionalLightBuffer->GetSizeInBytes() );
 	}
-	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	stageLightCounts( triLightCount, pointLightCount, spotLightCount, directionalLightCount );
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -765,7 +744,7 @@ void RenderCore::Shutdown()
 	delete skyPixelBuffer;
 	delete instDescBuffer;
 	// delete light data
-	delete areaLightBuffer;
+	delete triLightBuffer;
 	delete pointLightBuffer;
 	delete spotLightBuffer;
 	delete directionalLightBuffer;

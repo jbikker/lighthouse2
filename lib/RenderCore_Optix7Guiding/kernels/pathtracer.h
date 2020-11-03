@@ -65,8 +65,8 @@ LH2_DEVFUNC float3 RandomPointOnLightPNEE( float r0, float r1, const float3& I, 
 	if (g1.x == 0)
 	{
 		// nothing here; sample lights uniformly
-		lightIdx = (int)(r1 * (AREALIGHTCOUNT + POINTLIGHTCOUNT));
-		pickProb = 1.0f / (AREALIGHTCOUNT + POINTLIGHTCOUNT);
+		lightIdx = (int)(r1 * (TRILIGHTCOUNT + POINTLIGHTCOUNT));
+		pickProb = 1.0f / (TRILIGHTCOUNT + POINTLIGHTCOUNT);
 	}
 	else
 	{
@@ -83,8 +83,8 @@ LH2_DEVFUNC float3 RandomPointOnLightPNEE( float r0, float r1, const float3& I, 
 		{
 			// sample a random light
 			r1 /= CDFFLOOR; // normalize r1 so we can reuse it
-			lightIdx = (int)(r1 * (AREALIGHTCOUNT + POINTLIGHTCOUNT));
-			pickProb = CDFFLOOR / (AREALIGHTCOUNT + POINTLIGHTCOUNT);
+			lightIdx = (int)(r1 * (TRILIGHTCOUNT + POINTLIGHTCOUNT));
+			pickProb = CDFFLOOR / (TRILIGHTCOUNT + POINTLIGHTCOUNT);
 			// account for probability of sampling this light using the other method
 			if ((g1.x & 0xfffff) == lightIdx) pickProb += (g1.x >> 20) * ((1 - CDFFLOOR) / 4096.0f);
 			if ((g1.y & 0xfffff) == lightIdx) pickProb += (g1.y >> 20) * ((1 - CDFFLOOR) / 4096.0f);
@@ -156,15 +156,15 @@ LH2_DEVFUNC float3 RandomPointOnLightPNEE( float r0, float r1, const float3& I, 
 					}
 				}
 			}
-			pickProb += CDFFLOOR / (AREALIGHTCOUNT + POINTLIGHTCOUNT);
+			pickProb += CDFFLOOR / (TRILIGHTCOUNT + POINTLIGHTCOUNT);
 			if (debugFlag) printf( "S: %4i; prob: %5.3f\n", s, pickProb );
 		}
 	}
 	// sample selected light
-	if (lightIdx < AREALIGHTCOUNT)
+	if (lightIdx < TRILIGHTCOUNT)
 	{
 		float3 bary = RandomBarycentrics( r0 );
-		const CoreLightTri4& light = (const CoreLightTri4&)areaLights[lightIdx];
+		const CoreLightTri4& light = (const CoreLightTri4&)triLights[lightIdx];
 		const float4 V0 = light.data3;				// vertex0
 		const float4 V1 = light.data4;				// vertex1
 		const float4 V2 = light.data5;				// vertex2
@@ -181,7 +181,7 @@ LH2_DEVFUNC float3 RandomPointOnLightPNEE( float r0, float r1, const float3& I, 
 	}
 	else
 	{
-		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - AREALIGHTCOUNT];
+		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - TRILIGHTCOUNT];
 		const float3 P = make_float3( light.data0 );	// position
 		lightColor = make_float3( light.data1 );	// radiance
 		const float3 L = P - I;
@@ -206,7 +206,7 @@ LH2_DEVFUNC float LightPickProbPNEE( int idx, const float3& O, const float3& N, 
 	const int gz = clamp( (int)G.z, 0, GRIDDIMZ - 1 );
 	const int cellIdx = gx + (gy << BITS_TO_REPRESENT( GRIDDIMX - 1 )) + (gz << BITS_TO_REPRESENT( GRIDDIMX * GRIDDIMY - 1 ));
 	// what are the odds of selecting the specified light
-	float pickProb = CDFFLOOR / (AREALIGHTCOUNT + POINTLIGHTCOUNT);
+	float pickProb = CDFFLOOR / (TRILIGHTCOUNT + POINTLIGHTCOUNT);
 	if (guidance)
 	{
 		const uint4 g1 = guidance[cellIdx * 4 + 0];

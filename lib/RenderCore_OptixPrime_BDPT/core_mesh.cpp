@@ -15,7 +15,7 @@
 
 #include "core_settings.h"
 
-RenderCore* CoreMesh::renderCore = 0;
+namespace lh2core { void stageMemcpy( void* d, void* s, int n ); };
 
 //  +-----------------------------------------------------------------------------+
 //  |  CoreMesh::~CoreMesh                                                        |
@@ -36,6 +36,10 @@ CoreMesh::~CoreMesh()
 void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, const int triCount, const CoreTri* tris )
 {
 	// copy triangle data to GPU
+	bool reallocate = (triangles == 0);
+	if (triangles) if (triCount > triangles->GetSize()) reallocate = true;
+	if (reallocate)
+	{
 	delete triangles;
 	triangles = new CoreBuffer<CoreTri4>( triCount, ON_DEVICE, tris );
 	// create dummy index data
@@ -45,7 +49,6 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 	// create float3 vertex data
 	delete vertex3Data;
 	vertex3Data = new float3[vertexCount];
-	for (int i = 0; i < vertexCount; i++) vertex3Data[i] = make_float3( vertexData[i] );
 	// create OptiX geometry buffers
 	CHK_PRIME( rtpBufferDescCreate( RenderCore::context, RTP_BUFFER_FORMAT_INDICES_INT3, RTP_BUFFER_TYPE_HOST, indexData, &indicesDesc ) );
 	CHK_PRIME( rtpBufferDescCreate( RenderCore::context, RTP_BUFFER_FORMAT_VERTEX_FLOAT3, RTP_BUFFER_TYPE_HOST, vertex3Data, &verticesDesc ) );
@@ -53,8 +56,25 @@ void CoreMesh::SetGeometry( const float4* vertexData, const int vertexCount, con
 	CHK_PRIME( rtpBufferDescSetRange( verticesDesc, 0, vertexCount ) );
 	// create model
 	CHK_PRIME( rtpModelCreate( RenderCore::context, &model ) );
+	}
+	// copy new vertex positions and normals
+	for (int i = 0; i < vertexCount; i++) vertex3Data[i] = make_float3( vertexData[i] );
+	triangles->SetHostData( (CoreTri4*)tris );
+	triangles->StageCopyToDevice();
+	// mark this mesh: BVH rebuild needed
+	accstrucNeedsUpdate = true;
+	UpdateAccstruc(); // for now
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  CoreMesh::UpdateAccstruc                                                   |
+//  |  Update the BVH.                                                      LH2'20|
+//  +-----------------------------------------------------------------------------+
+void CoreMesh::UpdateAccstruc()
+{
 	CHK_PRIME( rtpModelSetTriangles( model, indicesDesc, verticesDesc ) );
 	CHK_PRIME( rtpModelUpdate( model, RTP_MODEL_HINT_NONE /* blocking; try RTP_MODEL_HINT_ASYNC + rtpModelFinish for async version. */ ) );
+	accstrucNeedsUpdate = false;
 }
 
 // EOF

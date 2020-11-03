@@ -62,9 +62,9 @@ LH2_DEVFUNC void calculateDepthDerivatives( const int x, const int y, const int 
 //  |  Implements the shade phase of the wavefront path tracer.             LH2'19|
 //  +-----------------------------------------------------------------------------+
 #if __CUDA_ARCH__ > 700 // Volta deliberately excluded
-__global__  __launch_bounds__( 128 /* max block size */, 4 /* min blocks per sm TURING */ )
+__global__  __launch_bounds__( 128 /* max block size */, 2 /* min blocks per sm TURING */ )
 #else
-__global__  __launch_bounds__( 128 /* max block size */, 8 /* min blocks per sm, PASCAL, VOLTA */ )
+__global__  __launch_bounds__( 128 /* max block size */, 2 /* min blocks per sm, PASCAL, VOLTA */ )
 #endif
 void shadeKernel( float4* accumulator, const uint stride,
 	uint4* features, float4* worldPos, float4* deltaDepth,

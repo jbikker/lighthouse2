@@ -35,11 +35,11 @@ void finalizeRender( const float4* accumulator, const int w, const int h, const 
 // staged setters / getters
 void stageInstanceDescriptors( CoreInstanceDesc* p );
 void stageMaterialList( CUDAMaterial* p );
-void stageAreaLights( CoreLightTri* p );
+void stageTriLights( CoreLightTri* p );
 void stagePointLights( CorePointLight* p );
 void stageSpotLights( CoreSpotLight* p );
 void stageDirectionalLights( CoreDirectionalLight* p );
-void stageLightCounts( int area, int point, int spot, int directional );
+void stageLightCounts( int tri, int point, int spot, int directional );
 void stageARGB32Pixels( uint* p );
 void stageARGB128Pixels( float4* p );
 void stageNRM32Pixels( uint* p );
@@ -491,17 +491,17 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stageTriLights( StagedBufferResize<CoreLightTri>( triLightBuffer, triLightCount, triLights ) );
 	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
-	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
-	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
+	stageLightCounts( triLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (triLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -780,7 +780,7 @@ void RenderCore::Shutdown()
 	delete skyPixelBuffer;
 	delete instDescBuffer;
 	// delete light data
-	delete areaLightBuffer;
+	delete triLightBuffer;
 	delete pointLightBuffer;
 	delete spotLightBuffer;
 	delete directionalLightBuffer;

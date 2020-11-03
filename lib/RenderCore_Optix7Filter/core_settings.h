@@ -211,11 +211,11 @@ namespace lh2core
 // setters / getters
 void stageInstanceDescriptors( CoreInstanceDesc* p );
 void stageMaterialList( CUDAMaterial* p );
-void stageAreaLights( CoreLightTri* p );
+void stageTriLights( CoreLightTri* p );
 void stagePointLights( CorePointLight* p );
 void stageSpotLights( CoreSpotLight* p );
 void stageDirectionalLights( CoreDirectionalLight* p );
-void stageLightCounts( int area, int point, int spot, int directional );
+void stageLightCounts( int tris, int point, int spot, int directional );
 void stageARGB32Pixels( uint* p );
 void stageARGB128Pixels( float4* p );
 void stageNRM32Pixels( uint* p );

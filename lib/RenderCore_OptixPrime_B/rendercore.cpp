@@ -62,15 +62,6 @@ int4 RenderCore::GetScreenParams()
 }
 
 //  +-----------------------------------------------------------------------------+
-//  |  RenderCore::SetProbePos                                                    |
-//  |  Set the pixel for which the triid will be captured.                  LH2'19|
-//  +-----------------------------------------------------------------------------+
-void RenderCore::SetProbePos( int2 pos )
-{
-	probePos = pos; // triangle id for this pixel will be stored in coreStats
-}
-
-//  +-----------------------------------------------------------------------------+
 //  |  RenderCore::Init                                                           |
 //  |  CUDA / Optix / RenderCore initialization.                            LH2'19|
 //  +-----------------------------------------------------------------------------+
@@ -106,7 +97,7 @@ void RenderCore::Init()
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_ANY, &shadowQuery ) );
 	CHK_PRIME( rtpQueryCreate( *topLevel, RTP_QUERY_TYPE_CLOSEST, &extendQuery ) );
 	// prepare counters for persistent threads
-	counterBuffer = new CoreBuffer<Counters>( 16, ON_DEVICE | ON_HOST );
+	counterBuffer = new CoreBuffer<Counters>( 1, ON_DEVICE | ON_HOST );
 	SetCounters( counterBuffer->DevPtr() );
 	// render settings
 	stageClampValue( 10.0f );
@@ -452,17 +443,17 @@ template <class T> T* RenderCore::StagedBufferResize( CoreBuffer<T>*& lightBuffe
 	lightBuffer->StageCopyToDevice();
 	return lightBuffer->DevPtr();
 }
-void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+void RenderCore::SetLights( const CoreLightTri* triLights, const int triLightCount,
 	const CorePointLight* pointLights, const int pointLightCount,
 	const CoreSpotLight* spotLights, const int spotLightCount,
 	const CoreDirectionalLight* directionalLights, const int directionalLightCount )
 {
-	stageAreaLights( StagedBufferResize<CoreLightTri>( areaLightBuffer, areaLightCount, areaLights ) );
+	stageTriLights( StagedBufferResize<CoreLightTri>( triLightBuffer, triLightCount, triLights ) );
 	stagePointLights( StagedBufferResize<CorePointLight>( pointLightBuffer, pointLightCount, pointLights ) );
 	stageSpotLights( StagedBufferResize<CoreSpotLight>( spotLightBuffer, spotLightCount, spotLights ) );
 	stageDirectionalLights( StagedBufferResize<CoreDirectionalLight>( directionalLightBuffer, directionalLightCount, directionalLights ) );
-	stageLightCounts( areaLightCount, pointLightCount, spotLightCount, directionalLightCount );
-	noDirectLightsInScene = (areaLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
+	stageLightCounts( triLightCount, pointLightCount, spotLightCount, directionalLightCount );
+	noDirectLightsInScene = (triLightCount + pointLightCount + spotLightCount + directionalLightCount) == 0;
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -472,7 +463,7 @@ void RenderCore::SetLights( const CoreLightTri* areaLights, const int areaLightC
 void RenderCore::SetSkyData( const float3* pixels, const uint width, const uint height, const mat4& worldToLight )
 {
 	delete skyPixelBuffer;
-	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_DEVICE | ON_HOST, 0 );
+	skyPixelBuffer = new CoreBuffer<float4>( width * height + (width >> 6) * (height >> 6), ON_HOST | ON_DEVICE, 0 );
 	for (uint i = 0; i < width * height; i++) skyPixelBuffer->HostPtr()[i] = make_float4( pixels[i], 0 );
 	stageSkyPixels( skyPixelBuffer->DevPtr() );
 	stageSkySize( width, height );
@@ -508,6 +499,10 @@ void RenderCore::Setting( const char* name, const float value )
 	else if (!strcmp( name, "clampValue" ))
 	{
 		if (vars.clampValue != value) stageClampValue( vars.clampValue = value );
+	}
+	else if (!strcmp( name, "noiseShift" ))
+	{
+		noiseShift = fmod( value, 1.0f );
 	}
 }
 
@@ -593,15 +588,16 @@ void RenderCore::RenderImpl( const ViewPyramid& view )
 	// clean accumulator, if requested
 	if (samplesTaken == 0) accumulator->Clear( ON_DEVICE );
 	// render image
+	RandomUInt( shiftSeed );
 	coreStats.totalExtensionRays = 0;
 	InitCountersForExtend( scrwidth * scrheight * scrspp );
 	const uint camR0 = RandomUInt( camRNGseed );
 	generateEyeRays( extensionRayBuffer[inBuffer]->DevPtr(), extensionRayExBuffer[inBuffer]->DevPtr(),
 		camR0, blueNoise->DevPtr(), samplesTaken, view, GetScreenParams() );
 	// start wavefront loop
-	uint pathCount = scrwidth * scrheight * scrspp, pathLength = 1;
+	uint pathCount = scrwidth * scrheight * scrspp;
 	Counters& counters = counterBuffer->HostPtr()[0];
-	for (; pathLength <= MAXPATHLENGTH; pathLength++)
+	for (uint pathLength = 1; pathLength <= MAXPATHLENGTH; pathLength++)
 	{
 		// extend
 		float traceTime = TraceExtensionRays( pathCount );
@@ -667,6 +663,7 @@ void RenderCore::WaitForRender()
 	// get back the RenderCore state data changed by the thread
 	coreStats = renderThread->coreState.coreStats;
 	camRNGseed = renderThread->coreState.camRNGseed;
+	shiftSeed = renderThread->coreState.shiftSeed;
 	// copy the accumulator to the OpenGL texture
 	FinalizeRender();
 }
@@ -726,7 +723,7 @@ void RenderCore::Shutdown()
 	delete skyPixelBuffer;
 	delete instDescBuffer;
 	// delete light data
-	delete areaLightBuffer;
+	delete triLightBuffer;
 	delete pointLightBuffer;
 	delete spotLightBuffer;
 	delete directionalLightBuffer;

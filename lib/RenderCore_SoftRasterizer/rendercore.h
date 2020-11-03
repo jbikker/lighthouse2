@@ -47,7 +47,7 @@ public:
 	// property of the caller, and can be safely deleted or modified as soon as these calls return.
 	void SetTextures( const CoreTexDesc* tex, const int textureCount );
 	void SetMaterials( CoreMaterial* mat, const int materialCount ); // textures must be in sync when calling this
-	void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+	void SetLights( const CoreLightTri* triLights, const int triLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount );

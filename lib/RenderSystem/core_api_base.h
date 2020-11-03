@@ -76,7 +76,7 @@ struct SystemStats
 
 //  +-----------------------------------------------------------------------------+
 //  |  CoreAPI_Base                                                               |
-//  |  Interface between the RenderCore and the RenderSystem.               LH2'19|
+//  |  Interface between the RenderSystem and the RenderCore.               LH2'19|
 //  +-----------------------------------------------------------------------------+
 class CoreAPI_Base
 {
@@ -104,7 +104,7 @@ public:
 	// SetMaterials: update the material list used by the RenderCore. Textures referenced by the materials must be set in advance.
 	virtual void SetMaterials( CoreMaterial* mat, const int materialCount ) = 0;
 	// SetLights: update the point lights, spot lights and directional lights.
-	virtual void SetLights( const CoreLightTri* areaLights, const int areaLightCount,
+	virtual void SetLights( const CoreLightTri* triLights, const int triLightCount,
 		const CorePointLight* pointLights, const int pointLightCount,
 		const CoreSpotLight* spotLights, const int spotLightCount,
 		const CoreDirectionalLight* directionalLights, const int directionalLightCount ) = 0;

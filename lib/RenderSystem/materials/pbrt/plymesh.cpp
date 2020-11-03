@@ -298,10 +298,10 @@ HostMesh* CreatePLYMesh(
 	vector<Point3f> vertices( context.p, context.p + vertexCount );
 	vector<Normal3f> normals;
 	if (context.n) normals = { context.n, context.n + vertexCount };
-	vector<Point2f> uvs;
+	vector<Point2f> uvs, uv2s /* second layer uvs not used for this type of mesh */;
 	if (context.uv) uvs = { context.uv, context.uv + vertexCount };
 	vector<float4> dummyT;
-	mesh->BuildFromIndexedData( indices, vertices, normals, uvs, dummyT, noPose, noJoints, noWeights, materialIdx );
+	mesh->BuildFromIndexedData( indices, vertices, normals, uvs, uv2s, dummyT, noPose, noJoints, noWeights, materialIdx );
 
 	return mesh;
 }
@@ -413,10 +413,10 @@ HostMesh* CreateTriangleMeshShape(
 	// Optional normals and uvs:
 	std::vector<Normal3f> normals;
 	if (N) normals = { N, N + nni };
-	std::vector<Point2f> uvs_vec;
+	std::vector<Point2f> uvs_vec, uv2s /* second layer uvs not used for this type of mesh */;
 	if (uvs) uvs_vec = { uvs, uvs + nuvi };
 	vector<float4> dummyT;
-	mesh->BuildFromIndexedData( indices, vertices, normals, uvs_vec, dummyT, noPose, noJoints, noWeights, materialIdx );
+	mesh->BuildFromIndexedData( indices, vertices, normals, uvs_vec, uv2s, dummyT, noPose, noJoints, noWeights, materialIdx );
 	return mesh;
 }
 

@@ -21,24 +21,21 @@
 
 #include "noerrors.h"
 
-// #define ISLIGHTS
-#define MAXISLIGHTS	8
+#define ISLIGHTS
+#define MAXISLIGHTS	64
 
-#define AREALIGHTCOUNT			lightCounts.x
+#define TRILIGHTCOUNT			(lightCounts.x & 0xffff)
 #define POINTLIGHTCOUNT			lightCounts.y
 #define SPOTLIGHTCOUNT			lightCounts.z
 #define DIRECTIONALLIGHTCOUNT	lightCounts.w
 
 //  +-----------------------------------------------------------------------------+
-//  |  PotentialAreaLightContribution                                             |
-//  |  Calculates the potential contribution of an area light.              LH2'19|
+//  |  PotentialTriLightContribution                                              |
+//  |  Calculates the potential contribution of an area light.              LH2'20|
 //  +-----------------------------------------------------------------------------+
-LH2_DEVFUNC float PotentialAreaLightContribution( const int idx, const float3& O, const float3& N, const float3& I, const float3& bary )
+LH2_DEVFUNC float PotentialTriLightContribution( const int idx, const float3& O, const float3& N, const float3& I, const float3& bary )
 {
-	// Note: in LH1, lights have an 'enabled' boolean. This functionality does not
-	// belong in the core; the RenderSystem should remove inactive lights from the
-	// list so the core never encounters them.
-	const CoreLightTri4& light = (const CoreLightTri4&)areaLights[idx];
+	const CoreLightTri4& light = (const CoreLightTri4&)triLights[idx];
 	const float4 centre4 = light.data0; // holds area light energy in w
 	const float4 LN = light.data1;
 	float3 L = I;
@@ -66,7 +63,7 @@ LH2_DEVFUNC float PotentialPointLightContribution( const int idx, const float3& 
 	const CorePointLight4& light = (const CorePointLight4&)pointLights[idx];
 	const float4 position4 = light.data0;
 	const float3 L = make_float3( position4 ) - I;
-	const float NdotL = max( 0.0f, dot( N, L ) );
+	const float NdotL = max( 0.0f, dot( N, normalize( L ) ) );
 	const float att = 1.0f / dot( L, L );
 	return POINTLIGHT_ENERGY * NdotL * att;
 }
@@ -126,14 +123,15 @@ LH2_DEVFUNC float LightPickProb( int idx, const float3& O, const float3& N, cons
 	// for implicit connections; calculates the chance that the light would have been explicitly selected
 	float potential[MAXISLIGHTS];
 	float sum = 0;
-	for (int i = 0; i < AREALIGHTCOUNT; i++) { float c = PotentialAreaLightContribution( i, O, N, I, make_float3( -1 ) ); potential[i] = c; sum += c; }
-	for (int i = 0; i < POINTLIGHTCOUNT; i++) { float c = PotentialPointLightContribution( i, O, N ); sum += c; }
-	for (int i = 0; i < SPOTLIGHTCOUNT; i++) { float c = PotentialSpotLightContribution( i, O, N ); sum += c; }
-	for (int i = 0; i < DIRECTIONALLIGHTCOUNT; i++) { float c = PotentialDirectionalLightContribution( i, O, N ); sum += c; }
+	int lights = 0;
+	for (int i = 0; i < TRILIGHTCOUNT; i++) { float c = PotentialTriLightContribution( i, O, N, I, make_float3( -1 ) ); potential[lights++] = c; sum += c; }
+	for (int i = 0; i < POINTLIGHTCOUNT; i++) { float c = PotentialPointLightContribution( i, O, N ); potential[lights++] = c; sum += c; }
+	for (int i = 0; i < SPOTLIGHTCOUNT; i++) { float c = PotentialSpotLightContribution( i, O, N ); potential[lights++] = c; sum += c; }
+	for (int i = 0; i < DIRECTIONALLIGHTCOUNT; i++) { float c = PotentialDirectionalLightContribution( i, O, N ); potential[lights++] = c; sum += c; }
 	if (sum <= 0) return 0; // no potential lights found
 	return potential[idx] / sum;
 #else
-	return 1.0f / AREALIGHTCOUNT; // should I include delta lights?
+	return 1.0f / (TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT);
 #endif
 }
 
@@ -145,7 +143,7 @@ LH2_DEVFUNC float LightPickProb( int idx, const float3& O, const float3& N, cons
 //  +-----------------------------------------------------------------------------+
 LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, const float3& N, float& pickProb, float& lightPdf, float3& lightColor )
 {
-	const float lightCount = AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
+	const float lightCount = TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
 	// predetermine the barycentrics for any area light we sample
 	float3 bary = RandomBarycentrics( r0 );
 #ifdef ISLIGHTS
@@ -153,7 +151,7 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 	float potential[MAXISLIGHTS];
 	float sum = 0, total = 0;
 	int lights = 0, lightIdx = 0;
-	for (int i = 0; i < AREALIGHTCOUNT; i++) { float c = PotentialAreaLightContribution( i, I, N, make_float3( 0 ), bary ); potential[lights++] = c; sum += c; }
+	for (int i = 0; i < TRILIGHTCOUNT; i++) { float c = PotentialTriLightContribution( i, I, N, I, bary ); potential[lights++] = c; sum += c; }
 	for (int i = 0; i < POINTLIGHTCOUNT; i++) { float c = PotentialPointLightContribution( i, I, N ); potential[lights++] = c; sum += c; }
 	for (int i = 0; i < SPOTLIGHTCOUNT; i++) { float c = PotentialSpotLightContribution( i, I, N ); potential[lights++] = c; sum += c; }
 	for (int i = 0; i < DIRECTIONALLIGHTCOUNT; i++) { float c = PotentialDirectionalLightContribution( i, I, N ); potential[lights++] = c; sum += c; }
@@ -175,10 +173,10 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 	int lightIdx = (int)(r1 * lightCount);
 #endif
 	lightIdx = clamp( lightIdx, 0, (int)lightCount - 1 );
-	if (lightIdx < AREALIGHTCOUNT)
+	if (lightIdx < TRILIGHTCOUNT)
 	{
 		// pick an area light
-		const CoreLightTri4& light = (const CoreLightTri4&)areaLights[lightIdx];
+		const CoreLightTri4& light = (const CoreLightTri4&)triLights[lightIdx];
 		const float4 V0 = light.data3;			// vertex0
 		const float4 V1 = light.data4;			// vertex1
 		const float4 V2 = light.data5;			// vertex2
@@ -193,21 +191,21 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 		lightPdf = (LNdotL > 0 && dot( L, N ) < 0) ? reciSolidAngle : 0;
 		return P;
 	}
-	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT))
+	else if (lightIdx < (TRILIGHTCOUNT + POINTLIGHTCOUNT))
 	{
 		// pick a pointlight
-		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - AREALIGHTCOUNT];
+		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - TRILIGHTCOUNT];
 		const float3 P = make_float3( light.data0 );	// position
-		lightColor = make_float3( light.data1 );	// radiance
 		const float3 L = P - I;
 		const float sqDist = dot( L, L );
-		lightPdf = dot( L, N ) > 0 ? sqDist : 0;
+		lightColor = make_float3( light.data1 ) / sqDist;		// radiance
+		lightPdf = dot( L, N ) > 0 ? 1 : 0;
 		return P;
 	}
-	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT))
+	else if (lightIdx < (TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT))
 	{
 		// pick a spotlight
-		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT)];
+		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[lightIdx - (TRILIGHTCOUNT + POINTLIGHTCOUNT)];
 		const float4 V0 = light.data0;			// position + cos_inner
 		const float4 V1 = light.data1;			// radiance + cos_outer
 		const float4 D = light.data2;			// direction
@@ -224,7 +222,7 @@ LH2_DEVFUNC float3 RandomPointOnLight( float r0, float r1, const float3& I, cons
 	else
 	{
 		// pick a directional light
-		const CoreDirectionalLight4& light = (const CoreDirectionalLight4&)directionalLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT)];
+		const CoreDirectionalLight4& light = (const CoreDirectionalLight4&)directionalLights[lightIdx - (TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT)];
 		const float3 L = make_float3( light.data0 );	// direction
 		lightColor = make_float3( light.data1 );		// radiance
 		const float NdotL = dot( L, N );
@@ -241,7 +239,7 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 	float3& normal, float3& lightDir, float3& lightColor,
 	float& lightPdf, float& pdfPos, float& pdfDir )
 {
-	const float lightCount = AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
+	const float lightCount = TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT + DIRECTIONALLIGHTCOUNT;
 	// predetermine the barycentrics for any area light we sample
 	float3 bary = RandomBarycentrics( r0 );
 #ifdef ISLIGHTS
@@ -249,9 +247,9 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 	float potential[MAXISLIGHTS];
 	float sum = 0, total = 0;
 	int lights = 0, lightIdx = 0;
-	for (int i = 0; i < AREALIGHTCOUNT; i++)
+	for (int i = 0; i < TRILIGHTCOUNT; i++)
 	{
-		const CoreLightTri4& light = (const CoreLightTri4&)areaLights[i];
+		const CoreLightTri4& light = (const CoreLightTri4&)triLights[i];
 		const float4 centre4 = light.data0; // holds area light energy in w
 		float c = AREALIGHT_ENERGY;
 		potential[lights++] = c;
@@ -300,9 +298,9 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 #endif
 	lightIdx = clamp( lightIdx, 0, (int)lightCount - 1 );
 	float3 pos;
-	if (lightIdx < AREALIGHTCOUNT)
+	if (lightIdx < TRILIGHTCOUNT)
 	{
-		const CoreLightTri4& light = (const CoreLightTri4&)areaLights[lightIdx];
+		const CoreLightTri4& light = (const CoreLightTri4&)triLights[lightIdx];
 		const float4 V0 = light.data3;			// vertex0
 		const float4 V1 = light.data4;			// vertex1
 		const float4 V2 = light.data5;			// vertex2
@@ -327,10 +325,10 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 		lightDir = normalize( dir_loc.x * u + dir_loc.y * v + dir_loc.z * normal );
 		return pos;
 	}
-	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT))
+	else if (lightIdx < (TRILIGHTCOUNT + POINTLIGHTCOUNT))
 	{
 		// pick a pointlight
-		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - AREALIGHTCOUNT];
+		const CorePointLight4& light = (const CorePointLight4&)pointLights[lightIdx - TRILIGHTCOUNT];
 		const float3 pos = make_float3( light.data0 );			// position
 		lightColor = make_float3( light.data1 );	// radiance
 		normal = lightDir = UniformSampleSphere( r2, r3 );
@@ -338,10 +336,10 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 		pdfDir = INVPI * 0.25f; // UniformSpherePdf
 		return pos;
 	}
-	else if (lightIdx < (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT))
+	else if (lightIdx < (TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT))
 	{
 		// pick a spotlight
-		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT)];
+		const CoreSpotLight4& light = (const CoreSpotLight4&)spotLights[lightIdx - (TRILIGHTCOUNT + POINTLIGHTCOUNT)];
 		const float4 P = light.data0;			// position + cos_inner
 		const float4 E = light.data1;			// radiance + cos_outer
 		const float4 D = light.data2;			// direction
@@ -367,7 +365,7 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 	else
 	{
 		// pick a directional light
-		const CoreDirectionalLight4& light = (const CoreDirectionalLight4&)directionalLights[lightIdx - (AREALIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT)];
+		const CoreDirectionalLight4& light = (const CoreDirectionalLight4&)directionalLights[lightIdx - (TRILIGHTCOUNT + POINTLIGHTCOUNT + SPOTLIGHTCOUNT)];
 		const float3 L = make_float3( light.data0 );	// direction
 		lightColor = make_float3( light.data1 );		// radiance
 	#ifdef DIRECTIONAL_LIGHT
@@ -378,6 +376,7 @@ LH2_DEVFUNC float3 Sample_Le( const float& r0, float r1, const float& r2, const 
 	#endif
 		return pos;
 	}
+	return make_float3( 0 );
 }
 
 // EOF

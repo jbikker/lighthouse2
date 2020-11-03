@@ -1,4 +1,4 @@
-/* camera.cu - Copyright 2019/2020 Utrecht University
+/* camera.h - Copyright 2019/2020 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ void generateEyeRaysKernel( Ray4* rayBuffer, float4* pathStateData,
 		r4.z = RandomFloat( seed ), r4.w = RandomFloat( seed );
 	}
 	const float3 posOnLens = RandomPointOnLens( r4.x, r4.z, pos, aperture, right, up );
-	float3 posOnPixel = RayTarget( sx, sy, r4.y, r4.w, make_int2( scrhsize, scrvsize ), distortion, p1, right, up );
+	const float3 posOnPixel = RayTarget( sx, sy, r4.y, r4.w, make_int2( scrhsize, scrvsize ), distortion, p1, right, up );
 	const float3 rayDir = normalize( posOnPixel - posOnLens );
 	// initialize path state
 	rayBuffer[jobIndex].O4 = make_float4( posOnLens, geometryEpsilon );

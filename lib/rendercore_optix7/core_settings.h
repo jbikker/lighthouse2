@@ -224,6 +224,7 @@ void stageDebugData( float4* p );
 void stageGeometryEpsilon( float e );
 void stageClampValue( float c );
 void stageMemcpy( void* d, void* s, int n );
+void stageLightTree( LightCluster* t );
 void pushStagedCopies();
 void SetCounters( Counters* p );
 

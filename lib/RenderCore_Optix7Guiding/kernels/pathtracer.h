@@ -65,7 +65,7 @@ LH2_DEVFUNC float3 RandomPointOnLightPNEE( float r0, float r1, const float3& I, 
 	if (g1.x == 0)
 	{
 		// nothing here; sample lights uniformly
-		lightIdx = (int)(r1 * (TRILIGHTCOUNT + POINTLIGHTCOUNT));
+		lightIdx = min( (int)(r1 * (TRILIGHTCOUNT + POINTLIGHTCOUNT)), TRILIGHTCOUNT + POINTLIGHTCOUNT - 1 );
 		pickProb = 1.0f / (TRILIGHTCOUNT + POINTLIGHTCOUNT);
 	}
 	else
@@ -374,9 +374,9 @@ void shadeKernel( float4* accumulator, const uint stride,
 	// next event estimation: connect eye path to light
 	if ((FLAGS & S_SPECULAR) == 0 && connections != 0) // skip for specular vertices
 	{
-		float pickProb, lightPdf = 0;
+		float pickProb, lightPdf = (pixelIdx == probePixelIdx && pathLength == 1) ? -999 : 0;
 		float3 lightColor, L;
-		if (pixelIdx % SCRWIDTH < SCRWIDTH / 2)
+		if (1) // pixelIdx % SCRWIDTH < SCRWIDTH / 2)
 		{
 			float3 jitter = make_float3( 1.0f / PNEErext.x, 1.0f / PNEErext.y, 1.0f / PNEErext.z );
 			float3 II = make_float3(
@@ -410,7 +410,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 				const uint shadowRayIdx = atomicAdd( &counters->shadowRays, 1 ); // compaction
 				connections[shadowRayIdx] = make_float4( SafeOrigin( I, L, N, geometryEpsilon ), 0 ); // O4
 				connections[shadowRayIdx + stride * 2] = make_float4( L, dist - 2 * geometryEpsilon ); // D4
-				connections[shadowRayIdx + stride * 2 * 2] = make_float4( contribution, __int_as_float( pixelIdx ) ); // E4
+				connections[shadowRayIdx + stride * 2 * 2] = make_float4( contribution, __int_as_float( 0 ) ); // E4
 			}
 		}
 	}

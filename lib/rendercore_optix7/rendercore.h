@@ -70,6 +70,9 @@ private:
 	void FinalizeRender();
 	template <class T> T* StagedBufferResize( CoreBuffer<T>*& lightBuffer, const int newCount, const T* sourceData );
 	void UpdateToplevel();
+	int FindBestMatch( int* todo, const int idx, const int N );
+	void UpdateLightTreeNormals( const int node );
+	void UpdateLightTree();
 	void SyncStorageType( const TexelStorage storage );
 	void CreateOptixContext( int cc );
 	// helpers
@@ -97,6 +100,7 @@ private:
 	CoreBuffer<CoreLightTri>* triLightBuffer;		// tri lights
 	CoreBuffer<CorePointLight>* pointLightBuffer;	// point lights
 	CoreBuffer<CoreSpotLight>* spotLightBuffer;		// spot lights
+	CoreBuffer<LightCluster>* lightTree = 0;		// light tree for stochastic lightcuts
 	CoreBuffer<CoreDirectionalLight>* directionalLightBuffer;	// directional lights
 	CoreBuffer<float4>* texel128Buffer = 0;			// texel buffer 1: hdr ARGB128 texture data
 	CoreBuffer<uint>* normal32Buffer = 0;			// texel buffer 2: integer-encoded normals

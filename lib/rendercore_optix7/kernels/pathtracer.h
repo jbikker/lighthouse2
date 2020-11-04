@@ -142,6 +142,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 				const CoreTri& tri = (const CoreTri&)instanceTriangles[PRIMIDX];
 				const float lightPdf = CalculateLightPDF( D, HIT_T, tri.area, N );
 				const float pickProb = LightPickProb( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */ );
+				// const float pickProb = LightPickProbLTree( tri.ltriIdx, RAY_O, lastN, I /* the N at the previous vertex */, seed );
 				if ((bsdfPdf + lightPdf * pickProb) > 0) contribution = throughput * shadingData.color * (1.0f / (bsdfPdf + lightPdf * pickProb));
 			}
 			CLAMPINTENSITY;
@@ -183,6 +184,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	{
 		float pickProb, lightPdf = 0;
 		float3 lightColor, L = RandomPointOnLight( r4.x, r4.y, I, fN * faceDir, pickProb, lightPdf, lightColor ) - I;
+		// float3 lightColor, L = RandomPointOnLightLTree( r4.x, r4.y, seed, I, fN * faceDir, pickProb, lightPdf, lightColor, false ) - I;
 		const float dist = length( L );
 		L *= 1.0f / dist;
 		const float NdotL = dot( L, fN * faceDir );

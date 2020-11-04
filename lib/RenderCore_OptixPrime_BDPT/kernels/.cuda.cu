@@ -33,6 +33,7 @@ __constant__ float4* skyPixels;
 __constant__ int skywidth;
 __constant__ int skyheight;
 __constant__ float4* debugData;
+__constant__ LightCluster* lightTree;
 
 __constant__ mat4 worldToSky;
 
@@ -50,6 +51,7 @@ __host__ void stageTriLights( CoreLightTri* p ) { stagedcpy( triLights, p ); }
 __host__ void stagePointLights( CorePointLight* p ) { stagedcpy( pointLights, p ); }
 __host__ void stageSpotLights( CoreSpotLight* p ) { stagedcpy( spotLights, p ); }
 __host__ void stageDirectionalLights( CoreDirectionalLight* p ) { stagedcpy( directionalLights, p ); }
+__host__ void stageLightTree( LightCluster* t ) { stagedcpy( lightTree, t ); }
 __host__ void stageLightCounts( int tri, int point, int spot, int directional )
 {
 	const int4 counts = make_int4( tri, point, spot, directional );

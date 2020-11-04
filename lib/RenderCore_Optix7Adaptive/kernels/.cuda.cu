@@ -34,6 +34,7 @@ __constant__ int skywidth;
 __constant__ int skyheight;
 __constant__ PathState* pathStates;
 __constant__ float4* debugData;
+__constant__ LightCluster* lightTree;
 
 __constant__ mat4 worldToSky;
 
@@ -44,7 +45,7 @@ __constant__ __device__ float clampValue;
 // staging: copies will be batched and carried out after rendering completes, 
 // to allow the CPU to update the scene concurrently with GPU rendering.
 
-enum { INSTS = 0, MATS, TLGHTS, PLGHTS, SLGHTS, DLGHTS, LCNTS, RGB32, RGBH, NRMLS, SKYPIX, SKYW, SKYH, SMAT, DBGDAT, GEPS, CLMPV };
+enum { INSTS = 0, MATS, TLGHTS, PLGHTS, SLGHTS, DLGHTS, LCNTS, RGB32, RGBH, NRMLS, SKYPIX, SKYW, SKYH, SMAT, DBGDAT, GEPS, CLMPV, LTREE };
 
 // device pointers are not real pointers for nvcc, so we need a bit of a hack.
 
@@ -74,6 +75,7 @@ __host__ static void pushPtrCpy( int id, void* p )
 	if (id == NRMLS) cudaMemcpyToSymbol( nrm32, &p, sizeof( void* ) );
 	if (id == SKYPIX) cudaMemcpyToSymbol( skyPixels, &p, sizeof( void* ) );
 	if (id == DBGDAT) cudaMemcpyToSymbol( debugData, &p, sizeof( void* ) );
+	if (id == LTREE) cudaMemcpyToSymbol( lightTree, &p, sizeof( void* ) );
 }
 __host__ static void pushIntCpy( int id, const int v )
 {
@@ -151,6 +153,7 @@ __host__ void stageWorldToSky( const mat4& worldToLight ) { stageMatCpy( SMAT /*
 __host__ void stageDebugData( float4* p ) { stagePtrCpy( DBGDAT /* debugData */, p ); }
 __host__ void stageGeometryEpsilon( float e ) { stageF32Cpy( GEPS /* geometryEpsilon */, e ); }
 __host__ void stageClampValue( float c ) { stageF32Cpy( CLMPV /* clampValue */, c ); }
+__host__ void stageLightTree( LightCluster* t ) { stagePtrCpy( LTREE /* light tree */, t ); }
 __host__ void stageLightCounts( int tri, int point, int spot, int directional )
 {
 	const int4 counts = make_int4( tri, point, spot, directional );

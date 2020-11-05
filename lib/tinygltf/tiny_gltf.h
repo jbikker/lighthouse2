@@ -26,6 +26,8 @@
 // THE SOFTWARE.
 
 // Version:
+//  - v2.5.0 Add SetPreserveImageChannels() option to load image data as is.
+//  - v2.4.3 Fix null object output when when material has all default parameters.
 //  - v2.4.2 Decode percent-encoded URI.
 //  - v2.4.1 Fix some glTF object class does not have `extensions` and/or
 //  `extras` property.
@@ -52,6 +54,7 @@
 
 #include <array>
 #include <cassert>
+#include <cmath>  // std::fabs
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -322,7 +325,8 @@ class Value {
   }
 
   // Use this function if you want to have number value as int.
-  double GetNumberAsInt() const {
+  // TODO(syoyo): Support int value larger than 32 bits
+  int GetNumberAsInt() const {
     if (type_ == REAL_TYPE) {
       return int(real_value_);
     } else {
@@ -662,6 +666,8 @@ struct Image {
     width = -1;
     height = -1;
     component = -1;
+    bits = -1;
+    pixel_type = -1;
   }
   DEFAULT_METHODS(Image)
 
@@ -994,6 +1000,7 @@ struct Primitive {
   Primitive() {
     material = -1;
     indices = -1;
+    mode = -1;
   }
   DEFAULT_METHODS(Primitive)
   bool operator==(const Primitive &) const;
@@ -1113,9 +1120,9 @@ struct SpotLight {
 struct Light {
   std::string name;
   std::vector<double> color;
-  double intensity;
+  double intensity{1.0};
   std::string type;
-  double range;
+  double range{0.0};  // 0.0 = inifinite
   SpotLight spot;
 
   Light() : intensity(1.0), range(0.0) {}
@@ -1184,7 +1191,7 @@ enum SectionCheck {
 ///
 typedef bool (*LoadImageDataFunction)(Image *, const int, std::string *,
                                       std::string *, int, int,
-                                      const unsigned char *, int, void *);
+                                      const unsigned char *, int, void *user_pointer);
 
 ///
 /// WriteImageDataFunction type. Signature for custom image writing callbacks.
@@ -1247,7 +1254,14 @@ struct FsCallbacks {
 
 bool FileExists(const std::string &abs_filename, void *);
 
-std::string ExpandFilePath(const std::string &filepath, void *);
+///
+/// Expand file path(e.g. `~` to home directory on posix, `%APPDATA%` to
+/// `C:\Users\tinygltf\AppData`)
+///
+/// @param[in] filepath File path string. Assume UTF-8
+/// @param[in] userdata User data. Set to `nullptr` if you don't need it.
+///
+std::string ExpandFilePath(const std::string &filepath, void *userdata);
 
 bool ReadWholeFile(std::vector<unsigned char> *out, std::string *err,
                    const std::string &filepath, void *);
@@ -1334,6 +1348,11 @@ class TinyGLTF {
   void SetImageLoader(LoadImageDataFunction LoadImageData, void *user_data);
 
   ///
+  /// Unset(remove) callback of loading image data
+  ///
+  void RemoveImageLoader();
+
+  ///
   /// Set callback to use for writing image data
   ///
   void SetImageWriter(WriteImageDataFunction WriteImageData, void *user_data);
@@ -1371,6 +1390,18 @@ class TinyGLTF {
     return store_original_json_for_extras_and_extensions_;
   }
 
+  ///
+  /// Specify whether preserve image channales when loading images or not.
+  /// (Not effective when the user suppy their own LoadImageData callbacks)
+  ///
+  void SetPreserveImageChannels(bool onoff) {
+    preserve_image_channels_ = onoff;
+  }
+
+  bool GetPreserveImageChannels() const {
+    return preserve_image_channels_;
+  }
+
  private:
   ///
   /// Loads glTF asset from string(memory).
@@ -1389,6 +1420,8 @@ class TinyGLTF {
   bool serialize_default_values_ = false;  ///< Serialize default values?
 
   bool store_original_json_for_extras_and_extensions_ = false;
+
+  bool preserve_image_channels_ = false; /// Default false(expand channels to RGBA) for backward compatibility.
 
   FsCallbacks fs = {
 #ifndef TINYGLTF_NO_FS
@@ -1409,7 +1442,8 @@ class TinyGLTF {
 #else
       nullptr;
 #endif
-  void *load_image_user_data_ = reinterpret_cast<void *>(&fs);
+  void *load_image_user_data_{nullptr};
+  bool user_image_loader_{false};
 
   WriteImageDataFunction WriteImageData =
 #ifndef TINYGLTF_NO_STB_IMAGE_WRITE
@@ -1417,7 +1451,7 @@ class TinyGLTF {
 #else
       nullptr;
 #endif
-  void *write_image_user_data_ = reinterpret_cast<void *>(&fs);
+  void *write_image_user_data_{nullptr};
 };
 
 #ifdef __clang__
@@ -1670,6 +1704,19 @@ void JsonParse(JsonDocument &doc, const char *str, size_t length,
 #endif
 
 namespace tinygltf {
+
+///
+/// Internal LoadImageDataOption struct.
+/// This struct is passed through `user_pointer` in LoadImageData.
+/// The struct is not passed when the user supply their own LoadImageData callbacks.
+///
+struct LoadImageDataOption
+{
+  // true: preserve image channels(e.g. load as RGB image if the image has RGB channels)
+  // default `false`(channels are expanded to RGBA for backward compatiblity).
+  bool preserve_channels{false};
+
+};
 
 // Equals function for Value, for recursivity
 static bool Equals(const tinygltf::Value &one, const tinygltf::Value &other) {
@@ -2285,22 +2332,40 @@ static bool LoadExternalFile(std::vector<unsigned char> *out, std::string *err,
 void TinyGLTF::SetImageLoader(LoadImageDataFunction func, void *user_data) {
   LoadImageData = func;
   load_image_user_data_ = user_data;
+  user_image_loader_ = true;
+}
+
+void TinyGLTF::RemoveImageLoader() {
+  LoadImageData =
+#ifndef TINYGLTF_NO_STB_IMAGE
+      &tinygltf::LoadImageData;
+#else
+      nullptr;
+#endif
+
+  load_image_user_data_ = nullptr;
+  user_image_loader_ = false;
 }
 
 #ifndef TINYGLTF_NO_STB_IMAGE
 bool LoadImageData(Image *image, const int image_idx, std::string *err,
                    std::string *warn, int req_width, int req_height,
                    const unsigned char *bytes, int size, void *user_data) {
-  (void)user_data;
   (void)warn;
+
+  LoadImageDataOption option;
+  if (user_data) {
+    option = *reinterpret_cast<LoadImageDataOption *>(user_data);
+  }
 
   int w = 0, h = 0, comp = 0, req_comp = 0;
 
   unsigned char *data = nullptr;
 
-  // force 32-bit textures for common Vulkan compatibility. It appears that
+  // preserve_channels true: Use channels stored in the image file.
+  // false: force 32-bit textures for common Vulkan compatibility. It appears that
   // some GPU drivers do not support 24-bit images for Vulkan
-  req_comp = 4;
+  req_comp = option.preserve_channels ? 0 : 4;
   int bits = 8;
   int pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
 
@@ -2372,13 +2437,18 @@ bool LoadImageData(Image *image, const int image_idx, std::string *err,
     }
   }
 
+  if (req_comp != 0) {
+    // loaded data has `req_comp` channels(components)
+    comp = req_comp;
+  }
+
   image->width = w;
   image->height = h;
-  image->component = req_comp;
+  image->component = comp;
   image->bits = bits;
   image->pixel_type = pixel_type;
-  image->image.resize(static_cast<size_t>(w * h * req_comp) * size_t(bits / 8));
-  std::copy(data, data + w * h * req_comp * (bits / 8), image->image.begin());
+  image->image.resize(static_cast<size_t>(w * h * comp) * size_t(bits / 8));
+  std::copy(data, data + w * h * comp * (bits / 8), image->image.begin());
   stbi_image_free(data);
 
   return true;
@@ -2481,6 +2551,15 @@ static inline std::wstring UTF8ToWchar(const std::string &str) {
                       (int)wstr.size());
   return wstr;
 }
+
+static inline std::string WcharToUTF8(const std::wstring &wstr) {
+  int str_size = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(),
+                                     nullptr, 0, NULL, NULL);
+  std::string str(str_size, 0);
+  WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(), &str[0],
+                      (int)str.size(), NULL, NULL);
+  return str;
+}
 #endif
 
 #ifndef TINYGLTF_NO_FS
@@ -2532,15 +2611,16 @@ bool FileExists(const std::string &abs_filename, void *) {
 
 std::string ExpandFilePath(const std::string &filepath, void *) {
 #ifdef _WIN32
-  DWORD len = ExpandEnvironmentStringsA(filepath.c_str(), NULL, 0);
-  char *str = new char[len];
-  ExpandEnvironmentStringsA(filepath.c_str(), str, len);
+  // Assume input `filepath` is encoded in UTF-8
+  std::wstring wfilepath = UTF8ToWchar(filepath);
+  DWORD wlen = ExpandEnvironmentStringsW(wfilepath.c_str(), nullptr, 0);
+  wchar_t *wstr = new wchar_t[wlen];
+  ExpandEnvironmentStringsW(wfilepath.c_str(), wstr, wlen);
 
-  std::string s(str);
+  std::wstring ws(wstr);
+  delete[] wstr;
+  return WcharToUTF8(ws);
 
-  delete[] str;
-
-  return s;
 #else
 
 #if defined(TARGET_OS_IPHONE) || defined(TARGET_IPHONE_SIMULATOR) || \
@@ -2592,11 +2672,12 @@ bool ReadWholeFile(std::vector<unsigned char> *out, std::string *err,
       return false;
     }
     size_t size = AAsset_getLength(asset);
-    if (size <= 0) {
+    if (size == 0) {
       if (err) {
         (*err) += "Invalid file size : " + filepath +
                   " (does the path point to a directory?)";
       }
+      return false;
     }
     out->resize(size);
     AAsset_read(asset, reinterpret_cast<char *>(&out->at(0)), size);
@@ -2615,9 +2696,12 @@ bool ReadWholeFile(std::vector<unsigned char> *out, std::string *err,
       _wopen(UTF8ToWchar(filepath).c_str(), _O_RDONLY | _O_BINARY);
   __gnu_cxx::stdio_filebuf<char> wfile_buf(file_descriptor, std::ios_base::in);
   std::istream f(&wfile_buf);
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) || defined(_LIBCPP_VERSION)
+  // For libcxx, assume _LIBCPP_HAS_OPEN_WITH_WCHAR is defined to accept
+  // `wchar_t *`
   std::ifstream f(UTF8ToWchar(filepath).c_str(), std::ifstream::binary);
-#else  // clang?
+#else
+  // Unknown compiler/runtime
   std::ifstream f(filepath.c_str(), std::ifstream::binary);
 #endif
 #else
@@ -2659,9 +2743,10 @@ bool WriteWholeFile(std::string *err, const std::string &filepath,
                     const std::vector<unsigned char> &contents, void *) {
 #ifdef _WIN32
 #if defined(__GLIBCXX__)  // mingw
-  int file_descriptor =
-      _wopen(UTF8ToWchar(filepath).c_str(), _O_WRONLY | _O_BINARY);
-  __gnu_cxx::stdio_filebuf<char> wfile_buf(file_descriptor, std::ios_base::in);
+  int file_descriptor = _wopen(UTF8ToWchar(filepath).c_str(),
+                               _O_CREAT | _O_WRONLY | _O_TRUNC | _O_BINARY);
+  __gnu_cxx::stdio_filebuf<char> wfile_buf(
+      file_descriptor, std::ios_base::out | std::ios_base::binary);
   std::ostream f(&wfile_buf);
 #elif defined(_MSC_VER)
   std::ofstream f(UTF8ToWchar(filepath).c_str(), std::ofstream::binary);
@@ -2716,10 +2801,9 @@ static void UpdateImageObject(Image &image, std::string &baseDir, int index,
   if (image.uri.size()) {
     filename = GetBaseFilename(image.uri);
     ext = GetFilePathExtension(filename);
-  }
-  else if (image.bufferView != -1) {
-	  //If there's no URI and the data exists in a buffer,
-	  //don't change properties or write images
+  } else if (image.bufferView != -1) {
+    // If there's no URI and the data exists in a buffer,
+    // don't change properties or write images
   } else if (image.name.size()) {
     ext = MimeToExt(image.mimeType);
     // Otherwise use name as filename
@@ -2976,7 +3060,9 @@ json_const_iterator ObjectEnd(const json &o) {
 #endif
 }
 
-const char *GetKey(json_const_iterator &it) {
+// Making this a const char* results in a pointer to a temporary when
+// TINYGLTF_USE_RAPIDJSON is off.
+std::string GetKey(json_const_iterator &it) {
 #ifdef TINYGLTF_USE_RAPIDJSON
   return it->name.GetString();
 #else
@@ -4862,13 +4948,13 @@ static bool ParseAnimationChannel(
       }
       return false;
     }
-	ParseExtensionsProperty(&channel->target_extensions, err, target_object);
-	if (store_original_json_for_extras_and_extensions) {
+    ParseExtensionsProperty(&channel->target_extensions, err, target_object);
+    if (store_original_json_for_extras_and_extensions) {
       json_const_iterator it;
       if (FindMember(target_object, "extensions", it)) {
         channel->target_extensions_json_string = JsonToString(GetValue(it));
       }
-	}
+    }
   }
 
   channel->sampler = samplerIndex;
@@ -5679,10 +5765,15 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
             .target = TINYGLTF_TARGET_ARRAY_BUFFER;
       }
 
-      for(auto &target : primitive.targets) {
-        for(auto &attribute : target) {
-          model->bufferViews[size_t(model->accessors[size_t(attribute.second)].bufferView)]
-              .target = TINYGLTF_TARGET_ARRAY_BUFFER;
+      for (auto &target : primitive.targets) {
+        for (auto &attribute : target) {
+          auto bufferView =
+              model->accessors[size_t(attribute.second)].bufferView;
+          // bufferView could be null(-1) for sparse morph target
+          if (bufferView >= 0) {
+            model->bufferViews[size_t(bufferView)].target =
+                TINYGLTF_TARGET_ARRAY_BUFFER;
+          }
         }
       }
     }
@@ -5792,6 +5883,18 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
   }
 
   // 11. Parse Image
+  void *load_image_user_data{nullptr};
+
+  LoadImageDataOption load_image_option;
+
+  if (user_image_loader_) {
+    // Use user supplied pointer
+    load_image_user_data = load_image_user_data_;
+  } else {
+    load_image_option.preserve_channels = preserve_image_channels_;
+    load_image_user_data = reinterpret_cast<void *>(&load_image_option);
+  }
+
   {
     int idx = 0;
     bool success = ForEachInArray(v, "images", [&](const json &o) {
@@ -5804,7 +5907,7 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
       Image image;
       if (!ParseImage(&image, idx, err, warn, o,
                       store_original_json_for_extras_and_extensions_, base_dir,
-                      &fs, &this->LoadImageData, load_image_user_data_)) {
+                      &fs, &this->LoadImageData, load_image_user_data)) {
         return false;
       }
 
@@ -5842,7 +5945,7 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
         bool ret = LoadImageData(
             &image, idx, err, warn, image.width, image.height,
             &buffer.data[bufferView.byteOffset],
-            static_cast<int>(bufferView.byteLength), load_image_user_data_);
+            static_cast<int>(bufferView.byteLength), load_image_user_data);
         if (!ret) {
           return false;
         }
@@ -6267,6 +6370,13 @@ static void SerializeNumberProperty(const std::string &key, T number,
   JsonAddMember(obj, key.c_str(), json(number));
 }
 
+#ifdef TINYGLTF_USE_RAPIDJSON
+template <>
+void SerializeNumberProperty(const std::string &key, size_t number, json &obj) {
+  JsonAddMember(obj, key.c_str(), json(static_cast<uint64_t>(number)));
+}
+#endif
+
 template <typename T>
 static void SerializeNumberArrayProperty(const std::string &key,
                                          const std::vector<T> &value,
@@ -6417,9 +6527,10 @@ static bool SerializeGltfBufferData(const std::vector<unsigned char> &data,
                                     const std::string &binFilename) {
 #ifdef _WIN32
 #if defined(__GLIBCXX__)  // mingw
-  int file_descriptor =
-      _wopen(UTF8ToWchar(binFilename).c_str(), _O_WRONLY | _O_BINARY);
-  __gnu_cxx::stdio_filebuf<char> wfile_buf(file_descriptor, std::ios_base::in);
+  int file_descriptor = _wopen(UTF8ToWchar(binFilename).c_str(),
+                               _O_CREAT | _O_WRONLY | _O_TRUNC | _O_BINARY);
+  __gnu_cxx::stdio_filebuf<char> wfile_buf(
+      file_descriptor, std::ios_base::out | std::ios_base::binary);
   std::ostream output(&wfile_buf);
   if (!wfile_buf.is_open()) return false;
 #elif defined(_MSC_VER)
@@ -6505,7 +6616,7 @@ static void SerializeGltfAccessor(Accessor &accessor, json &o) {
   if (accessor.bufferView >= 0)
     SerializeNumberProperty<int>("bufferView", accessor.bufferView, o);
 
-  if (accessor.byteOffset != 0.0)
+  if (accessor.byteOffset != 0)
     SerializeNumberProperty<int>("byteOffset", int(accessor.byteOffset), o);
 
   SerializeNumberProperty<int>("componentType", accessor.componentType, o);
@@ -6554,7 +6665,7 @@ static void SerializeGltfAnimationChannel(AnimationChannel &channel, json &o) {
     SerializeNumberProperty("node", channel.target_node, target);
     SerializeStringProperty("path", channel.target_path, target);
 
-	SerializeExtensionMap(channel.target_extensions, target);
+    SerializeExtensionMap(channel.target_extensions, target);
 
     JsonAddMember(o, "target", std::move(target));
   }
@@ -6961,7 +7072,9 @@ static void SerializeSpotLight(SpotLight &spot, json &o) {
 static void SerializeGltfLight(Light &light, json &o) {
   if (!light.name.empty()) SerializeStringProperty("name", light.name, o);
   SerializeNumberProperty("intensity", light.intensity, o);
-  SerializeNumberProperty("range", light.range, o);
+  if (light.range > 0.0) {
+    SerializeNumberProperty("range", light.range, o);
+  }
   SerializeNumberArrayProperty("color", light.color, o);
   SerializeStringProperty("type", light.type, o);
   if (light.type == "spot") {
@@ -7075,6 +7188,11 @@ static void SerializeGltfCamera(const Camera &camera, json &o) {
   } else {
     // ???
   }
+
+  if (camera.extras.Type() != NULL_TYPE) {
+    SerializeValue("extras", camera.extras, o);
+  }
+  SerializeExtensionMap(camera.extensions, o);
 }
 
 static void SerializeGltfScene(Scene &scene, json &o) {
@@ -7153,7 +7271,7 @@ static void SerializeGltfModel(Model *model, json &o) {
   JsonAddMember(o, "asset", std::move(asset));
 
   // BUFFERVIEWS
-  if(model->bufferViews.size()) {
+  if (model->bufferViews.size()) {
     json bufferViews;
     JsonReserveArray(bufferViews, model->bufferViews.size());
     for (unsigned int i = 0; i < model->bufferViews.size(); ++i) {
@@ -7162,11 +7280,6 @@ static void SerializeGltfModel(Model *model, json &o) {
       JsonPushBack(bufferViews, std::move(bufferView));
     }
     JsonAddMember(o, "bufferViews", std::move(bufferViews));
-  }
-
-  // Extensions used
-  if (model->extensionsUsed.size()) {
-    SerializeStringArrayProperty("extensionsUsed", model->extensionsUsed, o);
   }
 
   // Extensions required
@@ -7182,6 +7295,15 @@ static void SerializeGltfModel(Model *model, json &o) {
     for (unsigned int i = 0; i < model->materials.size(); ++i) {
       json material;
       SerializeGltfMaterial(model->materials[i], material);
+
+      if (JsonIsNull(material)) {
+        // Issue 294.
+        // `material` does not have any required parameters
+        // so the result may be null(unmodified) when all material parameters have default value.
+        //
+        // null is not allowed thus we create an empty JSON object.
+        JsonSetObject(material);
+      }
       JsonPushBack(materials, std::move(material));
     }
     JsonAddMember(o, "materials", std::move(materials));
@@ -7279,7 +7401,9 @@ static void SerializeGltfModel(Model *model, json &o) {
   // EXTENSIONS
   SerializeExtensionMap(model->extensions, o);
 
-  // LIGHTS as KHR_lights_cmn
+  auto extensionsUsed = model->extensionsUsed;
+
+  // LIGHTS as KHR_lights_punctual
   if (model->lights.size()) {
     json lights;
     JsonReserveArray(lights, model->lights.size());
@@ -7294,7 +7418,7 @@ static void SerializeGltfModel(Model *model, json &o) {
 
     {
       json_const_iterator it;
-      if (!FindMember(o, "extensions", it)) {
+      if (FindMember(o, "extensions", it)) {
         JsonAssign(ext_j, GetValue(it));
       }
     }
@@ -7302,6 +7426,24 @@ static void SerializeGltfModel(Model *model, json &o) {
     JsonAddMember(ext_j, "KHR_lights_punctual", std::move(khr_lights_cmn));
 
     JsonAddMember(o, "extensions", std::move(ext_j));
+
+    // Also add "KHR_lights_punctual" to `extensionsUsed`
+    {
+      auto has_khr_lights_punctual =
+          std::find_if(extensionsUsed.begin(), extensionsUsed.end(),
+                       [](const std::string &s) {
+                         return (s.compare("KHR_lights_punctual") == 0);
+                       });
+
+      if (has_khr_lights_punctual == extensionsUsed.end()) {
+        extensionsUsed.push_back("KHR_lights_punctual");
+      }
+    }
+  }
+
+  // Extensions used
+  if (model->extensionsUsed.size()) {
+    SerializeStringArrayProperty("extensionsUsed", extensionsUsed, o);
   }
 
   // EXTRAS
@@ -7321,9 +7463,10 @@ static bool WriteGltfFile(const std::string &output,
 #if defined(_MSC_VER)
   std::ofstream gltfFile(UTF8ToWchar(output).c_str());
 #elif defined(__GLIBCXX__)
-  int file_descriptor =
-      _wopen(UTF8ToWchar(output).c_str(), _O_WRONLY | _O_BINARY);
-  __gnu_cxx::stdio_filebuf<char> wfile_buf(file_descriptor, std::ios_base::in);
+  int file_descriptor = _wopen(UTF8ToWchar(output).c_str(),
+                               _O_CREAT | _O_WRONLY | _O_TRUNC | _O_BINARY);
+  __gnu_cxx::stdio_filebuf<char> wfile_buf(
+      file_descriptor, std::ios_base::out | std::ios_base::binary);
   std::ostream gltfFile(&wfile_buf);
   if (!wfile_buf.is_open()) return false;
 #else
@@ -7409,9 +7552,10 @@ static void WriteBinaryGltfFile(const std::string &output,
 #if defined(_MSC_VER)
   std::ofstream gltfFile(UTF8ToWchar(output).c_str(), std::ios::binary);
 #elif defined(__GLIBCXX__)
-  int file_descriptor =
-      _wopen(UTF8ToWchar(output).c_str(), _O_WRONLY | _O_BINARY);
-  __gnu_cxx::stdio_filebuf<char> wfile_buf(file_descriptor, std::ios_base::in);
+  int file_descriptor = _wopen(UTF8ToWchar(output).c_str(),
+                               _O_CREAT | _O_WRONLY | _O_TRUNC | _O_BINARY);
+  __gnu_cxx::stdio_filebuf<char> wfile_buf(
+      file_descriptor, std::ios_base::out | std::ios_base::binary);
   std::ostream gltfFile(&wfile_buf);
 #else
   std::ofstream gltfFile(output.c_str(), std::ios::binary);
@@ -7432,13 +7576,13 @@ bool TinyGLTF::WriteGltfSceneToStream(Model *model, std::ostream &stream,
 
   // BUFFERS
   std::vector<unsigned char> binBuffer;
-  if(model->buffers.size()) {
+  if (model->buffers.size()) {
     json buffers;
     JsonReserveArray(buffers, model->buffers.size());
     for (unsigned int i = 0; i < model->buffers.size(); ++i) {
       json buffer;
-      if (writeBinary && i==0 && model->buffers[i].uri.empty()){
-        SerializeGltfBufferBin(model->buffers[i], buffer,binBuffer);
+      if (writeBinary && i == 0 && model->buffers[i].uri.empty()) {
+        SerializeGltfBufferBin(model->buffers[i], buffer, binBuffer);
       } else {
         SerializeGltfBuffer(model->buffers[i], buffer);
       }
@@ -7455,10 +7599,11 @@ bool TinyGLTF::WriteGltfSceneToStream(Model *model, std::ostream &stream,
       json image;
 
       std::string dummystring = "";
-	  // UpdateImageObject need baseDir but only uses it if embeddedImages is
-	  // enabled, since we won't write separate images when writing to a stream we
-	  UpdateImageObject(model->images[i], dummystring, int(i), false,
-		  &this->WriteImageData, this->write_image_user_data_);
+      // UpdateImageObject need baseDir but only uses it if embeddedImages is
+      // enabled, since we won't write separate images when writing to a stream
+      // we
+      UpdateImageObject(model->images[i], dummystring, int(i), false,
+                        &this->WriteImageData, this->write_image_user_data_);
       SerializeGltfImage(model->images[i], image);
       JsonPushBack(images, std::move(image));
     }
@@ -7503,14 +7648,15 @@ bool TinyGLTF::WriteGltfSceneToFile(Model *model, const std::string &filename,
     JsonReserveArray(buffers, model->buffers.size());
     for (unsigned int i = 0; i < model->buffers.size(); ++i) {
       json buffer;
-      if (writeBinary && i==0 && model->buffers[i].uri.empty()){
-        SerializeGltfBufferBin(model->buffers[i], buffer,binBuffer);
+      if (writeBinary && i == 0 && model->buffers[i].uri.empty()) {
+        SerializeGltfBufferBin(model->buffers[i], buffer, binBuffer);
       } else if (embedBuffers) {
         SerializeGltfBuffer(model->buffers[i], buffer);
       } else {
         std::string binSavePath;
         std::string binUri;
-        if (!model->buffers[i].uri.empty() && !IsDataURI(model->buffers[i].uri)) {
+        if (!model->buffers[i].uri.empty() &&
+            !IsDataURI(model->buffers[i].uri)) {
           binUri = model->buffers[i].uri;
         } else {
           binUri = defaultBinFilename + defaultBinFileExt;
@@ -7536,7 +7682,7 @@ bool TinyGLTF::WriteGltfSceneToFile(Model *model, const std::string &filename,
       }
       JsonPushBack(buffers, std::move(buffer));
     }
-  JsonAddMember(output, "buffers", std::move(buffers));
+    JsonAddMember(output, "buffers", std::move(buffers));
   }
 
   // IMAGES

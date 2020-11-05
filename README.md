@@ -3,14 +3,14 @@ Lighthouse 2 framework for real-time ray tracing
 
 This is the public repo for Lighthouse 2, a rendering framework for real-time ray tracing / path tracing experiments. 
 Lighthouse 2 uses a state-of-the-art wavefront / streaming ray tracing implementation to reach high ray througput on RTX hardware 
-(using Optix 7) and pre-RTX hardware (using Optix 5 Prime) and soon on AMD hardware (using RadeonRays / OpenCL) and CPUs (using Embree).
+(using Optix 7.2) and pre-RTX hardware (using Optix 5 Prime) and soon on AMD hardware (using RadeonRays / OpenCL) and CPUs (using Embree).
 A software rasterizer is also included, mostly as an example of a minimal API implementation.
 
 ![ScreenShot](/screenshots/lighthouse_cobra.png)
 
 Quick pointers / Important advice:
 
-* Building Lighthouse 2: Since February 20202, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 10.2.
+* Building Lighthouse 2: Since February 2020, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 11.1.
 * Lighthouse 2 wiki: https://github.com/jbikker/lighthouse2/wiki (early stages)
 * Trouble shooting page on the wiki: https://github.com/jbikker/lighthouse2/wiki/TroubleShooting
 * Lighthouse 2 forum: https://ompf2.com/viewforum.php?f=18
@@ -50,15 +50,16 @@ from core development.
 
 <b>What it is not</b>
 
-The ray tracing infrastructure (with related scene management acceleration structure maintenance) should be close to optimal. The implemented estimators however (unidirectional path tracers without filtering and blue noise) are not, and neither is the shading
+The ray tracing infrastructure (with related scene management acceleration structure maintenance) should be close to optimal. 
+The implemented estimators however (unidirectional path tracers without filtering and blue noise) are not, and neither is the shading
 model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
 achieved with the platform: https://youtu.be/uEDTtu2ky3o .
 
-Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2019. For the CUDA/Optix based cores CUDA 10.2 is required:
+Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2019. For the CUDA/Optix based cores CUDA 11.1 is required:
 
 https://developer.nvidia.com/cuda-downloads
 
-Optix 5.x, 6.0 and 7.0 libraries are included in the Lighthouse 2 download.
+Optix 5.x, 6.0 and 7.2 libraries are included in the Lighthouse 2 download and do not have to be downloaded separately.
 
 For more information on Lighthouse 2 please visit: http://jacco.ompf2.com.
 

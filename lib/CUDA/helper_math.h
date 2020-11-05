@@ -30,6 +30,7 @@ typedef unsigned short ushort;
 #endif
 
 #ifndef __CUDACC__
+
 #include <cuda_runtime.h>
 
 #pragma warning (disable : 4244 )

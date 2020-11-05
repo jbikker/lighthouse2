@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
 *
 * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
 * rights in and to this software, related documentation and any modifications thereto.
@@ -57,7 +57,7 @@
 /// \param[in] rayFlags       really only 8 bits, combination of OptixRayFlags
 /// \param[in] SBToffset      really only 8 bits
 /// \param[in] SBTstride      really only 8 bits
-/// \param[in] missSBTIndex   specifies the miss shader invoked on a miss
+/// \param[in] missSBTIndex   specifies the miss program invoked on a miss
 static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
                                                    float3                 rayOrigin,
                                                    float3                 rayDirection,
@@ -263,130 +263,189 @@ static __forceinline__ __device__ unsigned int optixGetPayload_7();
 /// Returns an undefined value.
 static __forceinline__ __device__ unsigned int optixUndefinedValue();
 
-/// Returns the rayOrigin passed into rtTrace.
+/// Returns the rayOrigin passed into optixTrace.
 ///
-/// May be more expensive to call in Intersection and AH than their object space counterparts,
+/// May be more expensive to call in IS and AH than their object space counterparts,
 /// so effort should be made to use the object space ray in those programs.
-/// Only available in Intersection, AH, CH, Miss
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ float3 optixGetWorldRayOrigin();
 
-/// Returns the rayDirection passed into rtTrace.
+/// Returns the rayDirection passed into optixTrace.
 ///
-/// May be more expensive to call in Intersection and AH than their object space counterparts,
+/// May be more expensive to call in IS and AH than their object space counterparts,
 /// so effort should be made to use the object space ray in those programs.
-/// Only available in Intersection, AH, CH, Miss
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ float3 optixGetWorldRayDirection();
 
 /// Returns the current object space ray origin based on the current transform stack.
 ///
-/// Only available in Intersection and AH.
+/// Only available in IS and AH.
 static __forceinline__ __device__ float3 optixGetObjectRayOrigin();
 
 /// Returns the current object space ray direction based on the current transform stack.
 ///
-/// Only available in Intersection and AH.
+/// Only available in IS and AH.
 static __forceinline__ __device__ float3 optixGetObjectRayDirection();
 
-/// Returns the tmin passed into rtTrace.
+/// Returns the tmin passed into optixTrace.
 ///
-/// Only available in Intersection, AH, CH, Miss
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ float optixGetRayTmin();
 
-/// In intersection and CH returns the current smallest reported hitT or the tmax passed into rtTrace if no hit has been reported
+/// In IS and CH returns the current smallest reported hitT or the tmax passed into optixTrace if no hit has been reported
 /// In AH returns the hitT value as passed in to optixReportIntersection
-/// In Miss returns the tmax passed into optixTrace
-/// Only available in Intersection, AH, CH, Miss
+/// In MS returns the tmax passed into optixTrace
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ float optixGetRayTmax();
 
-/// Returns the rayTime passed into rtTrace.
+/// Returns the rayTime passed into optixTrace.
 ///
 /// Will return 0 if motion is disabled.
-/// Only available in Intersection, AH, CH, Miss
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ float optixGetRayTime();
 
-/// Returns the rayFlags passed into rtTrace
+/// Returns the rayFlags passed into optixTrace
 ///
-/// Only available in Intersection, AH, CH, Miss
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ unsigned int optixGetRayFlags();
 
-/// Returns the visibilityMask passed into rtTrace
+/// Returns the visibilityMask passed into optixTrace
 ///
-/// Only available in Intersection, AH, CH, Miss
+/// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ unsigned int optixGetRayVisibilityMask();
 
 /// Return the object space triangle vertex positions of a given triangle in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
 ///
-/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion the
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
 /// time parameter is ignored.
 static __forceinline__ __device__ void optixGetTriangleVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float3 data[3]);
+
+/// Return the object space curve control vertex data of a linear curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
+/// time parameter is ignored.
+static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[2] );
+
+/// Return the object space curve control vertex data of a quadratic BSpline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
+/// time parameter is ignored.
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[3] );
+
+/// Return the object space curve control vertex data of a cubic BSpline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
+/// time parameter is ignored.
+static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[4] );
 
 /// Returns the traversable handle for the Geometry Acceleration Structure (GAS) containing
 /// the current hit. May be called from IS, AH and CH.
 static __forceinline__ __device__ OptixTraversableHandle optixGetGASTraversableHandle();
 
+/// Returns the motion begin time of a GAS (see OptixMotionOptions)
 static __forceinline__ __device__ float optixGetGASMotionTimeBegin( OptixTraversableHandle gas );
+
+/// Returns the motion end time of a GAS (see OptixMotionOptions)
 static __forceinline__ __device__ float optixGetGASMotionTimeEnd( OptixTraversableHandle gas );
+
+/// Returns the number of motion steps of a GAS (see OptixMotionOptions)
 static __forceinline__ __device__ unsigned int optixGetGASMotionStepCount( OptixTraversableHandle gas );
 
-/// Returns the world-to-object transformation matrix resulting from the currenct active transformation stack.
+/// Returns the world-to-object transformation matrix resulting from the current active transformation list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ void optixGetWorldToObjectTransformMatrix( float m[12] );
 
-/// Returns the object-to-world transformation matrix resulting from the currenct active transformation stack.
+/// Returns the object-to-world transformation matrix resulting from the current active transformation list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ void optixGetObjectToWorldTransformMatrix( float m[12] );
 
-/// Transforms the point using world-to-object transformation matrix resulting from the currenct active transformation
-/// stack.
+/// Transforms the point using world-to-object transformation matrix resulting from the current active transformation
+/// list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ float3 optixTransformPointFromWorldToObjectSpace( float3 point );
 
-/// Transforms the vector using world-to-object transformation matrix resulting from the currenct active transformation
-/// stack.
+/// Transforms the vector using world-to-object transformation matrix resulting from the current active transformation
+/// list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ float3 optixTransformVectorFromWorldToObjectSpace( float3 vec );
 
-/// Transforms the normal using world-to-object transformation matrix resulting from the currenct active transformation
-/// stack.
+/// Transforms the normal using world-to-object transformation matrix resulting from the current active transformation
+/// list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ float3 optixTransformNormalFromWorldToObjectSpace( float3 normal );
 
-/// Transforms the point using object-to-world transformation matrix resulting from the currenct active transformation
-/// stack.
+/// Transforms the point using object-to-world transformation matrix resulting from the current active transformation
+/// list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ float3 optixTransformPointFromObjectToWorldSpace( float3 point );
 
-/// Transforms the vector using object-to-world transformation matrix resulting from the currenct active transformation
-/// stack.
+/// Transforms the vector using object-to-world transformation matrix resulting from the current active transformation
+/// list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ float3 optixTransformVectorFromObjectToWorldSpace( float3 vec );
 
-/// Transforms the normal using object-to-world transformation matrix resulting from the currenct active transformation
-/// stack.
+/// Transforms the normal using object-to-world transformation matrix resulting from the current active transformation
+/// list.
 ///
-/// The cost of this function may be proportional to the size of the transformation stack.
+/// The cost of this function may be proportional to the size of the transformation list.
 static __forceinline__ __device__ float3 optixTransformNormalFromObjectToWorldSpace( float3 normal );
 
-
+/// Returns the number of transforms on the current transform list.
+///
+/// Only available in IS, AH, CH, EX
 static __forceinline__ __device__ unsigned int optixGetTransformListSize();
 
+/// Returns the traversable handle for a transform on the current transform list.
+///
+/// Only available in IS, AH, CH, EX
 static __forceinline__ __device__ OptixTraversableHandle optixGetTransformListHandle( unsigned int index );
+
+
+/// Returns the transform type of a traversable handle from a transform list.
 static __forceinline__ __device__ OptixTransformType optixGetTransformTypeFromHandle( OptixTraversableHandle handle );
 
+/// Returns a pointer to a OptixStaticTransform from its traversable handle.
+///
+/// Returns 0 if the traversable is not of type OPTIX_TRANSFORM_TYPE_STATIC_TRANSFORM.
 static __forceinline__ __device__ const OptixStaticTransform* optixGetStaticTransformFromHandle( OptixTraversableHandle handle );
+
+/// Returns a pointer to a OptixSRTMotionTransform from its traversable handle.
+///
+/// Returns 0 if the traversable is not of type OPTIX_TRANSFORM_TYPE_SRT_MOTION_TRANSFORM.
 static __forceinline__ __device__ const OptixSRTMotionTransform* optixGetSRTMotionTransformFromHandle( OptixTraversableHandle handle );
+
+/// Returns a pointer to a OptixMatrixMotionTransform from its traversable handle.
+///
+/// Returns 0 if the traversable is not of type OPTIX_TRANSFORM_TYPE_MATRIX_MOTION_TRANSFORM.
 static __forceinline__ __device__ const OptixMatrixMotionTransform* optixGetMatrixMotionTransformFromHandle( OptixTraversableHandle handle );
 
+/// Returns instanceId from an OptixInstance traversable.
+///
+/// Returns 0 if the traversable handle does not reference an OptixInstance.
 static __forceinline__ __device__ unsigned int optixGetInstanceIdFromHandle( OptixTraversableHandle handle );
+
+/// Returns object-to-world transform from an OptixInstance traversable.
+///
+/// Returns 0 if the traversable handle does not reference an OptixInstance.
 static __forceinline__ __device__ const float4* optixGetInstanceTransformFromHandle( OptixTraversableHandle handle );
+
+/// Returns world-to-object transform from an OptixInstance traversable.
+///
+/// Returns 0 if the traversable handle does not reference an OptixInstance.
 static __forceinline__ __device__ const float4* optixGetInstanceInverseTransformFromHandle( OptixTraversableHandle handle );
 
 /// Reports an intersections (overload without attributes).
@@ -407,22 +466,22 @@ static __forceinline__ __device__ const float4* optixGetInstanceInverseTransform
 /// \param[in] hitKind
 static __forceinline__ __device__ bool optixReportIntersection( float hitT, unsigned int hitKind );
 
-/// Reports an intersections (overload with 1 attribute register).
+/// Reports an intersection (overload with 1 attribute register).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float hitT, unsigned int hitKind, unsigned int a0 );
 
-/// Reports an intersections (overload with 2 attribute registers).
+/// Reports an intersection (overload with 2 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float hitT, unsigned int hitKind, unsigned int a0, unsigned int a1 );
 
-/// Reports an intersections (overload with 3 attribute registers).
+/// Reports an intersection (overload with 3 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float hitT, unsigned int hitKind, unsigned int a0, unsigned int a1, unsigned int a2 );
 
-/// Reports an intersections (overload with 4 attribute registers).
+/// Reports an intersection (overload with 4 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float        hitT,
@@ -432,7 +491,7 @@ static __forceinline__ __device__ bool optixReportIntersection( float        hit
                                                                 unsigned int a2,
                                                                 unsigned int a3 );
 
-/// Reports an intersections (overload with 5 attribute registers).
+/// Reports an intersection (overload with 5 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float        hitT,
@@ -443,7 +502,7 @@ static __forceinline__ __device__ bool optixReportIntersection( float        hit
                                                                 unsigned int a3,
                                                                 unsigned int a4 );
 
-/// Reports an intersections (overload with 6 attribute registers).
+/// Reports an intersection (overload with 6 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float        hitT,
@@ -455,7 +514,7 @@ static __forceinline__ __device__ bool optixReportIntersection( float        hit
                                                                 unsigned int a4,
                                                                 unsigned int a5 );
 
-/// Reports an intersections (overload with 7 attribute registers).
+/// Reports an intersection (overload with 7 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float        hitT,
@@ -468,7 +527,7 @@ static __forceinline__ __device__ bool optixReportIntersection( float        hit
                                                                 unsigned int a5,
                                                                 unsigned int a6 );
 
-/// Reports an intersections (overload with 8 attribute registers).
+/// Reports an intersection (overload with 8 attribute registers).
 ///
 /// \see #optixReportIntersection(float,unsigned int)
 static __forceinline__ __device__ bool optixReportIntersection( float        hitT,
@@ -511,45 +570,69 @@ static __forceinline__ __device__ void optixIgnoreIntersection();
 
 
 /// For a given OptixBuildInputTriangleArray the number of primitives is defined as
-/// (OptixBuildInputTriangleArray::indexBuffer == nullptr) ? OptixBuildInputTriangleArray::numVertices/3 :
-///                                                          OptixBuildInputTriangleArray::numIndices/3;
-///
+/// "(OptixBuildInputTriangleArray::indexBuffer == 0) ? OptixBuildInputTriangleArray::numVertices/3 :
+///                                                     OptixBuildInputTriangleArray::numIndexTriplets;".
 /// For a given OptixBuildInputCustomPrimitiveArray the number of primitives is defined as
-/// numAabbs.  The primitive index returns is the index into the corresponding build array
+/// numAabbs.
+///
+/// The primitive index returns the index into the array of primitives
 /// plus the primitiveIndexOffset.
 ///
-/// In Intersection and AH this corresponds to the currently intersected primitive.
+/// In IS and AH this corresponds to the currently intersected primitive.
 /// In CH this corresponds to the primitive index of the closest intersected primitive.
-/// In EX with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT corresponds to the active primitive index. Returns zero for all other exceptions.
 static __forceinline__ __device__ unsigned int optixGetPrimitiveIndex();
+
+/// Returns the Sbt GAS index of the primitive associated with the current intersection.
+///
+/// In IS and AH this corresponds to the currently intersected primitive.
+/// In CH this corresponds to the Sbt GAS index of the closest intersected primitive.
+/// In EX with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT corresponds to the sbt index within the hit GAS. Returns zero for all other exceptions.
+static __forceinline__ __device__ unsigned int optixGetSbtGASIndex();
 
 
 /// Returns the OptixInstance::instanceId of the instance within the top level acceleration structure associated with the current intersection.
 ///
 /// When building an acceleration structure using OptixBuildInputInstanceArray each OptixInstance has a user supplied instanceId.
 /// OptixInstance objects reference another acceleration structure.  During traversal the acceleration structures are visited top down.
-/// In the Intersection and AH programs the OptixInstance::instanceId corresponding to the most recently visited OptixInstance is returned when calling optixGetInstanceId().
+/// In the IS and AH programs the OptixInstance::instanceId corresponding to the most recently visited OptixInstance is returned when calling optixGetInstanceId().
 /// In CH optixGetInstanceId() returns the OptixInstance::instanceId when the hit was recorded with optixReportIntersection.
 /// In the case where there is no OptixInstance visited, optixGetInstanceId returns ~0u
 static __forceinline__ __device__ unsigned int optixGetInstanceId();
 
 /// Returns the zero-based index of the instance within its instance acceleration structure associated with the current intersection.
 ///
-/// In the Intersection and AH programs the index corresponding to the most recently visited OptixInstance is returned when calling optixGetInstanceIndex().
+/// In the IS and AH programs the index corresponding to the most recently visited OptixInstance is returned when calling optixGetInstanceIndex().
 /// In CH optixGetInstanceIndex() returns the index when the hit was recorded with optixReportIntersection.
-/// In the case where there is no OptixInstance visited, optixGetInstanceId returns 0
+/// In the case where there is no OptixInstance visited, optixGetInstanceIndex returns 0
 static __forceinline__ __device__ unsigned int optixGetInstanceIndex();
 
-/// AH - Returns the 8 bit hit kind associated with the current optixReportIntersection.  For custom intersection, this will be the hitKind passed to optixReportIntersection.
+/// Returns the 8 bit hit kind associated with the current hit.
+/// 
+/// Use optixGetPrimitiveType() to interpret the hit kind.
+/// For custom intersections (primitive type OPTIX_PRIMITIVE_TYPE_CUSTOM),
+/// this is the 7-bit hitKind passed to optixReportIntersection(). 
+/// Hit kinds greater than 127 are reserved for built-in primitives.
 ///
-/// For built-in intersection see table below.
-/// Intersection, CH - returns the hitKind from the last recorded intersection.  For custom intersection, this will be the hitKind passed to optixReportIntersection.  For built-in intersection see table below.
-///
-///      Built in intersection hitKind values:
-///         result & 0x80 : built-in primitive hit
-///         result == 0xFE: front face of triangle hit
-///         result == 0xFF: back face of triangle hit
+/// Available only in AH and CH.
 static __forceinline__ __device__ unsigned int optixGetHitKind();
+
+/// Function interpreting the result of #optixGetHitKind().
+static __forceinline__ __device__ OptixPrimitiveType optixGetPrimitiveType( unsigned int hitKind );
+
+/// Function interpreting the result of #optixGetHitKind().
+static __forceinline__ __device__ bool optixIsFrontFaceHit( unsigned int hitKind );
+
+/// Function interpreting the result of #optixGetHitKind().
+static __forceinline__ __device__ bool optixIsBackFaceHit( unsigned int hitKind );
+
+/// Function interpreting the hit kind associated with the current optixReportIntersection.
+static __forceinline__ __device__ OptixPrimitiveType optixGetPrimitiveType();
+
+/// Function interpreting the hit kind associated with the current optixReportIntersection.
+static __forceinline__ __device__ bool optixIsFrontFaceHit();
+
+/// Function interpreting the hit kind associated with the current optixReportIntersection.
+static __forceinline__ __device__ bool optixIsBackFaceHit();
 
 /// Convenience function interpreting the result of #optixGetHitKind().
 static __forceinline__ __device__ bool optixIsTriangleHit();
@@ -565,6 +648,12 @@ static __forceinline__ __device__ bool optixIsTriangleBackFaceHit();
 /// When using OptixBuildInputTriangleArray objects, during intersection the barycentric
 /// coordinates are stored into the first two attribute registers.
 static __forceinline__ __device__ float2 optixGetTriangleBarycentrics();
+
+/// Convenience function that returns the curve parameter.
+///
+/// When using OptixBuildInputCurveArray objects, during intersection the curve parameter
+/// is stored into the first attribute register.
+static __forceinline__ __device__ float optixGetCurveParameter();
 
 /// Available in any program, it returns the current launch index within the launch dimensions specified by optixLaunch on the host.
 ///
@@ -713,15 +802,89 @@ static __forceinline__ __device__ unsigned int optixGetExceptionDetail_6();
 /// \see #optixGetExceptionDetail_0()
 static __forceinline__ __device__ unsigned int optixGetExceptionDetail_7();
 
-/// Returns the invalid traversable handle for exceptions with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_TRAVERSABLE. Returns zero for all other exception codes. Only available in EX.
+/// Returns the invalid traversable handle for exceptions with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_TRAVERSABLE. 
+/// 
+/// Returns zero for all other exception codes. 
+/// 
+/// Only available in EX.
 static __forceinline__ __device__ OptixTraversableHandle optixGetExceptionInvalidTraversable();
 
-/// Returns the invalid sbt offset for exceptions with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_MISS_SBT and OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT. Returns zero for all other exception codes. Only available in EX.
+/// Returns the invalid sbt offset for exceptions with exception code OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_MISS_SBT and OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT. 
+/// 
+/// Returns zero for all other exception codes. 
+/// 
+/// Only available in EX.
 static __forceinline__ __device__ int optixGetExceptionInvalidSbtOffset();
 
+/// Returns the invalid ray for exceptions with exception code OPTIX_EXCEPTION_CODE_INVALID_RAY.
+/// Exceptions of type OPTIX_EXCEPTION_CODE_INVALID_RAY are thrown when one or more values that were
+/// passed into optixTrace are either inf or nan.
+///
+/// OptixInvalidRayExceptionDetails::rayTime will always be 0 if OptixPipelineCompileOptions::usesMotionBlur is 0.
+/// Values in the returned struct are all zero for all other exception codes.
+/// 
+/// Only available in EX.
+static __forceinline__ __device__ OptixInvalidRayExceptionDetails optixGetExceptionInvalidRay();
+
+/// Returns information about an exception with code OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH.
+/// 
+/// Exceptions of type OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH are called when the number of
+/// arguments that were passed into a call to optixDirectCall or optixContinuationCall does not match
+/// the number of parameters of the callable that is called.
+/// Note that the parameters are packed by OptiX into individual 32 bit values, so the number of
+/// expected and passed values may not correspond to the number of arguments passed into optixDirectCall
+/// or optixContinuationCall.
+/// 
+/// Values in the returned struct are all zero for all other exception codes.
+/// 
+/// Only available in EX.
+static __forceinline__ __device__ OptixParameterMismatchExceptionDetails optixGetExceptionParameterMismatch();
+
+/// Returns a string that includes information about the source location that caused the current exception.
+///
+/// The source location is only available for exceptions of type OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH,
+/// OPTIX_EXCEPTION_CODE_UNSUPPORTED_PRIMITIVE_TYPE, OPTIX_EXCEPTION_CODE_INVALID_RAY, and for user exceptions.
+/// Line information needs to be present in the input PTX and OptixModuleCompileOptions::debugLevel
+/// may not be set to OPTIX_COMPILE_DEBUG_LEVEL_NONE.
+/// 
+/// Returns a NULL pointer if no line information is available.
+/// 
+/// Only available in EX.
+static __forceinline__ __device__ char* optixGetExceptionLineInfo();
+
+/// Creates a call to the direct callable program at the specified SBT entry.
+/// 
+/// This will call the program that was specified in the OptixProgramGroupCallables::entryFunctionNameDC in the
+/// module specified by OptixProgramGroupCallables::moduleDC.
+/// The address of the SBT entry is calculated by OptixShaderBindingTable::callablesRecordBase + ( OptixShaderBindingTable::callablesRecordStrideInBytes * sbtIndex ).
+/// 
+/// Behavior is undefined if there is no direct callable program at the specified SBT entry.
+/// 
+/// Behavior is undefined if the number of arguments that are being passed in does not match the number of
+/// parameters expected by the program that is called. In that case an exception of type OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH 
+/// will be thrown if OPTIX_EXCEPTION_FLAG_DEBUG was specified for the OptixPipelineCompileOptions::exceptionFlags.
+///
+/// \param[in] sbtIndex The offset of the SBT entry of the direct callable program to call relative to OptixShaderBindingTable::callablesRecordBase.
+/// \param[in] args The arguments to pass to the direct callable program.
 template <typename ReturnT, typename... ArgTypes>
 static __forceinline__ __device__ ReturnT optixDirectCall( unsigned int sbtIndex, ArgTypes... args );
 
+
+/// Creates a call to the continuation callable program at the specified SBT entry.
+/// 
+/// This will call the program that was specified in the OptixProgramGroupCallables::entryFunctionNameCC in the
+/// module specified by OptixProgramGroupCallables::moduleCC.
+/// The address of the SBT entry is calculated by OptixShaderBindingTable::callablesRecordBase + ( OptixShaderBindingTable::callablesRecordStrideInBytes * sbtIndex ).
+/// As opposed to direct callable programs, continuation callable programs are allowed to call optixTrace recursively.
+/// 
+/// Behavior is undefined if there is no continuation callable program at the specified SBT entry.
+/// 
+/// Behavior is undefined if the number of arguments that are being passed in does not match the number of
+/// parameters expected by the program that is called. In that case an exception of type OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH 
+/// will be thrown if OPTIX_EXCEPTION_FLAG_DEBUG was specified for the OptixPipelineCompileOptions::exceptionFlags.
+///
+/// \param[in] sbtIndex The offset of the SBT entry of the continuation callable program to call relative to OptixShaderBindingTable::callablesRecordBase.
+/// \param[in] args The arguments to pass to the continuation callable program.
 template <typename ReturnT, typename... ArgTypes>
 static __forceinline__ __device__ ReturnT optixContinuationCall( unsigned int sbtIndex, ArgTypes... args );
 
@@ -729,4 +892,4 @@ static __forceinline__ __device__ ReturnT optixContinuationCall( unsigned int sb
 
 #include "internal/optix_7_device_impl.h"
 
-#endif
+#endif  // __optix_optix_7_device_h__

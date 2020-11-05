@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
  * rights in and to this software, related documentation and any modifications thereto.
@@ -26,7 +26,7 @@
 #define __optix_optix_function_table_h__
 
 /// The OptiX ABI version.
-#define OPTIX_ABI_VERSION 22
+#define OPTIX_ABI_VERSION 41
 
 #ifndef OPTIX_DEFINE_ABI_VERSION_ONLY
 
@@ -41,6 +41,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/// \defgroup optix_function_table Function Table
+/// \brief OptiX Function Table
+
+/** \addtogroup optix_function_table
+@{
+*/
 
 /// The function table containing all API functions.
 ///
@@ -109,6 +116,13 @@ typedef struct OptixFunctionTable
 
     /// See ::optixModuleDestroy().
     OptixResult ( *optixModuleDestroy )( OptixModule module );
+
+    /// See ::optixBuiltinISModuleGet().
+    OptixResult( *optixBuiltinISModuleGet )( OptixDeviceContext                 context,
+                                             const OptixModuleCompileOptions*   moduleCompileOptions,
+                                             const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                             const OptixBuiltinISOptions*       builtinISOptions,
+                                             OptixModule*                       builtinModule);
 
     //@ }
     /// \name Program groups
@@ -241,15 +255,15 @@ typedef struct OptixFunctionTable
 
     /// See ::optixDenoiserComputeMemoryResources().
     OptixResult ( *optixDenoiserComputeMemoryResources )( const OptixDenoiser handle,
-                                                          unsigned int        maximumOutputWidth,
-                                                          unsigned int        maximumOutputHeight,
+                                                          unsigned int        maximumInputWidth,
+                                                          unsigned int        maximumInputHeight,
                                                           OptixDenoiserSizes* returnSizes );
 
     /// See ::optixDenoiserSetup().
     OptixResult ( *optixDenoiserSetup )( OptixDenoiser denoiser,
                                          CUstream      stream,
-                                         unsigned int  outputWidth,
-                                         unsigned int  outputHeight,
+                                         unsigned int  inputWidth,
+                                         unsigned int  inputHeight,
                                          CUdeviceptr   state,
                                          size_t        stateSizeInBytes,
                                          CUdeviceptr   scratch,
@@ -281,9 +295,18 @@ typedef struct OptixFunctionTable
                                                     CUdeviceptr         scratch,
                                                     size_t              scratchSizeInBytes );
 
+    /// See ::optixDenoiserComputeAverageColor().
+    OptixResult ( *optixDenoiserComputeAverageColor )( OptixDenoiser       handle,
+                                                       CUstream            stream,
+                                                       const OptixImage2D* inputImage,
+                                                       CUdeviceptr         outputAverageColor,
+                                                       CUdeviceptr         scratch,
+                                                       size_t              scratchSizeInBytes );
     //@ }
 
 } OptixFunctionTable;
+
+/*@}*/  // end group optix_function_table
 
 #ifdef __cplusplus
 }

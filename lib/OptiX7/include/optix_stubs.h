@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,16 +53,16 @@
 extern "C" {
 #endif
 
-/// The function table needs to be defined in exactly one translation unit. This can be
-/// achieved by including optix_function_table_definition.h in that translation unit.
+// The function table needs to be defined in exactly one translation unit. This can be
+// achieved by including optix_function_table_definition.h in that translation unit.
 extern OptixFunctionTable g_optixFunctionTable;
 
 #ifdef _WIN32
-
-static void* optixLoadWindowsDll( void )
+static void* optixLoadWindowsDllFromName( const char* optixDllName )
 {
-    const char* optixDllName = "nvoptix.dll";
-    void*       handle       = NULL;
+    void* handle = NULL;
+
+
     // Get the size of the path first, then allocate
     unsigned int size = GetSystemDirectoryA( NULL, 0 );
     if( size == 0 )
@@ -72,14 +72,16 @@ static void* optixLoadWindowsDll( void )
     }
     size_t pathSize   = size + 1 + strlen( optixDllName );
     char*  systemPath = (char*)malloc( pathSize );
+    if( systemPath == NULL )
+        return NULL;
     if( GetSystemDirectoryA( systemPath, size ) != size - 1 )
     {
         // Something went wrong
         free( systemPath );
         return NULL;
     }
-    strcat_s( systemPath, pathSize, "\\" );
-    strcat_s( systemPath, pathSize, optixDllName );
+    strcat( systemPath, "\\" );
+    strcat( systemPath, optixDllName );
     handle = LoadLibraryA( systemPath );
     free( systemPath );
     if( handle )
@@ -89,7 +91,6 @@ static void* optixLoadWindowsDll( void )
     // have its own registry entry, we are going to look for the opengl driver which lives
     // next to nvoptix.dll.  0 (null) will be returned if any errors occured.
 
-
     static const char* deviceInstanceIdentifiersGUID = "{4d36e968-e325-11ce-bfc1-08002be10318}";
     const ULONG        flags                         = CM_GETIDLIST_FILTER_CLASS | CM_GETIDLIST_FILTER_PRESENT;
     ULONG              deviceListSize                = 0;
@@ -98,13 +99,16 @@ static void* optixLoadWindowsDll( void )
         return NULL;
     }
     char* deviceNames = (char*)malloc( deviceListSize );
+    if( deviceNames == NULL )
+        return NULL;
     if( CM_Get_Device_ID_ListA( deviceInstanceIdentifiersGUID, deviceNames, deviceListSize, flags ) )
     {
         free( deviceNames );
         return NULL;
     }
     DEVINST devID   = 0;
-    char*   dllPath = 0;
+    char*   dllPath = NULL;
+
     // Continue to the next device if errors are encountered.
     for( char* deviceName = deviceNames; *deviceName; deviceName += strlen( deviceName ) + 1 )
     {
@@ -126,6 +130,11 @@ static void* optixLoadWindowsDll( void )
             continue;
         }
         char* regValue = (char*)malloc( valueSize );
+        if( regValue == NULL )
+        {
+            RegCloseKey( regKey );
+            continue;
+        }
         ret            = RegQueryValueExA( regKey, valueName, NULL, NULL, (LPBYTE)regValue, &valueSize );
         if( ret != ERROR_SUCCESS )
         {
@@ -135,12 +144,18 @@ static void* optixLoadWindowsDll( void )
         }
         // Strip the opengl driver dll name from the string then create a new string with
         // the path and the nvoptix.dll name
-        for( int i = valueSize - 1; i >= 0 && regValue[i] != '\\'; --i )
+        for( int i = (int) valueSize - 1; i >= 0 && regValue[i] != '\\'; --i )
             regValue[i] = '\0';
         size_t newPathSize = strlen( regValue ) + strlen( optixDllName ) + 1;
         dllPath            = (char*)malloc( newPathSize );
-        strcpy_s( dllPath, newPathSize, regValue );
-        strcat_s( dllPath, newPathSize, optixDllName );
+        if( dllPath == NULL )
+        {
+            free( regValue );
+            RegCloseKey( regKey );
+            continue;
+        }
+        strcpy( dllPath, regValue );
+        strcat( dllPath, optixDllName );
         free( regValue );
         RegCloseKey( regKey );
         handle = LoadLibraryA( (LPCSTR)dllPath );
@@ -151,11 +166,25 @@ static void* optixLoadWindowsDll( void )
     free( deviceNames );
     return handle;
 }
+
+static void* optixLoadWindowsDll( )
+{
+    return optixLoadWindowsDllFromName( "nvoptix.dll" );
+}
 #endif
+
+/// \defgroup optix_utilities Utilities
+/// \brief OptiX Utilities
+
+/** \addtogroup optix_utilities
+@{
+*/
 
 /// Loads the OptiX library and initializes the function table used by the stubs below.
 ///
 /// If handlePtr is not nullptr, an OS-specific handle to the library will be returned in *handlePtr.
+///
+/// \see #optixUninitWithHandle
 inline OptixResult optixInitWithHandle( void** handlePtr )
 {
     // Make sure these functions get initialized to zero in case the DLL and function
@@ -191,12 +220,36 @@ inline OptixResult optixInitWithHandle( void** handlePtr )
 
 /// Loads the OptiX library and initializes the function table used by the stubs below.
 ///
-/// A variant of optixInitWithHandle() that does not make the handle to the loaded library available.
+/// A variant of #optixInitWithHandle() that does not make the handle to the loaded library available.
 inline OptixResult optixInit( void )
 {
     void* handle;
     return optixInitWithHandle( &handle );
 }
+
+/// Unloads the OptiX library and zeros the function table used by the stubs below.  Takes the
+/// handle returned by optixInitWithHandle.  All OptixDeviceContext objects must be destroyed
+/// before calling this function, or the behavior is undefined.
+///
+/// \see #optixInitWithHandle
+inline OptixResult optixUninitWithHandle( void* handle )
+{
+    if( !handle )
+      return OPTIX_ERROR_INVALID_VALUE;
+#ifdef _WIN32
+    if( !FreeLibrary( (HMODULE)handle ) )
+        return OPTIX_ERROR_LIBRARY_UNLOAD_FAILURE;
+#else
+    if( dlclose( handle ) )
+        return OPTIX_ERROR_LIBRARY_UNLOAD_FAILURE;
+#endif
+    OptixFunctionTable empty = { 0 };
+    g_optixFunctionTable = empty;
+    return OPTIX_SUCCESS;
+}
+
+
+/*@}*/  // end group optix_utilities
 
 #ifndef OPTIX_DOXYGEN_SHOULD_SKIP_THIS
 
@@ -225,6 +278,8 @@ inline const char* optixGetErrorName( OptixResult result )
             return "OPTIX_ERROR_LIBRARY_NOT_FOUND";
         case OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND:
             return "OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND";
+        case OPTIX_ERROR_LIBRARY_UNLOAD_FAILURE:
+            return "OPTIX_ERROR_LIBRARY_UNLOAD_FAILURE";
         default:
             return "Unknown OptixResult code";
     }
@@ -253,6 +308,8 @@ inline const char* optixGetErrorString( OptixResult result )
             return "Library not found";
         case OPTIX_ERROR_ENTRY_SYMBOL_NOT_FOUND:
             return "Entry symbol not found";
+        case OPTIX_ERROR_LIBRARY_UNLOAD_FAILURE:
+            return "Library could not be unloaded";
         default:
             return "Unknown OptixResult code";
     }
@@ -327,6 +384,16 @@ inline OptixResult optixModuleCreateFromPTX( OptixDeviceContext                 
 inline OptixResult optixModuleDestroy( OptixModule module )
 {
     return g_optixFunctionTable.optixModuleDestroy( module );
+}
+
+inline OptixResult optixBuiltinISModuleGet( OptixDeviceContext                 context,
+                                            const OptixModuleCompileOptions*   moduleCompileOptions,
+                                            const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                            const OptixBuiltinISOptions*       builtinISOptions,
+                                            OptixModule*                       builtinModule )
+{
+    return g_optixFunctionTable.optixBuiltinISModuleGet( context, moduleCompileOptions, pipelineCompileOptions, 
+                                                         builtinISOptions, builtinModule );
 }
 
 inline OptixResult optixProgramGroupCreate( OptixDeviceContext              context,
@@ -477,23 +544,23 @@ inline OptixResult optixDenoiserDestroy( OptixDenoiser handle )
 }
 
 inline OptixResult optixDenoiserComputeMemoryResources( const OptixDenoiser handle,
-                                                        unsigned int        maximumOutputWidth,
-                                                        unsigned int        maximumOutputHeight,
+                                                        unsigned int        maximumInputWidth,
+                                                        unsigned int        maximumInputHeight,
                                                         OptixDenoiserSizes* returnSizes )
 {
-    return g_optixFunctionTable.optixDenoiserComputeMemoryResources( handle, maximumOutputWidth, maximumOutputHeight, returnSizes );
+    return g_optixFunctionTable.optixDenoiserComputeMemoryResources( handle, maximumInputWidth, maximumInputHeight, returnSizes );
 }
 
 inline OptixResult optixDenoiserSetup( OptixDenoiser denoiser,
                                        CUstream      stream,
-                                       unsigned int  outputWidth,
-                                       unsigned int  outputHeight,
+                                       unsigned int  inputWidth,
+                                       unsigned int  inputHeight,
                                        CUdeviceptr   denoiserState,
                                        size_t        denoiserStateSizeInBytes,
                                        CUdeviceptr   scratch,
                                        size_t        scratchSizeInBytes )
 {
-    return g_optixFunctionTable.optixDenoiserSetup( denoiser, stream, outputWidth, outputHeight, denoiserState,
+    return g_optixFunctionTable.optixDenoiserSetup( denoiser, stream, inputWidth, inputHeight, denoiserState,
                                                     denoiserStateSizeInBytes, scratch, scratchSizeInBytes );
 }
 
@@ -528,6 +595,16 @@ inline OptixResult optixDenoiserComputeIntensity( OptixDenoiser       handle,
                                                   size_t              scratchSizeInBytes )
 {
     return g_optixFunctionTable.optixDenoiserComputeIntensity( handle, stream, inputImage, outputIntensity, scratch, scratchSizeInBytes );
+}
+
+inline OptixResult optixDenoiserComputeAverageColor( OptixDenoiser       handle,
+                                                     CUstream            stream,
+                                                     const OptixImage2D* inputImage,
+                                                     CUdeviceptr         outputAverageColor,
+                                                     CUdeviceptr         scratch,
+                                                     size_t              scratchSizeInBytes )
+{
+    return g_optixFunctionTable.optixDenoiserComputeAverageColor( handle, stream, inputImage, outputAverageColor, scratch, scratchSizeInBytes );
 }
 
 #endif  // OPTIX_DOXYGEN_SHOULD_SKIP_THIS

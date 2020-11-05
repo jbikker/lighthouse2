@@ -79,7 +79,7 @@ public:
 	}
 	static const char* decodeError( cudaError_t res )
 	{
-		switch ((cudaError_enum)res)
+		switch (res)
 		{
 		default:                                        return "Unknown cudaError_t";
 		case CUDA_SUCCESS:                              return "No error";

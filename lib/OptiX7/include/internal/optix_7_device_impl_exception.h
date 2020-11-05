@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
 *
 * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
 * rights in and to this software, related documentation and any modifications thereto.
@@ -200,12 +200,74 @@ namespace optix_impl {
         else if( exceptionCode == OPTIX_EXCEPTION_CODE_TRAVERSAL_INVALID_HIT_SBT )
         {
             int sbtOffset = optixGetExceptionInvalidSbtOffset();
-            printf("(%4i,%4i,%4i) error: invalid hit sbt of %i at primitive %i\n", index.x,index.y,index.z, sbtOffset, optixGetPrimitiveIndex() );
+            printf("(%4i,%4i,%4i) error: invalid hit sbt of %i at primitive with gas sbt index %i\n", index.x,index.y,index.z, sbtOffset, optixGetSbtGASIndex() );
+            dumpTlist = true;
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_UNSUPPORTED_PRIMITIVE_TYPE )
+        {
+            dumpTlist = true;
+            printf( "(%4i,%4i,%4i) error: shader encountered unsupported builtin type\n"
+                    "       call location:   %s\n", index.x, index.y, index.z, optixGetExceptionLineInfo() );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_INVALID_RAY )
+        {
+            OptixInvalidRayExceptionDetails ray = optixGetExceptionInvalidRay();
+            printf( "(%4i,%4i,%4i) error: encountered ray with nan or inf values:\n", index.x, index.y, index.z );
+            printf(
+                "       origin:          [%f, %f, %f]\n"
+                "       direction:       [%f, %f, %f]\n"
+                "       tmin:            %f\n"
+                "       tmax:            %f\n"
+                "       rayTime:         %f\n"
+                "       call location:   %s\n",
+                ray.origin.x, ray.origin.y, ray.origin.z, ray.direction.x, ray.direction.y,
+                ray.direction.z, ray.tmin, ray.tmax, ray.time, optixGetExceptionLineInfo() );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_CALLABLE_PARAMETER_MISMATCH )
+        {
+             OptixParameterMismatchExceptionDetails details = optixGetExceptionParameterMismatch();
+             printf( "(%4i,%4i,%4i) error: parameter mismatch in callable call.\n", index.x, index.y, index.z );
+             printf(
+                "       passed packed arguments:       %u 32 Bit values\n"
+                "       expected packed parameters:    %u 32 Bit values\n"
+                "       SBT index:                     %u\n"
+                "       called function:               %s\n"
+                "       call location:                 %s\n",
+                details.passedArgumentCount, details.expectedParameterCount, details.sbtIndex,
+                details.callableName, optixGetExceptionLineInfo() );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_BUILTIN_IS_MISMATCH )
+        {
+            dumpTlist = true;
+            printf("(%4i,%4i,%4i) error: mismatch between builtin IS shader and build input\n"
+                   "       call location:   %s\n", index.x,index.y,index.z, optixGetExceptionLineInfo() );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_CALLABLE_INVALID_SBT )
+        {
+            int sbtOffset = optixGetExceptionInvalidSbtOffset();
+            printf( "(%4i,%4i,%4i) error: invalid sbt offset of %i for callable program\n", index.x, index.y, index.z, sbtOffset );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_CALLABLE_NO_DC_SBT_RECORD )
+        {
+            int sbtOffset = optixGetExceptionInvalidSbtOffset();
+            printf( "(%4i,%4i,%4i) error: invalid sbt offset of %i for direct callable program\n", index.x, index.y, index.z, sbtOffset );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_CALLABLE_NO_CC_SBT_RECORD )
+        {
+            int sbtOffset = optixGetExceptionInvalidSbtOffset();
+            printf( "(%4i,%4i,%4i) error: invalid sbt offset of %i for continuation callable program\n", index.x, index.y, index.z, sbtOffset );
+        }
+        else if( exceptionCode == OPTIX_EXCEPTION_CODE_UNSUPPORTED_SINGLE_LEVEL_GAS )
+        {
+            OptixTraversableHandle handle = optixGetExceptionInvalidTraversable();
+            printf("(%4i,%4i,%4i) error: unsupported single GAS traversable graph %p\n", index.x,index.y,index.z, (void*)handle);
             dumpTlist = true;
         }
         else if( exceptionCode >= 0 )
         {
-            printf("(%4i,%4i,%4i) error: user exception with error code %i\n", index.x,index.y,index.z, exceptionCode);
+            dumpTlist = true;
+            printf( "(%4i,%4i,%4i) error: user exception with error code %i\n"
+                    "       call location:   %s\n", index.x, index.y, index.z, exceptionCode, optixGetExceptionLineInfo() );
         }
         else
         {

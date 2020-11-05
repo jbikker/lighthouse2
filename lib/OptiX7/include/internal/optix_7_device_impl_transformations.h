@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
 *
 * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
 * rights in and to this software, related documentation and any modifications thereto.
@@ -111,9 +111,9 @@ static __forceinline__ __device__ void optixGetMatrixFromSrt( float4& m0, float4
     m2.y = 2.0f * ( yz + xw );
     m2.z = ( -sqx - sqy + sqz + sqw );
 
-    m0.w = -( m0.x * srt.pvx + m0.y * srt.pvy + m0.z * srt.pvz ) + srt.tx;
-    m1.w = -( m1.x * srt.pvx + m1.y * srt.pvy + m1.z * srt.pvz ) + srt.ty;
-    m2.w = -( m2.x * srt.pvx + m2.y * srt.pvy + m2.z * srt.pvz ) + srt.tz;
+    m0.w = m0.x * srt.pvx + m0.y * srt.pvy + m0.z * srt.pvz + srt.tx;
+    m1.w = m1.x * srt.pvx + m1.y * srt.pvy + m1.z * srt.pvz + srt.ty;
+    m2.w = m2.x * srt.pvx + m2.y * srt.pvy + m2.z * srt.pvz + srt.tz;
 
     m0.z = m0.x * srt.b + m0.y * srt.c + m0.z * srt.sz;
     m1.z = m1.x * srt.b + m1.y * srt.c + m1.z * srt.sz;

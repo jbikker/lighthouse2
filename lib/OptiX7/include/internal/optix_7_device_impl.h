@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
+* Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
 *
 * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
 * rights in and to this software, related documentation and any modifications thereto.
@@ -348,7 +348,7 @@ static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle
 
 #define OPTIX_DEFINE_optixGetPayload_BODY( which )                                                                     \
     unsigned int result;                                                                                               \
-    asm( "call (%0), _optix_get_payload_" #which ", ();" : "=r"( result ) : );                                         \
+    asm volatile( "call (%0), _optix_get_payload_" #which ", ();" : "=r"( result ) : );                                         \
     return result;
 
 static __forceinline__ __device__ void optixSetPayload_0( unsigned int p )
@@ -522,6 +522,52 @@ static __forceinline__ __device__ void optixGetTriangleVertexData( OptixTraversa
          "(%9, %10, %11, %12);"
          : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[1].x ), "=f"( data[1].y ),
            "=f"( data[1].z ), "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTraversableHandle gas,
+                                                                      unsigned int           primIdx,
+                                                                      unsigned int           sbtGASIndex,
+                                                                      float                  time,
+                                                                      float4                 data[2] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7), _optix_get_linear_curve_vertex_data, "
+         "(%8, %9, %10, %11);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ),
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( OptixTraversableHandle gas,
+                                                                           unsigned int         primIdx,
+                                                                           unsigned int         sbtGASIndex,
+                                                                           float                time,
+                                                                           float4               data[3] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11), _optix_get_quadratic_bspline_vertex_data, "
+         "(%12, %13, %14, %15);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), 
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w )
+         : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
+         : );
+}
+
+static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTraversableHandle gas,
+                                                                       unsigned int         primIdx,
+                                                                       unsigned int         sbtGASIndex,
+                                                                       float                time,
+                                                                       float4               data[4] )
+{
+    asm( "call (%0, %1, %2, %3,  %4, %5, %6, %7,  %8, %9, %10, %11,  %12, %13, %14, %15), "
+         "_optix_get_cubic_bspline_vertex_data, "
+         "(%16, %17, %18, %19);"
+         : "=f"( data[0].x ), "=f"( data[0].y ), "=f"( data[0].z ), "=f"( data[0].w ), 
+           "=f"( data[1].x ), "=f"( data[1].y ), "=f"( data[1].z ), "=f"( data[1].w ),
+           "=f"( data[2].x ), "=f"( data[2].y ), "=f"( data[2].z ), "=f"( data[2].w ),
+           "=f"( data[3].x ), "=f"( data[3].y ), "=f"( data[3].z ), "=f"( data[3].w )
          : "l"( gas ), "r"( primIdx ), "r"( sbtGASIndex ), "f"( time )
          : );
 }
@@ -954,6 +1000,13 @@ static __forceinline__ __device__ unsigned int optixGetPrimitiveIndex()
     return u0;
 }
 
+static __forceinline__ __device__ unsigned int optixGetSbtGASIndex()
+{
+    unsigned int u0;
+    asm( "call (%0), _optix_read_sbt_gas_idx, ();" : "=r"( u0 ) : );
+    return u0;
+}
+
 static __forceinline__ __device__ unsigned int optixGetInstanceId()
 {
     unsigned int u0;
@@ -975,6 +1028,41 @@ static __forceinline__ __device__ unsigned int optixGetHitKind()
     return u0;
 }
 
+static __forceinline__ __device__ OptixPrimitiveType optixGetPrimitiveType(unsigned int hitKind)
+{
+    unsigned int u0;
+    asm( "call (%0), _optix_get_primitive_type_from_hit_kind, (%1);" : "=r"( u0 ) : "r"( hitKind ) );
+    return (OptixPrimitiveType)u0;
+}
+
+static __forceinline__ __device__ bool optixIsBackFaceHit( unsigned int hitKind )
+{
+    unsigned int u0;
+    asm( "call (%0), _optix_get_backface_from_hit_kind, (%1);" : "=r"( u0 ) : "r"( hitKind ) );
+    return (u0 == 0x1);
+}
+
+static __forceinline__ __device__ bool optixIsFrontFaceHit( unsigned int hitKind )
+{
+    return !optixIsBackFaceHit( hitKind );
+}
+
+
+static __forceinline__ __device__ OptixPrimitiveType optixGetPrimitiveType()
+{
+    return optixGetPrimitiveType( optixGetHitKind() );
+}
+
+static __forceinline__ __device__ bool optixIsBackFaceHit()
+{
+    return optixIsBackFaceHit( optixGetHitKind() );
+}
+
+static __forceinline__ __device__ bool optixIsFrontFaceHit()
+{
+    return optixIsFrontFaceHit( optixGetHitKind() );
+}
+
 static __forceinline__ __device__ bool optixIsTriangleHit()
 {
     return optixIsTriangleFrontFaceHit() || optixIsTriangleBackFaceHit();
@@ -988,6 +1076,11 @@ static __forceinline__ __device__ bool optixIsTriangleFrontFaceHit()
 static __forceinline__ __device__ bool optixIsTriangleBackFaceHit()
 {
     return optixGetHitKind() == OPTIX_HIT_KIND_TRIANGLE_BACK_FACE;
+}
+
+static __forceinline__ __device__ float optixGetCurveParameter()
+{
+    return __int_as_float( optixGetAttribute_0() );
 }
 
 static __forceinline__ __device__ float2 optixGetTriangleBarycentrics()
@@ -1169,6 +1262,44 @@ static __forceinline__ __device__ int optixGetExceptionInvalidSbtOffset()
     int s0;
     asm( "call (%0), _optix_get_exception_invalid_sbt_offset, ();" : "=r"( s0 ) : );
     return s0;
+}
+
+static __forceinline__ __device__ OptixInvalidRayExceptionDetails optixGetExceptionInvalidRay()
+{
+    float rayOriginX, rayOriginY, rayOriginZ, rayDirectionX, rayDirectionY, rayDirectionZ, tmin, tmax, rayTime;
+    asm( "call (%0, %1, %2, %3, %4, %5, %6, %7, %8), _optix_get_exception_invalid_ray, ();"
+         : "=f"( rayOriginX ), "=f"( rayOriginY ), "=f"( rayOriginZ ), "=f"( rayDirectionX ), "=f"( rayDirectionY ),
+           "=f"( rayDirectionZ ), "=f"( tmin ), "=f"( tmax ), "=f"( rayTime )
+         : );
+    OptixInvalidRayExceptionDetails ray;
+    ray.origin    = make_float3( rayOriginX, rayOriginY, rayOriginZ );
+    ray.direction = make_float3( rayDirectionX, rayDirectionY, rayDirectionZ );
+    ray.tmin      = tmin;
+    ray.tmax      = tmax;
+    ray.time      = rayTime;
+    return ray;
+}
+
+static __forceinline__ __device__ OptixParameterMismatchExceptionDetails optixGetExceptionParameterMismatch()
+{
+    unsigned int expected, actual, sbtIdx;
+    unsigned long long calleeName;
+    asm(
+        "call (%0, %1, %2, %3), _optix_get_exception_parameter_mismatch, ();"
+        : "=r"(expected), "=r"(actual), "=r"(sbtIdx), "=l"(calleeName) : );
+    OptixParameterMismatchExceptionDetails details;
+    details.expectedParameterCount = expected;
+    details.passedArgumentCount = actual;
+    details.sbtIndex = sbtIdx;
+    details.callableName = (char*)calleeName;
+    return details;
+}
+
+static __forceinline__ __device__ char* optixGetExceptionLineInfo()
+{
+    unsigned long long ptr;
+    asm( "call (%0), _optix_get_exception_line_info, ();" : "=l"(ptr) : );
+    return (char*)ptr;
 }
 
 template <typename ReturnT, typename... ArgTypes>

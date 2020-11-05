@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
  * rights in and to this software, related documentation and any modifications thereto.
@@ -34,7 +34,7 @@
 /// - major =  OPTIX_VERSION/10000
 /// - minor = (OPTIX_VERSION%10000)/100
 /// - micro =  OPTIX_VERSION%100
-#define OPTIX_VERSION 70000
+#define OPTIX_VERSION 70200
 
 
 #ifdef __CUDACC__

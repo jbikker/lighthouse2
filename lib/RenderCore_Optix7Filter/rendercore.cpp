@@ -214,7 +214,6 @@ void RenderCore::CreateOptixContext( int cc )
 	OptixPipelineLinkOptions linkOptions = {};
 	linkOptions.maxTraceDepth = 1;
 	linkOptions.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
-	linkOptions.overrideUsesMotionBlur = false;
 	logSize = sizeof( log );
 	CHK_OPTIX_LOG( optixPipelineCreate( optixContext, &pipeCompileOptions, &linkOptions, progGroup, 5, log, &logSize, &pipeline ) );
 	// calculate the stack sizes, so we can specify all parameters to optixPipelineSetStackSize

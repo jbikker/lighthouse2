@@ -14,6 +14,7 @@
 */
 
 #include "core_settings.h"
+#include "whitted_ray_tracer.h"
 
 using namespace lh2core;
 

@@ -11,6 +11,8 @@ rd .vs /S /Q
 
 rem | Clean up RenderCore folders
 
+rd lib\RenderCore_Whitted\lib /S /Q
+rd lib\RenderCore_Whitted\x64 /S /Q
 rd lib\RenderCore_Minimal\lib /S /Q
 rd lib\RenderCore_Minimal\x64 /S /Q
 rd lib\RenderCore_PrimeRef\lib /S /Q

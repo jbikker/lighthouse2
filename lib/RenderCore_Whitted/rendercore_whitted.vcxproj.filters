@@ -3,9 +3,37 @@
   <ItemGroup>
     <ClCompile Include="rendercore.cpp" />
     <ClCompile Include="core_api.cpp" />
+    <ClCompile Include="whitted_ray_tracer.cpp" />
+    <ClCompile Include="ray.cpp">
+      <Filter>engine_objects</Filter>
+    </ClCompile>
+    <ClCompile Include="material.cpp">
+      <Filter>engine_objects</Filter>
+    </ClCompile>
+    <ClCompile Include="primitive.cpp">
+      <Filter>primitives</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rendercore.h" />
     <ClInclude Include="core_settings.h" />
+    <ClInclude Include="whitted_ray_tracer.h" />
+    <ClInclude Include="material.h">
+      <Filter>engine_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="ray.h">
+      <Filter>engine_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="primitive.h">
+      <Filter>primitives</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="primitives">
+      <UniqueIdentifier>{1b6e8e0f-2a0a-49c6-8639-1c921a16b68f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine_objects">
+      <UniqueIdentifier>{5ac55355-928c-485e-8070-d18c0ddd7b4e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

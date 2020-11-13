@@ -1,13 +1,7 @@
 #pragma once
-
-namespace lh2core
+class Ray
 {
-
-	class Ray
-	{
-	public:
-		float4* origin;
-		float4* direction;
-	};
-
-}
+//public:
+//	float4* origin;
+//	float4* direction;
+};

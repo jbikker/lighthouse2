@@ -1,11 +1,9 @@
+#include "core_settings.h"
+
 #pragma once
 class WhittedRayTracer
 {
 public:
-	void Render(const ViewPyramid& view);
-
-private:
-	float4 Trace(Ray& ray);
-
+	static int* Render(const ViewPyramid& view, const int height, const int width);
 };
 

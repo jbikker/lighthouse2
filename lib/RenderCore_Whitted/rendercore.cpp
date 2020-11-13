@@ -65,17 +65,10 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// render
-	screen->Clear();
-	for (Mesh& mesh : meshes) for (int i = 0; i < mesh.vcount; i++)
-	{
-		// convert a vertex position to a screen coordinate
-		int screenx = mesh.vertices[i].x / 80 * (float)screen->width + screen->width / 2;
-		int screeny = mesh.vertices[i].z / 80 * (float)screen->height + screen->height / 2;
-		screen->Plot( screenx, screeny, 0xffffff /* white */ );
-	}
+	int* pixels = WhittedRayTracer::Render(view, screen->width, screen->height);
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen->pixels );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
 }
 
 //  +-----------------------------------------------------------------------------+

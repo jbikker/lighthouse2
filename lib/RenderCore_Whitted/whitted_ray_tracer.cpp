@@ -5,6 +5,15 @@
 
 using namespace lh2core;
 
-void WhittedRayTracer::Render(ViewPyramid& view) {
+int* WhittedRayTracer::Render(const ViewPyramid& view, const int height, const int width) {
+	int amountPixels = height * width;
+	int* pixels = new int[amountPixels];
+	for (int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			int index = i + j * width;
+			pixels[index] = 255 << 8;
+		}
+	}
 
+	return pixels;
 }

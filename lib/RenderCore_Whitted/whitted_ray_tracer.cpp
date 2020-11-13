@@ -3,24 +3,29 @@
 #include "ray.h"
 #include "material.h"
 #include "sphere.h"
+#include "primitive.h"
+
+Primitive** WhittedRayTracer::scene = new Primitive*[2] {
+	new Sphere(make_float4(0, 0, 10, 0), 3),
+	new Sphere(make_float4(2, 0, 10, 0), 3)
+};
 
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 	Ray ray = Ray(make_float4(view.pos, 0), make_float4(0, 0, 0, 0));
-	
-	Sphere sphere = Sphere(make_float4(view.pos, 0) + make_float4(0, 0, 10, 0), 3);
-	Sphere sphere2 = Sphere(make_float4(view.pos, 0) + make_float4(2, 0, 10, 0), 3);
 
-	for (int j = 0; j < screen->height; j++) {
-		for (int i = 0; i < screen->width; i++) {
+	for (int y = 0; y < screen->height; y++) {
+		for (int x = 0; x < screen->width; x++) {
 
-			float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, i, j);
+			float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, x, y);
 			float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
 			ray.direction = rayDirection;
 
-			sphere.Intersect(ray);
-			sphere2.Intersect(ray);
+			for (int i = 0; i < 2; i++) {
+				Primitive* primitive = WhittedRayTracer::scene[i];
+				primitive->Intersect(ray);
+			}
 
-			int index = i + j * screen->width;
+			int index = x + y * screen->width;
 			if (ray.intersectionDistance > 0) {
 				screen->pixels[index] = 255 << 8;
 			} else {

@@ -7,7 +7,8 @@
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 	Ray ray = Ray(make_float4(view.pos, 0), make_float4(0, 0, 0, 0));
 	
-	Sphere sphere = Sphere(make_float4(view.pos, 0) + make_float4(0, 0, 5, 0), 24);
+	Sphere sphere = Sphere(make_float4(view.pos, 0) + make_float4(0, 0, 10, 0), 3);
+	Sphere sphere2 = Sphere(make_float4(view.pos, 0) + make_float4(2, 0, 10, 0), 3);
 
 	for (int j = 0; j < screen->height; j++) {
 		for (int i = 0; i < screen->width; i++) {
@@ -17,6 +18,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			ray.direction = rayDirection;
 
 			sphere.Intersect(ray);
+			sphere2.Intersect(ray);
 
 			int index = i + j * screen->width;
 			if (ray.intersectionDistance > 0) {
@@ -25,7 +27,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 				screen->pixels[index] = 0;
 			}
 
-			ray.intersectionDistance = 0;
+			ray.intersectionDistance = NULL;
 		}
 	}
 }

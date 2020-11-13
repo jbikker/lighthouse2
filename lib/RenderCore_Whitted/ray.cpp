@@ -5,5 +5,5 @@
 Ray::Ray(float4 _origin, float4 _direction) {
 	origin = _origin;
 	direction = _direction;
-	intersectionDistance = std::numeric_limits<float>::max();
+	intersectionDistance = NULL;
 }

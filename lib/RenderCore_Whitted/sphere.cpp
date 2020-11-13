@@ -13,8 +13,11 @@ void Sphere::Intersect(Ray& ray) {
 	float lengthPerpendicular = dot(directionPerpendicular, directionPerpendicular);
 	if (lengthPerpendicular > this->radius2) return;
 	distanceMappedOnRay -= sqrt(this->radius2 - lengthPerpendicular);
-	if (
-		(distanceMappedOnRay < ray.intersectionDistance) &&
+	if ( (
+			(ray.intersectionDistance == NULL) ||
+			(distanceMappedOnRay < ray.intersectionDistance)
+		)
+		&&
 		(distanceMappedOnRay > 0)
 	) { 
 		ray.intersectionDistance = distanceMappedOnRay;

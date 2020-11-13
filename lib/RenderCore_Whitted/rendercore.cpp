@@ -65,10 +65,10 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// render
-	int* pixels = WhittedRayTracer::Render(view, screen->width, screen->height);
+	WhittedRayTracer::Render(view,screen);
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen->pixels);
 }
 
 //  +-----------------------------------------------------------------------------+

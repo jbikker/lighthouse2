@@ -4,6 +4,6 @@
 class WhittedRayTracer
 {
 public:
-	static int* Render(const ViewPyramid& view, const int height, const int width);
+	static void Render(const ViewPyramid& view, const Bitmap* screen);
 };
 

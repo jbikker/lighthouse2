@@ -3,6 +3,8 @@
 #include "ray.h"
 #include "material.h"
 
+using namespace lh2core;
+
 void WhittedRayTracer::Render(ViewPyramid& view) {
 
 }

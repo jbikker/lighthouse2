@@ -10,6 +10,9 @@
     <ClCompile Include="material.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
+    <ClCompile Include="sphere.cpp">
+      <Filter>primitives</Filter>
+    </ClCompile>
     <ClCompile Include="primitive.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
@@ -25,6 +28,9 @@
       <Filter>engine_objects</Filter>
     </ClInclude>
     <ClInclude Include="primitive.h">
+      <Filter>primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="sphere.h">
       <Filter>primitives</Filter>
     </ClInclude>
   </ItemGroup>

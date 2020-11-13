@@ -1,7 +1,9 @@
 #include "ray.h"
 #include "core_settings.h"
+#include "limits"
 
-Ray::Ray(float4 orig, float4 dir) {
-	origin = orig;
-	direction = dir;
+Ray::Ray(float4 _origin, float4 _direction) {
+	origin = _origin;
+	direction = _direction;
+	intersectionDistance = std::numeric_limits<float>::max();
 }

@@ -1,7 +1,8 @@
 #pragma once
 class Ray
 {
-//public:
-//	float4* origin;
-//	float4* direction;
+public:
+	Ray(float4 orig, float4 dir);
+	float4 origin;
+	float4 direction;
 };

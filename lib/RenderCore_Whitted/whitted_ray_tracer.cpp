@@ -4,16 +4,17 @@
 #include "material.h"
 #include "sphere.h"
 #include "primitive.h"
+#include "tuple"
 
 Primitive** WhittedRayTracer::scene = new Primitive*[2] {
 	new Sphere(
 		make_float4(0, 0, 10, 0),  
-		new Material(make_float4(255, 0, 0, 0)),
+		new Material(make_float4(1, 0, 0, 0)),
 		3
 	),
 	new Sphere(
 		make_float4(2, 0, 10, 0), 
-		new Material(make_float4(0, 255, 0, 0)),
+		new Material(make_float4(0, 1, 0, 0)),
 		3
 	)
 };
@@ -29,19 +30,18 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
 			ray.direction = rayDirection;
 
-			for (int i = 0; i < 2; i++) {
-				Primitive* primitive = WhittedRayTracer::scene[i];
-				primitive->Intersect(ray);
-			}
+			tuple<Primitive*, float> nearestIntersection = WhittedRayTracer::GetNearestIntersection();
+			Primitive* nearestPrimitive = get<0>(nearestIntersection);
+			float intersectionDistance = get<1>(nearestIntersection);
 
 			int index = x + y * screen->width;
-			if (ray.intersectionDistance > 0) {
-				screen->pixels[index] = 255 << 8;
+			
+			if (intersectionDistance > 0) {
+				int color = WhittedRayTracer::ConvertColorToInt(nearestPrimitive->material->color);
+				screen->pixels[index] = color;
 			} else {
 				screen->pixels[index] = 0;
 			}
-
-			ray.intersectionDistance = NULL;
 		}
 	}
 }
@@ -59,4 +59,31 @@ float4 WhittedRayTracer::GetRayDirection(const ViewPyramid& view, float3 point) 
 	float3 originToPoint = point - view.pos;
 	float3 rayDirection = normalize((originToPoint) / length(originToPoint));
 	return make_float4(rayDirection, 0);
+}
+
+tuple<Primitive*, float> WhittedRayTracer::GetNearestIntersection() {
+	float minDistance = NULL;
+	Primitive* nearestPrimitive = NULL;
+
+	for (int i = 0; i < 2; i++) {
+		Primitive* primitive = WhittedRayTracer::scene[i];
+		float distance = primitive->Intersect(ray);
+
+		if (( (minDistance == NULL) || (distance < minDistance) )
+			  && (distance > 0)
+		) {
+			minDistance = distance;
+			nearestPrimitive = primitive;
+		}
+	}
+
+	return make_tuple(nearestPrimitive, minDistance);
+}
+
+int WhittedRayTracer::ConvertColorToInt(float4 color) {
+	int red = clamp((int)(color.x * 256), 0, 255);
+	int green = clamp((int)(color.y * 256), 0, 255);
+	int blue = clamp((int)(color.z * 256), 0, 255);
+	// TODO: should be: red << 16 + green << 8 + blue
+	return (blue << 16) + (green << 8) + red;
 }

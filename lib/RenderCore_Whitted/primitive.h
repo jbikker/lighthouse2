@@ -9,6 +9,6 @@ public:
 	explicit Primitive(float4 _origin, Material* _material);
 	float4 origin;
 	Material* material;
-	virtual void Intersect(Ray& ray) = 0;
+	virtual float Intersect(Ray& ray) = 0;
 };
 

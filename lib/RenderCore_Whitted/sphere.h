@@ -9,6 +9,6 @@ class Sphere : public Primitive
 public:
 	explicit Sphere(float4 _origin, Material* _material, float _radius2);
 	float radius2;
-	void Intersect(Ray& ray);
+	float Intersect(Ray& ray);
 };
 

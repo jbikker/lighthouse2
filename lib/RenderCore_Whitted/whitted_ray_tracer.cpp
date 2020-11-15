@@ -7,7 +7,7 @@
 #include "light.h"
 #include "tuple"
 
-const int PRIMITIVES_SIZE = 3;
+const int PRIMITIVES_SIZE = 2;
 Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 	new Sphere(
 		make_float4(0, 0, 10, 0),  
@@ -15,27 +15,18 @@ Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 		3
 	),
 	new Sphere(
-		make_float4(2, 0, 10, 0), 
+		make_float4(0, 2, 9, 0), 
 		new Material(make_float4(0, 1, 0, 0)),
-		3
-	),
-	new Sphere(
-		make_float4(2, 2.5, 9, 0),
-		new Material(make_float4(0, 0, 1, 0)),
 		0.25
-	)
+	),
 };
 
 
-const int LIGHTS_SIZE = 2;
+const int LIGHTS_SIZE = 1;
 Light** WhittedRayTracer::lights = new Light*[LIGHTS_SIZE]{
 	new Light(
-		make_float4(1, 3, 7, 0),
-		100
-	),
-	new Light(
-		make_float4(5, 3, 5, 0),
-		100
+		make_float4(0, 10, 10, 0),
+		500
 	)
 };
 
@@ -129,7 +120,7 @@ float WhittedRayTracer::CalculateEnergyFromLights(const float4 intersectionPoint
 			Primitive* nearestPrimitive = get<0>(nearestIntersection);
 			float intersectionDistance = get<1>(nearestIntersection);
 
-			 if (intersectionDistance < shadowRayLength) continue;
+			if (intersectionDistance != NULL && intersectionDistance < shadowRayLength) continue;
 
 			/** energy based distance */
 			float distanceEnergy = light->intensity * (1 / (4 * PI * (shadowRayLength * shadowRayLength)));

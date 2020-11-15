@@ -6,3 +6,8 @@ Ray::Ray(float4 _origin, float4 _direction) {
 	origin = _origin;
 	direction = _direction;
 }
+
+float4 Ray::GetIntersectionPoint(float intersectionDistance)
+{
+	return origin + (direction * intersectionDistance);
+}

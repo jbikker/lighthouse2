@@ -1,12 +1,14 @@
 #include "core_settings.h"
 #include "ray.h"
+#include "material.h";
 
 #pragma once
 class Primitive
 {
 public:
-	explicit Primitive(float4 _origin);
+	explicit Primitive(float4 _origin, Material* _material);
 	float4 origin;
+	Material* material;
 	virtual void Intersect(Ray& ray) = 0;
 };
 

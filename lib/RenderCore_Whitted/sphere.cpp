@@ -1,8 +1,9 @@
 #include "sphere.h"
 #include "core_settings.h"
 #include "ray.h"
+#include "material.h";
 
-Sphere::Sphere(float4 _origin, float _radius2) : Primitive(_origin) {
+Sphere::Sphere(float4 _origin, Material* _material, float _radius2) : Primitive(_origin, _material) {
 	radius2 = _radius2;
 }
 

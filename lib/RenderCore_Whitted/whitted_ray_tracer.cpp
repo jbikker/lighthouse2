@@ -6,16 +6,25 @@
 #include "primitive.h"
 
 Primitive** WhittedRayTracer::scene = new Primitive*[2] {
-	new Sphere(make_float4(0, 0, 10, 0), 3),
-	new Sphere(make_float4(2, 0, 10, 0), 3)
+	new Sphere(
+		make_float4(0, 0, 10, 0),  
+		new Material(make_float4(255, 0, 0, 0)),
+		3
+	),
+	new Sphere(
+		make_float4(2, 0, 10, 0), 
+		new Material(make_float4(0, 255, 0, 0)),
+		3
+	)
 };
 
+Ray WhittedRayTracer::ray = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
+
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
-	Ray ray = Ray(make_float4(view.pos, 0), make_float4(0, 0, 0, 0));
+	ray.origin = make_float4(view.pos, 0);
 
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
-
 			float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, x, y);
 			float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
 			ray.direction = rayDirection;

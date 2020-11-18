@@ -19,6 +19,9 @@
     <ClCompile Include="light.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
+    <ClCompile Include="plane.cpp">
+      <Filter>primitives</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rendercore.h" />
@@ -38,6 +41,9 @@
     </ClInclude>
     <ClInclude Include="light.h">
       <Filter>engine_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="plane.h">
+      <Filter>primitives</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -3,11 +3,12 @@
 #include "ray.h"
 #include "material.h"
 #include "sphere.h"
+#include "plane.h"
 #include "primitive.h"
 #include "light.h"
 #include "tuple"
 
-const int PRIMITIVES_SIZE = 2;
+const int PRIMITIVES_SIZE = 3;
 Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 	new Sphere(
 		make_float4(0, 0, 10, 0),  
@@ -19,6 +20,11 @@ Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 		new Material(make_float4(0, 1, 0, 0)),
 		0.25
 	),
+	new Plane(
+		make_float4(0, -5, 0, 0),
+		new Material(make_float4(0, 0, 1, 0)),
+		make_float4(0, 1, 0, 0)
+	)
 };
 
 
@@ -26,7 +32,7 @@ const int LIGHTS_SIZE = 1;
 Light** WhittedRayTracer::lights = new Light*[LIGHTS_SIZE]{
 	new Light(
 		make_float4(0, 10, 10, 0),
-		500
+		10000
 	)
 };
 
@@ -103,28 +109,30 @@ int WhittedRayTracer::ConvertColorToInt(float4 color) {
 	return (blue << 16) + (green << 8) + red;
 }
 
-float WhittedRayTracer::CalculateEnergyFromLights(const float4 intersectionPoint, float4 normal)
-{
+float WhittedRayTracer::CalculateEnergyFromLights(const float4 intersectionPoint, float4 normal) {
 	float energy = 0;
 	for (int i = 0; i < LIGHTS_SIZE; i++) {
 		Light* light = WhittedRayTracer::lights[i];
 		float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
+		float shadowRayLength = length(light->origin - shadowRay.origin);
 
-		/** check if light can reach the surface */
-		if (dot(normal, shadowRayDirection) > 0) {
-			shadowRay.origin = intersectionPoint;
+		float distanceEnergy = light->intensity * (1 / (4 * PI * (shadowRayLength * shadowRayLength)));
+		float angleFalloff = dot(normal, shadowRayDirection);
+
+		/** check if there is enough energy to apply to the material */
+		if (
+			(angleFalloff > EPSILON) || (distanceEnergy > EPSILON)
+		) {
+			/** Adds additional length to prevent intersection to itself */
+			shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
 			shadowRay.direction = shadowRayDirection;
-			float shadowRayLength = length(light->origin - shadowRay.origin);
 
 			tuple<Primitive*, float> nearestIntersection = WhittedRayTracer::GetNearestIntersection(shadowRay);
 			Primitive* nearestPrimitive = get<0>(nearestIntersection);
 			float intersectionDistance = get<1>(nearestIntersection);
 
-			if (intersectionDistance != NULL && intersectionDistance < shadowRayLength) continue;
-
-			/** energy based distance */
-			float distanceEnergy = light->intensity * (1 / (4 * PI * (shadowRayLength * shadowRayLength)));
-			float angleFalloff = dot(shadowRayDirection, normal);
+			if (intersectionDistance != NULL && intersectionDistance < shadowRayLength) { continue; }
+			
 			energy += distanceEnergy * angleFalloff;
 		}
 	}

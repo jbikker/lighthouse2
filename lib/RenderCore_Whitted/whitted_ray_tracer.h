@@ -1,23 +1,28 @@
+#pragma once
 #include "core_settings.h"
 #include "primitive.h"
 #include "ray.h"
 #include "light.h"
 #include "tuple"
+#include "vector"
 
-#pragma once
 class WhittedRayTracer
 {
 public:
-	static void Render(const ViewPyramid& view, const Bitmap* screen);
-private:
-	static Primitive** scene;
-	static Light** lights;
+	static int recursionThreshold;
+	static vector<Primitive*> scene;
+	static vector<Light*> lights;
+
 	static Ray primaryRay;
 	static Ray shadowRay;
+
+	static float4 globalIllumination;
+
+	static void Initialise();
+	static void Render(const ViewPyramid& view, const Bitmap* screen);
+private:
 	static float3 GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y);
 	static float4 GetRayDirection(const ViewPyramid& view, float3 point);
-	static tuple<Primitive*, float> GetNearestIntersection(Ray& ray);
 	static int ConvertColorToInt(float4 color);
-	static float CalculateEnergyFromLights(float4 intersectionPoint, float4 normal);
 };
 

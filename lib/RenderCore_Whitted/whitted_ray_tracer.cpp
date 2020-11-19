@@ -7,62 +7,96 @@
 #include "primitive.h"
 #include "light.h"
 #include "tuple"
+#include "vector"
 
-const int PRIMITIVES_SIZE = 3;
-Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
-	new Sphere(
-		make_float4(0, 0, 10, 0),  
-		new Material(make_float4(1, 0, 0, 0)),
+vector<Primitive*> WhittedRayTracer::scene = vector<Primitive*>();
+vector<Light*> WhittedRayTracer::lights = vector<Light*>();
+
+float4 WhittedRayTracer::globalIllumination = make_float4(0.05, 0.05, 0.05, 0);
+
+void WhittedRayTracer::Initialise() {
+
+	/** Scene */
+	scene.push_back(new Sphere(
+		make_float4(0, 0, 10, 0),
+		new Material(Material::Type::Diffuse, make_float4(109.0 / 255.0, 145.0 / 255.0, 242.0 / 255.0, 0)),
 		3
-	),
-	new Sphere(
-		make_float4(0, 2, 9, 0), 
-		new Material(make_float4(0, 1, 0, 0)),
+	));
+
+	scene.push_back(new Sphere(
+		make_float4(-5, 0, 10, 0),
+		new Material(Material::Type::Mirror),
+		3
+	));
+
+	scene.push_back(new Sphere(
+		make_float4(5, 0, 10, 0),
+		new Material(Material::Type::Mirror),
+		3
+	));
+
+	scene.push_back(new Sphere(
+		make_float4(3, -1.4, 9, 0),
+		new Material(Material::Type::Diffuse, make_float4(232.0 / 255.0, 234.0 / 255.0, 95.0 / 255.0, 0)),
 		0.25
-	),
-	new Plane(
-		make_float4(0, -5, 0, 0),
-		new Material(make_float4(0, 0, 1, 0)),
+	));
+
+	scene.push_back(new Plane(
+		make_float4(0, -2, 0, 0),
+		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
 		make_float4(0, 1, 0, 0)
-	)
-};
+	));
 
+	scene.push_back(new Plane(
+		make_float4(0, 0, 20, 0),
+		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
+		make_float4(0, 0, -1, 0)
+	));
 
-const int LIGHTS_SIZE = 1;
-Light** WhittedRayTracer::lights = new Light*[LIGHTS_SIZE]{
-	new Light(
-		make_float4(0, 10, 10, 0),
-		10000
-	)
-};
+	scene.push_back(new Plane(
+		make_float4(-150, 0, 0, 0),
+		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
+		make_float4(1, 0, 0, 0)
+	));
+
+	scene.push_back(new Plane(
+		make_float4(150, 0, 0, 0),
+		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
+		make_float4(-1, 0, 0, 0)
+	));
+
+	/** Lights */
+	lights.push_back(new Light(
+		make_float4(0, 100, -100, 0),
+		15000
+	));
+
+}
+
+int WhittedRayTracer::recursionThreshold = 5;
 
 Ray WhittedRayTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 Ray WhittedRayTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 
+
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
-	primaryRay.origin = make_float4(view.pos, 0);
 
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
+
+			/** Setup the ray from the screen */
 			float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, x, y);
 			float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
+
+			/** Reset the primary, it can be used as a reflective ray */
+			primaryRay.origin = make_float4(view.pos, 0);
 			primaryRay.direction = rayDirection;
 
-			tuple<Primitive*, float> nearestIntersection = WhittedRayTracer::GetNearestIntersection(primaryRay);
-			Primitive* nearestPrimitive = get<0>(nearestIntersection);
-			float intersectionDistance = get<1>(nearestIntersection);
+			/** Trace the ray */
+			float4 color = primaryRay.Trace(0) + WhittedRayTracer::globalIllumination;
 
 			int index = x + y * screen->width;
-			
-			if (intersectionDistance > 0) {
-				float4 intersectionPoint = primaryRay.GetIntersectionPoint(intersectionDistance);
-				float4 normal = nearestPrimitive->GetNormal(intersectionPoint);
-				float energy = WhittedRayTracer::CalculateEnergyFromLights(intersectionPoint, normal);
-				float4 color = nearestPrimitive->material->color * energy;
-				screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);
-			} else {
-				screen->pixels[index] = 0;
-			}
+			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);
 		}
 	}
 }
@@ -70,9 +104,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y) {
 	float u = (float)x / (float)screen->width;
 	float v = (float)y / (float)screen->height;
-
 	float3 point = view.p1 + u * (view.p2 - view.p1) + v * (view.p3 - view.p1);
-
 	return point;
 }
 
@@ -82,59 +114,10 @@ float4 WhittedRayTracer::GetRayDirection(const ViewPyramid& view, float3 point) 
 	return make_float4(rayDirection, 0);
 }
 
-tuple<Primitive*, float> WhittedRayTracer::GetNearestIntersection(Ray& ray) {
-	float minDistance = NULL;
-	Primitive* nearestPrimitive = NULL;
-
-	for (int i = 0; i < PRIMITIVES_SIZE; i++) {
-		Primitive* primitive = WhittedRayTracer::scene[i];
-		float distance = primitive->Intersect(ray);
-
-		if (( (minDistance == NULL) || (distance < minDistance) )
-			  && (distance > 0)
-		) {
-			minDistance = distance;
-			nearestPrimitive = primitive;
-		}
-	}
-
-	return make_tuple(nearestPrimitive, minDistance);
-}
-
 int WhittedRayTracer::ConvertColorToInt(float4 color) {
 	int red = clamp((int)(color.x * 256), 0, 255);
 	int green = clamp((int)(color.y * 256), 0, 255);
 	int blue = clamp((int)(color.z * 256), 0, 255);
 	// TODO: should be: red << 16 + green << 8 + blue
 	return (blue << 16) + (green << 8) + red;
-}
-
-float WhittedRayTracer::CalculateEnergyFromLights(const float4 intersectionPoint, float4 normal) {
-	float energy = 0;
-	for (int i = 0; i < LIGHTS_SIZE; i++) {
-		Light* light = WhittedRayTracer::lights[i];
-		float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
-		float shadowRayLength = length(light->origin - shadowRay.origin);
-
-		float distanceEnergy = light->intensity * (1 / (4 * PI * (shadowRayLength * shadowRayLength)));
-		float angleFalloff = dot(normal, shadowRayDirection);
-
-		/** check if there is enough energy to apply to the material */
-		if (
-			(angleFalloff > EPSILON) || (distanceEnergy > EPSILON)
-		) {
-			/** Adds additional length to prevent intersection to itself */
-			shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
-			shadowRay.direction = shadowRayDirection;
-
-			tuple<Primitive*, float> nearestIntersection = WhittedRayTracer::GetNearestIntersection(shadowRay);
-			Primitive* nearestPrimitive = get<0>(nearestIntersection);
-			float intersectionDistance = get<1>(nearestIntersection);
-
-			if (intersectionDistance != NULL && intersectionDistance < shadowRayLength) { continue; }
-			
-			energy += distanceEnergy * angleFalloff;
-		}
-	}
-	return energy;
 }

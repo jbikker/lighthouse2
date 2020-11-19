@@ -1,10 +1,21 @@
+#pragma once
 #include "core_settings.h"
 
-#pragma once
 class Material
 {
 public:
-	Material(float4 _color);
+
+	enum class Type {
+		Diffuse,
+		Mirror,
+		Glass
+	};
+
 	float4 color;
+	Type type;
+
+	Material(Type type, float4 _color);
+	Material(Type type);
+
 };
 

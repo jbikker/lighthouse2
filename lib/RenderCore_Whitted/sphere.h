@@ -1,9 +1,9 @@
+#pragma once
 #include "primitive.h"
 #include "core_settings.h"
 #include "ray.h"
 #include "material.h";
 
-#pragma once
 class Sphere : public Primitive
 {
 public:

@@ -1,8 +1,8 @@
+#pragma once
 #include "core_settings.h"
 #include "ray.h"
 #include "material.h";
 
-#pragma once
 class Primitive
 {
 public:

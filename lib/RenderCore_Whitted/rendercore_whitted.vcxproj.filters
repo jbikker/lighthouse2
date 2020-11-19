@@ -21,6 +21,8 @@
     </ClCompile>
     <ClCompile Include="material.cpp">
       <Filter>materials</Filter>
+    <ClCompile Include="triangle.cpp">
+      <Filter>primitives</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -44,6 +46,8 @@
     </ClInclude>
     <ClInclude Include="material.h">
       <Filter>materials</Filter>
+    <ClInclude Include="triangle.h">
+      <Filter>primitives</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -4,6 +4,7 @@
 #include "material.h"
 #include "sphere.h"
 #include "plane.h"
+#include "triangle.h"
 #include "primitive.h"
 #include "light.h"
 #include "tuple"
@@ -41,6 +42,14 @@ void WhittedRayTracer::Initialise() {
 		0.25
 	));
 
+	scene.push_back(new Triangle(
+		make_float4(0, 2, 8, 0),
+		new Material(Material::Type::Diffuse, make_float4(1, 1, 0, 0)),
+		make_float4(0, 0, 0, 0),
+		make_float4(0, 1, 0, 0),
+		make_float4(1, 0, 0, 0)
+	));
+
 	scene.push_back(new Plane(
 		make_float4(0, -2, 0, 0),
 		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
@@ -53,18 +62,6 @@ void WhittedRayTracer::Initialise() {
 		make_float4(0, 0, -1, 0)
 	));
 
-	scene.push_back(new Plane(
-		make_float4(-150, 0, 0, 0),
-		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
-		make_float4(1, 0, 0, 0)
-	));
-
-	scene.push_back(new Plane(
-		make_float4(150, 0, 0, 0),
-		new Material(Material::Type::Diffuse, make_float4(255.0 / 255.0, 186.0 / 255.0, 234.0 / 255.0, 0)),
-		make_float4(-1, 0, 0, 0)
-	));
-
 	/** Lights */
 	lights.push_back(new Light(
 		make_float4(0, 100, -100, 0),
@@ -74,7 +71,6 @@ void WhittedRayTracer::Initialise() {
 }
 
 int WhittedRayTracer::recursionThreshold = 5;
-
 Ray WhittedRayTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 Ray WhittedRayTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 

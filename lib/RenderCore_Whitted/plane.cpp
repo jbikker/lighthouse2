@@ -16,5 +16,5 @@ float Plane::Intersect(Ray& ray) {
 }
 
 float4 Plane::GetNormal(float4 point) {
-    return normal;
+    return normalize(normal);
 }

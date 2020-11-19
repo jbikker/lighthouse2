@@ -22,6 +22,9 @@
     <ClCompile Include="plane.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
+    <ClCompile Include="triangle.cpp">
+      <Filter>primitives</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="rendercore.h" />
@@ -43,6 +46,9 @@
       <Filter>engine_objects</Filter>
     </ClInclude>
     <ClInclude Include="plane.h">
+      <Filter>primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="triangle.h">
       <Filter>primitives</Filter>
     </ClInclude>
   </ItemGroup>

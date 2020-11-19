@@ -4,11 +4,12 @@
 #include "material.h"
 #include "sphere.h"
 #include "plane.h"
+#include "triangle.h"
 #include "primitive.h"
 #include "light.h"
 #include "tuple"
 
-const int PRIMITIVES_SIZE = 3;
+const int PRIMITIVES_SIZE = 4;
 Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 	new Sphere(
 		make_float4(0, 0, 10, 0),  
@@ -21,9 +22,16 @@ Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 		0.25
 	),
 	new Plane(
-		make_float4(0, -5, 0, 0),
+		make_float4(0, 0, 15, 0),
 		new Material(make_float4(0, 0, 1, 0)),
-		make_float4(0, 1, 0, 0)
+		make_float4(0, 0, -1, 0)
+	),
+	new Triangle(
+		make_float4(-5, -2, 13, 0),
+		new Material(make_float4(1, 0, 0, 0)),
+		make_float4(0, 0, 0, 0),
+		make_float4(0, 1, 0, 0),
+		make_float4(1, 0, 0, 0)
 	)
 };
 
@@ -31,7 +39,7 @@ Primitive** WhittedRayTracer::scene = new Primitive*[PRIMITIVES_SIZE] {
 const int LIGHTS_SIZE = 1;
 Light** WhittedRayTracer::lights = new Light*[LIGHTS_SIZE]{
 	new Light(
-		make_float4(0, 10, 10, 0),
+		make_float4(0, 5, 0, 0),
 		10000
 	)
 };
@@ -114,9 +122,9 @@ float WhittedRayTracer::CalculateEnergyFromLights(const float4 intersectionPoint
 	for (int i = 0; i < LIGHTS_SIZE; i++) {
 		Light* light = WhittedRayTracer::lights[i];
 		float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
-		float shadowRayLength = length(light->origin - shadowRay.origin);
+		float shadowRayLength = length(light->origin - shadowRay.origin) - EPSILON;
 
-		float distanceEnergy = light->intensity * (1 / (4 * PI * (shadowRayLength * shadowRayLength)));
+		float distanceEnergy = light->intensity * (1 / (shadowRayLength * shadowRayLength));
 		float angleFalloff = dot(normal, shadowRayDirection);
 
 		/** check if there is enough energy to apply to the material */
@@ -131,7 +139,9 @@ float WhittedRayTracer::CalculateEnergyFromLights(const float4 intersectionPoint
 			Primitive* nearestPrimitive = get<0>(nearestIntersection);
 			float intersectionDistance = get<1>(nearestIntersection);
 
-			if (intersectionDistance != NULL && intersectionDistance < shadowRayLength) { continue; }
+			if (intersectionDistance != NULL && intersectionDistance < shadowRayLength) { 
+				continue; 
+			}
 			
 			energy += distanceEnergy * angleFalloff;
 		}

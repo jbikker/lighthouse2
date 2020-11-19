@@ -20,7 +20,6 @@ float Sphere::Intersect(Ray& ray) {
 	return distanceMappedOnRay;
 }
 
-float4 Sphere::GetNormal(float4 point)
-{
+float4 Sphere::GetNormal(float4 point) {
 	return normalize(point - origin);
 }

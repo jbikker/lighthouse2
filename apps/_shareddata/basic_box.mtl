@@ -1,0 +1,11 @@
+newmtl walls
+Kd 1.0000 1.0000 1.0000
+
+newmtl cube1
+Kd 1.0000 0.0000 0.0000
+
+newmtl cube2
+Kd 0.0000 0.0471 0.6824
+
+newmtl floor
+Kd 0.0000 0.5020 0.0000

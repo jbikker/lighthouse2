@@ -5,6 +5,7 @@
 #include "light.h"
 #include "tuple"
 #include "vector"
+#include "triangle.h";
 
 class WhittedRayTracer
 {
@@ -19,6 +20,7 @@ public:
 	static float4 globalIllumination;
 
 	static void Initialise();
+	static void AddTriangle(float4 v0, float4 v1, float4 v2);
 	static void Render(const ViewPyramid& view, const Bitmap* screen);
 private:
 	static float3 GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y);

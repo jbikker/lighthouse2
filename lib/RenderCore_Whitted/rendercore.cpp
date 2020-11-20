@@ -24,7 +24,6 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
-
 	WhittedRayTracer::Initialise();
 }
 
@@ -47,16 +46,42 @@ void RenderCore::SetTarget( GLTexture* target, const uint )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangleData )
 {
-	Mesh newMesh;
-	// copy the supplied vertices; we cannot assume that the render system does not modify
-	// the original data after we leave this function.
-	newMesh.vertices = new float4[vertexCount];
-	newMesh.vcount = vertexCount;
-	memcpy( newMesh.vertices, vertexData, vertexCount * sizeof( float4 ) );
-	// copy the supplied 'fat triangles'
-	newMesh.triangles = new CoreTri[vertexCount / 3];
-	memcpy( newMesh.triangles, triangleData, (vertexCount / 3) * sizeof( CoreTri ) );
-	meshes.push_back( newMesh );
+	for (int i = 0; i < vertexCount; i += 3) {
+		float4 v0 = vertexData[i];
+		float4 v1 = vertexData[i + 1];
+		float4 v2 = vertexData[i + 2];
+
+		WhittedRayTracer::AddTriangle(v0, v1, v2);
+	}
+}
+
+//  +-----------------------------------------------------------------------------+
+//  |  RenderCore::SetMaterials                                                   |
+//  |  Set the material data.                                               LH2'19|
+//  +-----------------------------------------------------------------------------+
+void RenderCore::SetMaterials(CoreMaterial* mat, const int materialCount)
+{
+	// EXAMPLE
+	
+	/*for (int i = 0; i < materialCount; i++)
+	{
+		Material* m;
+		if (i < rasterizer.scene.matList.size()) m = rasterizer.scene.matList[i];
+		else rasterizer.scene.matList.push_back(m = new Material());
+		m->texture = 0;
+		int texID = mat[i].color.textureID;
+		if (texID == -1)
+		{
+			float r = mat[i].color.value.x;
+			float g = mat[i].color.value.y;
+			float b = mat[i].color.value.z;
+			m->diffuse = ((int)(b * 255.0f) << 16) + ((int)(g * 255.0f) << 8) + (int)(r * 255.0f);
+		}
+		else
+		{
+			m->texture = rasterizer.scene.texList[texID];
+		}
+	}*/
 }
 
 //  +-----------------------------------------------------------------------------+

@@ -19,7 +19,7 @@ float4 Ray::Trace(int recursionDepth) {
 		return make_float4(0, 0, 0, 0);
 	}
 
-	tuple<Primitive*, float> nearestIntersection = GetNearestIntersection();
+	tuple<Primitive*, float> nearestIntersection = Ray::GetNearestIntersection();
 	Primitive* nearestPrimitive = get<0>(nearestIntersection);
 	float intersectionDistance = get<1>(nearestIntersection);
 
@@ -30,7 +30,6 @@ float4 Ray::Trace(int recursionDepth) {
 			case Material::Type::Mirror:
 				float4 normal = nearestPrimitive->GetNormal(intersectionPoint);
 				float4 reflectDir = this->direction - 2.0f * normal * dot(normal, this->direction);
-				/** TODO: may need epsilon */
 				this->origin = intersectionPoint + (reflectDir * EPSILON);
 				this->direction = normalize(reflectDir);
 				return this->Trace(recursionDepth + 1);

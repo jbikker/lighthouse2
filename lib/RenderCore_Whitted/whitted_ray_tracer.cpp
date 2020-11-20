@@ -74,12 +74,9 @@ int WhittedRayTracer::recursionThreshold = 5;
 Ray WhittedRayTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 Ray WhittedRayTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 
-
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
-
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
-
 			/** Setup the ray from the screen */
 			float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, x, y);
 			float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
@@ -89,7 +86,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			primaryRay.direction = rayDirection;
 
 			/** Trace the ray */
-			float4 color = primaryRay.Trace(0) + WhittedRayTracer::globalIllumination;
+			float4 color = primaryRay.Trace() + WhittedRayTracer::globalIllumination;
 
 			int index = x + y * screen->width;
 			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);
@@ -114,6 +111,5 @@ int WhittedRayTracer::ConvertColorToInt(float4 color) {
 	int red = clamp((int)(color.x * 256), 0, 255);
 	int green = clamp((int)(color.y * 256), 0, 255);
 	int blue = clamp((int)(color.z * 256), 0, 255);
-	// TODO: should be: red << 16 + green << 8 + blue
 	return (blue << 16) + (green << 8) + red;
 }

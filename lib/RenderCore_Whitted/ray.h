@@ -14,9 +14,6 @@ public:
 	float4 origin;
 	float4 direction;
 	float4 GetIntersectionPoint(float intersectionDistance);
-	float4 Trace(int recursionDepth);
-
-private:
+	float4 Trace(int recursionDepth = 0);
 	tuple<Primitive*, float> GetNearestIntersection();
-	float CalculateEnergyFromLights(float4 intersectionPoint, float4 normal);
 };

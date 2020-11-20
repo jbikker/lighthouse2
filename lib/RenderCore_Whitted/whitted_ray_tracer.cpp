@@ -64,7 +64,7 @@ void WhittedRayTracer::Initialise() {
 	/** Lights */
 	lights.push_back(new Light(
 		make_float4(0, 20, 0, 0),
-		500
+		100
 	));
 
 }

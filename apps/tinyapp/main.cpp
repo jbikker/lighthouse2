@@ -79,7 +79,7 @@ int main()
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_BDPT" );	// Peter's OptixPrime / BDPT core
 
 	// Remembers camera position
-	//renderer->DeserializeCamera( "camera.xml" );
+	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
 	PrepareScene();
 	// set initial window size

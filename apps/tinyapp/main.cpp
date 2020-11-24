@@ -34,6 +34,7 @@ static std::bitset<1024> keystates;
 void PrepareScene()
 {
 	// initialize scene
+	renderer->DeserializeMaterials("../_shareddata/basic_box.mtl");
 	int boxScene = renderer->AddMesh("../_shareddata/basic_box.obj", 0.2f);
 	renderer->AddInstance(boxScene);
 }

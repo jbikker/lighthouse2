@@ -13,15 +13,6 @@
     <ClCompile Include="ray.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
-    <ClCompile Include="plane.cpp">
-      <Filter>primitives</Filter>
-    </ClCompile>
-    <ClCompile Include="primitive.cpp">
-      <Filter>primitives</Filter>
-    </ClCompile>
-    <ClCompile Include="sphere.cpp">
-      <Filter>primitives</Filter>
-    </ClCompile>
     <ClCompile Include="triangle.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
@@ -38,15 +29,6 @@
     </ClInclude>
     <ClInclude Include="ray.h">
       <Filter>engine_objects</Filter>
-    </ClInclude>
-    <ClInclude Include="plane.h">
-      <Filter>primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="primitive.h">
-      <Filter>primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="sphere.h">
-      <Filter>primitives</Filter>
     </ClInclude>
     <ClInclude Include="triangle.h">
       <Filter>primitives</Filter>

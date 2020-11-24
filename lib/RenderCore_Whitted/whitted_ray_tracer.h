@@ -1,6 +1,5 @@
 #pragma once
 #include "core_settings.h"
-#include "primitive.h"
 #include "ray.h"
 #include "light.h"
 #include "tuple"
@@ -11,8 +10,9 @@ class WhittedRayTracer
 {
 public:
 	static int recursionThreshold;
-	static vector<Primitive*> scene;
+	static vector<Triangle*> scene;
 	static vector<Light*> lights;
+	static vector<CoreMaterial> materials;
 
 	static Ray primaryRay;
 	static Ray shadowRay;
@@ -20,7 +20,7 @@ public:
 	static float4 globalIllumination;
 
 	static void Initialise();
-	static void AddTriangle(float4 v0, float4 v1, float4 v2);
+	static void AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex);
 	static void Render(const ViewPyramid& view, const Bitmap* screen);
 private:
 	static float3 GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y);

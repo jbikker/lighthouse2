@@ -1,13 +1,16 @@
 #pragma once
 
-#include "primitive.h"
 #include "core_settings.h"
+#include "ray.h"
 
-class Triangle : public Primitive {
+class Triangle {
 public:
-	explicit Triangle(float4 _origin, Material* _material, float4 _v0, float4 _v1, float4 _v2);
+	uint materialIndex;
+	explicit Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material);
 	float Intersect(Ray& ray);
 	float4 GetNormal(float4 point);
+	float CalculateEnergyFromLights(const float4 intersectionPoint);
+	bool IsLightBlocked(float shadowRayLength);
 private:
 	float4 v0;
 	float4 v1;

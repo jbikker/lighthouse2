@@ -50,7 +50,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	}
 
 	if (reflection > EPSILON) {
-		float4 normal = triangle->GetNormal(intersectionPoint);
+		float4 normal = triangle->GetNormal();
 		float4 reflectDir = this->direction - 2.0f * normal * dot(normal, this->direction);
 		this->origin = intersectionPoint + (reflectDir * EPSILON);
 		this->direction = normalize(reflectDir);
@@ -68,9 +68,10 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 		Triangle* triangle = WhittedRayTracer::scene[i];
 		float distance = triangle->Intersect(*this);
 
-		if (((minDistance == NULL) || (distance < minDistance))
+		if (
+			((minDistance == NULL) || (distance < minDistance))
 			&& (distance > 0)
-			) {
+		) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
 		}

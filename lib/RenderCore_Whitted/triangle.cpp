@@ -11,10 +11,7 @@ Triangle::Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material) {
 }
 
 float Triangle::Intersect(Ray& ray) {
-	float4 pvec = make_float4(
-		cross(make_float3(ray.direction), make_float3(v0v2)), 
-		0
-	);
+	float4 pvec = cross(ray.direction, v0v2);
 	float det = dot(v0v1, pvec);
 
 	if (det < EPSILON && det > -EPSILON) { return NULL; }
@@ -25,10 +22,7 @@ float Triangle::Intersect(Ray& ray) {
 
 	if (u < 0 || u > 1) { return NULL; }
 
-	float4 qvec = make_float4(
-		cross(make_float3(tvec), make_float3(v0v1)), 
-		0
-	);
+	float4 qvec = cross(tvec, v0v1);
 	float v = dot(ray.direction, qvec) * invDet;
 
 	if (v < 0 || u + v > 1) { return NULL; }
@@ -38,12 +32,8 @@ float Triangle::Intersect(Ray& ray) {
 	return distance;
 }
 
-float4 Triangle::GetNormal(float4 point) {
-	float3 q0 = make_float3(v0);
-	float3 q1 = make_float3(v1);
-	float3 q2 = make_float3(v2);
-
-	return normalize(make_float4(cross(q1 - q0, q2 - q0), 0));
+float4 Triangle::GetNormal() {
+	return normalize(cross(v1 - v0, v2 - v0));
 }
 
 bool Triangle::IsLightBlocked(float shadowRayLength) {
@@ -64,7 +54,7 @@ bool Triangle::IsLightBlocked(float shadowRayLength) {
 
 float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 	float energy = 0;
-	float4 normal = this->GetNormal(intersectionPoint);
+	float4 normal = this->GetNormal();
 
 	for (int i = 0; i < WhittedRayTracer::lights.size(); i++) {
 		Light* light = WhittedRayTracer::lights[i];

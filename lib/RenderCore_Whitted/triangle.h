@@ -8,7 +8,7 @@ public:
 	uint materialIndex;
 	explicit Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material);
 	float Intersect(Ray& ray);
-	float4 GetNormal(float4 point);
+	float4 GetNormal();
 	float CalculateEnergyFromLights(const float4 intersectionPoint);
 	bool IsLightBlocked(float shadowRayLength);
 private:

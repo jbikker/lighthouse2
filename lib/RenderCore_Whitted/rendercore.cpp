@@ -61,6 +61,7 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetMaterials(CoreMaterial* mat, const int materialCount)
 {
+	int i = 0;
 	// EXAMPLE
 	
 	/*for (int i = 0; i < materialCount; i++)

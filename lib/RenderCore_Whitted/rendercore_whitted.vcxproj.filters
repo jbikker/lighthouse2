@@ -1,36 +1,46 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="rendercore.cpp" />
     <ClCompile Include="core_api.cpp" />
+    <ClCompile Include="rendercore.cpp" />
     <ClCompile Include="whitted_ray_tracer.cpp" />
-    <ClCompile Include="ray.cpp">
+    <ClCompile Include="light.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
-    <ClCompile Include="sphere.cpp">
-      <Filter>primitives</Filter>
+    <ClCompile Include="material.cpp">
+      <Filter>engine_objects</Filter>
     </ClCompile>
-    <ClCompile Include="primitive.cpp">
-      <Filter>primitives</Filter>
-    </ClCompile>
-    <ClCompile Include="light.cpp">
+    <ClCompile Include="ray.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
     <ClCompile Include="plane.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
-    <ClCompile Include="material.cpp">
-      <Filter>materials</Filter>
+    <ClCompile Include="primitive.cpp">
+      <Filter>primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="sphere.cpp">
+      <Filter>primitives</Filter>
+    </ClCompile>
     <ClCompile Include="triangle.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="rendercore.h" />
     <ClInclude Include="core_settings.h" />
+    <ClInclude Include="rendercore.h" />
     <ClInclude Include="whitted_ray_tracer.h" />
+    <ClInclude Include="light.h">
+      <Filter>engine_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="material.h">
+      <Filter>engine_objects</Filter>
+    </ClInclude>
     <ClInclude Include="ray.h">
       <Filter>engine_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="plane.h">
+      <Filter>primitives</Filter>
     </ClInclude>
     <ClInclude Include="primitive.h">
       <Filter>primitives</Filter>
@@ -38,27 +48,16 @@
     <ClInclude Include="sphere.h">
       <Filter>primitives</Filter>
     </ClInclude>
-    <ClInclude Include="light.h">
-      <Filter>engine_objects</Filter>
-    </ClInclude>
-    <ClInclude Include="plane.h">
-      <Filter>primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="material.h">
-      <Filter>materials</Filter>
     <ClInclude Include="triangle.h">
       <Filter>primitives</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="primitives">
-      <UniqueIdentifier>{1b6e8e0f-2a0a-49c6-8639-1c921a16b68f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="engine_objects">
-      <UniqueIdentifier>{5ac55355-928c-485e-8070-d18c0ddd7b4e}</UniqueIdentifier>
+      <UniqueIdentifier>{45496cb3-3a5a-4433-8849-035a8c9096a0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="materials">
-      <UniqueIdentifier>{92f5523e-d518-4ed1-8bfc-4eae46d2e273}</UniqueIdentifier>
+    <Filter Include="primitives">
+      <UniqueIdentifier>{585283cb-96a6-4ae7-a3d7-c96d53931bed}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

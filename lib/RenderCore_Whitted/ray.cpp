@@ -43,13 +43,13 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	float4 materialColor = make_float4(material->color.value, 0);
 	float4 color = make_float4(0,0,0,0);
 
-	if (diffuse > 0) {
+	if (diffuse > EPSILON) {
 		float energy = triangle->CalculateEnergyFromLights(intersectionPoint);
 		float4 diffuseColor = materialColor * energy;
 		color += diffuse * diffuseColor;
 	}
 
-	if (reflection > 0) {
+	if (reflection > EPSILON) {
 		float4 normal = triangle->GetNormal(intersectionPoint);
 		float4 reflectDir = this->direction - 2.0f * normal * dot(normal, this->direction);
 		this->origin = intersectionPoint + (reflectDir * EPSILON);

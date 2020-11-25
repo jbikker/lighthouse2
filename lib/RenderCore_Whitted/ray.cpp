@@ -29,6 +29,8 @@ float4 Ray::Trace(uint recursionDepth) {
 
 		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
 
+		//cout << "test" << mater;
+
 		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
 
 		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth) + globalIlluminationColor;
@@ -44,6 +46,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 
 	float4 materialColor = make_float4(material->color.value, 0);
 	float4 color = make_float4(0,0,0,0);
+	float4 normal = triangle->GetNormal();
 
 	if (diffuse > EPSILON) {
 		float energy = triangle->CalculateEnergyFromLights(intersectionPoint);
@@ -52,14 +55,55 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	}
 
 	if (reflection > EPSILON) {
-		float4 normal = triangle->GetNormal();
 		float4 reflectDir = this->direction - 2.0f * normal * dot(normal, this->direction);
 		this->origin = intersectionPoint + (reflectDir * EPSILON);
 		this->direction = normalize(reflectDir);
 		color += this->Trace(recursionDepth + 1) * reflection;
 	}
 
+	if (refraction > EPSILON) {
+
+		float4 refractionDirection = this->GetRefractionDirection(triangle, material);
+		if (length(refractionDirection) > 0) {
+			this->origin = intersectionPoint + (refractionDirection * EPSILON);
+			this->direction = refractionDirection;
+			color += this->Trace(recursionDepth + 1) * refraction;
+		}
+
+	}
+
 	return color;
+}
+
+
+float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
+	float4 normal = triangle->GetNormal();
+	float cosi = clamp(-1.0, 1.0, dot(this->direction, normal));
+	float etai = 1;
+	float etat = material->ior.value;
+	float4 normalRefraction = normal;
+
+	/** Outside the surface */
+	if (cosi < 0) {
+		cosi = -cosi;
+	}
+
+	/** Inside the surface */
+	else {
+		normalRefraction = -normal;
+		std::swap(etai, etat);
+	}
+
+	float eta = etai / etat;
+	float k = 1 - eta * eta * (1 - cosi * cosi);
+
+	if (k < 0) {
+		return make_float4(0, 0, 0, 0);
+	}
+	else {
+		return normalize(eta * this->direction + (eta * cosi - sqrtf(k)) * normalRefraction);
+	}
+
 }
 
 tuple<Triangle*, float> Ray::GetNearestIntersection() {

@@ -16,8 +16,8 @@ float4 WhittedRayTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
 void WhittedRayTracer::Initialise() {
 	/** Lights */
 	lights.push_back(new Light(
-		make_float4(0, 0, -5, 0),
-		30
+		make_float4(-5, 20, 0, 0),
+		100
 	));
 }
 

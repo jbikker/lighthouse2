@@ -1,0 +1,15 @@
+# 
+# Wavefront material file
+# Converted by the DEEP Exploration  3.5.0.448
+# Right Hemisphere, LTD
+# http://www.righthemisphere.com/
+# 
+
+newmtl Glass
+Ka 0.576471 0.647059 0.666667
+Kd 0.921569 0.945098 0.937255
+Ks 1 1 1
+illum 2
+Ns 147.033
+d 0.21
+refl Glass20.jpg

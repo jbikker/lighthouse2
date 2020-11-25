@@ -11,13 +11,13 @@ vector<Triangle*> WhittedRayTracer::scene = vector<Triangle*>();
 vector<Light*> WhittedRayTracer::lights = vector<Light*>();
 vector<CoreMaterial> WhittedRayTracer::materials;
 
-float4 WhittedRayTracer::globalIllumination = make_float4(0.05, 0.05, 0.05, 0);
+float4 WhittedRayTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
 
 void WhittedRayTracer::Initialise() {
 	/** Lights */
 	lights.push_back(new Light(
-		make_float4(0, 20, 0, 0),
-		100
+		make_float4(0, 0, -5, 0),
+		30
 	));
 }
 
@@ -37,7 +37,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			primaryRay.direction = rayDirection;
 
 			/** Trace the ray */
-			float4 color = primaryRay.Trace() + WhittedRayTracer::globalIllumination;
+			float4 color = primaryRay.Trace();
 
 			int index = x + y * screen->width;
 			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);

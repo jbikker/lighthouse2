@@ -38,6 +38,7 @@ void HostMaterial::ConvertFrom( const tinyobjMaterial& original )
 	name = original.name;
 	color.value = make_float3( original.diffuse[0], original.diffuse[1], original.diffuse[2] ); // Kd
 	absorption.value = make_float3( original.transmittance[0], original.transmittance[1], original.transmittance[2] ); // Kt
+	ior.value = original.ior;
 	roughness = 1.0f;
 	// maps
 	if (original.diffuse_texname != "")

@@ -19,8 +19,8 @@
 #include <bitset>
 
 static RenderAPI* renderer = 0;
-static GLTexture* renderTarget = 0;
-static Shader* shader = 0;
+static GLTexture* renderTarget = 0, * overlayTarget = 0;
+static Shader* shader = 0, * overlayShader = 0;
 static uint scrwidth = 0, scrheight = 0, car = 0, scrspp = 1;
 static bool running = true;
 static std::bitset<1024> keystates;

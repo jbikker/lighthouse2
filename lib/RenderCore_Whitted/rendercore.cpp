@@ -16,6 +16,7 @@
 #include "core_settings.h"
 #include "whitted_ray_tracer.h"
 #include "vector"
+#include "chrono"
 
 using namespace lh2core;
 
@@ -74,7 +75,12 @@ void RenderCore::SetMaterials(CoreMaterial* mat, const int materialCount) {
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// render
+	auto start = std::chrono::high_resolution_clock::now();
 	WhittedRayTracer::Render(view, screen);
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float> elapsed = finish - start;
+	auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
+	std::cout << "Elapsed Time: " << durationMs.count() << "ms\n";
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen->pixels);

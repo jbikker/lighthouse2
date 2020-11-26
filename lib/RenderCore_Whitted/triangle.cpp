@@ -45,7 +45,10 @@ bool Triangle::IsLightBlocked(float shadowRayLength) {
 			distance != NULL &&
 			distance > EPSILON &&
 			distance < shadowRayLength
-			) {
+		) {
+			if (WhittedRayTracer::materials[triangle->materialIndex].refraction.value == 1) {
+				continue;
+			}
 			return true;
 		}
 	}

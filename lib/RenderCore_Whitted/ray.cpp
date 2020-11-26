@@ -61,14 +61,12 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 		color += this->Trace(recursionDepth + 1) * reflection;
 	}
 
-	/** TODO: check for refraction value */
-	if (material->ior.value > 1) {
+	if (refraction > EPSILON) {
 		float4 refractionDirection = this->GetRefractionDirection(triangle, material);
 		if (length(refractionDirection) > 0) {
 			this->origin = intersectionPoint + (refractionDirection * EPSILON);
 			this->direction = refractionDirection;
-			/** TODO: multiply with refraction */
-			color += this->Trace(recursionDepth + 1);
+			color += this->Trace(recursionDepth + 1) * refraction;
 		}
 
 	}

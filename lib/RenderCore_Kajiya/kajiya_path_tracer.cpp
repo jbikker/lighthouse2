@@ -22,7 +22,7 @@ void KajiyaPathTracer::Initialise() {
 			make_float4(0, 20, 5, 0), 
 			-1
 		),
-		20
+		5
 	));
 }
 

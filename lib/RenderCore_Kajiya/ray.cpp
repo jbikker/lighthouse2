@@ -28,7 +28,7 @@ float4 Ray::Trace(uint recursionDepth) {
 
 		/** Hit a light */
 		if (nearestTriangle->materialIndex == -1) {
-			return make_float4(1, 0, 0, 0);
+			return make_float4(1, 1, 1, 0);
 		}
 
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
@@ -37,30 +37,27 @@ float4 Ray::Trace(uint recursionDepth) {
 		Light* selectedLight = KajiyaPathTracer::lights[0];
 		float4 lightColor = make_float4(1, 1, 1, 0);
 
-		float4 L = selectedLight->shape->GetRandomPoint() - intersectionPoint;
-		float distance = length(L);
-		L /= distance;
-		float4 normalOfLight = selectedLight->shape->GetNormal();
-		float cos_o = dot(-L, selectedLight->shape->GetNormal());
-		float cos_i = dot(L, nearestTriangle->GetNormal());
-
-		/** TODO: what this checks.. */
-		if ((cos_o <= 0) || (cos_i <= 0)) return make_float4(1, 0, 0, 0);
+		float4 lineIntserToLight = selectedLight->shape->GetRandomPoint() - intersectionPoint;
+		float distToLight = length(lineIntserToLight);
+		float4 dirToLight = normalize(lineIntserToLight);
 
 		/** Trace the shadow ray */
-		KajiyaPathTracer::shadowRay.origin = intersectionPoint + EPSILON * L;
-		KajiyaPathTracer::shadowRay.direction = L;
+		KajiyaPathTracer::shadowRay.origin = intersectionPoint + EPSILON * dirToLight;
+		KajiyaPathTracer::shadowRay.direction = dirToLight;
 		tuple<Triangle*, float> nearestIntersectionShadow = KajiyaPathTracer::shadowRay.GetNearestIntersection();
 		Triangle* nearestTriangleShadow = get<0>(nearestIntersection);
 		float intersectionDistanceShadow = get<1>(nearestIntersection);
 
-		if ((intersectionDistanceShadow < distance - EPSILON * 2) && intersectionDistanceShadow > EPSILON) return make_float4(0, 0, 0, 0);
+		if ((intersectionDistanceShadow < distToLight - EPSILON * 2) && intersectionDistanceShadow > EPSILON) return make_float4(0, 0, 0, 0);
 		
 		float3 BRDF = KajiyaPathTracer::materials[nearestTriangle->materialIndex].color.value / PI;
-		float solidAngle = (cos_o * selectedLight->shape->GetArea()) / (distance * distance);
 
-		return make_float4(BRDF, 0);
-		//return make_float4(BRDF, 0) * KajiyaPathTracer::lights.size() * lightColor * solidAngle * cos_i;
+		this->origin = intersectionPoint;
+		this->direction = dirToLight;
+
+		float4 Ei = this->Trace(recursionDepth + 1) * dot(nearestTriangle->GetNormal(), dirToLight);
+
+		return PI * 2.0f * make_float4(BRDF, 0) * Ei;
 	}
 
 	return make_float4(0,0,0,0);

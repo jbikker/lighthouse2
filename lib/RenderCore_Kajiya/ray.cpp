@@ -2,7 +2,7 @@
 #include "core_settings.h"
 #include "limits"
 #include "triangle.h"
-#include "whitted_ray_tracer.h"
+#include "kajiya_path_tracer.h"
 #include "vector"
 
 Ray::Ray(float4 _origin, float4 _direction) {
@@ -16,7 +16,7 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 
 float4 Ray::Trace(uint recursionDepth) {
 	/** check if we reached our recursion depth */
-	if (recursionDepth > WhittedRayTracer::recursionThreshold) {
+	if (recursionDepth > KajiyaPathTracer::recursionThreshold) {
 		return make_float4(0, 0, 0, 0);
 	}
 
@@ -27,11 +27,11 @@ float4 Ray::Trace(uint recursionDepth) {
 	if (intersectionDistance > 0) {
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
 
-		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
+		CoreMaterial* material = &KajiyaPathTracer::materials[nearestTriangle->materialIndex];
 
 		//cout << "test" << mater;
 
-		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
+		float4 globalIlluminationColor = KajiyaPathTracer::globalIllumination * make_float4(material->color.value, 0);
 
 		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth) + globalIlluminationColor;
 	}
@@ -109,8 +109,8 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 	float minDistance = NULL;
 	Triangle* nearestPrimitive = NULL;
 
-	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[i];
+	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
+		Triangle* triangle = KajiyaPathTracer::scene[i];
 		float distance = triangle->Intersect(*this);
 
 		if (

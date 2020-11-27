@@ -14,7 +14,7 @@
 */
 
 #include "core_settings.h"
-#include "whitted_ray_tracer.h"
+#include "kajiya_path_tracer.h"
 #include "vector"
 #include "chrono"
 
@@ -26,7 +26,7 @@ using namespace lh2core;
 //  +-----------------------------------------------------------------------------+
 void RenderCore::Init()
 {
-	WhittedRayTracer::Initialise();
+	KajiyaPathTracer::Initialise();
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -56,7 +56,7 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 		float4 v2 = make_float4(triangle.vertex2, 0);
 		uint materialIndex = triangle.material;
 
-		WhittedRayTracer::AddTriangle(v0, v1, v2, materialIndex);
+		KajiyaPathTracer::AddTriangle(v0, v1, v2, materialIndex);
 	}
 }
 
@@ -65,7 +65,7 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetMaterials(CoreMaterial* mat, const int materialCount) {
-	WhittedRayTracer::materials = vector<CoreMaterial>(mat, mat + materialCount);
+	KajiyaPathTracer::materials = vector<CoreMaterial>(mat, mat + materialCount);
 }
 
 //  +-----------------------------------------------------------------------------+
@@ -75,12 +75,17 @@ void RenderCore::SetMaterials(CoreMaterial* mat, const int materialCount) {
 void RenderCore::Render( const ViewPyramid& view, const Convergence converge, bool async )
 {
 	// render
+	// Start stopwatch
 	auto start = std::chrono::high_resolution_clock::now();
-	WhittedRayTracer::Render(view, screen);
+
+	KajiyaPathTracer::Render(view, screen);
+	
+	// Finish stopwatch and calculate time in ms
 	auto finish = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<float> elapsed = finish - start;
 	auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
 	std::cout << "Elapsed Time: " << durationMs.count() << "ms\n";
+	
 	// copy pixel buffer to OpenGL render target texture
 	glBindTexture( GL_TEXTURE_2D, targetTextureID );
 	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, screen->width, screen->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, screen->pixels);

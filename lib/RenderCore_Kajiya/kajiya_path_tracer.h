@@ -6,7 +6,7 @@
 #include "vector"
 #include "triangle.h";
 
-class WhittedRayTracer
+class KajiyaPathTracer
 {
 public:
 	static int recursionThreshold;

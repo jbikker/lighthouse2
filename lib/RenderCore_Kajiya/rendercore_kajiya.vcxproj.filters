@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClCompile Include="core_api.cpp" />
     <ClCompile Include="rendercore.cpp" />
-    <ClCompile Include="whitted_ray_tracer.cpp" />
     <ClCompile Include="light.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
@@ -16,11 +15,11 @@
     <ClCompile Include="triangle.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
+    <ClCompile Include="kajiya_path_tracer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="rendercore.h" />
-    <ClInclude Include="whitted_ray_tracer.h" />
     <ClInclude Include="light.h">
       <Filter>engine_objects</Filter>
     </ClInclude>
@@ -33,6 +32,7 @@
     <ClInclude Include="triangle.h">
       <Filter>primitives</Filter>
     </ClInclude>
+    <ClInclude Include="kajiya_path_tracer.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="engine_objects">

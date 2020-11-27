@@ -1,5 +1,5 @@
 #include "triangle.h"
-#include "whitted_ray_tracer.h"
+#include "kajiya_path_tracer.h"
 
 Triangle::Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material) {
 	this->v0 = _v0;
@@ -37,16 +37,16 @@ float4 Triangle::GetNormal() {
 }
 
 bool Triangle::IsLightBlocked(float shadowRayLength) {
-	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[i];
-		float distance = triangle->Intersect(WhittedRayTracer::shadowRay);
+	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
+		Triangle* triangle = KajiyaPathTracer::scene[i];
+		float distance = triangle->Intersect(KajiyaPathTracer::shadowRay);
 
 		if (
 			distance != NULL &&
 			distance > EPSILON &&
 			distance < shadowRayLength
 		) {
-			if (WhittedRayTracer::materials[triangle->materialIndex].refraction.value == 1) {
+			if (KajiyaPathTracer::materials[triangle->materialIndex].refraction.value == 1) {
 				continue;
 			}
 			return true;
@@ -59,10 +59,10 @@ float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 	float energy = 0;
 	float4 normal = this->GetNormal();
 
-	for (int i = 0; i < WhittedRayTracer::lights.size(); i++) {
-		Light* light = WhittedRayTracer::lights[i];
+	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {
+		Light* light = KajiyaPathTracer::lights[i];
 		float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
-		float shadowRayLength = length(light->origin - WhittedRayTracer::shadowRay.origin) - (length(shadowRayDirection) * EPSILON);
+		float shadowRayLength = length(light->origin - KajiyaPathTracer::shadowRay.origin) - (length(shadowRayDirection) * EPSILON);
 
 		float distanceEnergy = light->intensity * (1 / (shadowRayLength * shadowRayLength));
 		float angleFalloff = dot(normal, shadowRayDirection);
@@ -72,8 +72,8 @@ float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 			(angleFalloff > EPSILON) || (distanceEnergy > EPSILON)
 			) {
 			/** Adds additional length to prevent intersection to itself */
-			WhittedRayTracer::shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
-			WhittedRayTracer::shadowRay.direction = shadowRayDirection;
+			KajiyaPathTracer::shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
+			KajiyaPathTracer::shadowRay.direction = shadowRayDirection;
 
 			if (Triangle::IsLightBlocked(shadowRayLength)) { continue; }
 

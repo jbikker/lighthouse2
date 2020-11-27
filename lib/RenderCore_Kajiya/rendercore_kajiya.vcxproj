@@ -121,7 +121,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">core_settings.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="triangle.cpp" />
-    <ClCompile Include="whitted_ray_tracer.cpp" />
+    <ClCompile Include="kajiya_path_tracer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
@@ -130,7 +130,7 @@
     <ClInclude Include="ray.h" />
     <ClInclude Include="rendercore.h" />
     <ClInclude Include="triangle.h" />
-    <ClInclude Include="whitted_ray_tracer.h" />
+    <ClInclude Include="kajiya_path_tracer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

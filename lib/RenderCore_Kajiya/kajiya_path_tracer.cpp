@@ -16,16 +16,30 @@ float4 KajiyaPathTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
 void KajiyaPathTracer::Initialise() {
 	/** Lights */
 	lights.push_back(new Light(
-		make_float4(-5, 20, 0, 0),
-		200
+		new Triangle(
+			make_float4(0, 20, 0, 0), 
+			make_float4(5, 20, 0, 0), 
+			make_float4(0, 20, 5, 0), 
+			-1
+		),
+		20
 	));
 }
+
+int KajiyaPathTracer::stillFrames = 1;
+float3 KajiyaPathTracer::oldCameraPos = make_float3(0, 0, 0);
+float3 KajiyaPathTracer::oldCameraP1 = make_float3(0, 0, 0);
+float3 KajiyaPathTracer::oldCameraP2 = make_float3(0, 0, 0);
+float3 KajiyaPathTracer::oldCameraP3 = make_float3(0, 0, 0);
+
 
 int KajiyaPathTracer::recursionThreshold = 5;
 Ray KajiyaPathTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 Ray KajiyaPathTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 
 void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
+	bool cameraStill = view.pos.x == KajiyaPathTracer::oldCameraPos.x && view.pos.y == KajiyaPathTracer::oldCameraPos.y && view.pos.z == KajiyaPathTracer::oldCameraPos.z;
+
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
 			/** Setup the ray from the screen */
@@ -38,11 +52,32 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 
 			/** Trace the ray */
 			float4 color = primaryRay.Trace();
-
 			int index = x + y * screen->width;
-			screen->pixels[index] = KajiyaPathTracer::ConvertColorToInt(color);
+
+
+			/** Camera moved */
+			if (!cameraStill) {
+				screen->pixels[index] = KajiyaPathTracer::ConvertColorToInt(color);
+			}
+
+			/** Converge */
+			else {
+				float4 oldColor = KajiyaPathTracer::ConvertIntToColor(screen->pixels[index]);
+				screen->pixels[index] = KajiyaPathTracer::ConvertColorToInt(oldColor + ((color - oldColor) / (KajiyaPathTracer::stillFrames + 1)));
+			}
+
 		}
 	}
+
+	cout << KajiyaPathTracer::stillFrames << "\n";
+	KajiyaPathTracer::oldCameraPos = view.pos;
+	if (cameraStill) {
+		KajiyaPathTracer::stillFrames++;
+	}
+	else {
+		KajiyaPathTracer::stillFrames = 1;
+	}
+
 }
 
 void KajiyaPathTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
@@ -68,4 +103,11 @@ int KajiyaPathTracer::ConvertColorToInt(float4 color) {
 	int green = clamp((int)(color.y * 256), 0, 255);
 	int blue = clamp((int)(color.z * 256), 0, 255);
 	return (blue << 16) + (green << 8) + red;
+}
+
+float4 KajiyaPathTracer::ConvertIntToColor(int color) {
+	float red = color & 0xFF;
+	float green = (color >> 8) & 0xFF;
+	float blue = (color >> 16) & 0xFF;
+	return make_float4(red, green, blue, 0) / 255;
 }

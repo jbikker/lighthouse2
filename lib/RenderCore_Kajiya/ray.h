@@ -1,11 +1,11 @@
 #pragma once
 #include "core_settings.h"
-#include "light.h"
 #include "tuple"
 #include "vector"
 
+class KajiyaPathTracer;
 class Triangle;
-class WhittedRayTracer;
+class Light;
 
 class Ray
 {

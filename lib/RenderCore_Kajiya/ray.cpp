@@ -25,15 +25,42 @@ float4 Ray::Trace(uint recursionDepth) {
 	float intersectionDistance = get<1>(nearestIntersection);
 
 	if (intersectionDistance > 0) {
+
+		/** Hit a light */
+		if (nearestTriangle->materialIndex == -1) {
+			return make_float4(1, 0, 0, 0);
+		}
+
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
 
-		CoreMaterial* material = &KajiyaPathTracer::materials[nearestTriangle->materialIndex];
+		/** Select a random light */
+		Light* selectedLight = KajiyaPathTracer::lights[0];
+		float4 lightColor = make_float4(1, 1, 1, 0);
 
-		//cout << "test" << mater;
+		float4 L = selectedLight->shape->GetRandomPoint() - intersectionPoint;
+		float distance = length(L);
+		L /= distance;
+		float4 normalOfLight = selectedLight->shape->GetNormal();
+		float cos_o = dot(-L, selectedLight->shape->GetNormal());
+		float cos_i = dot(L, nearestTriangle->GetNormal());
 
-		float4 globalIlluminationColor = KajiyaPathTracer::globalIllumination * make_float4(material->color.value, 0);
+		/** TODO: what this checks.. */
+		if ((cos_o <= 0) || (cos_i <= 0)) return make_float4(1, 0, 0, 0);
 
-		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth) + globalIlluminationColor;
+		/** Trace the shadow ray */
+		KajiyaPathTracer::shadowRay.origin = intersectionPoint + EPSILON * L;
+		KajiyaPathTracer::shadowRay.direction = L;
+		tuple<Triangle*, float> nearestIntersectionShadow = KajiyaPathTracer::shadowRay.GetNearestIntersection();
+		Triangle* nearestTriangleShadow = get<0>(nearestIntersection);
+		float intersectionDistanceShadow = get<1>(nearestIntersection);
+
+		if ((intersectionDistanceShadow < distance - EPSILON * 2) && intersectionDistanceShadow > EPSILON) return make_float4(0, 0, 0, 0);
+		
+		float3 BRDF = KajiyaPathTracer::materials[nearestTriangle->materialIndex].color.value / PI;
+		float solidAngle = (cos_o * selectedLight->shape->GetArea()) / (distance * distance);
+
+		return make_float4(BRDF, 0);
+		//return make_float4(BRDF, 0) * KajiyaPathTracer::lights.size() * lightColor * solidAngle * cos_i;
 	}
 
 	return make_float4(0,0,0,0);
@@ -49,7 +76,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	float4 normal = triangle->GetNormal();
 
 	if (diffuse > EPSILON) {
-		float energy = triangle->CalculateEnergyFromLights(intersectionPoint);
+		float energy = 1;  triangle->CalculateEnergyFromLights(intersectionPoint);
 		float4 diffuseColor = materialColor * energy;
 		color += diffuse * diffuseColor;
 	}
@@ -109,6 +136,8 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 	float minDistance = NULL;
 	Triangle* nearestPrimitive = NULL;
 
+
+	/** Intersect scene objects */
 	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
 		Triangle* triangle = KajiyaPathTracer::scene[i];
 		float distance = triangle->Intersect(*this);
@@ -117,6 +146,20 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 			((minDistance == NULL) || (distance < minDistance))
 			&& (distance > 0)
 		) {
+			minDistance = distance;
+			nearestPrimitive = triangle;
+		}
+	}
+
+	/** Intersect lights */
+	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {
+		Triangle* triangle = KajiyaPathTracer::lights[i]->shape;
+		float distance = triangle->Intersect(*this);
+
+		if (
+			((minDistance == NULL) || (distance < minDistance))
+			&& (distance > 0)
+			) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
 		}

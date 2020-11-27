@@ -25,6 +25,12 @@ float4 Ray::Trace(uint recursionDepth) {
 	float intersectionDistance = get<1>(nearestIntersection);
 
 	if (intersectionDistance > 0) {
+
+		/** is a light */
+		if (nearestTriangle->materialIndex == -1) {
+			return make_float4(1, 1, 1, 0);
+		}
+			
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
 
 		CoreMaterial* material = &KajiyaPathTracer::materials[nearestTriangle->materialIndex];
@@ -109,6 +115,8 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 	float minDistance = NULL;
 	Triangle* nearestPrimitive = NULL;
 
+
+	/** Intersect scene objects */
 	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
 		Triangle* triangle = KajiyaPathTracer::scene[i];
 		float distance = triangle->Intersect(*this);
@@ -117,6 +125,20 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 			((minDistance == NULL) || (distance < minDistance))
 			&& (distance > 0)
 		) {
+			minDistance = distance;
+			nearestPrimitive = triangle;
+		}
+	}
+
+	/** Intersect lights */
+	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {
+		Triangle* triangle = &KajiyaPathTracer::lights[i]->shape;
+		float distance = triangle->Intersect(*this);
+
+		if (
+			((minDistance == NULL) || (distance < minDistance))
+			&& (distance > 0)
+			) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
 		}

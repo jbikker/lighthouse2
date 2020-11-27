@@ -1,7 +1,8 @@
 #include "light.h"
+#include "triangle.h"
 
-Light::Light(float4 _origin, float _intensity)
+Light::Light(Triangle triangle, float emmitance)
 {
-	origin = _origin;
-	intensity = _intensity;
+	this->shape = triangle;
+	this->emmitance = emmitance;
 }

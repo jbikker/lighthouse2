@@ -37,21 +37,21 @@ float4 Triangle::GetNormal() {
 }
 
 bool Triangle::IsLightBlocked(float shadowRayLength) {
-	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
-		Triangle* triangle = KajiyaPathTracer::scene[i];
-		float distance = triangle->Intersect(KajiyaPathTracer::shadowRay);
+	// for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
+	// 	Triangle* triangle = KajiyaPathTracer::scene[i];
+	// 	float distance = triangle->Intersect(KajiyaPathTracer::shadowRay);
 
-		if (
-			distance != NULL &&
-			distance > EPSILON &&
-			distance < shadowRayLength
-		) {
-			if (KajiyaPathTracer::materials[triangle->materialIndex].refraction.value == 1) {
-				continue;
-			}
-			return true;
-		}
-	}
+	// 	if (
+	// 		distance != NULL &&
+	// 		distance > EPSILON &&
+	// 		distance < shadowRayLength
+	// 	) {
+	// 		if (KajiyaPathTracer::materials[triangle->materialIndex].refraction.value == 1) {
+	// 			continue;
+	// 		}
+	// 		return true;
+	// 	}
+	// }
 	return false;
 }
 
@@ -59,26 +59,26 @@ float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 	float energy = 0;
 	float4 normal = this->GetNormal();
 
-	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {
-		Light* light = KajiyaPathTracer::lights[i];
-		float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
-		float shadowRayLength = length(light->origin - KajiyaPathTracer::shadowRay.origin) - (length(shadowRayDirection) * EPSILON);
+	//for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {
+	//	Light* light = KajiyaPathTracer::lights[i];
+	//	float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
+	//	float shadowRayLength = length(light->origin - KajiyaPathTracer::shadowRay.origin) - (length(shadowRayDirection) * EPSILON);
 
-		float distanceEnergy = light->intensity * (1 / (shadowRayLength * shadowRayLength));
-		float angleFalloff = dot(normal, shadowRayDirection);
+	//	float distanceEnergy = light->intensity * (1 / (shadowRayLength * shadowRayLength));
+	//	float angleFalloff = dot(normal, shadowRayDirection);
 
-		/** check if there is enough energy to apply to the material */
-		if (
-			(angleFalloff > EPSILON) || (distanceEnergy > EPSILON)
-			) {
-			/** Adds additional length to prevent intersection to itself */
-			KajiyaPathTracer::shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
-			KajiyaPathTracer::shadowRay.direction = shadowRayDirection;
+	//	/** check if there is enough energy to apply to the material */
+	//	if (
+	//		(angleFalloff > EPSILON) || (distanceEnergy > EPSILON)
+	//		) {
+	//		/** Adds additional length to prevent intersection to itself */
+	//		KajiyaPathTracer::shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
+	//		KajiyaPathTracer::shadowRay.direction = shadowRayDirection;
 
-			if (Triangle::IsLightBlocked(shadowRayLength)) { continue; }
+	//		if (Triangle::IsLightBlocked(shadowRayLength)) { continue; }
 
-			energy += distanceEnergy * angleFalloff;
-		}
-	}
+	//		energy += distanceEnergy * angleFalloff;
+	//	}
+	//}
 	return energy;
 }

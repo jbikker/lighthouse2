@@ -41,18 +41,9 @@ float4 Ray::Trace(uint recursionDepth) {
 		float distToLight = length(lineIntserToLight);
 		float4 dirToLight = normalize(lineIntserToLight);
 
-		/** Trace the shadow ray */
-		KajiyaPathTracer::shadowRay.origin = intersectionPoint + EPSILON * dirToLight;
-		KajiyaPathTracer::shadowRay.direction = dirToLight;
-		tuple<Triangle*, float> nearestIntersectionShadow = KajiyaPathTracer::shadowRay.GetNearestIntersection();
-		Triangle* nearestTriangleShadow = get<0>(nearestIntersection);
-		float intersectionDistanceShadow = get<1>(nearestIntersection);
-
-		if ((intersectionDistanceShadow < distToLight - EPSILON * 2) && intersectionDistanceShadow > EPSILON) return make_float4(0, 0, 0, 0);
-		
 		float3 BRDF = KajiyaPathTracer::materials[nearestTriangle->materialIndex].color.value / PI;
 
-		this->origin = intersectionPoint;
+		this->origin = intersectionPoint + EPSILON * dirToLight;
 		this->direction = dirToLight;
 
 		float4 Ei = this->Trace(recursionDepth + 1) * dot(nearestTriangle->GetNormal(), dirToLight);

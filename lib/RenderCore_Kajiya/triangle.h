@@ -1,7 +1,8 @@
 #pragma once
 
 #include "core_settings.h"
-#include "ray.h"
+
+class Ray;
 
 class Triangle {
 public:
@@ -9,6 +10,8 @@ public:
 	explicit Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material);
 	float Intersect(Ray& ray);
 	float4 GetNormal();
+	float4 GetRandomPoint();
+	float GetArea();
 	float CalculateEnergyFromLights(const float4 intersectionPoint);
 	bool IsLightBlocked(float shadowRayLength);
 private:

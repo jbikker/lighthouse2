@@ -4,7 +4,7 @@
 #include "light.h"
 #include "tuple"
 #include "vector"
-#include "triangle.h";
+#include "triangle.h"
 
 class KajiyaPathTracer
 {
@@ -23,8 +23,17 @@ public:
 	static void AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex);
 	static void Render(const ViewPyramid& view, const Bitmap* screen);
 private:
+
+	/** Old camera position */
+	static int stillFrames;
+	static float3 oldCameraPos;
+	static float3 oldCameraP1;
+	static float3 oldCameraP2;
+	static float3 oldCameraP3;
+
 	static float3 GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y);
 	static float4 GetRayDirection(const ViewPyramid& view, float3 point);
 	static int ConvertColorToInt(float4 color);
+	static float4 ConvertIntToColor(int color);
 };
 

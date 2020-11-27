@@ -6,7 +6,7 @@ class Light
 {
 public:
 	float emmitance;
-	Triangle shape;
-	Light(Triangle triangle, float emmitance);
+	Triangle* shape;
+	Light(Triangle* triangle, float emmitance);
 };
 

@@ -35,9 +35,6 @@ void PrepareScene()
 {
 	// initialize scene
 	int boxScene = renderer->AddMesh("../_shareddata/basic_box.obj", 0.2f);
-	HostMaterial* material = renderer->GetMaterial(1);
-	material->refraction.value = 1;
-	material->reflection.value = 0;
 	renderer->AddInstance(boxScene);
 }
 

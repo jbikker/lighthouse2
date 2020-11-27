@@ -36,22 +36,39 @@ float4 Triangle::GetNormal() {
 	return normalize(cross(v1 - v0, v2 - v0));
 }
 
-bool Triangle::IsLightBlocked(float shadowRayLength) {
-	// for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
-	// 	Triangle* triangle = KajiyaPathTracer::scene[i];
-	// 	float distance = triangle->Intersect(KajiyaPathTracer::shadowRay);
+float4 Triangle::GetRandomPoint()
+{
+	float a = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	float b = 1 - a;
+	return this->v0 + a * (this->v1 - this->v0) + b * (this->v2 - this->v0);
+}
 
-	// 	if (
-	// 		distance != NULL &&
-	// 		distance > EPSILON &&
-	// 		distance < shadowRayLength
-	// 	) {
-	// 		if (KajiyaPathTracer::materials[triangle->materialIndex].refraction.value == 1) {
-	// 			continue;
-	// 		}
-	// 		return true;
-	// 	}
-	// }
+float Triangle::GetArea()
+{
+	/** Area code from: common_classes.h */
+	const float a = length(this->v1 - this->v0);
+	const float b = length(this->v2 - this->v1);
+	const float c = length(this->v0 - this->v2);
+	const float s = (a + b + c) * 0.5f;
+	return sqrtf(s * (s - a) * (s - b) * (s - c));
+}
+
+bool Triangle::IsLightBlocked(float shadowRayLength) {
+	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
+		Triangle* triangle = KajiyaPathTracer::scene[i];
+		float distance = triangle->Intersect(KajiyaPathTracer::shadowRay);
+
+		if (
+			distance != NULL &&
+			distance > EPSILON &&
+			distance < shadowRayLength
+		) {
+			if (KajiyaPathTracer::materials[triangle->materialIndex].refraction.value == 1) {
+				continue;
+			}
+			return true;
+		}
+	}
 	return false;
 }
 

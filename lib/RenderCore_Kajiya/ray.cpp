@@ -31,7 +31,27 @@ float4 Ray::Trace(uint recursionDepth) {
 			return make_float4(1, 1, 1, 0);
 		}
 
+		CoreMaterial material = KajiyaPathTracer::materials[nearestTriangle->materialIndex];
+		float4 normal = nearestTriangle->GetNormal();
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
+
+		/** Hit a mirror */
+		if (KajiyaPathTracer::materials[nearestTriangle->materialIndex].reflection.value > EPSILON) {
+			this->direction = this->direction - 2.0f * normal * dot(normal, this->direction);;
+			this->origin = intersectionPoint + EPSILON * this->direction;
+			return this->Trace(recursionDepth + 1);
+		}
+
+		/** Hit a glass */
+		if (KajiyaPathTracer::materials[nearestTriangle->materialIndex].refraction.value > EPSILON) {
+			float4 refractionDirection = this->GetRefractionDirection(nearestTriangle, &material);
+			if (length(refractionDirection) > EPSILON) {
+				this->origin = intersectionPoint + (refractionDirection * EPSILON);
+				this->direction = refractionDirection;
+				return this->Trace(recursionDepth + 1);
+			}
+		}
+
 
 		/** Select a random light */
 		Light* selectedLight = KajiyaPathTracer::lights[0];
@@ -41,12 +61,12 @@ float4 Ray::Trace(uint recursionDepth) {
 		float distToLight = length(lineIntserToLight);
 		float4 dirToLight = normalize(lineIntserToLight);
 
-		float3 BRDF = KajiyaPathTracer::materials[nearestTriangle->materialIndex].color.value / PI;
+		float3 BRDF = material.color.value / PI;
 
 		this->origin = intersectionPoint + EPSILON * dirToLight;
 		this->direction = dirToLight;
 
-		float4 Ei = this->Trace(recursionDepth + 1) * dot(nearestTriangle->GetNormal(), dirToLight);
+		float4 Ei = this->Trace(recursionDepth + 1) * dot(normal, dirToLight);
 
 		return PI * 2.0f * make_float4(BRDF, 0) * Ei;
 	}

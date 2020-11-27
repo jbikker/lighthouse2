@@ -18,8 +18,8 @@ void KajiyaPathTracer::Initialise() {
 	lights.push_back(new Light(
 		new Triangle(
 			make_float4(0, 20, 0, 0), 
-			make_float4(5, 20, 0, 0), 
-			make_float4(0, 20, 5, 0), 
+			make_float4(10, 20, 0, 0), 
+			make_float4(0, 20, 10, 0), 
 			-1
 		),
 		5
@@ -33,7 +33,7 @@ float3 KajiyaPathTracer::oldCameraP2 = make_float3(0, 0, 0);
 float3 KajiyaPathTracer::oldCameraP3 = make_float3(0, 0, 0);
 
 
-int KajiyaPathTracer::recursionThreshold = 5;
+int KajiyaPathTracer::recursionThreshold = 3;
 Ray KajiyaPathTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 Ray KajiyaPathTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 

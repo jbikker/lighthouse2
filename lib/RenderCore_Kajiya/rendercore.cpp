@@ -65,6 +65,7 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 //  |  Set the material data.                                               LH2'19|
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetMaterials(CoreMaterial* mat, const int materialCount) {
+	//cout << "Material"
 	KajiyaPathTracer::materials = vector<CoreMaterial>(mat, mat + materialCount);
 }
 

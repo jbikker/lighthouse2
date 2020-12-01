@@ -11,7 +11,7 @@ class KajiyaPathTracer
 public:
 	static int recursionThreshold;
 	static vector<Triangle*> scene;
-	static vector<Light*> lights;
+	static vector<Triangle*> lights;
 	static vector<CoreMaterial> materials;
 
 	static Ray primaryRay;

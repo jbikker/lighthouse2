@@ -20,15 +20,16 @@ float4 Ray::Trace(uint recursionDepth) {
 		return make_float4(0, 0, 0, 0);
 	}
 
-	tuple<Triangle*, float> nearestIntersection = Ray::GetNearestIntersection();
+	tuple<Triangle*, float, Ray::HitType> nearestIntersection = Ray::GetNearestIntersection();
 	Triangle* nearestTriangle = get<0>(nearestIntersection);
 	float intersectionDistance = get<1>(nearestIntersection);
+	Ray::HitType hitType = get<2>(nearestIntersection);
 
 	if (intersectionDistance > 0) {
 
 		/** Hit a light */
-		if (nearestTriangle->materialIndex == -1) {
-			return make_float4(1, 1, 1, 0);
+		if (hitType == Ray::HitType::Light) {
+			return make_float4(KajiyaPathTracer::materials[nearestTriangle->materialIndex].color.value, 0);
 		}
 
 		CoreMaterial material = KajiyaPathTracer::materials[nearestTriangle->materialIndex];
@@ -52,23 +53,18 @@ float4 Ray::Trace(uint recursionDepth) {
 			}
 		}
 
+		/** hit a random point on the hemisphere */
+		float x = ((float) rand()) / (float) RAND_MAX;
+		float y = ((float) rand()) / (float) RAND_MAX;
+		float z = ((float) rand()) / (float) RAND_MAX;
+		float4 point = normalize(make_float4(x, y, z, 0));
+		float4 r = this->direction = (dot(point, normal) > 0) ? point : -point;
+		this->origin = intersectionPoint + (this->direction * EPSILON);
+		float4 hitColor = this->Trace(recursionDepth + 1);
 
-		/** Select a random light */
-		Light* selectedLight = KajiyaPathTracer::lights[0];
-		float4 lightColor = make_float4(1, 1, 1, 0);
-
-		float4 lineIntserToLight = selectedLight->shape->GetRandomPoint() - intersectionPoint;
-		float distToLight = length(lineIntserToLight);
-		float4 dirToLight = normalize(lineIntserToLight);
-
-		float3 BRDF = material.color.value / PI;
-
-		this->origin = intersectionPoint + EPSILON * dirToLight;
-		this->direction = dirToLight;
-
-		float4 Ei = this->Trace(recursionDepth + 1) * dot(normal, dirToLight);
-
-		return PI * 2.0f * make_float4(BRDF, 0) * Ei;
+		float4 BRDF = make_float4(material.color.value / PI, 0);
+		// return PI * 2.0f * make_float4(BRDF, 0) * hitColor;
+		return dot(r, normal) * BRDF * hitColor * 2.0 * PI;
 	}
 
 	return make_float4(0,0,0,0);
@@ -140,10 +136,10 @@ float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 
 }
 
-tuple<Triangle*, float> Ray::GetNearestIntersection() {
+tuple<Triangle*, float, Ray::HitType> Ray::GetNearestIntersection() {
 	float minDistance = NULL;
 	Triangle* nearestPrimitive = NULL;
-
+	Ray::HitType hitType = Ray::HitType::Nothing;
 
 	/** Intersect scene objects */
 	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
@@ -156,12 +152,13 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 		) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
+			hitType = Ray::HitType::SceneObject;
 		}
 	}
 
 	/** Intersect lights */
 	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {
-		Triangle* triangle = KajiyaPathTracer::lights[i]->shape;
+		Triangle* triangle = KajiyaPathTracer::lights[i];
 		float distance = triangle->Intersect(*this);
 
 		if (
@@ -170,10 +167,11 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 			) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
+			hitType = Ray::HitType::Light;
 		}
 	}
 
-	return make_tuple(nearestPrimitive, minDistance);
+	return make_tuple(nearestPrimitive, minDistance, hitType);
 }
 
 

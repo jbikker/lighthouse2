@@ -33,22 +33,12 @@ static std::bitset<1024> keystates;
 //  +-----------------------------------------------------------------------------+
 void PrepareScene()
 {
-	// initialize scene
+	/** Add light material */
+	const int emittance = 3;
+	renderer->AddMaterial(make_float3(emittance));
+	/** Add scene */
 	int boxScene = renderer->AddMesh("../_shareddata/basic_box.obj", 0.2f);
 	renderer->AddInstance(boxScene);
-
-	HostMaterial* material; 
-
-	// material = renderer->GetMaterial(3);
-	// material->reflection.value = 1;
-
-	material = renderer->GetMaterial(2);
-	material->refraction.value = 1;
-	material->ior.value = 1.15;
-
-	material = renderer->GetMaterial(1);
-	material->refraction.value = 1;
-	material->ior.value = 1.15;
 }
 
 //  +-----------------------------------------------------------------------------+

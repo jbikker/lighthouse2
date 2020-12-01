@@ -8,21 +8,18 @@
 #include "vector"
 
 vector<Triangle*> KajiyaPathTracer::scene = vector<Triangle*>();
-vector<Light*> KajiyaPathTracer::lights = vector<Light*>();
+vector<Triangle*> KajiyaPathTracer::lights = vector<Triangle*>();
 vector<CoreMaterial> KajiyaPathTracer::materials;
 
 float4 KajiyaPathTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
 
 void KajiyaPathTracer::Initialise() {
 	/** Lights */
-	lights.push_back(new Light(
-		new Triangle(
-			make_float4(0, 20, 0, 0), 
-			make_float4(10, 20, 0, 0), 
-			make_float4(0, 20, 10, 0), 
-			-1
-		),
-		5
+	lights.push_back(new Triangle(
+		make_float4(0, 20, 0, 0),
+		make_float4(100, 20, 0, 0),
+		make_float4(0, 20, 100, 0),
+		0
 	));
 }
 
@@ -69,7 +66,7 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 		}
 	}
 
-	cout << KajiyaPathTracer::stillFrames << "\n";
+	cout << "Amount of still frames: " << KajiyaPathTracer::stillFrames << "\n";
 	KajiyaPathTracer::oldCameraPos = view.pos;
 	if (cameraStill) {
 		KajiyaPathTracer::stillFrames++;

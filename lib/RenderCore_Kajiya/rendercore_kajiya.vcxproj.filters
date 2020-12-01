@@ -3,12 +3,6 @@
   <ItemGroup>
     <ClCompile Include="core_api.cpp" />
     <ClCompile Include="rendercore.cpp" />
-    <ClCompile Include="light.cpp">
-      <Filter>engine_objects</Filter>
-    </ClCompile>
-    <ClCompile Include="material.cpp">
-      <Filter>engine_objects</Filter>
-    </ClCompile>
     <ClCompile Include="ray.cpp">
       <Filter>engine_objects</Filter>
     </ClCompile>
@@ -20,12 +14,6 @@
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="rendercore.h" />
-    <ClInclude Include="light.h">
-      <Filter>engine_objects</Filter>
-    </ClInclude>
-    <ClInclude Include="material.h">
-      <Filter>engine_objects</Filter>
-    </ClInclude>
     <ClInclude Include="ray.h">
       <Filter>engine_objects</Filter>
     </ClInclude>

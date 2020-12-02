@@ -3,7 +3,6 @@
 *.exe
 *.exp
 *.lib
-camera.xml
 camera.dat
 .vscode
 sky_15.hdr.bin

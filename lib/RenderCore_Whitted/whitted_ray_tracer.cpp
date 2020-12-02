@@ -57,7 +57,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 		}
 	}
 
-	WhittedRayTracer::ApplyPostProcessing(screen);
+	 WhittedRayTracer::ApplyPostProcessing(screen);
 }
 
 void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
@@ -118,7 +118,7 @@ void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
 			color.z = WhittedRayTracer::ConvertIntToColor(pixels[pixelB]).z;
 
 			/** Gamma Correction */
-			float gamma = 2.2;
+			float gamma = 1.8;
 			color.x = pow(color.x, 1.0 / gamma);
 			color.y = pow(color.y, 1.0 / gamma);
 			color.z = pow(color.z, 1.0 / gamma);

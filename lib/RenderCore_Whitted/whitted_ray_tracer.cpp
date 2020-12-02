@@ -84,11 +84,14 @@ int WhittedRayTracer::ConvertColorToInt(float4 color) {
 }
 
 void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen, int x, int y, float4& color) {
-		float u = ((float) x / (float) screen->width) - 0.5;
-		float v = ((float) y / (float) screen->height) - 0.5;
+		float u = ((float) x / (float) screen->width);
+		float v = ((float) y / (float) screen->height);
 		
+		u *= 1.0 - u;
+		v *= 1.0 - v;
+
 		/** Vignette */
-		float vignette = abs(u * v);
-		// vignette = pow(0.5, vignette);
-		color -= vignette;
+		float vignette = u * v * 15.0;
+		vignette = pow(vignette, 0.25);
+		color *= vignette;
 }

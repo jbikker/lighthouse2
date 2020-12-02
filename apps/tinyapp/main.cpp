@@ -34,7 +34,7 @@ static std::bitset<1024> keystates;
 void PrepareScene()
 {
 	/** Add light material */
-	const int emittance = 3;
+	const int emittance = 5;
 	renderer->AddMaterial(make_float3(emittance));
 	/** Add scene */
 	int boxScene = renderer->AddMesh("../_shareddata/abstract.obj", 1.0f);
@@ -81,8 +81,8 @@ int main()
 	InitGLFW();
 
 	// initialize renderer: pick one
-	renderer = RenderAPI::CreateRenderAPI("RenderCore_Whitted");
-	// renderer = RenderAPI::CreateRenderAPI("RenderCore_Kajiya");
+	// renderer = RenderAPI::CreateRenderAPI("RenderCore_Whitted");
+	renderer = RenderAPI::CreateRenderAPI("RenderCore_Kajiya");
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
 	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices

@@ -132,6 +132,10 @@ inline int3 operator-( int3& a ) { return make_int3( -a.x, -a.y, -a.z ); }
 inline float4 operator-( float4& a ) { return make_float4( -a.x, -a.y, -a.z, -a.w ); }
 inline int4 operator-( int4& a ) { return make_int4( -a.x, -a.y, -a.z, -a.w ); }
 
+inline bool operator==( const float3& a, float3& b) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+inline bool operator==( float3& a, float3& b ) { return a.x == b.x && a.y == b.y && a.z == b.z; }
+inline bool operator==( float4& a, float4& b ) { return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w; }
+
 inline float2 operator+( float2 a, float2 b ) { return make_float2( a.x + b.x, a.y + b.y ); }
 inline void operator+=( float2& a, float2 b ) { a.x += b.x;	a.y += b.y; }
 inline float2 operator+( float2 a, float b ) { return make_float2( a.x + b, a.y + b ); }

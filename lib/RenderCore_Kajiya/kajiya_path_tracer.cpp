@@ -35,7 +35,7 @@ Ray KajiyaPathTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0
 Ray KajiyaPathTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 
 void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
-	bool cameraStill = view.pos.x == KajiyaPathTracer::oldCameraPos.x && view.pos.y == KajiyaPathTracer::oldCameraPos.y && view.pos.z == KajiyaPathTracer::oldCameraPos.z;
+	bool cameraStill = view.pos == KajiyaPathTracer::oldCameraPos && view.p1 == KajiyaPathTracer::oldCameraP1 && view.p2 == KajiyaPathTracer::oldCameraP2 && view.p3 == KajiyaPathTracer::oldCameraP3;
 
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
@@ -68,6 +68,9 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 
 	cout << "Amount of still frames: " << KajiyaPathTracer::stillFrames << "\n";
 	KajiyaPathTracer::oldCameraPos = view.pos;
+	KajiyaPathTracer::oldCameraP1 = view.p1;
+	KajiyaPathTracer::oldCameraP2 = view.p2;
+	KajiyaPathTracer::oldCameraP3 = view.p3;
 	if (cameraStill) {
 		KajiyaPathTracer::stillFrames++;
 	}

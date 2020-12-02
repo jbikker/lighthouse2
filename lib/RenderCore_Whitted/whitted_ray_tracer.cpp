@@ -104,6 +104,7 @@ void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
 			float vVig = v * (1.0 - v);
 			float4 color = WhittedRayTracer::ConvertIntToColor(screen->pixels[index]);
 
+
 			/** Chromatic abberation */
 			int abberationStrength = 50;
 			int abberationPixels = abs((u - 0.5) * (v - 0.5)) * abberationStrength;
@@ -114,6 +115,11 @@ void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
 			color.x = WhittedRayTracer::ConvertIntToColor(pixels[pixelR]).x;
 			color.z = WhittedRayTracer::ConvertIntToColor(pixels[pixelB]).z;
 
+			/** Gamma Correction */
+			float gamma = 2.2;
+			color.x = pow(color.x, 1.0 / gamma);
+			color.y = pow(color.y, 1.0 / gamma);
+			color.z = pow(color.z, 1.0 / gamma);
 
 			/** Vignetting */
 			float vignette = uVig * vVig * 15.0;

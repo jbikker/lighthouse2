@@ -49,13 +49,12 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			}
 
 			pixelColor /= WhittedRayTracer::antiAliasingAmount * WhittedRayTracer::antiAliasingAmount;
-			WhittedRayTracer::ApplyPostProcessing(screen, x, y, pixelColor);
-
 			int index = x + y * screen->width;
 			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(pixelColor);
 		}
 	}
 
+	 WhittedRayTracer::ApplyPostProcessing(screen);
 }
 
 void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
@@ -83,15 +82,45 @@ int WhittedRayTracer::ConvertColorToInt(float4 color) {
 	return (blue << 16) + (green << 8) + red;
 }
 
-void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen, int x, int y, float4& color) {
-		float u = ((float) x / (float) screen->width);
-		float v = ((float) y / (float) screen->height);
-		
-		u *= 1.0 - u;
-		v *= 1.0 - v;
+float4 WhittedRayTracer::ConvertIntToColor(int color) {
+	float red = color & 0xFF;
+	float green = (color >> 8) & 0xFF;
+	float blue = (color >> 16) & 0xFF;
+	return make_float4(red, green, blue, 0) / 255;
+}
 
-		/** Vignette */
-		float vignette = u * v * 15.0;
-		vignette = pow(vignette, 0.25);
-		color *= vignette;
+
+void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
+	uint* pixels = new uint[screen->width * screen->height];
+	memcpy(pixels, screen->pixels, screen->width * screen->height * sizeof(uint));
+	int screenWidth = screen->width;
+
+	for (int y = 0; y < screen->height; y++) {
+		for (int x = 0; x < screen->width; x++) {
+			int index = x + y * screen->width;
+			float u = ((float) x / (float) screen->width);
+			float v = ((float) y / (float) screen->height);
+			float uVig = u * (1.0 - u);
+			float vVig = v * (1.0 - v);
+			float4 color = WhittedRayTracer::ConvertIntToColor(screen->pixels[index]);
+
+			/** Chromatic abberation */
+			int abberationStrength = 50;
+			int abberationPixels = abs((u - 0.5) * (v - 0.5)) * abberationStrength;
+			int min = 0;
+			int max = screen->width - 1;
+			int pixelR = clamp((x + abberationPixels), min, max) + y * screenWidth;
+			int pixelB = clamp((x - abberationPixels), min, max) + y * screenWidth;
+			color.x = WhittedRayTracer::ConvertIntToColor(pixels[pixelR]).x;
+			color.z = WhittedRayTracer::ConvertIntToColor(pixels[pixelB]).z;
+
+
+			/** Vignetting */
+			float vignette = uVig * vVig * 15.0;
+			vignette = pow(vignette, 0.25);
+			color *= vignette;
+
+			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);
+		}
+	}
 }

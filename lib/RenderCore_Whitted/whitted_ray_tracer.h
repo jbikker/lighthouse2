@@ -27,6 +27,7 @@ private:
 	static float3 GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const float x, const float y);
 	static float4 GetRayDirection(const ViewPyramid& view, float3 point);
 	static int ConvertColorToInt(float4 color);
-	static void ApplyPostProcessing(const Bitmap* screen, int x, int y, float4& color);
+	static float4 ConvertIntToColor(int color);
+	static void ApplyPostProcessing(const Bitmap* screen);
 };
 

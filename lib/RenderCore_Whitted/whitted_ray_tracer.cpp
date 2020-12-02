@@ -21,26 +21,37 @@ void WhittedRayTracer::Initialise() {
 	));
 }
 
-int WhittedRayTracer::recursionThreshold = 5;
+int WhittedRayTracer::recursionThreshold = 3;
+int WhittedRayTracer::antiAliasingAmount = 1;
 Ray WhittedRayTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 Ray WhittedRayTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
 
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
-			/** Setup the ray from the screen */
-			float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, x, y);
-			float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
+			float4 pixelColor = make_float4(0, 0, 0, 0);
 
-			/** Reset the primary, it can be used as a reflective ray */
-			primaryRay.origin = make_float4(view.pos, 0);
-			primaryRay.direction = rayDirection;
+			for (int j = 0; j < WhittedRayTracer::antiAliasingAmount; j++) {
+				for (int i = 0; i < WhittedRayTracer::antiAliasingAmount; i++) {
+					/** Setup the ray from the screen */
+					float u = (float)x + ((float)i / WhittedRayTracer::antiAliasingAmount);
+					float v = (float)y + ((float)j / WhittedRayTracer::antiAliasingAmount);
+					float3 point = WhittedRayTracer::GetPointOnScreen(view, screen, u, v);
+					float4 rayDirection = WhittedRayTracer::GetRayDirection(view, point);
 
-			/** Trace the ray */
-			float4 color = primaryRay.Trace();
+					/** Reset the primary, it can be used as a reflective ray */
+					primaryRay.origin = make_float4(view.pos, 0);
+					primaryRay.direction = rayDirection;
+
+					/** Trace the ray */
+					pixelColor += primaryRay.Trace();
+				}
+			}
+
+			pixelColor /= WhittedRayTracer::antiAliasingAmount * WhittedRayTracer::antiAliasingAmount;
 
 			int index = x + y * screen->width;
-			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);
+			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(pixelColor);
 		}
 	}
 }
@@ -50,9 +61,9 @@ void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materia
 	scene.push_back(triangle);
 }
 
-float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y) {
-	float u = (float)x / (float)screen->width;
-	float v = (float)y / (float)screen->height;
+float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const float x, const float y) {
+	float u = x / (float)screen->width;
+	float v = y / (float)screen->height;
 	float3 point = view.p1 + u * (view.p2 - view.p1) + v * (view.p3 - view.p1);
 	return point;
 }

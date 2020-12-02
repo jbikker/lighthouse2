@@ -29,8 +29,6 @@ float4 Ray::Trace(uint recursionDepth) {
 
 		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
 
-		//cout << "test" << mater;
-
 		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
 
 		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth) + globalIlluminationColor;

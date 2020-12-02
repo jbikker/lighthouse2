@@ -29,9 +29,8 @@ float4 Ray::Trace(uint recursionDepth) {
 
 		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
 
-		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
 
-		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth) + globalIlluminationColor;
+		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth);
 	}
 
 	return make_float4(0,0,0,0);
@@ -47,9 +46,11 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	float4 normal = triangle->GetNormal();
 
 	if (diffuse > EPSILON) {
+		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
 		float energy = triangle->CalculateEnergyFromLights(intersectionPoint);
 		float4 diffuseColor = materialColor * energy;
 		color += diffuse * diffuseColor;
+		color += globalIlluminationColor;
 	}
 
 	if (reflection > EPSILON) {

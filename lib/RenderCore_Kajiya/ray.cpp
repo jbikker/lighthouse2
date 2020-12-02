@@ -26,7 +26,6 @@ float4 Ray::Trace(uint recursionDepth) {
 	Ray::HitType hitType = get<2>(nearestIntersection);
 
 	if (intersectionDistance > 0) {
-
 		/** Hit a light */
 		if (hitType == Ray::HitType::Light) {
 			return make_float4(KajiyaPathTracer::materials[nearestTriangle->materialIndex].color.value, 0);

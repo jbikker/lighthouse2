@@ -31,6 +31,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 		for (int x = 0; x < screen->width; x++) {
 			float4 pixelColor = make_float4(0, 0, 0, 0);
 
+			/** Loop additionally for anti aliasing */
 			for (int j = 0; j < WhittedRayTracer::antiAliasingAmount; j++) {
 				for (int i = 0; i < WhittedRayTracer::antiAliasingAmount; i++) {
 					/** Setup the ray from the screen */
@@ -48,13 +49,15 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 				}
 			}
 
+			/** Divide the color by the amount of extra anti aliasing rays */
 			pixelColor /= WhittedRayTracer::antiAliasingAmount * WhittedRayTracer::antiAliasingAmount;
+			
 			int index = x + y * screen->width;
 			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(pixelColor);
 		}
 	}
 
-	 // WhittedRayTracer::ApplyPostProcessing(screen);
+	 WhittedRayTracer::ApplyPostProcessing(screen);
 }
 
 void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
@@ -62,6 +65,7 @@ void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materia
 	scene.push_back(triangle);
 }
 
+/** Calculates the point on the camera screen given the x and y position */
 float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const float x, const float y) {
 	float u = x / (float)screen->width;
 	float v = y / (float)screen->height;
@@ -69,6 +73,7 @@ float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap*
 	return point;
 }
 
+/** Calculates the ray direction from the camera to the screen */
 float4 WhittedRayTracer::GetRayDirection(const ViewPyramid& view, float3 point) {
 	float3 originToPoint = point - view.pos;
 	float3 rayDirection = normalize((originToPoint) / length(originToPoint));
@@ -91,27 +96,24 @@ float4 WhittedRayTracer::ConvertIntToColor(int color) {
 
 
 void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
+	/** Copy the screen pixels to prevent changing the screen while reading from it */
 	uint* pixels = new uint[screen->width * screen->height];
 	memcpy(pixels, screen->pixels, screen->width * screen->height * sizeof(uint));
-	int screenWidth = screen->width;
 
 	for (int y = 0; y < screen->height; y++) {
 		for (int x = 0; x < screen->width; x++) {
 			int index = x + y * screen->width;
 			float u = ((float) x / (float) screen->width);
 			float v = ((float) y / (float) screen->height);
-			float uVig = u * (1.0 - u);
-			float vVig = v * (1.0 - v);
 			float4 color = WhittedRayTracer::ConvertIntToColor(screen->pixels[index]);
-
 
 			/** Chromatic abberation */
 			int abberationStrength = 50;
 			int abberationPixels = abs((u - 0.5) * (v - 0.5)) * abberationStrength;
 			int min = 0;
 			int max = screen->width - 1;
-			int pixelR = clamp((x + abberationPixels), min, max) + y * screenWidth;
-			int pixelB = clamp((x - abberationPixels), min, max) + y * screenWidth;
+			int pixelR = clamp((x + abberationPixels), min, max) + y * screen->width;
+			int pixelB = clamp((x - abberationPixels), min, max) + y * screen->width;
 			color.x = WhittedRayTracer::ConvertIntToColor(pixels[pixelR]).x;
 			color.z = WhittedRayTracer::ConvertIntToColor(pixels[pixelB]).z;
 
@@ -122,6 +124,8 @@ void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
 			color.z = pow(color.z, 1.0 / gamma);
 
 			/** Vignetting */
+			float uVig = u * (1.0 - u);
+			float vVig = v * (1.0 - v);
 			float vignette = uVig * vVig * 15.0;
 			vignette = pow(vignette, 0.25);
 			color *= vignette;

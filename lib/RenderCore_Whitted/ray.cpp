@@ -15,7 +15,7 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 }
 
 float4 Ray::Trace(uint recursionDepth) {
-	/** check if we reached our recursion depth */
+	/** Check if we reached our recursion depth */
 	if (recursionDepth > WhittedRayTracer::recursionThreshold) {
 		return make_float4(0, 0, 0, 0);
 	}
@@ -24,6 +24,7 @@ float4 Ray::Trace(uint recursionDepth) {
 	Triangle* nearestTriangle = get<0>(nearestIntersection);
 	float intersectionDistance = get<1>(nearestIntersection);
 
+	/** If a triangle is hit, determine the color of the triangle and return it */
 	if (intersectionDistance > 0) {
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
 
@@ -33,6 +34,7 @@ float4 Ray::Trace(uint recursionDepth) {
 		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth);
 	}
 
+	/** If no triangle is hit, return black */
 	return make_float4(0,0,0,0);
 }
 
@@ -45,6 +47,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	float4 color = make_float4(0,0,0,0);
 	float4 normal = triangle->GetNormal();
 
+	/** If material = diffuse apply diffuse color */
 	if (diffuse > EPSILON) {
 		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
 		float energy = triangle->CalculateEnergyFromLights(intersectionPoint);
@@ -52,7 +55,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 		color += diffuse * diffuseColor;
 		color += globalIlluminationColor;
 	}
-
+	/** If material = reflection apply reflection color */
 	if (reflection > EPSILON) {
 		float4 reflectDir = this->direction - 2.0f * normal * dot(normal, this->direction);
 		this->origin = intersectionPoint + (reflectDir * EPSILON);
@@ -60,6 +63,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 		color += this->Trace(recursionDepth + 1) * reflection;
 	}
 
+	/** If material = refraction apply refraction color */
 	if (refraction > EPSILON) {
 		float4 refractionDirection = this->GetRefractionDirection(triangle, material);
 		if (length(refractionDirection) > 0) {

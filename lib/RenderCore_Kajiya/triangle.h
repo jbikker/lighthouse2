@@ -12,8 +12,6 @@ public:
 	float4 GetNormal();
 	float4 GetRandomPoint();
 	float GetArea();
-	float CalculateEnergyFromLights(const float4 intersectionPoint);
-	bool IsLightBlocked(float shadowRayLength);
 private:
 	float4 v0;
 	float4 v1;

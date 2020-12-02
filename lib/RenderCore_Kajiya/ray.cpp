@@ -37,7 +37,7 @@ float4 Ray::Trace(uint recursionDepth) {
 
 		float randomChoice = ((float)rand()) / (float)RAND_MAX;
 
-		/** Hit a mirror */
+		/** If material = reflection, given a certain chance it calculates the reflection color */
 		float reflectionChance = KajiyaPathTracer::materials[nearestTriangle->materialIndex].reflection.value;
 		if (randomChoice < reflectionChance) {
 			this->direction = this->direction - 2.0f * normal * dot(normal, this->direction);
@@ -45,7 +45,7 @@ float4 Ray::Trace(uint recursionDepth) {
 			return this->Trace(recursionDepth + 1);
 		}
 
-		/** Hit a glass */
+		/** If material = refraction, given a certain chance it calculates the refraction color */
 		float refractionChance = KajiyaPathTracer::materials[nearestTriangle->materialIndex].refraction.value;
 		if (randomChoice < refractionChance + reflectionChance) {
 			float4 refractionDirection = this->GetRefractionDirection(nearestTriangle, &material);
@@ -56,12 +56,15 @@ float4 Ray::Trace(uint recursionDepth) {
 			}
 		}
 
-		/** hit a random point on the hemisphere */
+		/** Calculate a random direction on the hempisphere */
 		float x = ((float) rand()) / (float) RAND_MAX;
 		float y = ((float) rand()) / (float) RAND_MAX;
 		float4 uniformSample = normalize(make_float4(UniformSampleSphere(x, y)));
+		
+		/** Flips the direction away from the normal if needed */
 		float4 r = this->direction = (dot(uniformSample, normal) > 0) ? uniformSample : -uniformSample;
 		this->origin = intersectionPoint + (this->direction * EPSILON);
+		
 		float4 hitColor = this->Trace(recursionDepth + 1);
 
 		float4 BRDF = make_float4(material.color.value / PI, 0);

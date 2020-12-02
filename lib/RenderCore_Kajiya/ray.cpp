@@ -56,14 +56,12 @@ float4 Ray::Trace(uint recursionDepth) {
 		/** hit a random point on the hemisphere */
 		float x = ((float) rand()) / (float) RAND_MAX;
 		float y = ((float) rand()) / (float) RAND_MAX;
-		float z = ((float) rand()) / (float) RAND_MAX;
-		float4 point = normalize(make_float4(x, y, z, 0));
-		float4 r = this->direction = (dot(point, normal) > 0) ? point : -point;
+		float4 uniformSample = normalize(make_float4(UniformSampleSphere(x, y)));
+		float4 r = this->direction = (dot(uniformSample, normal) > 0) ? uniformSample : -uniformSample;
 		this->origin = intersectionPoint + (this->direction * EPSILON);
 		float4 hitColor = this->Trace(recursionDepth + 1);
 
 		float4 BRDF = make_float4(material.color.value / PI, 0);
-		// return PI * 2.0f * make_float4(BRDF, 0) * hitColor;
 		return dot(r, normal) * BRDF * hitColor * 2.0 * PI;
 	}
 

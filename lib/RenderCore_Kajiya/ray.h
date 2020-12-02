@@ -2,6 +2,7 @@
 #include "core_settings.h"
 #include "tuple"
 #include "vector"
+#include "random"
 
 class KajiyaPathTracer;
 class Triangle;

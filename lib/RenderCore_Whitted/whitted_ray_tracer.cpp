@@ -49,11 +49,13 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			}
 
 			pixelColor /= WhittedRayTracer::antiAliasingAmount * WhittedRayTracer::antiAliasingAmount;
+			WhittedRayTracer::ApplyPostProcessing(screen, x, y, pixelColor);
 
 			int index = x + y * screen->width;
 			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(pixelColor);
 		}
 	}
+
 }
 
 void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
@@ -79,4 +81,14 @@ int WhittedRayTracer::ConvertColorToInt(float4 color) {
 	int green = clamp((int)(color.y * 256), 0, 255);
 	int blue = clamp((int)(color.z * 256), 0, 255);
 	return (blue << 16) + (green << 8) + red;
+}
+
+void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen, int x, int y, float4& color) {
+		float u = ((float) x / (float) screen->width) - 0.5;
+		float v = ((float) y / (float) screen->height) - 0.5;
+		
+		/** Vignette */
+		float vignette = abs(u * v);
+		// vignette = pow(0.5, vignette);
+		color -= vignette;
 }

@@ -61,6 +61,7 @@ float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 
 	for (int i = 0; i < WhittedRayTracer::lights.size(); i++) {
 		Light* light = WhittedRayTracer::lights[i];
+		/** Calculate the direction from the intersection point to the light */
 		float4 shadowRayDirection = normalize(light->origin - intersectionPoint);
 		float shadowRayLength = length(light->origin - WhittedRayTracer::shadowRay.origin) - (length(shadowRayDirection) * EPSILON);
 
@@ -70,8 +71,8 @@ float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 		/** check if there is enough energy to apply to the material */
 		if (
 			(angleFalloff > EPSILON) || (distanceEnergy > EPSILON)
-			) {
-			/** Adds additional length to prevent intersection to itself */
+		) {
+			/** Adds additional length to prevent intersection with itself */
 			WhittedRayTracer::shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
 			WhittedRayTracer::shadowRay.direction = shadowRayDirection;
 

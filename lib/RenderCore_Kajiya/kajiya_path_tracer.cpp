@@ -23,6 +23,7 @@ void KajiyaPathTracer::Initialise() {
 	));
 }
 
+/** Keeps track if the camera has moved */
 int KajiyaPathTracer::stillFrames = 1;
 float3 KajiyaPathTracer::oldCameraPos = make_float3(0, 0, 0);
 float3 KajiyaPathTracer::oldCameraP1 = make_float3(0, 0, 0);
@@ -57,12 +58,12 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			int index = x + y * screen->width;
 
 
-			/** Camera moved */
+			/** If the camera moved, reset the color to the new color */
 			if (!cameraStill) {
 				screen->pixels[index] = KajiyaPathTracer::ConvertColorToInt(color);
 			}
 
-			/** Converge */
+			/** If the camera is still, update the color to converge */
 			else {
 				float4 oldColor = KajiyaPathTracer::ConvertIntToColor(screen->pixels[index]);
 				screen->pixels[index] = KajiyaPathTracer::ConvertColorToInt(oldColor + ((color - oldColor) / (KajiyaPathTracer::stillFrames + 1)));
@@ -71,11 +72,14 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 		}
 	}
 
-	cout << "Amount of still frames: " << KajiyaPathTracer::stillFrames << "\n";
+
+	/** Update the old position of the camera */
 	KajiyaPathTracer::oldCameraPos = view.pos;
 	KajiyaPathTracer::oldCameraP1 = view.p1;
 	KajiyaPathTracer::oldCameraP2 = view.p2;
 	KajiyaPathTracer::oldCameraP3 = view.p3;
+	
+	/** Keeps track of how many still frames have passed by */
 	if (cameraStill) {
 		KajiyaPathTracer::stillFrames++;
 	}
@@ -83,6 +87,7 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 		KajiyaPathTracer::stillFrames = 1;
 	}
 
+	cout << "Amount of still frames: " << KajiyaPathTracer::stillFrames << "\n";
 }
 
 void KajiyaPathTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
@@ -90,6 +95,7 @@ void KajiyaPathTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materia
 	scene.push_back(triangle);
 }
 
+/** Calculates the point on the camera screen given the x and y position */
 float3 KajiyaPathTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const int x, const int y) {
 	float u = (float)x / (float)screen->width;
 	float v = (float)y / (float)screen->height;
@@ -97,6 +103,7 @@ float3 KajiyaPathTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap*
 	return point;
 }
 
+/** Calculates the ray direction from the camera to the screen */
 float4 KajiyaPathTracer::GetRayDirection(const ViewPyramid& view, float3 point) {
 	float3 originToPoint = point - view.pos;
 	float3 rayDirection = normalize((originToPoint) / length(originToPoint));

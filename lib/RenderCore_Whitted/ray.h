@@ -1,6 +1,7 @@
 #pragma once
 #include "core_settings.h"
 #include "light.h"
+#include "bvhnode.h"
 #include "tuple"
 #include "vector"
 
@@ -14,8 +15,7 @@ public:
 	float4 origin;
 	float4 direction;
 	float4 GetIntersectionPoint(float intersectionDistance);
-	float4 Trace(uint recursionDepth = 0);
-	tuple<Triangle*, float> GetNearestIntersection();
-	float4 DetermineColor(Triangle* triangle, CoreMaterial* material, float4 intersectionPoint, uint recursionDepth);
+	tuple<Triangle*, float> GetNearestIntersection(vector<int> &triangleIndices);
+	float4 DetermineColor(Triangle* triangle, CoreMaterial* material, float4 intersectionPoint, BVHNode* root, uint recursionDepth);
 	float4 GetRefractionDirection(Triangle* triangle, CoreMaterial* material);
 };

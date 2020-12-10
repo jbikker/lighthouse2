@@ -3,6 +3,7 @@
 #include "limits"
 #include "triangle.h"
 #include "whitted_ray_tracer.h"
+#include "bvhnode.h"
 #include "vector"
 
 Ray::Ray(float4 _origin, float4 _direction) {
@@ -14,12 +15,12 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 	return origin + (direction * intersectionDistance);
 }
 
-tuple<Triangle*, float> Ray::GetNearestIntersection() {
+tuple<Triangle*, float> Ray::GetNearestIntersection(vector<int> &triangleIndices) {
 	float minDistance = NULL;
 	Triangle* nearestPrimitive = NULL;
 
-	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[i];
+	for (int i = 0; i < triangleIndices.size(); i++) {
+		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[i]];
 		float distance = triangle->Intersect(*this);
 
 		if (
@@ -34,30 +35,7 @@ tuple<Triangle*, float> Ray::GetNearestIntersection() {
 	return make_tuple(nearestPrimitive, minDistance);
 }
 
-float4 Ray::Trace(uint recursionDepth) {
-	/** Check if we reached our recursion depth */
-	if (recursionDepth > WhittedRayTracer::recursionThreshold) {
-		return make_float4(0, 0, 0, 0);
-	}
-
-	tuple<Triangle*, float> nearestIntersection = Ray::GetNearestIntersection();
-	Triangle* nearestTriangle = get<0>(nearestIntersection);
-	float intersectionDistance = get<1>(nearestIntersection);
-
-	/** If a triangle is hit, determine the color of the triangle and return it */
-	if (intersectionDistance > 0) {
-		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
-
-		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
-
-		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth);
-	}
-
-	/** If no triangle is hit, return black */
-	return make_float4(0,0,0,0);
-}
-
-float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 intersectionPoint, uint recursionDepth) {
+float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, BVHNode* root, float4 intersectionPoint, uint recursionDepth) {
 	float reflection = material->reflection.value;
 	float refraction = material->refraction.value;
 	float diffuse    = 1 - (reflection + refraction);

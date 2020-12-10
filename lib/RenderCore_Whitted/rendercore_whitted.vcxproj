@@ -105,6 +105,8 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bvh.cpp" />
+    <ClCompile Include="bvhnode.cpp" />
     <ClCompile Include="core_api.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">core_settings.h</PrecompiledHeaderFile>
@@ -123,6 +125,8 @@
     <ClCompile Include="whitted_ray_tracer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bvh.h" />
+    <ClInclude Include="bvhnode.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="light.h" />
     <ClInclude Include="ray.h" />

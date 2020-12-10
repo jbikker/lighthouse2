@@ -13,6 +13,12 @@
     <ClCompile Include="triangle.cpp">
       <Filter>primitives</Filter>
     </ClCompile>
+    <ClCompile Include="bvh.cpp">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClCompile>
+    <ClCompile Include="bvhnode.cpp">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
@@ -27,6 +33,12 @@
     <ClInclude Include="triangle.h">
       <Filter>primitives</Filter>
     </ClInclude>
+    <ClInclude Include="bvh.h">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClInclude>
+    <ClInclude Include="bvhnode.h">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="engine_objects">
@@ -34,6 +46,9 @@
     </Filter>
     <Filter Include="primitives">
       <UniqueIdentifier>{585283cb-96a6-4ae7-a3d7-c96d53931bed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine_objects\acceleration_structures">
+      <UniqueIdentifier>{0d7375e3-fe7f-4fb0-b66f-86971d008f8b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

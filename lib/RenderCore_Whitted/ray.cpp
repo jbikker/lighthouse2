@@ -14,6 +14,26 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 	return origin + (direction * intersectionDistance);
 }
 
+tuple<Triangle*, float> Ray::GetNearestIntersection() {
+	float minDistance = NULL;
+	Triangle* nearestPrimitive = NULL;
+
+	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
+		Triangle* triangle = WhittedRayTracer::scene[i];
+		float distance = triangle->Intersect(*this);
+
+		if (
+			((minDistance == NULL) || (distance < minDistance))
+			&& (distance > EPSILON)
+			) {
+			minDistance = distance;
+			nearestPrimitive = triangle;
+		}
+	}
+
+	return make_tuple(nearestPrimitive, minDistance);
+}
+
 float4 Ray::Trace(uint recursionDepth) {
 	/** Check if we reached our recursion depth */
 	if (recursionDepth > WhittedRayTracer::recursionThreshold) {
@@ -29,7 +49,6 @@ float4 Ray::Trace(uint recursionDepth) {
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
 
 		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
-
 
 		return Ray::DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth);
 	}
@@ -77,7 +96,6 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, float4 in
 	return color;
 }
 
-
 float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 	float4 normal = triangle->GetNormal();
 	float cosi = clamp(-1.0, 1.0, dot(this->direction, normal));
@@ -89,7 +107,6 @@ float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 	if (cosi < 0) {
 		cosi = -cosi;
 	}
-
 	/** Inside the surface */
 	else {
 		normalRefraction = -normal;
@@ -101,32 +118,7 @@ float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 
 	if (k < 0) {
 		return make_float4(0, 0, 0, 0);
-	}
-	else {
+	} else {
 		return normalize(eta * this->direction + (eta * cosi - sqrtf(k)) * normalRefraction);
 	}
-
 }
-
-tuple<Triangle*, float> Ray::GetNearestIntersection() {
-	float minDistance = NULL;
-	Triangle* nearestPrimitive = NULL;
-
-	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[i];
-		float distance = triangle->Intersect(*this);
-
-		if (
-			((minDistance == NULL) || (distance < minDistance))
-			&& (distance > 0)
-		) {
-			minDistance = distance;
-			nearestPrimitive = triangle;
-		}
-	}
-
-	return make_tuple(nearestPrimitive, minDistance);
-}
-
-
-

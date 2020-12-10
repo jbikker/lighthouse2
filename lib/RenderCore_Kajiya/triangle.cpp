@@ -38,7 +38,7 @@ float4 Triangle::GetNormal() {
 
 /** Gets a random point on the surface of the triangle */
 float4 Triangle::GetRandomPoint() {
-	float a = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	float a = RandomFloat();
 	float b = 1 - a;
 	return this->v0 + a * (this->v1 - this->v0) + b * (this->v2 - this->v0);
 }

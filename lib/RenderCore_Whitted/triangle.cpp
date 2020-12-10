@@ -10,6 +10,10 @@ Triangle::Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material) {
 	this->materialIndex = _material;
 }
 
+float4 Triangle::GetNormal() {
+	return normalize(cross(v1 - v0, v2 - v0));
+}
+
 float Triangle::Intersect(Ray& ray) {
 	float4 pvec = cross(ray.direction, v0v2);
 	float det = dot(v0v1, pvec);
@@ -32,10 +36,6 @@ float Triangle::Intersect(Ray& ray) {
 	return distance;
 }
 
-float4 Triangle::GetNormal() {
-	return normalize(cross(v1 - v0, v2 - v0));
-}
-
 bool Triangle::IsLightBlocked(float shadowRayLength) {
 	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
 		Triangle* triangle = WhittedRayTracer::scene[i];
@@ -44,11 +44,9 @@ bool Triangle::IsLightBlocked(float shadowRayLength) {
 		if (
 			distance != NULL &&
 			distance > EPSILON &&
-			distance < shadowRayLength
+			distance < shadowRayLength &&
+			WhittedRayTracer::materials[triangle->materialIndex].refraction.value != 1
 		) {
-			if (WhittedRayTracer::materials[triangle->materialIndex].refraction.value == 1) {
-				continue;
-			}
 			return true;
 		}
 	}

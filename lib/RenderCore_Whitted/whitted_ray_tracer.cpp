@@ -7,12 +7,33 @@
 #include "tuple"
 #include "vector"
 
+/** 
+  * Variables
+  */
+
+/** Scene */
 vector<Triangle*> WhittedRayTracer::scene = vector<Triangle*>();
 vector<Light*> WhittedRayTracer::lights = vector<Light*>();
 vector<CoreMaterial> WhittedRayTracer::materials;
 
+/** Global Illumitation */
 float4 WhittedRayTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
 
+/** Rays */
+Ray WhittedRayTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
+Ray WhittedRayTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
+
+/** Whitted Ray Tracer Settings */
+int WhittedRayTracer::recursionThreshold = 3;
+int WhittedRayTracer::antiAliasingAmount = 1;
+float WhittedRayTracer::gammaCorrection = 2.2;
+bool WhittedRayTracer::applyPostProcessing = false;
+
+/**
+  * Setup
+  */
+
+/** Intialise Whitted Ray Tracer */
 void WhittedRayTracer::Initialise() {
 	/** Lights */
 	lights.push_back(new Light(
@@ -21,10 +42,29 @@ void WhittedRayTracer::Initialise() {
 	));
 }
 
-int WhittedRayTracer::recursionThreshold = 3;
-int WhittedRayTracer::antiAliasingAmount = 1;
-Ray WhittedRayTracer::primaryRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
-Ray WhittedRayTracer::shadowRay = Ray(make_float4(0, 0, 0, 0), make_float4(0, 0, 0, 0));
+void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
+	Triangle* triangle = new Triangle(v0, v1, v2, materialIndex);
+	scene.push_back(triangle);
+}
+
+/**
+  * Rendering
+  */
+
+/** Calculates the point on the camera screen given the x and y position */
+float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const float x, const float y) {
+	float u = x / (float)screen->width;
+	float v = y / (float)screen->height;
+	float3 point = view.p1 + u * (view.p2 - view.p1) + v * (view.p3 - view.p1);
+	return point;
+}
+
+/** Calculates the ray direction from the camera to the screen */
+float4 WhittedRayTracer::GetRayDirection(const ViewPyramid& view, float3 point) {
+	float3 originToPoint = point - view.pos;
+	float3 rayDirection = normalize((originToPoint) / length(originToPoint));
+	return make_float4(rayDirection, 0);
+}
 
 void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 	for (int y = 0; y < screen->height; y++) {
@@ -57,43 +97,40 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 		}
 	}
 
-	 WhittedRayTracer::ApplyPostProcessing(screen);
+	if (WhittedRayTracer::applyPostProcessing) {
+		WhittedRayTracer::ApplyPostProcessing(screen);
+	}
 }
 
-void WhittedRayTracer::AddTriangle(float4 v0, float4 v1, float4 v2, uint materialIndex) {
-	Triangle* triangle = new Triangle(v0, v1, v2, materialIndex);
-	scene.push_back(triangle);
+/** 
+  * Post Processing
+  */
+
+void WhittedRayTracer::ChromaticAbberation(const Bitmap* screen, float4& color, uint* pixels, int x, int y, float u, float v) {
+	int abberationStrength = 50;
+	int abberationPixels = abs((u - 0.5) * (v - 0.5)) * abberationStrength;
+	int min = 0;
+	int max = screen->width - 1;
+	int pixelR = clamp((x + abberationPixels), min, max) + y * screen->width;
+	int pixelB = clamp((x - abberationPixels), min, max) + y * screen->width;
+	color.x = WhittedRayTracer::ConvertIntToColor(pixels[pixelR]).x;
+	color.z = WhittedRayTracer::ConvertIntToColor(pixels[pixelB]).z;
 }
 
-/** Calculates the point on the camera screen given the x and y position */
-float3 WhittedRayTracer::GetPointOnScreen(const ViewPyramid& view, const Bitmap* screen, const float x, const float y) {
-	float u = x / (float)screen->width;
-	float v = y / (float)screen->height;
-	float3 point = view.p1 + u * (view.p2 - view.p1) + v * (view.p3 - view.p1);
-	return point;
+void WhittedRayTracer::GammaCorrection(float4& color) {
+	float gamma = WhittedRayTracer::gammaCorrection;
+	color.x = pow(color.x, 1.0 / gamma);
+	color.y = pow(color.y, 1.0 / gamma);
+	color.z = pow(color.z, 1.0 / gamma);
 }
 
-/** Calculates the ray direction from the camera to the screen */
-float4 WhittedRayTracer::GetRayDirection(const ViewPyramid& view, float3 point) {
-	float3 originToPoint = point - view.pos;
-	float3 rayDirection = normalize((originToPoint) / length(originToPoint));
-	return make_float4(rayDirection, 0);
+void WhittedRayTracer::Vignetting(float4& color, float u, float v) {
+	float uVig = u * (1.0 - u);
+	float vVig = v * (1.0 - v);
+	float vignette = uVig * vVig * 15.0;
+	vignette = pow(vignette, 0.25);
+	color *= vignette;
 }
-
-int WhittedRayTracer::ConvertColorToInt(float4 color) {
-	int red = clamp((int)(color.x * 256), 0, 255);
-	int green = clamp((int)(color.y * 256), 0, 255);
-	int blue = clamp((int)(color.z * 256), 0, 255);
-	return (blue << 16) + (green << 8) + red;
-}
-
-float4 WhittedRayTracer::ConvertIntToColor(int color) {
-	float red = color & 0xFF;
-	float green = (color >> 8) & 0xFF;
-	float blue = (color >> 16) & 0xFF;
-	return make_float4(red, green, blue, 0) / 255;
-}
-
 
 void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
 	/** Copy the screen pixels to prevent changing the screen while reading from it */
@@ -107,30 +144,31 @@ void WhittedRayTracer::ApplyPostProcessing(const Bitmap* screen) {
 			float v = ((float) y / (float) screen->height);
 			float4 color = WhittedRayTracer::ConvertIntToColor(screen->pixels[index]);
 
-			/** Chromatic abberation */
-			int abberationStrength = 50;
-			int abberationPixels = abs((u - 0.5) * (v - 0.5)) * abberationStrength;
-			int min = 0;
-			int max = screen->width - 1;
-			int pixelR = clamp((x + abberationPixels), min, max) + y * screen->width;
-			int pixelB = clamp((x - abberationPixels), min, max) + y * screen->width;
-			color.x = WhittedRayTracer::ConvertIntToColor(pixels[pixelR]).x;
-			color.z = WhittedRayTracer::ConvertIntToColor(pixels[pixelB]).z;
+			WhittedRayTracer::ChromaticAbberation(screen, color, pixels, x, y, u, v);
 
-			/** Gamma Correction */
-			float gamma = 1.8;
-			color.x = pow(color.x, 1.0 / gamma);
-			color.y = pow(color.y, 1.0 / gamma);
-			color.z = pow(color.z, 1.0 / gamma);
+			WhittedRayTracer::GammaCorrection(color);
 
-			/** Vignetting */
-			float uVig = u * (1.0 - u);
-			float vVig = v * (1.0 - v);
-			float vignette = uVig * vVig * 15.0;
-			vignette = pow(vignette, 0.25);
-			color *= vignette;
+			WhittedRayTracer::Vignetting(color, u, v);
 
 			screen->pixels[index] = WhittedRayTracer::ConvertColorToInt(color);
 		}
 	}
+}
+
+/**
+  * Helper Functions
+  */
+
+int WhittedRayTracer::ConvertColorToInt(float4 color) {
+	int red = clamp((int)(color.x * 256), 0, 255);
+	int green = clamp((int)(color.y * 256), 0, 255);
+	int blue = clamp((int)(color.z * 256), 0, 255);
+	return (blue << 16) + (green << 8) + red;
+}
+
+float4 WhittedRayTracer::ConvertIntToColor(int color) {
+	float red = color & 0xFF;
+	float green = (color >> 8) & 0xFF;
+	float blue = (color >> 16) & 0xFF;
+	return make_float4(red, green, blue, 0) / 255;
 }

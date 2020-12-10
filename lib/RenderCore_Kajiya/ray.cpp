@@ -35,7 +35,7 @@ float4 Ray::Trace(uint recursionDepth) {
 		float4 normal = nearestTriangle->GetNormal();
 		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
 
-		float randomChoice = ((float)rand()) / (float)RAND_MAX;
+		float randomChoice = RandomFloat();
 
 		/** If material = reflection, given a certain chance it calculates the reflection color */
 		float reflectionChance = KajiyaPathTracer::materials[nearestTriangle->materialIndex].reflection.value;
@@ -57,8 +57,8 @@ float4 Ray::Trace(uint recursionDepth) {
 		}
 
 		/** Calculate a random direction on the hempisphere */
-		float x = ((float) rand()) / (float) RAND_MAX;
-		float y = ((float) rand()) / (float) RAND_MAX;
+		float x = RandomFloat();
+		float y = RandomFloat();
 		float4 uniformSample = normalize(make_float4(UniformSampleSphere(x, y)));
 		
 		/** Flips the direction away from the normal if needed */

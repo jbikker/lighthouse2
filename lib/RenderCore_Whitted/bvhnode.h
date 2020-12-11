@@ -22,5 +22,6 @@ public:
 	void UpdateBounds(float4 point);
 	void Traverse(Ray& ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float>& intersection);
 	void IntersectTriangles(Ray& ray, int* triangleIndices, tuple<Triangle*, float>& intersection);
+	void Swap(int* triangleIndices, int i, int j);
 };
 

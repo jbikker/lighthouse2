@@ -26,8 +26,8 @@ float Ray::IntersectionBounds(aabb bounds) {
 	float4 tmin = fminf(t1, t2);
 	float4 tmax = fmaxf(t1, t2);
 
-	float dmin = min(tmin.x, min(tmin.y, tmin.z));
-	float dmax = max(tmax.x, max(tmax.y, tmax.z));
+	float dmin = max(tmin.x, max(tmin.y, tmin.z));
+	float dmax = min(tmax.x, min(tmax.y, tmax.z));
 
 	if (dmax < 0 || dmin > dmax) {
 		return NULL;

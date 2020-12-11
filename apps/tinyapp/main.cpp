@@ -37,17 +37,17 @@ void PrepareScene()
 	const int emittance = 5;
 	renderer->AddMaterial(make_float3(emittance));
 	/** Add scene */
-	int boxScene = renderer->AddMesh("../_shareddata/abstract.obj", 1.0f);
+	int boxScene = renderer->AddMesh("../_shareddata/three-planes.obj", 1.0f);
 	renderer->AddInstance(boxScene);
 	
-	// Reflection
-	HostMaterial* material = renderer->GetMaterial(7);
-	material->reflection.value = 1;
+	//// Reflection
+	//HostMaterial* material = renderer->GetMaterial(7);
+	//material->reflection.value = 1;
 
-	// Refraction
-	HostMaterial* material2 = renderer->GetMaterial(3);
-	material2->refraction.value = 1;
-	material2->ior.value = 1.2;
+	//// Refraction
+	//HostMaterial* material2 = renderer->GetMaterial(3);
+	//material2->refraction.value = 1;
+	//material2->ior.value = 1.2;
 }
 
 //  +-----------------------------------------------------------------------------+

@@ -5,13 +5,12 @@
 BVH::BVH(int triangleIndex, int triangleCount) {
 	this->pool = new BVHNode[triangleCount * 2 - 1];
 	this->root = &this->pool[0];
-	this->poolPtr = 2;
+	this->poolPtr = 1;
 
-	int* triangleIndices = new int[triangleCount];
+	this->triangleIndices = new int[triangleCount];
 	for (int i = 0; i < triangleCount; i++) {
-		triangleIndices[triangleIndex + i];
+		this->triangleIndices[i] = triangleIndex + i;
 	}
-	this->triangleIndices = triangleIndices;
 
 	this->root->first = 0;
 	this->root->count = triangleCount;

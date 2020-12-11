@@ -5,11 +5,14 @@
 #include "tuple"
 
 void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
-	if (this->count < 3) return;
-	this->left = poolPtr += 2;
+	if (this->count < 5) return;
+	cout << "Amount BVHNode " << poolPtr << "\n";
+	this->left = poolPtr;
+	poolPtr += 2;
 	this->PartitionTriangles(pool, triangleIndices);
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
+	if (left->count == 0 || right->count == 0) { return; }
 	left->SubdivideNode(pool, triangleIndices, poolPtr);
 	right->SubdivideNode(pool, triangleIndices, poolPtr);
 	this->isLeaf = false;
@@ -18,7 +21,8 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 	int axis = this->bounds.LongestAxis();
 	float splitPoint = this->bounds.Center(axis);
-
+	
+	int j = 0;
 	for (int i = 0; i < this->count; i++) {
 		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
 
@@ -31,17 +35,20 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 			trianglePoint = triangle->centroid.z;
 		}
 
-		// TODO: QUICKSORT
-
-		/*if (trianglePoint < splitPoint) {
-			left->triangleIndices.push_back(triangleIndex);
-		} else {
-			right->triangleIndices.push_back(triangleIndex);
-		}*/
+		if (trianglePoint < splitPoint) {
+			this->Swap(triangleIndices, this->first + i, this->first + j);
+			j++;
+		}
 	}
+	this->Swap(triangleIndices, this->first + j - 1, this->first + this->count - 1);
 
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
+
+	left->first = this->first;
+	left->count = j;
+	right->first = j + this->first;
+	right->count = this->count - j;
 
 	left->UpdateBounds(triangleIndices);
 	right->UpdateBounds(triangleIndices);
@@ -85,7 +92,10 @@ void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Tria
 	
 	if (ray.IntersectionBounds(this->bounds) == NULL) { return; }
 	
-	if (this->isLeaf) { this->IntersectTriangles(ray, triangleIndices, intersection); return; }
+	if (this->isLeaf) { 
+		this->IntersectTriangles(ray, triangleIndices, intersection); 
+		return; 
+	}
 	
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
@@ -95,18 +105,15 @@ void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Tria
 
 	if (leftNodeDist == NULL && rightNodeDist == NULL) { return; }
 
-
 	if (leftNodeDist != NULL && rightNodeDist == NULL) {
 		left->Traverse(ray, pool, triangleIndices, intersection);
 	} else if (leftNodeDist == NULL && rightNodeDist != NULL) {
 		right->Traverse(ray, pool, triangleIndices, intersection);
 	} else if (leftNodeDist < rightNodeDist) {
 		left->Traverse(ray, pool, triangleIndices, intersection);
-		if (get<0>(intersection) != NULL) { return; }
 		right->Traverse(ray, pool, triangleIndices, intersection);
 	} else {
 		right->Traverse(ray, pool, triangleIndices, intersection);
-		if (get<0>(intersection) != NULL) { return; }
 		left->Traverse(ray, pool, triangleIndices, intersection);
 	}
 }
@@ -129,4 +136,10 @@ void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle
 	}
 
 	intersection = make_tuple(nearestPrimitive, minDistance);
+}
+
+void BVHNode::Swap(int* triangleIndices, int x, int y) {
+	int prev = triangleIndices[x];
+	triangleIndices[x] = triangleIndices[y];
+	triangleIndices[y] = prev;
 }

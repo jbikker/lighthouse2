@@ -14,7 +14,7 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 	return origin + (direction * intersectionDistance);
 }
 
-float Ray::IntersectionBounds(aabb bounds) {
+bool Ray::IntersectionBounds(aabb bounds, float &distance) {
 	float4 invDir = 1.0 / this->direction;
 
 	float4 bmin = make_float4(bounds.bmin[0], bounds.bmin[1], bounds.bmin[2], bounds.bmin[3]);
@@ -30,9 +30,10 @@ float Ray::IntersectionBounds(aabb bounds) {
 	float dmax = min(tmax.x, min(tmax.y, tmax.z));
 
 	if (dmax < 0 || dmin > dmax) {
-		return NULL;
+		return false;
 	}
-	return dmin;
+	distance = dmin;
+	return true;
 }
 
 float4 Ray::Trace(BVH* bvh, uint recursionDepth) {

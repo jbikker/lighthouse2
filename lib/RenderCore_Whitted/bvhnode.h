@@ -11,7 +11,7 @@ class BVHNode
 {
 public:
 	aabb bounds;
-	bool isLeaf;
+	bool isLeaf = true;
 	int left;
 	int first;
 	int count;

@@ -89,9 +89,10 @@ void BVHNode::UpdateBounds(float4 point) {
 
 void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {
 	if (get<0>(intersection) != NULL) { return; }
-	
-	if (ray.IntersectionBounds(this->bounds) == NULL) { return; }
-	
+
+	float test;
+	if (!ray.IntersectionBounds(this->bounds, test)) { return; }
+
 	if (this->isLeaf) { 
 		this->IntersectTriangles(ray, triangleIndices, intersection); 
 		return; 
@@ -100,14 +101,17 @@ void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Tria
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
 
-	float leftNodeDist = ray.IntersectionBounds(left->bounds);
-	float rightNodeDist = ray.IntersectionBounds(right->bounds);
+	float leftNodeDist;
+	bool hitLeft = ray.IntersectionBounds(left->bounds, leftNodeDist);
+	float rightNodeDist;
+	bool hitRight = ray.IntersectionBounds(right->bounds, rightNodeDist);
 
-	if (leftNodeDist == NULL && rightNodeDist == NULL) { return; }
+	if (!hitLeft && !hitRight) { return; }
 
-	if (leftNodeDist != NULL && rightNodeDist == NULL) {
+	if (hitLeft && !hitRight) {
 		left->Traverse(ray, pool, triangleIndices, intersection);
-	} else if (leftNodeDist == NULL && rightNodeDist != NULL) {
+	}
+	else if (!hitLeft && hitRight) {
 		right->Traverse(ray, pool, triangleIndices, intersection);
 	} else if (leftNodeDist < rightNodeDist) {
 		left->Traverse(ray, pool, triangleIndices, intersection);

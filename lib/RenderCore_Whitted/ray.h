@@ -1,12 +1,12 @@
 #pragma once
+
 #include "core_settings.h"
-#include "light.h"
-#include "bvhnode.h"
 #include "tuple"
 #include "vector"
 
+class BVH;
 class Triangle;
-class WhittedRayTracer;
+class Light;
 
 class Ray
 {
@@ -15,7 +15,8 @@ public:
 	float4 origin;
 	float4 direction;
 	float4 GetIntersectionPoint(float intersectionDistance);
-	tuple<Triangle*, float> GetNearestIntersection(vector<int> &triangleIndices);
-	float4 DetermineColor(Triangle* triangle, CoreMaterial* material, float4 intersectionPoint, BVHNode* root, uint recursionDepth);
+	float IntersectionBounds(aabb bounds);
+	float4 Trace(BVH* bvh, uint recursionDepth);
+	float4 DetermineColor(Triangle* triangle, CoreMaterial* material, BVH* bvh, float4 intersectionPoint, uint recursionDepth);
 	float4 GetRefractionDirection(Triangle* triangle, CoreMaterial* material);
 };

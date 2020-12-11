@@ -1,10 +1,12 @@
 #pragma once
 #include "core_settings.h"
-#include "ray.h"
-#include "light.h"
 #include "tuple"
 #include "vector"
-#include "triangle.h";
+
+class Ray;
+class Light;
+class BVH;
+class Triangle;
 
 class WhittedRayTracer
 {
@@ -12,6 +14,8 @@ public:
 	static vector<Triangle*> scene;
 	static vector<Light*> lights;
 	static vector<CoreMaterial> materials;
+	static vector<BVH*> bvhs;
+
 	
 	static float4 globalIllumination;
 

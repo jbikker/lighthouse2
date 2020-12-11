@@ -1,9 +1,8 @@
 #include "whitted_ray_tracer.h"
 #include "core_settings.h"
 #include "ray.h"
-#include "material.h"
-#include "triangle.h"
 #include "light.h"
+#include "triangle.h";
 #include "tuple"
 #include "vector"
 
@@ -15,6 +14,7 @@
 vector<Triangle*> WhittedRayTracer::scene = vector<Triangle*>();
 vector<Light*> WhittedRayTracer::lights = vector<Light*>();
 vector<CoreMaterial> WhittedRayTracer::materials;
+vector<BVH*> WhittedRayTracer::bvhs = vector<BVH*>();
 
 /** Global Illumitation */
 float4 WhittedRayTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
@@ -85,7 +85,7 @@ void WhittedRayTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 					primaryRay.direction = rayDirection;
 
 					/** Trace the ray */
-					pixelColor += primaryRay.Trace();
+					pixelColor += primaryRay.Trace(WhittedRayTracer::bvhs[0], 0);
 				}
 			}
 

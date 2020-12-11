@@ -15,6 +15,7 @@
 
 #include "core_settings.h"
 #include "whitted_ray_tracer.h"
+#include "bvh.h"
 #include "vector"
 #include "chrono"
 
@@ -48,6 +49,7 @@ void RenderCore::SetTarget( GLTexture* target, const uint )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangleData )
 {
+	int triangleIndex = max((int) WhittedRayTracer::scene.size() - 1, 0);
 	for (int i = 0; i < triangleCount; i++) {
 		CoreTri triangle = triangleData[i];
 
@@ -58,6 +60,9 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 
 		WhittedRayTracer::AddTriangle(v0, v1, v2, materialIndex);
 	}
+
+	BVH* bvh = new BVH(triangleIndex, triangleCount);
+	WhittedRayTracer::bvhs.push_back(bvh);
 }
 
 //  +-----------------------------------------------------------------------------+

@@ -1,10 +1,9 @@
 #include "ray.h"
 #include "core_settings.h"
-#include "limits"
-#include "triangle.h"
 #include "whitted_ray_tracer.h"
+#include "triangle.h"
+#include "bvh.h"
 #include "bvhnode.h"
-#include "vector"
 
 Ray::Ray(float4 _origin, float4 _direction) {
 	origin = _origin;
@@ -15,33 +14,59 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 	return origin + (direction * intersectionDistance);
 }
 
-tuple<Triangle*, float> Ray::GetNearestIntersection(vector<int> &triangleIndices) {
-	float minDistance = NULL;
-	Triangle* nearestPrimitive = NULL;
+float Ray::IntersectionBounds(aabb bounds) {
+	float4 invDir = 1.0 / this->direction;
 
-	for (int i = 0; i < triangleIndices.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[i]];
-		float distance = triangle->Intersect(*this);
+	float4 bmin = make_float4(bounds.bmin[0], bounds.bmin[1], bounds.bmin[2], bounds.bmin[3]);
+	float4 bmax = make_float4(bounds.bmax[0], bounds.bmax[1], bounds.bmax[2], bounds.bmax[3]);
 
-		if (
-			((minDistance == NULL) || (distance < minDistance))
-			&& (distance > EPSILON)
-			) {
-			minDistance = distance;
-			nearestPrimitive = triangle;
-		}
+	float4 t1 = (bmin - this->origin) * invDir;
+	float4 t2 = (bmax - this->origin) * invDir;
+
+	float4 tmin = fminf(t1, t2);
+	float4 tmax = fmaxf(t1, t2);
+
+	float dmin = min(tmin.x, min(tmin.y, tmin.z));
+	float dmax = max(tmax.x, max(tmax.y, tmax.z));
+
+	if (dmax < 0 || dmin > dmax) {
+		return NULL;
 	}
-
-	return make_tuple(nearestPrimitive, minDistance);
+	return dmin;
 }
 
-float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, BVHNode* root, float4 intersectionPoint, uint recursionDepth) {
+float4 Ray::Trace(BVH* bvh, uint recursionDepth) {
+	/** Check if we reached our recursion depth */
+	if (recursionDepth > WhittedRayTracer::recursionThreshold) {
+		return make_float4(0, 0, 0, 0);
+	}
+	
+	tuple<Triangle*, float> intersection = make_tuple<Triangle*, float>(NULL, NULL);
+	bvh->root->Traverse(*this, bvh->pool, bvh->triangleIndices, intersection);
+
+	Triangle* nearestTriangle = get<0>(intersection);
+	float intersectionDistance = get<1>(intersection);
+
+	/** If a triangle is hit, determine the color of the triangle and return it */
+	if (nearestTriangle != NULL && intersectionDistance != NULL) {
+		float4 intersectionPoint = this->GetIntersectionPoint(intersectionDistance);
+
+		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
+
+		return Ray::DetermineColor(nearestTriangle, material, bvh, intersectionPoint, recursionDepth);
+	}
+
+	/** If no triangle is hit, return black */
+	return make_float4(0, 0, 0, 0);
+}
+
+float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, BVH* bvh, float4 intersectionPoint, uint recursionDepth) {
 	float reflection = material->reflection.value;
 	float refraction = material->refraction.value;
-	float diffuse    = 1 - (reflection + refraction);
+	float diffuse = 1 - (reflection + refraction);
 
 	float4 materialColor = make_float4(material->color.value, 0);
-	float4 color = make_float4(0,0,0,0);
+	float4 color = make_float4(0, 0, 0, 0);
 	float4 normal = triangle->GetNormal();
 
 	/** If material = diffuse apply diffuse color */
@@ -57,7 +82,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, BVHNode* 
 		float4 reflectDir = this->direction - 2.0f * normal * dot(normal, this->direction);
 		this->origin = intersectionPoint + (reflectDir * EPSILON);
 		this->direction = normalize(reflectDir);
-		color += this->Trace(recursionDepth + 1) * reflection;
+		color += this->Trace(bvh, recursionDepth + 1) * reflection;
 	}
 
 	/** If material = refraction apply refraction color */
@@ -66,7 +91,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, BVHNode* 
 		if (length(refractionDirection) > 0) {
 			this->origin = intersectionPoint + (refractionDirection * EPSILON);
 			this->direction = refractionDirection;
-			color += this->Trace(recursionDepth + 1) * refraction;
+			color += this->Trace(bvh, recursionDepth + 1) * refraction;
 		}
 
 	}
@@ -96,7 +121,8 @@ float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 
 	if (k < 0) {
 		return make_float4(0, 0, 0, 0);
-	} else {
+	}
+	else {
 		return normalize(eta * this->direction + (eta * cosi - sqrtf(k)) * normalRefraction);
 	}
 }

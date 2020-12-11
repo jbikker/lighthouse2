@@ -1,22 +1,26 @@
 #pragma once
 
 #include "core_settings.h"
-#include "ray.h"
 #include "vector"
-#include "triangle.h"
+#include "tuple"
+
+class Ray;
+class Triangle;
 
 class BVHNode
 {
 public:
 	aabb bounds;
 	bool isLeaf;
-	BVHNode *left, *right;
-	vector<int> triangleIndices;
+	int left;
+	int first;
+	int count;
 
-	void SubdivideNode(BVHNode* pool, int& poolPtr);
-	void PartitionTriangles();
-	void UpdateBounds();
-	bool Traverse(Ray &ray, float4& color, uint& recursionDepth);
-	bool IntersectTriangles(Ray &ray, float4& color, uint& recursionDepth);
+	void SubdivideNode(BVHNode* pool, int* triangleIndices, int& poolPtr);
+	void PartitionTriangles(BVHNode* pool, int* triangleIndices);
+	void UpdateBounds(int* triangleIndices);
+	void UpdateBounds(float4 point);
+	void Traverse(Ray& ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float>& intersection);
+	void IntersectTriangles(Ray& ray, int* triangleIndices, tuple<Triangle*, float>& intersection);
 };
 

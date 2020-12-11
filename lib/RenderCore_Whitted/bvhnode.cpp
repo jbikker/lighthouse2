@@ -1,24 +1,26 @@
 #include "bvhnode.h"
 #include "whitted_ray_tracer.h"
 #include "triangle.h"
+#include "ray.h"
+#include "tuple"
 
-void BVHNode::SubdivideNode(BVHNode* pool, int &poolPtr) {
-	if (triangleIndices.size() < 3) return;
-	this->left = &pool[poolPtr++];
-	this->right = &pool[poolPtr++];
-	this->PartitionTriangles();
-	this->left->SubdivideNode(pool, poolPtr);
-	this->right->SubdivideNode(pool, poolPtr);
+void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
+	if (this->count < 3) return;
+	this->left = poolPtr += 2;
+	this->PartitionTriangles(pool, triangleIndices);
+	BVHNode* left = &pool[this->left];
+	BVHNode* right = &pool[this->left + 1];
+	left->SubdivideNode(pool, triangleIndices, poolPtr);
+	right->SubdivideNode(pool, triangleIndices, poolPtr);
 	this->isLeaf = false;
 }
 
-void BVHNode::PartitionTriangles() {
+void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 	int axis = this->bounds.LongestAxis();
 	float splitPoint = this->bounds.Center(axis);
 
-	for (int i = 0; i < this->triangleIndices.size(); i++) {
-		int triangleIndex = this->triangleIndices[i];
-		Triangle* triangle = WhittedRayTracer::scene[triangleIndex];
+	for (int i = 0; i < this->count; i++) {
+		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
 
 		float trianglePoint;
 		if (axis == 0) {
@@ -29,95 +31,102 @@ void BVHNode::PartitionTriangles() {
 			trianglePoint = triangle->centroid.z;
 		}
 
-		if (trianglePoint < splitPoint) {
+		// TODO: QUICKSORT
+
+		/*if (trianglePoint < splitPoint) {
 			left->triangleIndices.push_back(triangleIndex);
 		} else {
 			right->triangleIndices.push_back(triangleIndex);
-		}
+		}*/
 	}
 
-	left->UpdateBounds();
-	right->UpdateBounds();
+	BVHNode* left = &pool[this->left];
+	BVHNode* right = &pool[this->left + 1];
+
+	left->UpdateBounds(triangleIndices);
+	right->UpdateBounds(triangleIndices);
 }
 
-void BVHNode::UpdateBounds() {
+void BVHNode::UpdateBounds(int* triangleIndices) {
 	this->bounds = aabb();
 	
-	for (int i = 0; i < this->triangleIndices.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[this->triangleIndices[i]];
+	for (int i = 0; i < this->count; i++) {
+		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
 
-		if (triangle->v0.x < this->bounds.bmin[0]) {
-			this->bounds.bmin[0] = triangle->v0.x;
-		}
-		if (triangle->v0.x > this->bounds.bmax[0]) {
-			this->bounds.bmax[0] = triangle->v0.x;
-		}
-		if (triangle->v0.y < this->bounds.bmin[0]) {
-			this->bounds.bmin[0] = triangle->v0.y;
-		}
-		if (triangle->v0.y > this->bounds.bmax[0]) {
-			this->bounds.bmax[0] = triangle->v0.y;
-		}
-		if (triangle->v0.z < this->bounds.bmin[0]) {
-			this->bounds.bmin[0] = triangle->v0.z;
-		}
-		if (triangle->v0.z > this->bounds.bmax[0]) {
-			this->bounds.bmax[0] = triangle->v0.z;
-		}
+		this->UpdateBounds(triangle->v0);
+		this->UpdateBounds(triangle->v1);
+		this->UpdateBounds(triangle->v2);
 	}
 }
 
-bool BVHNode::Traverse(Ray &ray, float4 &color, BVHNode* root, uint &recursionDepth) {
-	if (recursionDepth > WhittedRayTracer::recursionThreshold) { return false; }
-	if (ray.IntersectBounds(this->bounds) == NULL) { return false; }
-	if (this->isLeaf) { return this->IntersectTriangles(ray, color); }
+void BVHNode::UpdateBounds(float4 point) {
+	if (point.x < this->bounds.bmin[0]) {
+		this->bounds.bmin[0] = point.x;
+	}
+	if (point.x > this->bounds.bmax[0]) {
+		this->bounds.bmax[0] = point.x;
+	}
+	if (point.y < this->bounds.bmin[1]) {
+		this->bounds.bmin[1] = point.y;
+	}
+	if (point.y > this->bounds.bmax[1]) {
+		this->bounds.bmax[1] = point.y;
+	}
+	if (point.z < this->bounds.bmin[2]) {
+		this->bounds.bmin[2] = point.z;
+	}
+	if (point.z > this->bounds.bmax[2]) {
+		this->bounds.bmax[2] = point.z;
+	}
+}
 
-	float leftNodeDist = ray.IntersectBounds(this->left->bounds);
-	float rightNodeDist = ray.IntersectBounds(this->right->bounds);
+void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {
+	if (get<0>(intersection) != NULL) { return; }
+	
+	if (ray.IntersectionBounds(this->bounds) == NULL) { return; }
+	
+	if (this->isLeaf) { this->IntersectTriangles(ray, triangleIndices, intersection); return; }
+	
+	BVHNode* left = &pool[this->left];
+	BVHNode* right = &pool[this->left + 1];
 
-	if (leftNodeDist == NULL && rightNodeDist == NULL) { return false; }
+	float leftNodeDist = ray.IntersectionBounds(left->bounds);
+	float rightNodeDist = ray.IntersectionBounds(right->bounds);
+
+	if (leftNodeDist == NULL && rightNodeDist == NULL) { return; }
+
 
 	if (leftNodeDist != NULL && rightNodeDist == NULL) {
-		return this->left->Traverse(ray, color, recursionDepth);
-	}
-
-	if (leftNodeDist == NULL && rightNodeDist != NULL) {
-		return this->right->Traverse(ray, color, recursionDepth);
-	}
-
-	float4 rayOrigin = ray.origin;
-	float4 rayDirection = ray.direction;
-
-	if (leftNodeDist < rightNodeDist) {
-		bool hitLeft = this->left->Traverse(ray, color, recursionDepth);
-		if (hitLeft) { return true; }
-
-		ray.origin = rayOrigin;
-		ray.direction = rayDirection; // Could be deleted when creating new ray
-		return this->right->Traverse(ray, color, recursionDepth);
+		left->Traverse(ray, pool, triangleIndices, intersection);
+	} else if (leftNodeDist == NULL && rightNodeDist != NULL) {
+		right->Traverse(ray, pool, triangleIndices, intersection);
+	} else if (leftNodeDist < rightNodeDist) {
+		left->Traverse(ray, pool, triangleIndices, intersection);
+		if (get<0>(intersection) != NULL) { return; }
+		right->Traverse(ray, pool, triangleIndices, intersection);
 	} else {
-		bool hitRight = this->right->Traverse(ray, color, recursionDepth);
-		if (hitRight) { return true; }
-
-		ray.origin = rayOrigin;
-		ray.direction = rayDirection; // Could be deleted when creating new ray
-		return this->left->Traverse(ray, color, recursionDepth);
+		right->Traverse(ray, pool, triangleIndices, intersection);
+		if (get<0>(intersection) != NULL) { return; }
+		left->Traverse(ray, pool, triangleIndices, intersection);
 	}
 }
 
-bool BVHNode::IntersectTriangles(Ray &ray, float4 &color, uint& recursionDepth) {
-	tuple<Triangle*, float> nearestIntersection = ray.GetNearestIntersection(this->triangleIndices);
-	Triangle* nearestTriangle = get<0>(nearestIntersection);
-	float intersectionDistance = get<1>(nearestIntersection);
+void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle*, float> &intersection) {
+	float minDistance = NULL;
+	Triangle* nearestPrimitive = NULL;
 
-	if (intersectionDistance > 0) {
-		float4 intersectionPoint = ray.GetIntersectionPoint(intersectionDistance);
+	for (int i = 0; i < this->count; i++) {
+		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
+		float distance = triangle->Intersect(ray);
 
-		CoreMaterial* material = &WhittedRayTracer::materials[nearestTriangle->materialIndex];
-
-		color += ray.DetermineColor(nearestTriangle, material, intersectionPoint, recursionDepth);
-		return true;
+		if (
+			((minDistance == NULL) || (distance < minDistance))
+			&& (distance > EPSILON)
+			) {
+			minDistance = distance;
+			nearestPrimitive = triangle;
+		}
 	}
 
-	return false;
+	intersection = make_tuple(nearestPrimitive, minDistance);
 }

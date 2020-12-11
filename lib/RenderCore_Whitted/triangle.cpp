@@ -1,5 +1,7 @@
 #include "triangle.h"
 #include "whitted_ray_tracer.h"
+#include "ray.h"
+#include "light.h"
 
 Triangle::Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material) {
 	this->v0 = _v0;

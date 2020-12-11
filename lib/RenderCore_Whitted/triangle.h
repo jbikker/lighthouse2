@@ -1,7 +1,8 @@
 #pragma once
 
 #include "core_settings.h"
-#include "ray.h"
+
+class Ray;
 
 class Triangle {
 public:

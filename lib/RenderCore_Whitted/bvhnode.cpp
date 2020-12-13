@@ -18,29 +18,47 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 	this->isLeaf = false;
 }
 
+void swap(int* triangleIndices, int x, int y) {
+	int prev = triangleIndices[x];
+	triangleIndices[x] = triangleIndices[y];
+	triangleIndices[y] = prev;
+}
+
+
+/** https://www.geeksforgeeks.org/iterative-quick-sort/ */
+int partition(int axis, float splitPoint, int* triangleIndices, int start, int end) {
+	int x = triangleIndices[end];
+	int i = start - 1;
+
+	for (int j = start; j <= end; j++) {
+		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[j]];
+
+		/** Determine sort point */
+		float trianglePoint;
+		if (axis == 0) { trianglePoint = triangle->centroid.x; } 
+		else if (axis == 1) { trianglePoint = triangle->centroid.y;} 
+		else { trianglePoint = triangle->centroid.z; }
+
+		if (trianglePoint <= splitPoint) {
+			i++;
+			swap(triangleIndices, i, j);
+		}
+	}
+
+	swap(triangleIndices, i + 1, end);
+	return i + 1;
+}
+
 void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 	int axis = this->bounds.LongestAxis();
 	float splitPoint = this->bounds.Center(axis);
-	
-	int j = 0;
-	for (int i = 0; i < this->count; i++) {
-		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
 
-		float trianglePoint;
-		if (axis == 0) {
-			trianglePoint = triangle->centroid.x;
-		} else if (axis == 1) {
-			trianglePoint = triangle->centroid.y;
-		} else {
-			trianglePoint = triangle->centroid.z;
-		}
+	cout << "Axis: " << axis << "\n";
+	cout << "SplitPoint: " << splitPoint << "\n";
+	cout << "First: " << this->first << "\n";
+	cout << "Count: " << this->count << "\n";
 
-		if (trianglePoint < splitPoint) {
-			this->Swap(triangleIndices, this->first + i, this->first + j);
-			j++;
-		}
-	}
-	this->Swap(triangleIndices, this->first + j - 1, this->first + this->count - 1);
+	int j = partition(axis, splitPoint, triangleIndices, this->first, this->first + this->count - 1);
 
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
@@ -67,24 +85,7 @@ void BVHNode::UpdateBounds(int* triangleIndices) {
 }
 
 void BVHNode::UpdateBounds(float4 point) {
-	if (point.x < this->bounds.bmin[0]) {
-		this->bounds.bmin[0] = point.x;
-	}
-	if (point.x > this->bounds.bmax[0]) {
-		this->bounds.bmax[0] = point.x;
-	}
-	if (point.y < this->bounds.bmin[1]) {
-		this->bounds.bmin[1] = point.y;
-	}
-	if (point.y > this->bounds.bmax[1]) {
-		this->bounds.bmax[1] = point.y;
-	}
-	if (point.z < this->bounds.bmin[2]) {
-		this->bounds.bmin[2] = point.z;
-	}
-	if (point.z > this->bounds.bmax[2]) {
-		this->bounds.bmax[2] = point.z;
-	}
+	this->bounds.Grow(make_float3(point));
 }
 
 void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {

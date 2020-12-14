@@ -40,7 +40,7 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 			j++;
 		}
 	}
-	this->Swap(triangleIndices, this->first + j - 1, this->first + this->count - 1);
+	this->Swap(triangleIndices, this->first + j, this->first + this->count - 1);
 
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];

@@ -2,6 +2,9 @@
 #include "whitted_ray_tracer.h"
 #include "ray.h"
 #include "light.h"
+#include "bvh.h"
+#include "bvhnode.h"
+#include "tuple"
 
 Triangle::Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material) {
 	this->v0 = _v0;
@@ -39,24 +42,25 @@ float Triangle::Intersect(Ray& ray) {
 	return distance;
 }
 
-bool Triangle::IsLightBlocked(float shadowRayLength) {
-	for (int i = 0; i < WhittedRayTracer::scene.size(); i++) {
-		Triangle* triangle = WhittedRayTracer::scene[i];
-		float distance = triangle->Intersect(WhittedRayTracer::shadowRay);
+bool Triangle::IsLightBlocked(const BVH* bvh, float shadowRayLength) {
+	tuple<Triangle*, float> intersection = make_tuple<Triangle*, float>(NULL, NULL);
+	bvh->root->Traverse(WhittedRayTracer::shadowRay, bvh->pool, bvh->triangleIndices, intersection);
 
-		if (
-			distance != NULL &&
-			distance > EPSILON &&
-			distance < shadowRayLength &&
-			WhittedRayTracer::materials[triangle->materialIndex].refraction.value != 1
-		) {
-			return true;
-		}
+	Triangle* intersectionTriangle = get<0>(intersection);
+	float intersectionDist = get<1>(intersection);
+
+	if (
+		intersectionTriangle != NULL && 
+		intersectionDist > EPSILON &&
+		intersectionDist < shadowRayLength &&
+		WhittedRayTracer::materials[intersectionTriangle->materialIndex].refraction.value != 1
+	) {
+		return true; 
 	}
 	return false;
 }
 
-float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
+float Triangle::CalculateEnergyFromLights(const BVH* bvh, const float4 intersectionPoint) {
 	float energy = 0;
 	float4 normal = this->GetNormal();
 
@@ -77,7 +81,7 @@ float Triangle::CalculateEnergyFromLights(const float4 intersectionPoint) {
 			WhittedRayTracer::shadowRay.origin = intersectionPoint + shadowRayDirection * EPSILON;
 			WhittedRayTracer::shadowRay.direction = shadowRayDirection;
 
-			if (Triangle::IsLightBlocked(shadowRayLength)) { continue; }
+			if (Triangle::IsLightBlocked(bvh, shadowRayLength)) { continue; }
 
 			energy += distanceEnergy * angleFalloff;
 		}

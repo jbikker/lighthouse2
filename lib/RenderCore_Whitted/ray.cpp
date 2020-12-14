@@ -73,7 +73,7 @@ float4 Ray::DetermineColor(Triangle* triangle, CoreMaterial* material, BVH* bvh,
 	/** If material = diffuse apply diffuse color */
 	if (diffuse > EPSILON) {
 		float4 globalIlluminationColor = WhittedRayTracer::globalIllumination * make_float4(material->color.value, 0);
-		float energy = triangle->CalculateEnergyFromLights(intersectionPoint);
+		float energy = triangle->CalculateEnergyFromLights(bvh, intersectionPoint);
 		float4 diffuseColor = materialColor * energy;
 		color += diffuse * diffuseColor;
 		color += globalIlluminationColor;

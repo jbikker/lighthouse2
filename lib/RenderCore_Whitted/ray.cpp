@@ -14,7 +14,7 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 	return origin + (direction * intersectionDistance);
 }
 
-bool Ray::IntersectionBounds(aabb bounds, float &distance) {
+bool Ray::IntersectionBounds(aabb &bounds, float &distance) {
 	float4 invDir = 1.0 / this->direction;
 
 	float4 bmin = make_float4(bounds.bmin[0], bounds.bmin[1], bounds.bmin[2], bounds.bmin[3]);

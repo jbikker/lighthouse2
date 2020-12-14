@@ -7,7 +7,6 @@
 void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 	if (this->count < 5) return;
 	
-	//cout << "Amount BVHNode " << poolPtr << "\n";
 	this->left = poolPtr;
 	poolPtr += 2;
 	
@@ -26,8 +25,9 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 
 void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 	int axis = this->bounds.LongestAxis();
+	this->splitAxis = axis;
 	float splitPoint = this->bounds.Center(axis);
-	
+
 	int low = this->first;
 	int high = this->first + this->count - 1;
 
@@ -39,9 +39,9 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 		if (axis == 0) {
 			trianglePoint = triangle->centroid.x;
 		} else if (axis == 1) {
-			trianglePoint = triangle->centroid.z;
-		} else {
 			trianglePoint = triangle->centroid.y;
+		} else {
+			trianglePoint = triangle->centroid.z;
 		}
 
 		if (trianglePoint < splitPoint) {
@@ -64,67 +64,58 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 }
 
 void BVHNode::UpdateBounds(int* triangleIndices) {
-	this->bounds = aabb();
-	
+	float4 bmin = make_float4(this->bounds.bmin[0], this->bounds.bmin[1], this->bounds.bmin[2], this->bounds.bmin[3]);
+	float4 bmax = make_float4(this->bounds.bmax[0], this->bounds.bmax[1], this->bounds.bmax[2], this->bounds.bmax[3]);
+
 	for (int i = 0; i < this->count; i++) {
 		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
-		this->UpdateBounds(triangle->v0);
-		this->UpdateBounds(triangle->v1);
-		this->UpdateBounds(triangle->v2);
+
+		bmin = fminf(bmin, fminf(triangle->v0, fminf(triangle->v1, triangle->v2)));
+		bmax = fmaxf(bmax, fmaxf(triangle->v0, fmaxf(triangle->v1, triangle->v2)));
 	}
+
+	this->bounds.bmin[0] = bmin.x;
+	this->bounds.bmin[1] = bmin.y;
+	this->bounds.bmin[2] = bmin.z;
+
+	this->bounds.bmax[0] = bmax.x;
+	this->bounds.bmax[1] = bmax.y;
+	this->bounds.bmax[2] = bmax.z;
 }
 
-void BVHNode::UpdateBounds(float4 point) {
-	if (point.x < this->bounds.bmin[0]) {
-		this->bounds.bmin[0] = point.x;
-	}
-	if (point.x > this->bounds.bmax[0]) {
-		this->bounds.bmax[0] = point.x;
-	}
-	if (point.y < this->bounds.bmin[1]) {
-		this->bounds.bmin[1] = point.y;
-	}
-	if (point.y > this->bounds.bmax[1]) {
-		this->bounds.bmax[1] = point.y;
-	}
-	if (point.z < this->bounds.bmin[2]) {
-		this->bounds.bmin[2] = point.z;
-	}
-	if (point.z > this->bounds.bmax[2]) {
-		this->bounds.bmax[2] = point.z;
-	}
-}
+void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {
+	if (get<0>(intersection) != NULL) { return; }
 
-void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &bestIntersect) {
-	float intersectDist;
-	if (!ray.IntersectionBounds(this->bounds, intersectDist)) { return; }
+	float intersect;
+	if (!ray.IntersectionBounds(this->bounds, intersect)) { return; }
 
-	if (this->isLeaf) { 
-		tuple<Triangle*, float> curIntersect = make_tuple<Triangle*, float>(NULL, NULL);
-		this->IntersectTriangles(ray, triangleIndices, curIntersect);
-		
-		Triangle* curIntersectTriangle = get<0>(curIntersect);
-		float curIntersectDist = get<1>(curIntersect);
-		
-		Triangle* bestIntersectTriangle = get<0>(bestIntersect);
-		float bestIntersectDist = get<1>(bestIntersect);
-
-		if (
-			curIntersectTriangle != NULL && (
-				bestIntersectTriangle == NULL ||
-				(curIntersectDist > EPSILON && curIntersectDist < bestIntersectDist)
-			)
-		) {
-			bestIntersect = curIntersect;
-		}
-		return; 
+	if (this->isLeaf) {
+		this->IntersectTriangles(ray, triangleIndices, intersection);
+		return;
 	}
-	
+
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
 
-	left->Traverse(ray, pool, triangleIndices, bestIntersect);
-	right->Traverse(ray, pool, triangleIndices, bestIntersect);
+	float rayDirAxis;
+	if (this->splitAxis == 0) {
+		rayDirAxis = ray.direction.x;
+	}
+	else if (this->splitAxis == 1) {
+		rayDirAxis = ray.direction.y;
+	}
+	else {
+		rayDirAxis = ray.direction.z;
+	}
+
+	if (rayDirAxis > 0) {
+		left->Traverse(ray, pool, triangleIndices, intersection);
+		right->Traverse(ray, pool, triangleIndices, intersection);
+	}
+	else {
+		right->Traverse(ray, pool, triangleIndices, intersection);
+		left->Traverse(ray, pool, triangleIndices, intersection);
+	}
 }
 
 void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle*, float> &intersection) {

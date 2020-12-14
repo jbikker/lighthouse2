@@ -68,6 +68,8 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 	std::chrono::duration<float> elapsed = finish - start;
 	auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
 	std::cout << "Building BVH Time: " << durationMs.count() << "ms\n";
+	
+	cout << "Amount of splits: " << (bvh->poolPtr + 1) / 2 << "\n";
 
 	WhittedRayTracer::bvhs.push_back(bvh);
 }

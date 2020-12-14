@@ -15,7 +15,7 @@ public:
 	float4 origin;
 	float4 direction;
 	float4 GetIntersectionPoint(float intersectionDistance);
-	bool IntersectionBounds(aabb bounds, float& distance);
+	bool IntersectionBounds(aabb &bounds, float &distance);
 	float4 Trace(BVH* bvh, uint recursionDepth);
 	float4 DetermineColor(Triangle* triangle, CoreMaterial* material, BVH* bvh, float4 intersectionPoint, uint recursionDepth);
 	float4 GetRefractionDirection(Triangle* triangle, CoreMaterial* material);

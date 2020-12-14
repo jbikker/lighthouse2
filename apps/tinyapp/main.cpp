@@ -37,7 +37,7 @@ void PrepareScene()
 	const int emittance = 5;
 	renderer->AddMaterial(make_float3(emittance));
 	/** Add scene */
-	int boxScene = renderer->AddMesh("../_shareddata/neighbor_totoro/model.obj", 3.0f);
+	int boxScene = renderer->AddMesh("../_shareddata/abstract.obj", 1.0f);
 	renderer->AddInstance(boxScene);
 	
 	//// Reflection

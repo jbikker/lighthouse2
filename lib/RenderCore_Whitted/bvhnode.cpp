@@ -5,7 +5,7 @@
 #include "tuple"
 
 void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
-	if (this->count < 5) return;
+	if (this->count <= 2) return;
 	
 	this->left = poolPtr;
 	poolPtr += 2;
@@ -28,11 +28,8 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 	this->splitAxis = axis;
 	float splitPoint = this->bounds.Center(axis);
 
-	int low = this->first;
-	int high = this->first + this->count - 1;
-
-	int j = low;
-	for (int i = low; i < high; i++) {
+	int j = this->first;
+	for (int i = this->first; i < this->first + this->count; i++) {
 		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[i]];
 
 		float trianglePoint;
@@ -49,13 +46,12 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 			j++;
 		}
 	}
-	this->Swap(triangleIndices, j, high);
 
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
 
 	left->first = this->first;
-	left->count = j - low;
+	left->count = j - this->first;
 	right->first = j;
 	right->count = this->count - left->count;
 
@@ -84,10 +80,12 @@ void BVHNode::UpdateBounds(int* triangleIndices) {
 }
 
 void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {
-	if (get<0>(intersection) != NULL) { return; }
-
 	float intersect;
 	if (!ray.IntersectionBounds(this->bounds, intersect)) { return; }
+	
+	Triangle* triangleIntersection = get<0>(intersection);
+	float distanceIntersection = get<1>(intersection);
+	if (triangleIntersection != NULL && intersect > distanceIntersection) { return; }
 
 	if (this->isLeaf) {
 		this->IntersectTriangles(ray, triangleIndices, intersection);

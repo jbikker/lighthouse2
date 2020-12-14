@@ -7,7 +7,7 @@
 void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 	if (this->count < 5) return;
 	
-	cout << "Amount BVHNode " << poolPtr << "\n";
+	//cout << "Amount BVHNode " << poolPtr << "\n";
 	this->left = poolPtr;
 	poolPtr += 2;
 	
@@ -138,7 +138,7 @@ void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle
 		if (
 			((minDistance == NULL) || (distance < minDistance))
 			&& (distance > EPSILON)
-			) {
+		) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
 		}

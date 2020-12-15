@@ -105,6 +105,8 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bvh.cpp" />
+    <ClCompile Include="bvhnode.cpp" />
     <ClCompile Include="core_api.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">core_settings.h</PrecompiledHeaderFile>
@@ -122,6 +124,8 @@
     <ClCompile Include="kajiya_path_tracer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bvh.h" />
+    <ClInclude Include="bvhnode.h" />
     <ClInclude Include="core_settings.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="rendercore.h" />

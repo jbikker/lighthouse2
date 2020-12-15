@@ -15,6 +15,7 @@
 
 #include "core_settings.h"
 #include "kajiya_path_tracer.h"
+#include "bvh.h"
 #include "vector"
 #include "chrono"
 
@@ -48,6 +49,8 @@ void RenderCore::SetTarget( GLTexture* target, const uint )
 //  +-----------------------------------------------------------------------------+
 void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const int vertexCount, const int triangleCount, const CoreTri* triangleData )
 {
+
+	int triangleIndex = max((int)KajiyaPathTracer::scene.size() - 1, 0);
 	for (int i = 0; i < triangleCount; i++) {
 		CoreTri triangle = triangleData[i];
 
@@ -58,6 +61,15 @@ void RenderCore::SetGeometry( const int meshIdx, const float4* vertexData, const
 
 		KajiyaPathTracer::AddTriangle(v0, v1, v2, materialIndex);
 	}
+
+	auto start = std::chrono::high_resolution_clock::now();
+	BVH* bvh = new BVH(triangleIndex, triangleCount);
+	auto finish = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<float> elapsed = finish - start;
+	auto durationMs = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed);
+	std::cout << "Building BVH Time: " << durationMs.count() << "ms\n";
+	cout << "Amount of splits: " << (bvh->poolPtr + 1) / 2 << "\n";
+	KajiyaPathTracer::bvhs.push_back(bvh);
 }
 
 //  +-----------------------------------------------------------------------------+

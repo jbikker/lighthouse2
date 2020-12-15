@@ -1,10 +1,11 @@
 #pragma once
 #include "core_settings.h"
-#include "ray.h"
-#include "light.h"
 #include "tuple"
 #include "vector"
-#include "triangle.h"
+
+class Ray;
+class BVH;
+class Triangle;
 
 class KajiyaPathTracer
 {
@@ -13,6 +14,7 @@ public:
 	static vector<Triangle*> scene;
 	static vector<Triangle*> lights;
 	static vector<CoreMaterial> materials;
+	static vector<BVH*> bvhs;
 
 	static Ray primaryRay;
 	static Ray shadowRay;

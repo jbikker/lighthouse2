@@ -60,32 +60,28 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 }
 
 void BVHNode::UpdateBounds(int* triangleIndices) {
-	float4 bmin = make_float4(this->bounds.bmin[0], this->bounds.bmin[1], this->bounds.bmin[2], this->bounds.bmin[3]);
-	float4 bmax = make_float4(this->bounds.bmax[0], this->bounds.bmax[1], this->bounds.bmax[2], this->bounds.bmax[3]);
+	this->bounds = aabb();
 
 	for (int i = 0; i < this->count; i++) {
 		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
 
-		bmin = fminf(bmin, fminf(triangle->v0, fminf(triangle->v1, triangle->v2)));
-		bmax = fmaxf(bmax, fmaxf(triangle->v0, fmaxf(triangle->v1, triangle->v2)));
+		this->UpdateBounds(triangle->v0);
+		this->UpdateBounds(triangle->v1);
+		this->UpdateBounds(triangle->v2);
 	}
+}
 
-	this->bounds.bmin[0] = bmin.x;
-	this->bounds.bmin[1] = bmin.y;
-	this->bounds.bmin[2] = bmin.z;
-
-	this->bounds.bmax[0] = bmax.x;
-	this->bounds.bmax[1] = bmax.y;
-	this->bounds.bmax[2] = bmax.z;
+void BVHNode::UpdateBounds(float4 point) {
+	this->bounds.Grow(make_float3(point));
 }
 
 void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {
-	float intersect;
-	if (!ray.IntersectionBounds(this->bounds, intersect)) { return; }
+	float distBoundingBox;
+	if (!ray.IntersectionBounds(this->bounds, distBoundingBox)) { return; }
 	
 	Triangle* triangleIntersection = get<0>(intersection);
-	float distanceIntersection = get<1>(intersection);
-	if (triangleIntersection != NULL && intersect > distanceIntersection) { return; }
+	float distTriangle = get<1>(intersection);
+	if (triangleIntersection != NULL && distBoundingBox > distTriangle) { return; }
 
 	if (this->isLeaf) {
 		this->IntersectTriangles(ray, triangleIndices, intersection);
@@ -133,7 +129,12 @@ void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle
 		}
 	}
 
-	intersection = make_tuple(nearestPrimitive, minDistance);
+	if (nearestPrimitive != NULL && (
+		get<0>(intersection) == NULL ||
+		(minDistance > EPSILON && minDistance < get<1>(intersection))
+	)) {
+		intersection = make_tuple(nearestPrimitive, minDistance);
+	}
 }
 
 void BVHNode::Swap(int* triangleIndices, int x, int y) {

@@ -113,8 +113,8 @@ void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Tria
 }
 
 void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle*, float> &intersection) {
-	float minDistance = NULL;
-	Triangle* nearestPrimitive = NULL;
+	Triangle* nearestPrimitive = get<0>(intersection);
+	float minDistance = get<1>(intersection);
 
 	for (int i = 0; i < this->count; i++) {
 		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[this->first + i]];
@@ -129,12 +129,7 @@ void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle
 		}
 	}
 
-	if (nearestPrimitive != NULL && (
-		get<0>(intersection) == NULL ||
-		(minDistance > EPSILON && minDistance < get<1>(intersection))
-	)) {
-		intersection = make_tuple(nearestPrimitive, minDistance);
-	}
+	intersection = make_tuple(nearestPrimitive, minDistance);
 }
 
 void BVHNode::Swap(int* triangleIndices, int x, int y) {

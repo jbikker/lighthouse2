@@ -75,7 +75,7 @@ void BVHNode::UpdateBounds(float4 point) {
 	this->bounds.Grow(make_float3(point));
 }
 
-void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {
+void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float, Ray::HitType> &intersection) {
 	float distBoundingBox;
 	if (!ray.IntersectionBounds(this->bounds, distBoundingBox)) { return; }
 	
@@ -112,9 +112,10 @@ void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Tria
 	}
 }
 
-void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle*, float> &intersection) {
+void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle*, float, Ray::HitType> &intersection) {
 	Triangle* nearestPrimitive = get<0>(intersection);
 	float minDistance = get<1>(intersection);
+	Ray::HitType hitType = get<2>(intersection);
 
 	for (int i = 0; i < this->count; i++) {
 		Triangle* triangle = KajiyaPathTracer::scene[triangleIndices[this->first + i]];
@@ -126,10 +127,11 @@ void BVHNode::IntersectTriangles(Ray &ray, int* triangleIndices,  tuple<Triangle
 		) {
 			minDistance = distance;
 			nearestPrimitive = triangle;
+			hitType = Ray::HitType::SceneObject;
 		}
 	}
 
-	intersection = make_tuple(nearestPrimitive, minDistance);
+	intersection = make_tuple(nearestPrimitive, minDistance, hitType);
 }
 
 void BVHNode::Swap(int* triangleIndices, int x, int y) {

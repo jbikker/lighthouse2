@@ -44,14 +44,15 @@ float4 Ray::Trace(BVH* bvh, uint recursionDepth) {
 		return make_float4(0, 0, 0, 0);
 	}
 
-	tuple<Triangle*, float> nearestIntersection = make_tuple<Triangle*, float>(NULL, NULL);
+	/** Intersect BVH */
+	tuple<Triangle*, float, Ray::HitType> nearestIntersection = make_tuple<Triangle*, float, Ray::HitType>(NULL, NULL, Ray::HitType::Nothing);
 	bvh->root->Traverse(*this, bvh->pool, bvh->triangleIndices, nearestIntersection);
+	/** Intersect Lights */
+	nearestIntersection = IntersectLights(nearestIntersection);
 
-	//tuple<Triangle*, float, Ray::HitType> nearestIntersection = Ray::GetNearestIntersection();
 	Triangle* nearestTriangle = get<0>(nearestIntersection);
 	float intersectionDistance = get<1>(nearestIntersection);
-	//Ray::HitType hitType = get<2>(nearestIntersection);
-	Ray::HitType hitType = Ray::HitType::Light;
+	Ray::HitType hitType = get<2>(nearestIntersection);
 
 	if (intersectionDistance > 0) {
 		/** Hit a light */
@@ -132,25 +133,10 @@ float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 
 }
 
-tuple<Triangle*, float, Ray::HitType> Ray::GetNearestIntersection() {
-	float minDistance = NULL;
-	Triangle* nearestPrimitive = NULL;
-	Ray::HitType hitType = Ray::HitType::Nothing;
-
-	/** Intersect scene objects */
-	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
-		Triangle* triangle = KajiyaPathTracer::scene[i];
-		float distance = triangle->Intersect(*this);
-
-		if (
-			((minDistance == NULL) || (distance < minDistance))
-			&& (distance > 0)
-		) {
-			minDistance = distance;
-			nearestPrimitive = triangle;
-			hitType = Ray::HitType::SceneObject;
-		}
-	}
+tuple<Triangle*, float, Ray::HitType> Ray::IntersectLights(tuple<Triangle*, float, Ray::HitType> &intersection) {
+	Triangle* nearestPrimitive = get<0>(intersection);
+	float minDistance = get<1>(intersection);
+	Ray::HitType hitType = get<2>(intersection);
 
 	/** Intersect lights */
 	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {

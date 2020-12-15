@@ -25,6 +25,6 @@ public:
 	float4 GetIntersectionPoint(float intersectionDistance);
 	bool IntersectionBounds(aabb& bounds, float& distance);
 	float4 Trace(BVH* bvh, uint recursionDepth = 0);
-	tuple<Triangle*, float, HitType> GetNearestIntersection();
+	tuple<Triangle*, float, HitType> IntersectLights(tuple<Triangle*, float, Ray::HitType> &intersection);
 	float4 GetRefractionDirection(Triangle* triangle, CoreMaterial* material);
 };

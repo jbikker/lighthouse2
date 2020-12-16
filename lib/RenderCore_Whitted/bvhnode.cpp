@@ -28,9 +28,7 @@ void UpdateBoundingBoxWithCentroid(aabb& aabb, Triangle* triangle) {
 }
 
 void UpdateBoundingBoxWithTriangle(aabb& aabb, Triangle* triangle) {
-	aabb.Grow(triangle->v0);
-	aabb.Grow(triangle->v1);
-	aabb.Grow(triangle->v2);
+	aabb.Grow(triangle->bounds);
 }
 
 float GetTriangleAxisValue(int axis, Triangle* triangle) {

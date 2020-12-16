@@ -37,7 +37,7 @@ void PrepareScene()
 	const int emittance = 5;
 	renderer->AddMaterial(make_float3(emittance));
 	/** Add scene */
-	int boxScene = renderer->AddMesh("../_shareddata/2Mtris.obj", 1.0f);
+	int boxScene = renderer->AddMesh("../_shareddata/2Mtris.obj", 0.1f);
 	renderer->AddInstance(boxScene);
 	
 	//// Reflection

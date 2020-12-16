@@ -3,6 +3,8 @@
 #include "limits"
 #include "triangle.h"
 #include "kajiya_path_tracer.h"
+#include "bvh.h"
+#include "bvhnode.h"
 #include "vector"
 
 Ray::Ray(float4 _origin, float4 _direction) {
@@ -14,13 +16,40 @@ float4 Ray::GetIntersectionPoint(float intersectionDistance) {
 	return origin + (direction * intersectionDistance);
 }
 
-float4 Ray::Trace(uint recursionDepth) {
+bool Ray::IntersectionBounds(aabb& bounds, float& distance) {
+	float4 invDir = 1.0 / this->direction;
+
+	float4 bmin = make_float4(bounds.bmin[0], bounds.bmin[1], bounds.bmin[2], bounds.bmin[3]);
+	float4 bmax = make_float4(bounds.bmax[0], bounds.bmax[1], bounds.bmax[2], bounds.bmax[3]);
+
+	float4 t1 = (bmin - this->origin) * invDir;
+	float4 t2 = (bmax - this->origin) * invDir;
+
+	float4 tmin = fminf(t1, t2);
+	float4 tmax = fmaxf(t1, t2);
+
+	float dmin = max(tmin.x, max(tmin.y, tmin.z));
+	float dmax = min(tmax.x, min(tmax.y, tmax.z));
+
+	if (dmax < 0 || dmin > dmax) {
+		return false;
+	}
+	distance = dmin;
+	return true;
+}
+
+float4 Ray::Trace(BVH* bvh, uint recursionDepth) {
 	/** check if we reached our recursion depth */
 	if (recursionDepth > KajiyaPathTracer::recursionThreshold) {
 		return make_float4(0, 0, 0, 0);
 	}
 
-	tuple<Triangle*, float, Ray::HitType> nearestIntersection = Ray::GetNearestIntersection();
+	/** Intersect BVH */
+	tuple<Triangle*, float, Ray::HitType> nearestIntersection = make_tuple<Triangle*, float, Ray::HitType>(NULL, NULL, Ray::HitType::Nothing);
+	bvh->root->Traverse(*this, bvh->pool, bvh->triangleIndices, nearestIntersection);
+	/** Intersect Lights */
+	nearestIntersection = IntersectLights(nearestIntersection);
+
 	Triangle* nearestTriangle = get<0>(nearestIntersection);
 	float intersectionDistance = get<1>(nearestIntersection);
 	Ray::HitType hitType = get<2>(nearestIntersection);
@@ -42,7 +71,7 @@ float4 Ray::Trace(uint recursionDepth) {
 		if (randomChoice < reflectionChance) {
 			this->direction = this->direction - 2.0f * normal * dot(normal, this->direction);
 			this->origin = intersectionPoint + EPSILON * this->direction;
-			return this->Trace(recursionDepth + 1);
+			return this->Trace(bvh, recursionDepth + 1);
 		}
 
 		/** If material = refraction, given a certain chance it calculates the refraction color */
@@ -52,7 +81,7 @@ float4 Ray::Trace(uint recursionDepth) {
 			if (length(refractionDirection) > EPSILON) {
 				this->origin = intersectionPoint + (refractionDirection * EPSILON);
 				this->direction = refractionDirection;
-				return this->Trace(recursionDepth + 1);
+				return this->Trace(bvh, recursionDepth + 1);
 			}
 		}
 
@@ -65,7 +94,7 @@ float4 Ray::Trace(uint recursionDepth) {
 		float4 r = this->direction = (dot(uniformSample, normal) > 0) ? uniformSample : -uniformSample;
 		this->origin = intersectionPoint + (this->direction * EPSILON);
 		
-		float4 hitColor = this->Trace(recursionDepth + 1);
+		float4 hitColor = this->Trace(bvh, recursionDepth + 1);
 
 		float4 BRDF = make_float4(material.color.value / PI, 0);
 		return dot(r, normal) * BRDF * hitColor * 2.0 * PI;
@@ -104,25 +133,10 @@ float4 Ray::GetRefractionDirection(Triangle* triangle, CoreMaterial* material) {
 
 }
 
-tuple<Triangle*, float, Ray::HitType> Ray::GetNearestIntersection() {
-	float minDistance = NULL;
-	Triangle* nearestPrimitive = NULL;
-	Ray::HitType hitType = Ray::HitType::Nothing;
-
-	/** Intersect scene objects */
-	for (int i = 0; i < KajiyaPathTracer::scene.size(); i++) {
-		Triangle* triangle = KajiyaPathTracer::scene[i];
-		float distance = triangle->Intersect(*this);
-
-		if (
-			((minDistance == NULL) || (distance < minDistance))
-			&& (distance > 0)
-		) {
-			minDistance = distance;
-			nearestPrimitive = triangle;
-			hitType = Ray::HitType::SceneObject;
-		}
-	}
+tuple<Triangle*, float, Ray::HitType> Ray::IntersectLights(tuple<Triangle*, float, Ray::HitType> &intersection) {
+	Triangle* nearestPrimitive = get<0>(intersection);
+	float minDistance = get<1>(intersection);
+	Ray::HitType hitType = get<2>(intersection);
 
 	/** Intersect lights */
 	for (int i = 0; i < KajiyaPathTracer::lights.size(); i++) {

@@ -10,6 +10,7 @@
 vector<Triangle*> KajiyaPathTracer::scene = vector<Triangle*>();
 vector<Triangle*> KajiyaPathTracer::lights = vector<Triangle*>();
 vector<CoreMaterial> KajiyaPathTracer::materials;
+vector<BVH*> KajiyaPathTracer::bvhs;
 
 float4 KajiyaPathTracer::globalIllumination = make_float4(0.2, 0.2, 0.2, 0);
 
@@ -54,7 +55,7 @@ void KajiyaPathTracer::Render(const ViewPyramid& view, const Bitmap* screen) {
 			primaryRay.direction = rayDirection;
 
 			/** Trace the ray */
-			float4 color = primaryRay.Trace();
+			float4 color = primaryRay.Trace(KajiyaPathTracer::bvhs[0], 0);
 			int index = x + y * screen->width;
 
 

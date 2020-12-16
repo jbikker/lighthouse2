@@ -1,10 +1,11 @@
 #pragma once
+
 #include "core_settings.h"
 #include "tuple"
 #include "vector"
 #include "random"
 
-class KajiyaPathTracer;
+class BVH;
 class Triangle;
 class Light;
 
@@ -22,7 +23,8 @@ public:
 	float4 origin;
 	float4 direction;
 	float4 GetIntersectionPoint(float intersectionDistance);
-	float4 Trace(uint recursionDepth = 0);
-	tuple<Triangle*, float, HitType> GetNearestIntersection();
+	bool IntersectionBounds(aabb& bounds, float& distance);
+	float4 Trace(BVH* bvh, uint recursionDepth = 0);
+	tuple<Triangle*, float, HitType> IntersectLights(tuple<Triangle*, float, Ray::HitType> &intersection);
 	float4 GetRefractionDirection(Triangle* triangle, CoreMaterial* material);
 };

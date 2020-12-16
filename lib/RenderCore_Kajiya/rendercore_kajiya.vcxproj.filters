@@ -10,6 +10,12 @@
       <Filter>primitives</Filter>
     </ClCompile>
     <ClCompile Include="kajiya_path_tracer.cpp" />
+    <ClCompile Include="bvh.cpp">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClCompile>
+    <ClCompile Include="bvhnode.cpp">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
@@ -21,6 +27,12 @@
       <Filter>primitives</Filter>
     </ClInclude>
     <ClInclude Include="kajiya_path_tracer.h" />
+    <ClInclude Include="bvh.h">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClInclude>
+    <ClInclude Include="bvhnode.h">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="engine_objects">
@@ -28,6 +40,9 @@
     </Filter>
     <Filter Include="primitives">
       <UniqueIdentifier>{585283cb-96a6-4ae7-a3d7-c96d53931bed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="engine_objects\acceleration_structures">
+      <UniqueIdentifier>{9d753644-82b1-4f6a-b39a-70cbdbdfa7a3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

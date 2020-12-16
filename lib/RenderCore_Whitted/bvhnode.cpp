@@ -12,14 +12,13 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 	this->left = poolPtr;
 	poolPtr += 2;
 	
-	bool shouldSubdivideNodeFurther = this->PartitionTriangles(pool, triangleIndices);
-	if (!shouldSubdivideNodeFurther) { return; }
+	if (!this->PartitionTriangles(pool, triangleIndices)) { return;  }
 
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
 	
 	if (left->count == 0 || right->count == 0) { return; }
-	
+
 	left->SubdivideNode(pool, triangleIndices, poolPtr);
 	right->SubdivideNode(pool, triangleIndices, poolPtr);
 	
@@ -50,8 +49,6 @@ float GetTrianglePoint(int axis, Triangle* triangle) {
 
 
 bool BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
-	int binCount = 6;
-
 	/** Generate bounding box over triangle centroids */
 	aabb centroidBoundingBox = aabb();
 	for (int i = this->first; i < this->first + this->count; i++) {
@@ -66,13 +63,11 @@ bool BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 	float bmin = centroidBoundingBox.bmin[axis];
 	float bmax = centroidBoundingBox.bmax[axis];
 	float totalWidth = abs(bmax - bmin);
-	float widthPerBin = totalWidth / binCount;
+	float widthPerBin = totalWidth / BVH::binCount;
 
-	/** Dont compute the most left and most right bin */
-	Bin* lowestCostBin = &BVH::bins[0];
+	Bin* lowestCostBin = NULL;
 
-	/** Create bins */
-	for (int i = 1; i < binCount; i++) {
+	for (int i = 1; i < BVH::binCount; i++) {
 		float splitPoint = bmin + widthPerBin * i;
 		Bin* bin = &BVH::bins[i - 1];
 		bin->Clear();
@@ -89,31 +84,27 @@ bool BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 			}
 		}
 
-		/** Calculate cost */
 		bin->UpdateSurfaceAreaCost();
-		if (bin->cost < lowestCostBin->cost) {
+
+		if (
+			(bin->countLeft > 0 && bin->countRight > 0) &&
+			(lowestCostBin == NULL || bin->cost < lowestCostBin->cost)
+		) {
 			lowestCostBin = bin;
 		}
 	}
 
-	/** Check SAH */
+	if (lowestCostBin == NULL) { return false; }
+
+	/** Check termination condition of SAH */
 	if (lowestCostBin->cost >= this->bounds.Area() * this->count) {
 		return false;
 	}
 
-
 	int j = this->first;
 	for (int i = this->first; i < this->first + this->count; i++) {
 		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[i]];
-
-		float trianglePoint;
-		if (axis == 0) {
-			trianglePoint = triangle->centroid.x;
-		} else if (axis == 1) {
-			trianglePoint = triangle->centroid.y;
-		} else {
-			trianglePoint = triangle->centroid.z;
-		}
+		float trianglePoint = GetTrianglePoint(axis, triangle);
 
 		if (trianglePoint < lowestCostBin->splitPoint) {
 			this->Swap(triangleIndices, i, j);

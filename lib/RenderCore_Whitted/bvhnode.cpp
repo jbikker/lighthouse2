@@ -24,13 +24,13 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 }
 
 void UpdateBoundingBoxWithCentroid(aabb& aabb, Triangle* triangle) {
-	aabb.Grow(make_float3(triangle->centroid));
+	aabb.Grow(triangle->centroid);
 }
 
 void UpdateBoundingBoxWithTriangle(aabb& aabb, Triangle* triangle) {
-	aabb.Grow(make_float3(triangle->v0));
-	aabb.Grow(make_float3(triangle->v1));
-	aabb.Grow(make_float3(triangle->v2));
+	aabb.Grow(triangle->v0);
+	aabb.Grow(triangle->v1);
+	aabb.Grow(triangle->v2);
 }
 
 float GetTriangleAxisValue(int axis, Triangle* triangle) {
@@ -169,7 +169,7 @@ void BVHNode::UpdateBounds(int* triangleIndices) {
 }
 
 void BVHNode::UpdateBounds(float4 point) {
-	this->bounds.Grow(make_float3(point));
+	this->bounds.Grow(point);
 }
 
 void BVHNode::Traverse(Ray &ray, BVHNode* pool, int* triangleIndices, tuple<Triangle*, float> &intersection) {

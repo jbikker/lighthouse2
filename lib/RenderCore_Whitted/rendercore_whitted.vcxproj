@@ -105,6 +105,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bin.cpp" />
     <ClCompile Include="bvh.cpp" />
     <ClCompile Include="bvhnode.cpp" />
     <ClCompile Include="core_api.cpp">
@@ -125,6 +126,7 @@
     <ClCompile Include="whitted_ray_tracer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bin.h" />
     <ClInclude Include="bvh.h" />
     <ClInclude Include="bvhnode.h" />
     <ClInclude Include="core_settings.h" />

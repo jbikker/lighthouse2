@@ -1,4 +1,6 @@
 #include "bvhnode.h"
+#include "bvh.h"
+#include "bin.h"
 #include "whitted_ray_tracer.h"
 #include "triangle.h"
 #include "ray.h"
@@ -10,7 +12,8 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 	this->left = poolPtr;
 	poolPtr += 2;
 	
-	this->PartitionTriangles(pool, triangleIndices);
+	bool shouldSubdivideNodeFurther = this->PartitionTriangles(pool, triangleIndices);
+	if (!shouldSubdivideNodeFurther) { return; }
 
 	BVHNode* left = &pool[this->left];
 	BVHNode* right = &pool[this->left + 1];
@@ -23,10 +26,81 @@ void BVHNode::SubdivideNode(BVHNode* pool, int* triangleIndices, int &poolPtr) {
 	this->isLeaf = false;
 }
 
-void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
-	int axis = this->bounds.LongestAxis();
+void UpdateBoundingBoxWithCentroid(aabb& aabb, Triangle* triangle) {
+	aabb.Grow(make_float3(triangle->centroid));
+}
+
+void UpdateBoundingBoxWithTriangle(aabb& aabb, Triangle* triangle) {
+	aabb.Grow(make_float3(triangle->v0));
+	aabb.Grow(make_float3(triangle->v1));
+	aabb.Grow(make_float3(triangle->v2));
+}
+
+float GetTrianglePoint(int axis, Triangle* triangle) {
+	if (axis == 0) {
+		return triangle->centroid.x;
+	}
+	else if (axis == 1) {
+		return triangle->centroid.y;
+	}
+	else {
+		return triangle->centroid.z;
+	}
+}
+
+
+bool BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
+	int binCount = 6;
+
+	/** Generate bounding box over triangle centroids */
+	aabb centroidBoundingBox = aabb();
+	for (int i = this->first; i < this->first + this->count; i++) {
+		Triangle* triangle = WhittedRayTracer::scene[triangleIndices[i]];
+		UpdateBoundingBoxWithCentroid(centroidBoundingBox, triangle);
+	}
+
+	int axis = centroidBoundingBox.LongestAxis();
 	this->splitAxis = axis;
-	float splitPoint = this->bounds.Center(axis);
+
+	/** Split into bins */
+	float bmin = centroidBoundingBox.bmin[axis];
+	float bmax = centroidBoundingBox.bmax[axis];
+	float totalWidth = abs(bmax - bmin);
+	float widthPerBin = totalWidth / binCount;
+
+	/** Dont compute the most left and most right bin */
+	Bin* lowestCostBin = &BVH::bins[0];
+
+	/** Create bins */
+	for (int i = 1; i < binCount; i++) {
+		float splitPoint = bmin + widthPerBin * i;
+		Bin* bin = &BVH::bins[i - 1];
+		bin->Clear();
+		bin->splitPoint = splitPoint;
+		for (int i = this->first; i < this->first + this->count; i++) {
+			Triangle* triangle = WhittedRayTracer::scene[triangleIndices[i]];
+			float trianglePoint = GetTrianglePoint(axis, triangle);
+			if (trianglePoint < splitPoint) {
+				bin->countLeft++;
+				UpdateBoundingBoxWithTriangle(bin->boundsLeft, triangle);
+			} else {
+				bin->countRight++;
+				UpdateBoundingBoxWithTriangle(bin->boundsRight, triangle);
+			}
+		}
+
+		/** Calculate cost */
+		bin->UpdateSurfaceAreaCost();
+		if (bin->cost < lowestCostBin->cost) {
+			lowestCostBin = bin;
+		}
+	}
+
+	/** Check SAH */
+	if (lowestCostBin->cost >= this->bounds.Area() * this->count) {
+		return false;
+	}
+
 
 	int j = this->first;
 	for (int i = this->first; i < this->first + this->count; i++) {
@@ -41,7 +115,7 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 			trianglePoint = triangle->centroid.z;
 		}
 
-		if (trianglePoint < splitPoint) {
+		if (trianglePoint < lowestCostBin->splitPoint) {
 			this->Swap(triangleIndices, i, j);
 			j++;
 		}
@@ -57,6 +131,8 @@ void BVHNode::PartitionTriangles(BVHNode* pool, int* triangleIndices) {
 
 	left->UpdateBounds(triangleIndices);
 	right->UpdateBounds(triangleIndices);
+
+	return true;
 }
 
 void BVHNode::UpdateBounds(int* triangleIndices) {

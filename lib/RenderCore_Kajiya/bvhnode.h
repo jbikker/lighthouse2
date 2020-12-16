@@ -8,9 +8,11 @@
 class Ray;
 class Triangle;
 
+
 class BVHNode
 {
 public:
+
 	aabb bounds;
 	bool isLeaf = true;
 	int left;

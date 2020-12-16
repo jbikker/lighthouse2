@@ -1,6 +1,11 @@
 #include "bvh.h"
 #include "bvhnode.h"
+#include "bin.h"
 #include "vector"
+
+int BVH::binCount = 6;
+
+Bin* BVH::bins = new Bin[BVH::binCount - 2];
 
 BVH::BVH(int triangleIndex, int triangleCount) {
 	this->pool = new BVHNode[triangleCount * 2 - 1];

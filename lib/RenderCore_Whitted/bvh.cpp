@@ -3,7 +3,7 @@
 #include "bin.h"
 #include "vector"
 
-int BVH::binCount = 6;
+int BVH::binCount = 16;
 
 Bin* BVH::bins = new Bin[BVH::binCount];
 Bin* BVH::binsLeft = new Bin[BVH::binCount];

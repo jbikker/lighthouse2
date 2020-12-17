@@ -16,6 +16,9 @@
     <ClCompile Include="bvhnode.cpp">
       <Filter>engine_objects\acceleration_structures</Filter>
     </ClCompile>
+    <ClCompile Include="bin.cpp">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="core_settings.h" />
@@ -31,6 +34,9 @@
       <Filter>engine_objects\acceleration_structures</Filter>
     </ClInclude>
     <ClInclude Include="bvhnode.h">
+      <Filter>engine_objects\acceleration_structures</Filter>
+    </ClInclude>
+    <ClInclude Include="bin.h">
       <Filter>engine_objects\acceleration_structures</Filter>
     </ClInclude>
   </ItemGroup>

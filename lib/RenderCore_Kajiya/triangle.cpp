@@ -10,6 +10,9 @@ Triangle::Triangle(float4 _v0, float4 _v1, float4 _v2, uint _material) {
 	this->v0v1 = v1 - v0;
 	this->materialIndex = _material;
 	this->centroid = (this->v0 + this->v1 + this->v2) / 3.0;
+	this->bounds.Grow(this->v0);
+	this->bounds.Grow(this->v1);
+	this->bounds.Grow(this->v2);
 }
 
 float Triangle::Intersect(Ray& ray) {

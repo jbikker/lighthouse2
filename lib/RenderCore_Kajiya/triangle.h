@@ -6,6 +6,7 @@ class Ray;
 
 class Triangle {
 public:
+	aabb bounds;
 	float4 v0;
 	float4 v1;
 	float4 v2;

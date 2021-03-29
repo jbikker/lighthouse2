@@ -150,7 +150,7 @@ class BSDFStackMaterial : public MaterialIntf
 			return make_float3( 0.f );
 
 		// Select a random BxDF (that matches the flags) to sample:
-		const int comp = min( (int)floor( r3 * matchingComps ), matchingComps - 1 );
+		const int comp = min( (int)floorf( r3 * matchingComps ), matchingComps - 1 );
 
 		// Rescale r3:
 		r3 = min( r3 * matchingComps - comp, OneMinusEpsilon );

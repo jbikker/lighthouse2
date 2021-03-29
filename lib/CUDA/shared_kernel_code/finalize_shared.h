@@ -181,8 +181,8 @@ LH2_DEVFUNC float FineWorldDistance( const float2& pixel, const float4& currentW
 	const int2 p1 = make_int2( p0.x + 1, p0.y );
 	const int2 p2 = make_int2( p0.x, p0.y + 1 );
 	const int2 p3 = make_int2( p0.x + 1, p0.y + 1 );
-	const float fx = pixel.x - floor( pixel.x );
-	const float fy = pixel.y - floor( pixel.y );
+	const float fx = pixel.x - floorf( pixel.x );
+	const float fy = pixel.y - floorf( pixel.y );
 	const float w0 = (1 - fx) * (1 - fy), w1 = fx * (1 - fy), w2 = (1 - fx) * fy, w3 = fx * fy;
 	float d0 = WorldDistance( p0, currentWorldPos, prevWorldPos, w, h );
 	float d1 = WorldDistance( p1, currentWorldPos, prevWorldPos, w, h );

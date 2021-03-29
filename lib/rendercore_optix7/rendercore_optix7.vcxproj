@@ -32,7 +32,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.1.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.2.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -44,11 +44,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>..\..\coredlls\$(Configuration)\</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(CudaToolkitIncludeDir)</IncludePath>
+    <IncludePath>$(CudaToolkitIncludeDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>..\..\coredlls\$(Configuration)\</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(CudaToolkitIncludeDir)</IncludePath>
+    <IncludePath>$(CudaToolkitIncludeDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -185,6 +185,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.1.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.2.targets" />
   </ImportGroup>
 </Project>

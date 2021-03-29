@@ -39,8 +39,8 @@ LH2_DEVFUNC float4 FetchTexel( const float2 texCoord, const int o, const int w, 
 	const int iu = ((int)tc.x) % w;
 	const int iv = ((int)tc.y) % h;
 #ifdef BILINEAR
-	const float fu = tc.x - floor( tc.x );
-	const float fv = tc.y - floor( tc.y );
+	const float fu = tc.x - floorf( tc.x );
+	const float fv = tc.y - floorf( tc.y );
 	const float w0 = (1 - fu) * (1 - fv);
 	const float w1 = fu * (1 - fv);
 	const float w2 = (1 - fu) * fv;
@@ -77,7 +77,7 @@ LH2_DEVFUNC float4 FetchTexelTrilinear( const float lambda, const float2 texCoor
 	if (lambda >= 0)
 		level0 = min( MIPLEVELCOUNT - 1, (int)lambda ),
 		level1 = min( MIPLEVELCOUNT - 1, level0 + 1 ),
-		f = lambda - floor( lambda );
+		f = lambda - floorf( lambda );
 #if 0
 	// select first MIP level
 	int o0 = offset, w0 = width, h0 = height;
@@ -139,9 +139,9 @@ LH2_DEVFUNC float4 ReadTexelConsistent( const float4* buffer, const float4* prev
 	// part of reprojection:
 	// read a texel from the specified history buffer with bilinear interpolation,
 	// while checking each tap for consistentency (similar world space position and normal).
-	const int iu1 = (int)floor( u ), iv1 = (int)floor( v ), iu0 = max( 0, iu1 - 1 ), iv0 = max( 0, iv1 - 1 );
+	const int iu1 = (int)floorf( u ), iv1 = (int)floorf( v ), iu0 = max( 0, iu1 - 1 ), iv0 = max( 0, iv1 - 1 );
 	if (iu1 >= w || iv1 >= h || iu1 < 0 || iv1 < 0) return make_float4( -1 );
-	const float2 fuv = make_float2( u - floor( u ), v - floor( v ) );
+	const float2 fuv = make_float2( u - floorf( u ), v - floorf( v ) );
 	const float4 p0 = buffer[iu0 + iv0 * w], pp0 = prevWorldPos[iu0 + iv0 * w];
 	const float4 p1 = buffer[iu1 + iv0 * w], pp1 = prevWorldPos[iu1 + iv0 * w];
 	const float4 p2 = buffer[iu0 + iv1 * w], pp2 = prevWorldPos[iu0 + iv1 * w];
@@ -183,9 +183,9 @@ LH2_DEVFUNC void ReadTexelConsistent2( const float4* buffer, const float4* prevW
 	// while checking each tap for consistentency (similar world space position and normal).
 	// this version interpolates and returns two values (for direct and indirect light).
 	direct.x = -1;
-	const int iu1 = (int)floor( u ), iv1 = (int)floor( v ), iu0 = max( 0, iu1 - 1 ), iv0 = max( 0, iv1 - 1 );
+	const int iu1 = (int)floorf( u ), iv1 = (int)floorf( v ), iu0 = max( 0, iu1 - 1 ), iv0 = max( 0, iv1 - 1 );
 	if (iu1 >= w || iv1 >= h || iu1 < 0 || iv1 < 0) return;
-	const float2 fuv = make_float2( u - floor( u ), v - floor( v ) );
+	const float2 fuv = make_float2( u - floorf( u ), v - floorf( v ) );
 	const float4 p0 = buffer[iu0 + iv0 * w], pp0 = prevWorldPos[iu0 + iv0 * w], pd0 = make_float4( GetDirectFromFloat4( p0 ), 1 ), pi0 = make_float4( GetIndirectFromFloat4( p0 ) );
 	const float4 p1 = buffer[iu1 + iv0 * w], pp1 = prevWorldPos[iu1 + iv0 * w], pd1 = make_float4( GetDirectFromFloat4( p1 ), 1 ), pi1 = make_float4( GetIndirectFromFloat4( p1 ) );
 	const float4 p2 = buffer[iu0 + iv1 * w], pp2 = prevWorldPos[iu0 + iv1 * w], pd2 = make_float4( GetDirectFromFloat4( p2 ), 1 ), pi2 = make_float4( GetIndirectFromFloat4( p2 ) );

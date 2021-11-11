@@ -158,7 +158,8 @@ void HostScene::Init()
 //  |  HostScene::SetSkyDome                                                      |
 //  |  Set the skydome used for this scene.                                 LH2'19|
 //  +-----------------------------------------------------------------------------+
-void HostScene::SetSkyDome( HostSkyDome* skydome ) {
+void HostScene::SetSkyDome( HostSkyDome* skydome )
+{
 	sky = skydome;
 }
 
@@ -169,11 +170,16 @@ void HostScene::SetSkyDome( HostSkyDome* skydome ) {
 //  +-----------------------------------------------------------------------------+
 int HostScene::AddMesh( HostMesh* mesh )
 {
-	auto res = std::find( meshPool.begin(), meshPool.end(), mesh );
-
-	if (res != meshPool.end())
-		return std::distance( meshPool.begin(), res );
-
+	// see if the mesh is already in the scene
+	for( int s = (int)meshPool.size(), i = 0; i < s; i++ )
+	{
+		if (meshPool[i] == mesh)
+		{
+			assert( mesh->ID == i );
+			return i;
+		}
+	}
+	// add the mesh
 	mesh->ID = (int)meshPool.size();
 	meshPool.push_back( mesh );
 	return mesh->ID;
@@ -397,7 +403,7 @@ int HostScene::AddQuad( float3 N, const float3 pos, const float width, const flo
 	HostMesh* newMesh = meshID > -1 ? meshPool[meshID] : new HostMesh();
 	N = normalize( N ); // let's not assume the normal is normalized.
 #if 1
-	const float3 tmp = N.x > 0.9f ? make_float3( 0, 1, 0 ) : make_float3( 1, 0, 0 );
+	const float3 tmp = fabs( N.x ) > 0.9f ? make_float3( 0, 1, 0 ) : make_float3( 1, 0, 0 );
 	const float3 T = 0.5f * width * normalize( cross( N, tmp ) );
 	const float3 B = 0.5f * height * normalize( cross( normalize( T ), N ) );
 #else
@@ -565,10 +571,10 @@ int HostScene::FindOrCreateMaterialCopy( const int matID, const uint color )
 {
 	// search list for existing material copy
 	const int r = (color >> 16) & 255, g = (color >> 8) & 255, b = color & 255;
-	const float3 c = make_float3( b * (1.0f / 255.0f), g * (1.0f / 255.0f), r * (1.0f / 255.0f ) );
-	for (auto material : materials) 
+	const float3 c = make_float3( b * (1.0f / 255.0f), g * (1.0f / 255.0f), r * (1.0f / 255.0f) );
+	for (auto material : materials)
 	{
-		if (material->flags & HostMaterial::SINGLE_COLOR_COPY && 
+		if (material->flags & HostMaterial::SINGLE_COLOR_COPY &&
 			material->color.value.x == c.x && material->color.value.y == c.y && material->color.value.z == c.z)
 		{
 			material->refCount++;

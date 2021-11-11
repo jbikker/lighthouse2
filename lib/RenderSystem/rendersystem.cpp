@@ -94,6 +94,9 @@ void RenderSystem::SynchronizeMaterials()
 			gpuMaterial.push_back( m );
 		}
 		core->SetMaterials( gpuMaterial.data(), (int)gpuMaterial.size() );
+		// mark them all as 'clean' to prevent subsequent transfers
+		for (auto m : scene->materials) m->MarkAsNotDirty();
+		// halt further processing
 		break;
 	}
 }

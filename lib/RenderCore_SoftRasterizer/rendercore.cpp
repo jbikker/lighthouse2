@@ -235,7 +235,7 @@ void RenderCore::Shutdown()
 //  |  RenderCore::GetCoreStats                                                   |
 //  |  Get a copy of the counters.                                          LH2'19|
 //  +-----------------------------------------------------------------------------+
-CoreStats RenderCore::GetCoreStats() const 
+CoreStats RenderCore::GetCoreStats() const
 {
 	return coreStats;
 }

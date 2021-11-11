@@ -549,7 +549,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	}
 	if (!materialBuffer)
 	{
-		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount + 512, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
 	else if (materialCount <= materialBuffer->GetSize())
 	{
@@ -558,7 +558,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	}
 	else /* if (materialCount > materialBuffer->GetSize()) */
 	{
-		// TODO: realloc
+		// TODO: realloc, remove +512 during allocation
 	}
 	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
@@ -635,10 +635,10 @@ void RenderCore::UpdateLightTree()
 	for (int i = 0; i < N; i++)
 		treeData[i + 1] = LightCluster( triLightBuffer->HostPtr()[i], i ), // leaf for light i has index i + 1
 		todo[i] = i + 1;
-	for( int i = 0; i < M; i++ )
+	for (int i = 0; i < M; i++)
 		treeData[i + 1 + N] = LightCluster( pointLightBuffer->HostPtr()[i], i ),
 		todo[i + N] = i + 1 + N;
-	for( int i = 0; i < O; i++ )
+	for (int i = 0; i < O; i++)
 		treeData[i + 1 + N + M] = LightCluster( spotLightBuffer->HostPtr()[i], i ),
 		todo[i + N + M] = i + 1 + N + M;
 	remaining += M + O;

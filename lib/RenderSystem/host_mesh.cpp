@@ -158,6 +158,7 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 		material->origin = fileName;
 		material->ConvertFrom( mtl );
 		material->flags |= HostMaterial::FROM_MTL;
+		material->MarkAsDirty();
 		HostScene::materials.push_back( material );
 		materialList.push_back( material->ID );
 	}
@@ -180,16 +181,22 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 				const float3 vert0 = make_float3( attrib.vertices[idx0 * 3 + 0], attrib.vertices[idx0 * 3 + 1], attrib.vertices[idx0 * 3 + 2] );
 				const float3 vert1 = make_float3( attrib.vertices[idx1 * 3 + 0], attrib.vertices[idx1 * 3 + 1], attrib.vertices[idx1 * 3 + 2] );
 				const float3 vert2 = make_float3( attrib.vertices[idx2 * 3 + 0], attrib.vertices[idx2 * 3 + 1], attrib.vertices[idx2 * 3 + 2] );
-				const float3 vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
-				const float3 vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
-				const float3 vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
 				float3 N = normalize( cross( vert1 - vert0, vert2 - vert0 ) );
+				float3 vN0, vN1, vN2;
+				if (nidx0 > -1)
+				{
+					vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
+					vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
+					vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
 				if (dot( N, vN0 ) < 0 && dot( N, vN1 ) < 0 && dot( N, vN2 ) < 0) N *= -1.0f; // flip if not consistent with vertex normals
-				// loop over vertices
-				// Note: we clamp at approx. 45 degree angles; beyond this the approach fails.
 				alphas[nidx0] = min( alphas[nidx0], max( 0.7f, dot( vN0, N ) ) );
 				alphas[nidx1] = min( alphas[nidx1], max( 0.7f, dot( vN1, N ) ) );
 				alphas[nidx2] = min( alphas[nidx2], max( 0.7f, dot( vN2, N ) ) );
+			}
+				else
+				{
+					vN0 = vN1 = vN2 = N;
+				}
 			}
 	}
 	// finalize alpha values based on max dots
@@ -243,13 +250,20 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			const int tidx0 = indices[f + 0].texcoord_index, nidx0 = indices[f + 0].normal_index, idx0 = indices[f + 0].vertex_index;
 			const int tidx1 = indices[f + 1].texcoord_index, nidx1 = indices[f + 1].normal_index, idx1 = indices[f + 1].vertex_index;
 			const int tidx2 = indices[f + 2].texcoord_index, nidx2 = indices[f + 2].normal_index, idx2 = indices[f + 2].vertex_index;
-			tri.vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
-			tri.vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
-			tri.vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
 			const float3 e1 = tri.vertex1 - tri.vertex0;
 			const float3 e2 = tri.vertex2 - tri.vertex0;
 			float3 N = normalize( cross( e1, e2 ) );
+			if (nidx0 > -1)
+			{
+			tri.vN0 = make_float3( attrib.normals[nidx0 * 3 + 0], attrib.normals[nidx0 * 3 + 1], attrib.normals[nidx0 * 3 + 2] );
+			tri.vN1 = make_float3( attrib.normals[nidx1 * 3 + 0], attrib.normals[nidx1 * 3 + 1], attrib.normals[nidx1 * 3 + 2] );
+			tri.vN2 = make_float3( attrib.normals[nidx2 * 3 + 0], attrib.normals[nidx2 * 3 + 1], attrib.normals[nidx2 * 3 + 2] );
 			if (dot( N, tri.vN0 ) < 0) N *= -1.0f; // flip face normal if not consistent with vertex normal
+			}
+			else
+			{
+				tri.vN0 = tri.vN1 = tri.vN2 = N;
+			}
 			if (flatShaded) tri.vN0 = tri.vN1 = tri.vN2 = N;
 			if (tidx0 > -1)
 			{
@@ -287,7 +301,10 @@ void HostMesh::LoadGeometryFromOBJ( const string& fileName, const char* director
 			tri.area = 0; // we don't actually use it, except for lights, where it is also calculated
 		#endif
 			tri.invArea = 0; // todo
+			if (nidx0 > -1) 
 			tri.alpha = make_float3( alphas[nidx0], tri.alpha.y = alphas[nidx1], tri.alpha.z = alphas[nidx2] );
+			else
+				tri.alpha = make_float3( 0 );
 			// calculate triangle LOD data
 			HostMaterial* mat = HostScene::materials[tri.material];
 			int textureID = mat->color.textureID;

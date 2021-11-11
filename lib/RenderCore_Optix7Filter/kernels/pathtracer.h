@@ -68,7 +68,7 @@ __global__  __launch_bounds__( 128 /* max block size */, 2 /* min blocks per sm,
 #endif
 void shadeKernel( float4* accumulator, const uint stride,
 	uint4* features, float4* worldPos, float4* deltaDepth,
-	float4* pathStates, const float4* hits, float4* connections,
+	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int blueSlot, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos, const uint pathCount )
@@ -82,6 +82,8 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float4 D4 = pathStates[jobIndex + stride];	// ray direction xyz
 	float4 T4 = pathLength == 1 ? make_float4( 1 ) /* faster */ : pathStates[jobIndex + stride * 2]; // path thoughput rgb
 	const float4 hitData = hits[jobIndex];
+	hits[jobIndex].z = int_as_float( -1 ); // reset for next query
+
 	const float bsdfPdf = T4.w;
 
 	// derived data
@@ -332,7 +334,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 //  +-----------------------------------------------------------------------------+
 __host__ void shade( const int pathCount, float4* accumulator, const uint stride,
 	uint4* features, float4* worldPos, float4* deltaDepth,
-	float4* pathStates, const float4* hits, float4* connections,
+	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int blueSlot, const int pass,
 	const int probePixelIdx, const int pathLength, const int scrwidth, const int scrheight, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos )

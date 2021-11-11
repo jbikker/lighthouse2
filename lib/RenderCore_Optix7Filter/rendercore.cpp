@@ -30,7 +30,7 @@ void InitCountersForExtend( int pathCount );
 void InitCountersSubsequent();
 void shade( const int pathCount, float4* accumulator, const uint stride,
 	uint4* features, float4* worldPos, float4* deltaDepth,
-	float4* pathStates, const float4* hits, float4* connections,
+	float4* pathStates, float4* hits, float4* connections,
 	const uint R0, const uint* blueNoise, const int blueSlot, const int pass,
 	const int probePixelIdx, const int pathLength, const int w, const int h, const float spreadAngle,
 	const float3 p1, const float3 p2, const float3 p3, const float3 pos );

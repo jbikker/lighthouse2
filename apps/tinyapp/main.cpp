@@ -1,4 +1,4 @@
-/* main.cpp - Copyright 2019/2020 Utrecht University
+/* main.cpp - Copyright 2019/2021 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 
 #include "platform.h"
 #include "rendersystem.h"
-
 #include <bitset>
 
 static RenderAPI* renderer = 0;
@@ -29,7 +28,7 @@ static std::bitset<1024> keystates;
 
 //  +-----------------------------------------------------------------------------+
 //  |  PrepareScene                                                               |
-//  |  Initialize a scene.                                                  LH2'19|
+//  |  Initialize a scene.                                                  LH2'21|
 //  +-----------------------------------------------------------------------------+
 void PrepareScene()
 {
@@ -44,7 +43,7 @@ void PrepareScene()
 
 //  +-----------------------------------------------------------------------------+
 //  |  HandleInput                                                                |
-//  |  Process user input.                                                  LH2'19|
+//  |  Process user input.                                                  LH2'21|
 //  +-----------------------------------------------------------------------------+
 void HandleInput( float frameTime )
 {
@@ -65,21 +64,14 @@ void HandleInput( float frameTime )
 
 //  +-----------------------------------------------------------------------------+
 //  |  main                                                                       |
-//  |  Application entry point.                                             LH2'19|
+//  |  Application entry point.                                             LH2'21|
 //  +-----------------------------------------------------------------------------+
 int main()
 {
 	// initialize OpenGL
 	InitGLFW();
-
-	// initialize renderer: pick one
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7filter" );			// OPTIX7 core, with filtering (static scenes only for now)
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );			// OPTIX7 core, best for RTX devices
-	renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_B" );		// OPTIX PRIME, best for pre-RTX CUDA devices
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_SoftRasterizer" );	// RASTERIZER, your only option if not on NVidia
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_Vulkan_RT" );			// Meir's Vulkan / RTX core
-	// renderer = RenderAPI::CreateRenderAPI( "RenderCore_OptixPrime_BDPT" );	// Peter's OptixPrime / BDPT core
-
+	// initialize renderer
+	renderer = RenderAPI::CreateRenderAPI( "RenderCore_Optix7" );	// OPTIX7 core, best for RTX devices
 	renderer->DeserializeCamera( "camera.xml" );
 	// initialize scene
 	PrepareScene();
@@ -96,8 +88,9 @@ int main()
 		HandleInput( 0.025f );
 		// minimal rigid animation example
 		static float r = 0;
-		renderer->SetNodeTransform( car, mat4::RotateY( r * 2.0f ) * mat4::RotateZ( 0.2f * sinf( r * 8.0f ) ) * mat4::Translate( make_float3( 0, 5, 0 ) ) );
-		r += 0.025f * 0.3f; if (r > 2 * PI) r -= 2 * PI;
+		mat4 M = mat4::RotateY( r * 2.0f ) * mat4::RotateZ( 0.2f * sinf( r * 8.0f ) ) * mat4::Translate( make_float3( 0, 5, 0 ) );
+		renderer->SetNodeTransform( car, M );
+		if ((r += 0.025f * 0.3f) > 2 * PI) r -= 2 * PI;
 		// finalize and present
 		shader->Bind();
 		shader->SetInputTexture( 0, "color", renderTarget );

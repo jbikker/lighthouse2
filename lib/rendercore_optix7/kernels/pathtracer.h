@@ -1,4 +1,4 @@
-/* pathtracer.cu - Copyright 2019/2020 Utrecht University
+/* pathtracer.cu - Copyright 2019/2021 Utrecht University
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ void shadeKernel( float4* accumulator, const uint stride,
 	const float4 D4 = pathStates[jobIndex + stride];	// ray direction xyz
 	float4 T4 = pathLength == 1 ? make_float4( 1 ) /* faster */ : pathStates[jobIndex + stride * 2]; // path thoughput rgb
 	const float4 hitData = hits[jobIndex];
-	hits[jobIndex].z = int_as_float( -1 ); // reset for next query
+	hits[jobIndex].z = __int_as_float( -1 ); // reset for next query
 	const float bsdfPdf = T4.w;
 
 	// derived data

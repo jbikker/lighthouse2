@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
+* Copyright (c) 2021 NVIDIA Corporation.  All rights reserved.
 *
 * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
 * rights in and to this software, related documentation and any modifications thereto.
@@ -54,7 +54,6 @@
 /// \param[in] tmax
 /// \param[in] rayTime
 /// \param[in] visibilityMask really only 8 bits
-/// \param[in] rayFlags       really only 8 bits, combination of OptixRayFlags
 /// \param[in] SBToffset      really only 8 bits
 /// \param[in] SBTstride      really only 8 bits
 /// \param[in] missSBTIndex   specifies the miss program invoked on a miss
@@ -69,8 +68,7 @@ static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle
                                                    unsigned int           SBToffset,
                                                    unsigned int           SBTstride,
                                                    unsigned int           missSBTIndex );
-
-/// Initiates a ray tracing query starting with the given traversable (overload with 1 payload register).
+/// Initiates a ray tracing query starting with the given traversable (overload with 1 payload registers).
 ///
 /// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
 static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
@@ -226,6 +224,1924 @@ static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle
                                                    unsigned int&          p6,
                                                    unsigned int&          p7 );
 
+/// Initiates a ray tracing query starting with the given traversable (overload with 9 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 10 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 11 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 12 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 13 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 14 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 15 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 16 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 17 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 18 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 19 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 20 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 21 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 22 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 23 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 24 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 25 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 26 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 27 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 28 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 29 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 30 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28,
+                                                   unsigned int&          p29 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 31 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28,
+                                                   unsigned int&          p29,
+                                                   unsigned int&          p30 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 32 payload registers).
+///
+/// \see #optixTrace(OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28,
+                                                   unsigned int&          p29,
+                                                   unsigned int&          p30,
+                                                   unsigned int&          p31 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload without payload).
+///
+/// \param[in] type
+/// \param[in] handle
+/// \param[in] rayOrigin
+/// \param[in] rayDirection
+/// \param[in] tmin
+/// \param[in] tmax
+/// \param[in] rayTime
+/// \param[in] visibilityMask really only 8 bits
+/// \param[in] SBToffset      really only 8 bits
+/// \param[in] SBTstride      really only 8 bits
+/// \param[in] missSBTIndex   specifies the miss program invoked on a miss
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 1 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 2 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 3 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 4 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 5 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 6 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 7 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 8 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 9 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 10 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 11 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 12 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 13 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 14 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 15 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 16 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 17 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 18 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 19 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 20 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 21 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 22 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 23 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 24 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 25 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 26 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 27 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 28 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 29 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 30 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28,
+                                                   unsigned int&          p29 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 31 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28,
+                                                   unsigned int&          p29,
+                                                   unsigned int&          p30 );
+
+/// Initiates a ray tracing query starting with the given traversable (overload with 32 payload registers).
+///
+/// \see #optixTrace(OptixPayloadTypeID,OptixTraversableHandle,float3,float3,float,float,float,OptixVisibilityMask,unsigned int,unsigned int,unsigned int,unsigned int)
+static __forceinline__ __device__ void optixTrace( OptixPayloadTypeID     type,
+                                                   OptixTraversableHandle handle,
+                                                   float3                 rayOrigin,
+                                                   float3                 rayDirection,
+                                                   float                  tmin,
+                                                   float                  tmax,
+                                                   float                  rayTime,
+                                                   OptixVisibilityMask    visibilityMask,
+                                                   unsigned int           rayFlags,
+                                                   unsigned int           SBToffset,
+                                                   unsigned int           SBTstride,
+                                                   unsigned int           missSBTIndex,
+                                                   unsigned int&          p0,
+                                                   unsigned int&          p1,
+                                                   unsigned int&          p2,
+                                                   unsigned int&          p3,
+                                                   unsigned int&          p4,
+                                                   unsigned int&          p5,
+                                                   unsigned int&          p6,
+                                                   unsigned int&          p7,
+                                                   unsigned int&          p8,
+                                                   unsigned int&          p9,
+                                                   unsigned int&          p10,
+                                                   unsigned int&          p11,
+                                                   unsigned int&          p12,
+                                                   unsigned int&          p13,
+                                                   unsigned int&          p14,
+                                                   unsigned int&          p15,
+                                                   unsigned int&          p16,
+                                                   unsigned int&          p17,
+                                                   unsigned int&          p18,
+                                                   unsigned int&          p19,
+                                                   unsigned int&          p20,
+                                                   unsigned int&          p21,
+                                                   unsigned int&          p22,
+                                                   unsigned int&          p23,
+                                                   unsigned int&          p24,
+                                                   unsigned int&          p25,
+                                                   unsigned int&          p26,
+                                                   unsigned int&          p27,
+                                                   unsigned int&          p28,
+                                                   unsigned int&          p29,
+                                                   unsigned int&          p30,
+                                                   unsigned int&          p31 );
+
 /// Writes the 32-bit payload value at slot 0.
 static __forceinline__ __device__ void optixSetPayload_0( unsigned int p );
 /// Writes the 32-bit payload value at slot 1.
@@ -243,6 +2159,55 @@ static __forceinline__ __device__ void optixSetPayload_6( unsigned int p );
 /// Writes the 32-bit payload value at slot 7.
 static __forceinline__ __device__ void optixSetPayload_7( unsigned int p );
 
+/// Writes the 32-bit payload value at slot 8.
+static __forceinline__ __device__ void optixSetPayload_8( unsigned int p );
+/// Writes the 32-bit payload value at slot 9.
+static __forceinline__ __device__ void optixSetPayload_9( unsigned int p );
+/// Writes the 32-bit payload value at slot 10.
+static __forceinline__ __device__ void optixSetPayload_10( unsigned int p );
+/// Writes the 32-bit payload value at slot 11.
+static __forceinline__ __device__ void optixSetPayload_11( unsigned int p );
+/// Writes the 32-bit payload value at slot 12.
+static __forceinline__ __device__ void optixSetPayload_12( unsigned int p );
+/// Writes the 32-bit payload value at slot 13.
+static __forceinline__ __device__ void optixSetPayload_13( unsigned int p );
+/// Writes the 32-bit payload value at slot 14.
+static __forceinline__ __device__ void optixSetPayload_14( unsigned int p );
+/// Writes the 32-bit payload value at slot 15.
+static __forceinline__ __device__ void optixSetPayload_15( unsigned int p );
+/// Writes the 32-bit payload value at slot 16.
+static __forceinline__ __device__ void optixSetPayload_16( unsigned int p );
+/// Writes the 32-bit payload value at slot 17.
+static __forceinline__ __device__ void optixSetPayload_17( unsigned int p );
+/// Writes the 32-bit payload value at slot 18.
+static __forceinline__ __device__ void optixSetPayload_18( unsigned int p );
+/// Writes the 32-bit payload value at slot 19.
+static __forceinline__ __device__ void optixSetPayload_19( unsigned int p );
+/// Writes the 32-bit payload value at slot 20.
+static __forceinline__ __device__ void optixSetPayload_20( unsigned int p );
+/// Writes the 32-bit payload value at slot 21.
+static __forceinline__ __device__ void optixSetPayload_21( unsigned int p );
+/// Writes the 32-bit payload value at slot 22.
+static __forceinline__ __device__ void optixSetPayload_22( unsigned int p );
+/// Writes the 32-bit payload value at slot 23.
+static __forceinline__ __device__ void optixSetPayload_23( unsigned int p );
+/// Writes the 32-bit payload value at slot 24.
+static __forceinline__ __device__ void optixSetPayload_24( unsigned int p );
+/// Writes the 32-bit payload value at slot 25.
+static __forceinline__ __device__ void optixSetPayload_25( unsigned int p );
+/// Writes the 32-bit payload value at slot 26.
+static __forceinline__ __device__ void optixSetPayload_26( unsigned int p );
+/// Writes the 32-bit payload value at slot 27.
+static __forceinline__ __device__ void optixSetPayload_27( unsigned int p );
+/// Writes the 32-bit payload value at slot 28.
+static __forceinline__ __device__ void optixSetPayload_28( unsigned int p );
+/// Writes the 32-bit payload value at slot 29.
+static __forceinline__ __device__ void optixSetPayload_29( unsigned int p );
+/// Writes the 32-bit payload value at slot 30.
+static __forceinline__ __device__ void optixSetPayload_30( unsigned int p );
+/// Writes the 32-bit payload value at slot 31.
+static __forceinline__ __device__ void optixSetPayload_31( unsigned int p );
+
 /// Reads the 32-bit payload value at slot 0.
 static __forceinline__ __device__ unsigned int optixGetPayload_0();
 /// Reads the 32-bit payload value at slot 1.
@@ -259,6 +2224,63 @@ static __forceinline__ __device__ unsigned int optixGetPayload_5();
 static __forceinline__ __device__ unsigned int optixGetPayload_6();
 /// Reads the 32-bit payload value at slot 7.
 static __forceinline__ __device__ unsigned int optixGetPayload_7();
+
+/// Reads the 32-bit payload value at slot 8.
+static __forceinline__ __device__ unsigned int optixGetPayload_8();
+/// Reads the 32-bit payload value at slot 9.
+static __forceinline__ __device__ unsigned int optixGetPayload_9();
+/// Reads the 32-bit payload value at slot 10.
+static __forceinline__ __device__ unsigned int optixGetPayload_10();
+/// Reads the 32-bit payload value at slot 11.
+static __forceinline__ __device__ unsigned int optixGetPayload_11();
+/// Reads the 32-bit payload value at slot 12.
+static __forceinline__ __device__ unsigned int optixGetPayload_12();
+/// Reads the 32-bit payload value at slot 13.
+static __forceinline__ __device__ unsigned int optixGetPayload_13();
+/// Reads the 32-bit payload value at slot 14.
+static __forceinline__ __device__ unsigned int optixGetPayload_14();
+/// Reads the 32-bit payload value at slot 15.
+static __forceinline__ __device__ unsigned int optixGetPayload_15();
+/// Reads the 32-bit payload value at slot 16.
+static __forceinline__ __device__ unsigned int optixGetPayload_16();
+/// Reads the 32-bit payload value at slot 17.
+static __forceinline__ __device__ unsigned int optixGetPayload_17();
+/// Reads the 32-bit payload value at slot 18.
+static __forceinline__ __device__ unsigned int optixGetPayload_18();
+/// Reads the 32-bit payload value at slot 19.
+static __forceinline__ __device__ unsigned int optixGetPayload_19();
+/// Reads the 32-bit payload value at slot 20.
+static __forceinline__ __device__ unsigned int optixGetPayload_20();
+/// Reads the 32-bit payload value at slot 21.
+static __forceinline__ __device__ unsigned int optixGetPayload_21();
+/// Reads the 32-bit payload value at slot 22.
+static __forceinline__ __device__ unsigned int optixGetPayload_22();
+/// Reads the 32-bit payload value at slot 23.
+static __forceinline__ __device__ unsigned int optixGetPayload_23();
+/// Reads the 32-bit payload value at slot 24.
+static __forceinline__ __device__ unsigned int optixGetPayload_24();
+/// Reads the 32-bit payload value at slot 25.
+static __forceinline__ __device__ unsigned int optixGetPayload_25();
+/// Reads the 32-bit payload value at slot 26.
+static __forceinline__ __device__ unsigned int optixGetPayload_26();
+/// Reads the 32-bit payload value at slot 27.
+static __forceinline__ __device__ unsigned int optixGetPayload_27();
+/// Reads the 32-bit payload value at slot 28.
+static __forceinline__ __device__ unsigned int optixGetPayload_28();
+/// Reads the 32-bit payload value at slot 29.
+static __forceinline__ __device__ unsigned int optixGetPayload_29();
+/// Reads the 32-bit payload value at slot 30.
+static __forceinline__ __device__ unsigned int optixGetPayload_30();
+/// Reads the 32-bit payload value at slot 31.
+static __forceinline__ __device__ unsigned int optixGetPayload_31();
+
+/// Specify the supported payload types for a program.
+///
+/// The supported types are specified as a bitwise combination of payload types. (See OptixPayloadTypeID)
+/// May only be called once per program.
+/// Must be called at the top of the program.
+/// Only available in IS, AH, CH, MS
+static __forceinline__ __device__ void optixSetPayloadTypes( unsigned int typeMask );
 
 /// Returns an undefined value.
 static __forceinline__ __device__ unsigned int optixUndefinedValue();
@@ -314,8 +2336,13 @@ static __forceinline__ __device__ unsigned int optixGetRayFlags();
 /// Only available in IS, AH, CH, MS
 static __forceinline__ __device__ unsigned int optixGetRayVisibilityMask();
 
+/// Return the traversable handle of a given instance in an Instance 
+/// Acceleration Structure (IAS)
+static __forceinline__ __device__ OptixTraversableHandle optixGetInstanceTraversableFromIAS( OptixTraversableHandle ias, unsigned int instIdx );
+
 /// Return the object space triangle vertex positions of a given triangle in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
+/// To access vertex data, the GAS must be built using the flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
 ///
 /// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
 /// time parameter is ignored.
@@ -323,6 +2350,7 @@ static __forceinline__ __device__ void optixGetTriangleVertexData( OptixTraversa
 
 /// Return the object space curve control vertex data of a linear curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
+/// To access vertex data, the GAS must be built using the flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
 ///
 /// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
 /// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
@@ -331,6 +2359,7 @@ static __forceinline__ __device__ void optixGetLinearCurveVertexData( OptixTrave
 
 /// Return the object space curve control vertex data of a quadratic BSpline curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
+/// To access vertex data, the GAS must be built using the flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
 ///
 /// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
 /// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
@@ -339,11 +2368,21 @@ static __forceinline__ __device__ void optixGetQuadraticBSplineVertexData( Optix
 
 /// Return the object space curve control vertex data of a cubic BSpline curve in a Geometry
 /// Acceleration Structure (GAS) at a given motion time.
+/// To access vertex data, the GAS must be built using the flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
 ///
 /// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
 /// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
 /// time parameter is ignored.
 static __forceinline__ __device__ void optixGetCubicBSplineVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[4] );
+
+/// Return the object space curve control vertex data of a CatmullRom spline curve in a Geometry
+/// Acceleration Structure (GAS) at a given motion time.
+/// To access vertex data, the GAS must be built using the flag OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS.
+///
+/// data[i] = {x,y,z,w} with {x,y,z} the position and w the radius of control vertex i.
+/// If motion is disabled via OptixPipelineCompileOptions::usesMotionBlur, or the GAS does not contain motion, the
+/// time parameter is ignored.
+static __forceinline__ __device__ void optixGetCatmullRomVertexData( OptixTraversableHandle gas, unsigned int primIdx, unsigned int sbtGASIndex, float time, float4 data[4] );
 
 /// Returns the traversable handle for the Geometry Acceleration Structure (GAS) containing
 /// the current hit. May be called from IS, AH and CH.
@@ -437,6 +2476,11 @@ static __forceinline__ __device__ const OptixMatrixMotionTransform* optixGetMatr
 ///
 /// Returns 0 if the traversable handle does not reference an OptixInstance.
 static __forceinline__ __device__ unsigned int optixGetInstanceIdFromHandle( OptixTraversableHandle handle );
+
+/// Returns child traversable handle from an OptixInstance traversable.
+///
+/// Returns 0 if the traversable handle does not reference an OptixInstance.
+static __forceinline__ __device__ OptixTraversableHandle optixGetInstanceChildFromHandle( OptixTraversableHandle handle );
 
 /// Returns object-to-world transform from an OptixInstance traversable.
 ///
@@ -887,6 +2931,106 @@ static __forceinline__ __device__ ReturnT optixDirectCall( unsigned int sbtIndex
 /// \param[in] args The arguments to pass to the continuation callable program.
 template <typename ReturnT, typename... ArgTypes>
 static __forceinline__ __device__ ReturnT optixContinuationCall( unsigned int sbtIndex, ArgTypes... args );
+
+
+/// optixTexFootprint2D calculates the footprint of a corresponding 2D texture fetch (non-mipmapped).
+///
+/// On Turing and subsequent architectures, a texture footprint instruction allows user programs to
+/// determine the set of texels that would be accessed by an equivalent filtered texture lookup.
+///
+/// \param[in] tex      CUDA texture object (cast to 64-bit integer)
+/// \param[in] texInfo  Texture info packed into 32-bit integer, described below.
+/// \param[in] x        Texture coordinate
+/// \param[in] y        Texture coordinate
+/// \param[out] singleMipLevel  Result indicating whether the footprint spans only a single miplevel.
+///
+/// The texture info argument is a packed 32-bit integer with the following layout:
+///
+///   texInfo[31:29] = reserved (3 bits)
+///   texInfo[28:24] = miplevel count (5 bits)
+///   texInfo[23:20] = log2 of tile width (4 bits)
+///   texInfo[19:16] = log2 of tile height (4 bits)
+///   texInfo[15:10] = reserved (6 bits)
+///   texInfo[9:8]   = horizontal wrap mode (2 bits) (CUaddress_mode)
+///   texInfo[7:6]   = vertical wrap mode (2 bits) (CUaddress_mode)
+///   texInfo[5]     = mipmap filter mode (1 bit) (CUfilter_mode)
+///   texInfo[4:0]   = maximum anisotropy (5 bits)
+///
+/// Returns a 16-byte structure (as a uint4) that stores the footprint of a texture request at a
+/// particular "granularity", which has the following layout:
+///
+///    struct Texture2DFootprint
+///    {
+///        unsigned long long mask;
+///        unsigned int tileY : 12;
+///        unsigned int reserved1 : 4;
+///        unsigned int dx : 3;
+///        unsigned int dy : 3;
+///        unsigned int reserved2 : 2;
+///        unsigned int granularity : 4;
+///        unsigned int reserved3 : 4;
+///        unsigned int tileX : 12;
+///        unsigned int level : 4;
+///        unsigned int reserved4 : 16;
+///    };
+///
+/// The granularity indicates the size of texel groups that are represented by an 8x8 bitmask. For
+/// example, a granularity of 12 indicates texel groups that are 128x64 texels in size. In a
+/// footprint call, The returned granularity will either be the actual granularity of the result, or
+/// 0 if the footprint call was able to honor the requested granularity (the usual case).
+///
+/// level is the mip level of the returned footprint. Two footprint calls are needed to get the
+/// complete footprint when a texture call spans multiple mip levels.
+///
+/// mask is an 8x8 bitmask of texel groups that are covered, or partially covered, by the footprint.
+/// tileX and tileY give the starting position of the mask in 8x8 texel-group blocks.  For example,
+/// suppose a granularity of 12 (128x64 texels), and tileX=3 and tileY=4. In this case, bit 0 of the
+/// mask (the low order bit) corresponds to texel group coordinates (3*8, 4*8), and texel
+/// coordinates (3*8*128, 4*8*64), within the specified mip level.
+///
+/// If nonzero, dx and dy specify a "toroidal rotation" of the bitmask.  Toroidal rotation of a
+/// coordinate in the mask simply means that its value is reduced by 8.  Continuing the example from
+/// above, if dx=0 and dy=0 the mask covers texel groups (3*8, 4*8) to (3*8+7, 4*8+7) inclusive.
+/// If, on the other hand, dx=2, the rightmost 2 columns in the mask have their x coordinates
+/// reduced by 8, and similarly for dy.
+///
+/// See the OptiX SDK for sample code that illustrates how to unpack the result.
+static __forceinline__ __device__ uint4 optixTexFootprint2D( unsigned long long tex, unsigned int texInfo, float x, float y, unsigned int* singleMipLevel );
+
+/// optixTexFootprint2DLod calculates the footprint of a corresponding 2D texture fetch (tex2DLod)
+/// \param[in] tex      CUDA texture object (cast to 64-bit integer)
+/// \param[in] texInfo  Texture info packed into 32-bit integer, described below.
+/// \param[in] x        Texture coordinate
+/// \param[in] y        Texture coordinate
+/// \param[in] level    Level of detail (lod)
+/// \param[in] coarse   Requests footprint from coarse miplevel, when the footprint spans two levels.
+/// \param[out] singleMipLevel  Result indicating whether the footprint spans only a single miplevel.
+/// \see #optixTexFootprint2D(unsigned long long,unsigned int,float,float,unsigned int*)
+static __forceinline__ __device__ uint4
+optixTexFootprint2DLod( unsigned long long tex, unsigned int texInfo, float x, float y, float level, bool coarse, unsigned int* singleMipLevel );
+
+/// optixTexFootprint2DGrad calculates the footprint of a corresponding 2D texture fetch (tex2DGrad)
+/// \param[in] tex      CUDA texture object (cast to 64-bit integer)
+/// \param[in] texInfo  Texture info packed into 32-bit integer, described below.
+/// \param[in] x        Texture coordinate
+/// \param[in] y        Texture coordinate
+/// \param[in] dPdx_x   Derivative of x coordinte, which determines level of detail.
+/// \param[in] dPdx_y   Derivative of x coordinte, which determines level of detail.
+/// \param[in] dPdy_x   Derivative of y coordinte, which determines level of detail.
+/// \param[in] dPdy_y   Derivative of y coordinte, which determines level of detail.
+/// \param[in] coarse   Requests footprint from coarse miplevel, when the footprint spans two levels.
+/// \param[out] singleMipLevel  Result indicating whether the footprint spans only a single miplevel.
+/// \see #optixTexFootprint2D(unsigned long long,unsigned int,float,float,unsigned int*)
+static __forceinline__ __device__ uint4 optixTexFootprint2DGrad( unsigned long long tex,
+                                                                 unsigned int       texInfo,
+                                                                 float              x,
+                                                                 float              y,
+                                                                 float              dPdx_x,
+                                                                 float              dPdx_y,
+                                                                 float              dPdy_x,
+                                                                 float              dPdy_y,
+                                                                 bool               coarse,
+                                                                 unsigned int*      singleMipLevel );
 
 /*@}*/  // end group optix_device_api
 

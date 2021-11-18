@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA Corporation.  All rights reserved.
  *
  * NVIDIA Corporation and its licensors retain all intellectual property and proprietary
  * rights in and to this software, related documentation and any modifications thereto.
@@ -26,7 +26,7 @@
 #define __optix_optix_function_table_h__
 
 /// The OptiX ABI version.
-#define OPTIX_ABI_VERSION 41
+#define OPTIX_ABI_VERSION 55
 
 #ifndef OPTIX_DEFINE_ABI_VERSION_ONLY
 
@@ -114,6 +114,20 @@ typedef struct OptixFunctionTable
                                                size_t*                            logStringSize,
                                                OptixModule*                       module );
 
+    /// See ::optixModuleCreateFromPTXWithTasks().
+    OptixResult ( *optixModuleCreateFromPTXWithTasks )( OptixDeviceContext                 context,
+                                                        const OptixModuleCompileOptions*   moduleCompileOptions,
+                                                        const OptixPipelineCompileOptions* pipelineCompileOptions,
+                                                        const char*                        PTX,
+                                                        size_t                             PTXsize,
+                                                        char*                              logString,
+                                                        size_t*                            logStringSize,
+                                                        OptixModule*                       module,
+                                                        OptixTask*                         firstTask );
+
+    /// See ::optixModuleGetCompilationState().
+    OptixResult ( *optixModuleGetCompilationState )( OptixModule module, OptixModuleCompileState* state );
+
     /// See ::optixModuleDestroy().
     OptixResult ( *optixModuleDestroy )( OptixModule module );
 
@@ -124,6 +138,15 @@ typedef struct OptixFunctionTable
                                              const OptixBuiltinISOptions*       builtinISOptions,
                                              OptixModule*                       builtinModule);
 
+    //@ }
+    /// \name Tasks
+    //@ {
+
+    /// See ::optixTaskExecute().
+    OptixResult ( *optixTaskExecute )( OptixTask     task,
+                                       OptixTask*    additionalTasks,
+                                       unsigned int  maxNumAdditionalTasks,
+                                       unsigned int* numAdditionalTasksCreated );
     //@ }
     /// \name Program groups
     //@ {
@@ -226,6 +249,9 @@ typedef struct OptixFunctionTable
                                                              OptixTraversableType    traversableType,
                                                              OptixTraversableHandle* traversableHandle );
 
+    void ( *reserved1 )( void );
+    void ( *reserved2 )( void );
+
     //@ }
     /// \name Launch
     //@ {
@@ -248,7 +274,7 @@ typedef struct OptixFunctionTable
     //@ {
 
     /// See ::optixDenoiserCreate().
-    OptixResult ( *optixDenoiserCreate )( OptixDeviceContext context, const OptixDenoiserOptions* options, OptixDenoiser* returnHandle );
+    OptixResult ( *optixDenoiserCreate )( OptixDeviceContext context, OptixDenoiserModelKind modelKind, const OptixDenoiserOptions* options, OptixDenoiser* returnHandle );
 
     /// See ::optixDenoiserDestroy().
     OptixResult ( *optixDenoiserDestroy )( OptixDenoiser handle );
@@ -269,23 +295,19 @@ typedef struct OptixFunctionTable
                                          CUdeviceptr   scratch,
                                          size_t        scratchSizeInBytes );
 
-
     /// See ::optixDenoiserInvoke().
-    OptixResult ( *optixDenoiserInvoke )( OptixDenoiser              denoiser,
-                                          CUstream                   stream,
-                                          const OptixDenoiserParams* params,
-                                          CUdeviceptr                denoiserState,
-                                          size_t                     denoiserStateSizeInBytes,
-                                          const OptixImage2D*        inputLayers,
-                                          unsigned int               numInputLayers,
-                                          unsigned int               inputOffsetX,
-                                          unsigned int               inputOffsetY,
-                                          const OptixImage2D*        outputLayer,
-                                          CUdeviceptr                scratch,
-                                          size_t                     scratchSizeInBytes );
-
-    /// See ::optixDenoiserSetModel().
-    OptixResult ( *optixDenoiserSetModel )( OptixDenoiser handle, OptixDenoiserModelKind kind, void* data, size_t sizeInBytes );
+    OptixResult ( *optixDenoiserInvoke )( OptixDenoiser                   denoiser,
+                                          CUstream                        stream,
+                                          const OptixDenoiserParams*      params,
+                                          CUdeviceptr                     denoiserState,
+                                          size_t                          denoiserStateSizeInBytes,
+                                          const OptixDenoiserGuideLayer * guideLayer,
+                                          const OptixDenoiserLayer *      layers,
+                                          unsigned int                    numLayers,
+                                          unsigned int                    inputOffsetX,
+                                          unsigned int                    inputOffsetY,
+                                          CUdeviceptr                     scratch,
+                                          size_t                          scratchSizeInBytes );
 
     /// See ::optixDenoiserComputeIntensity().
     OptixResult ( *optixDenoiserComputeIntensity )( OptixDenoiser       handle,
@@ -302,6 +324,9 @@ typedef struct OptixFunctionTable
                                                        CUdeviceptr         outputAverageColor,
                                                        CUdeviceptr         scratch,
                                                        size_t              scratchSizeInBytes );
+
+    /// See ::optixDenoiserCreateWithUserModel().
+    OptixResult ( *optixDenoiserCreateWithUserModel )( OptixDeviceContext context, const void * data, size_t dataSizeInBytes, OptixDenoiser* returnHandle );
     //@ }
 
 } OptixFunctionTable;

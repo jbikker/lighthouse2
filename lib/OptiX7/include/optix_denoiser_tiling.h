@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 NVIDIA Corporation.  All rights reserved.
+ * Copyright (c) 2021 NVIDIA Corporation.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -77,11 +77,17 @@ inline unsigned int optixUtilGetPixelStride( const OptixImage2D& image )
     {
         switch( image.format )
         {
+            case OPTIX_PIXEL_FORMAT_HALF2:
+                pixelStrideInBytes = 2 * sizeof( short );
+                break;
             case OPTIX_PIXEL_FORMAT_HALF3:
                 pixelStrideInBytes = 3 * sizeof( short );
                 break;
             case OPTIX_PIXEL_FORMAT_HALF4:
                 pixelStrideInBytes = 4 * sizeof( short );
+                break;
+            case OPTIX_PIXEL_FORMAT_FLOAT2:
+                pixelStrideInBytes = 2 * sizeof( float );
                 break;
             case OPTIX_PIXEL_FORMAT_FLOAT3:
                 pixelStrideInBytes = 3 * sizeof( float );
@@ -189,48 +195,108 @@ inline OptixResult optixUtilDenoiserSplitImage(
 /// \param[in] params
 /// \param[in] denoiserState
 /// \param[in] denoiserStateSizeInBytes
-/// \param[in] inputLayers
-/// \param[in] numInputLayers
-/// \param[in] outputLayer
+/// \param[in] guideLayer
+/// \param[in] layers
+/// \param[in] numLayers
 /// \param[in] scratch
 /// \param[in] scratchSizeInBytes
 /// \param[in] overlapWindowSizeInPixels
 /// \param[in] tileWidth
 /// \param[in] tileHeight
 inline OptixResult optixUtilDenoiserInvokeTiled(
-                                                OptixDenoiser&             denoiser,
-                                                CUstream                   stream,
-                                                const OptixDenoiserParams* params,
-                                                CUdeviceptr                denoiserState,
-                                                size_t                     denoiserStateSizeInBytes,
-                                                const OptixImage2D*        inputLayers,
-                                                unsigned int               numInputLayers,
-                                                const OptixImage2D*        outputLayer,
-                                                CUdeviceptr                scratch,
-                                                size_t                     scratchSizeInBytes,
-                                                unsigned int               overlapWindowSizeInPixels,
-                                                unsigned int               tileWidth,
-                                                unsigned int               tileHeight )
+                                                OptixDenoiser                   denoiser,
+                                                CUstream                        stream,
+                                                const OptixDenoiserParams*      params,
+                                                CUdeviceptr                     denoiserState,
+                                                size_t                          denoiserStateSizeInBytes,
+                                                const OptixDenoiserGuideLayer*  guideLayer,
+                                                const OptixDenoiserLayer*       layers,
+                                                unsigned int                    numLayers,
+                                                CUdeviceptr                     scratch,
+                                                size_t                          scratchSizeInBytes,
+                                                unsigned int                    overlapWindowSizeInPixels,
+                                                unsigned int                    tileWidth,
+                                                unsigned int                    tileHeight )
 {
-    if( !inputLayers || !outputLayer )
+    if( !guideLayer || !layers )
         return OPTIX_ERROR_INVALID_VALUE;
 
-    std::vector<std::vector<OptixUtilDenoiserImageTile>> tiles( numInputLayers );
-    for( unsigned int l = 0; l < numInputLayers; l++ )
-        if( const OptixResult res = optixUtilDenoiserSplitImage( inputLayers[l], *outputLayer, overlapWindowSizeInPixels,
+    std::vector<std::vector<OptixUtilDenoiserImageTile>> tiles( numLayers );
+    std::vector<std::vector<OptixUtilDenoiserImageTile>> prevTiles( numLayers );
+    for( unsigned int l = 0; l < numLayers; l++ )
+    {
+        if( const OptixResult res = optixUtilDenoiserSplitImage( layers[l].input, layers[l].output,
+                                                                 overlapWindowSizeInPixels,
                                                                  tileWidth, tileHeight, tiles[l] ) )
             return res;
 
+        if( layers[l].previousOutput.data )
+        {
+            OptixImage2D dummyOutput = layers[l].previousOutput;
+            if( const OptixResult res = optixUtilDenoiserSplitImage( layers[l].previousOutput, dummyOutput,
+                                                                 overlapWindowSizeInPixels,
+                                                                 tileWidth, tileHeight, prevTiles[l] ) )
+                return res;
+        }
+    }
+
+    std::vector<OptixUtilDenoiserImageTile> albedoTiles;
+    if( guideLayer->albedo.data )
+    {
+        OptixImage2D dummyOutput = guideLayer->albedo;
+        if( const OptixResult res = optixUtilDenoiserSplitImage( guideLayer->albedo, dummyOutput,
+                                                                 overlapWindowSizeInPixels,
+                                                                 tileWidth, tileHeight, albedoTiles ) )
+            return res;
+    }
+
+    std::vector<OptixUtilDenoiserImageTile> normalTiles;
+    if( guideLayer->normal.data )
+    {
+        OptixImage2D dummyOutput = guideLayer->normal;
+        if( const OptixResult res = optixUtilDenoiserSplitImage( guideLayer->normal, dummyOutput,
+                                                                 overlapWindowSizeInPixels,
+                                                                 tileWidth, tileHeight, normalTiles ) )
+            return res;
+    }
+    std::vector<OptixUtilDenoiserImageTile> flowTiles;
+    if( guideLayer->flow.data )
+    {
+        OptixImage2D dummyOutput = guideLayer->flow;
+        if( const OptixResult res = optixUtilDenoiserSplitImage( guideLayer->flow, dummyOutput,
+                                                                 overlapWindowSizeInPixels,
+                                                                 tileWidth, tileHeight, flowTiles ) )
+            return res;
+    }
+
     for( size_t t = 0; t < tiles[0].size(); t++ )
     {
-        std::vector<OptixImage2D> tlayers;
-        for( int l = 0; l < static_cast<int>( numInputLayers ); l++ )
-            tlayers.push_back( ( tiles[l] )[t].input );
+        std::vector<OptixDenoiserLayer> tlayers;
+        for( unsigned int l = 0; l < numLayers; l++ )
+        {
+            OptixDenoiserLayer layer = {};
+            layer.input  = ( tiles[l] )[t].input;
+            layer.output = ( tiles[l] )[t].output;
+            if( layers[l].previousOutput.data )
+                layer.previousOutput = ( prevTiles[l] )[t].input;
+            tlayers.push_back( layer );
+        }
+
+        OptixDenoiserGuideLayer gl = {};
+        if( guideLayer->albedo.data )
+            gl.albedo = albedoTiles[t].input;
+
+        if( guideLayer->normal.data )
+            gl.normal = normalTiles[t].input;
+
+        if( guideLayer->flow.data )
+            gl.flow = flowTiles[t].input;
 
         if( const OptixResult res =
-                optixDenoiserInvoke( denoiser, stream, params, denoiserState, denoiserStateSizeInBytes, &tlayers[0],
-                                     numInputLayers, ( tiles[0] )[t].inputOffsetX, ( tiles[0] )[t].inputOffsetY,
-                                     &( tiles[0] )[t].output, scratch, scratchSizeInBytes ) )
+                optixDenoiserInvoke( denoiser, stream, params, denoiserState, denoiserStateSizeInBytes,
+                                     &gl, &tlayers[0], numLayers,
+                                     ( tiles[0] )[t].inputOffsetX, ( tiles[0] )[t].inputOffsetY,
+                                     scratch, scratchSizeInBytes ) )
             return res;
     }
     return OPTIX_SUCCESS;

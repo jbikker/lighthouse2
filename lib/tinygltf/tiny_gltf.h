@@ -4,7 +4,7 @@
 //
 // The MIT License (MIT)
 //
-// Copyright (c) 2015 - 2020 Syoyo Fujita, Aurélien Chatelain and many
+// Copyright (c) 2015 - Present Syoyo Fujita, Aurélien Chatelain and many
 // contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,7 +27,8 @@
 
 // Version:
 //  - v2.5.0 Add SetPreserveImageChannels() option to load image data as is.
-//  - v2.4.3 Fix null object output when when material has all default parameters.
+//  - v2.4.3 Fix null object output when when material has all default
+//  parameters.
 //  - v2.4.2 Decode percent-encoded URI.
 //  - v2.4.1 Fix some glTF object class does not have `extensions` and/or
 //  `extras` property.
@@ -190,14 +191,14 @@ AAssetManager *asset_manager = nullptr;
 #endif
 
 typedef enum {
-  NULL_TYPE = 0,
-  REAL_TYPE = 1,
-  INT_TYPE = 2,
-  BOOL_TYPE = 3,
-  STRING_TYPE = 4,
-  ARRAY_TYPE = 5,
-  BINARY_TYPE = 6,
-  OBJECT_TYPE = 7
+  NULL_TYPE,
+  REAL_TYPE,
+  INT_TYPE,
+  BOOL_TYPE,
+  STRING_TYPE,
+  ARRAY_TYPE,
+  BINARY_TYPE,
+  OBJECT_TYPE
 } Type;
 
 static inline int32_t GetComponentSizeInBytes(uint32_t componentType) {
@@ -252,7 +253,6 @@ bool DecodeDataURI(std::vector<unsigned char> *out, std::string &mime_type,
 #ifdef __clang__
 #pragma clang diagnostic push
 // Suppress warning for : static Value null_value
-// https://stackoverflow.com/questions/15708411/how-to-deal-with-global-constructor-warning-in-clang
 #pragma clang diagnostic ignored "-Wexit-time-destructors"
 #pragma clang diagnostic ignored "-Wpadded"
 #endif
@@ -297,7 +297,7 @@ class Value {
 
   DEFAULT_METHODS(Value)
 
-  char Type() const { return static_cast<const char>(type_); }
+  char Type() const { return static_cast<char>(type_); }
 
   bool IsBool() const { return (type_ == BOOL_TYPE); }
 
@@ -603,7 +603,7 @@ struct Sampler {
   // `magFilter`. Set -1 in TinyGLTF(issue #186)
   int minFilter =
       -1;  // optional. -1 = no filter defined. ["NEAREST", "LINEAR",
-           // "NEAREST_MIPMAP_LINEAR", "LINEAR_MIPMAP_NEAREST",
+           // "NEAREST_MIPMAP_NEAREST", "LINEAR_MIPMAP_NEAREST",
            // "NEAREST_MIPMAP_LINEAR", "LINEAR_MIPMAP_LINEAR"]
   int magFilter =
       -1;  // optional. -1 = no filter defined. ["NEAREST", "LINEAR"]
@@ -613,7 +613,7 @@ struct Sampler {
   int wrapT =
       TINYGLTF_TEXTURE_WRAP_REPEAT;  // ["CLAMP_TO_EDGE", "MIRRORED_REPEAT",
                                      // "REPEAT"], default "REPEAT"
-  int wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;  // TinyGLTF extension
+  //int wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;  // TinyGLTF extension. currently not used.
 
   Value extras;
   ExtensionMap extensions;
@@ -626,8 +626,7 @@ struct Sampler {
       : minFilter(-1),
         magFilter(-1),
         wrapS(TINYGLTF_TEXTURE_WRAP_REPEAT),
-        wrapT(TINYGLTF_TEXTURE_WRAP_REPEAT),
-        wrapR(TINYGLTF_TEXTURE_WRAP_REPEAT) {}
+        wrapT(TINYGLTF_TEXTURE_WRAP_REPEAT) {}
   DEFAULT_METHODS(Sampler)
   bool operator==(const Sampler &) const;
 };
@@ -850,8 +849,10 @@ struct Accessor {
   std::string extras_json_string;
   std::string extensions_json_string;
 
-  std::vector<double> minValues;  // optional
-  std::vector<double> maxValues;  // optional
+  std::vector<double>
+      minValues;  // optional. integer value is promoted to double
+  std::vector<double>
+      maxValues;  // optional. integer value is promoted to double
 
   struct {
     int count;
@@ -1069,7 +1070,7 @@ struct Buffer {
 };
 
 struct Asset {
-  std::string version;  // required
+  std::string version = "2.0";  // required
   std::string generator;
   std::string minVersion;
   std::string copyright;
@@ -1191,7 +1192,8 @@ enum SectionCheck {
 ///
 typedef bool (*LoadImageDataFunction)(Image *, const int, std::string *,
                                       std::string *, int, int,
-                                      const unsigned char *, int, void *user_pointer);
+                                      const unsigned char *, int,
+                                      void *user_pointer);
 
 ///
 /// WriteImageDataFunction type. Signature for custom image writing callbacks.
@@ -1256,7 +1258,7 @@ bool FileExists(const std::string &abs_filename, void *);
 
 ///
 /// Expand file path(e.g. `~` to home directory on posix, `%APPDATA%` to
-/// `C:\Users\tinygltf\AppData`)
+/// `C:\\Users\\tinygltf\\AppData`)
 ///
 /// @param[in] filepath File path string. Assume UTF-8
 /// @param[in] userdata User data. Set to `nullptr` if you don't need it.
@@ -1398,9 +1400,7 @@ class TinyGLTF {
     preserve_image_channels_ = onoff;
   }
 
-  bool GetPreserveImageChannels() const {
-    return preserve_image_channels_;
-  }
+  bool GetPreserveImageChannels() const { return preserve_image_channels_; }
 
  private:
   ///
@@ -1421,7 +1421,8 @@ class TinyGLTF {
 
   bool store_original_json_for_extras_and_extensions_ = false;
 
-  bool preserve_image_channels_ = false; /// Default false(expand channels to RGBA) for backward compatibility.
+  bool preserve_image_channels_ = false;  /// Default false(expand channels to
+                                          /// RGBA) for backward compatibility.
 
   FsCallbacks fs = {
 #ifndef TINYGLTF_NO_FS
@@ -1536,11 +1537,13 @@ class TinyGLTF {
 #ifndef TINYGLTF_USE_RAPIDJSON
 #include "json.hpp"
 #else
+#ifndef TINYGLTF_NO_INCLUDE_RAPIDJSON
 #include "document.h"
 #include "prettywriter.h"
 #include "rapidjson.h"
 #include "stringbuffer.h"
 #include "writer.h"
+#endif
 #endif
 #endif
 
@@ -1601,7 +1604,7 @@ class TinyGLTF {
 
 #endif
 
-#elif !defined(__ANDROID__)
+#elif !defined(__ANDROID__) && !defined(__OpenBSD__)
 #include <wordexp.h>
 #endif
 
@@ -1708,14 +1711,14 @@ namespace tinygltf {
 ///
 /// Internal LoadImageDataOption struct.
 /// This struct is passed through `user_pointer` in LoadImageData.
-/// The struct is not passed when the user supply their own LoadImageData callbacks.
+/// The struct is not passed when the user supply their own LoadImageData
+/// callbacks.
 ///
-struct LoadImageDataOption
-{
-  // true: preserve image channels(e.g. load as RGB image if the image has RGB channels)
-  // default `false`(channels are expanded to RGBA for backward compatiblity).
+struct LoadImageDataOption {
+  // true: preserve image channels(e.g. load as RGB image if the image has RGB
+  // channels) default `false`(channels are expanded to RGBA for backward
+  // compatiblity).
   bool preserve_channels{false};
-
 };
 
 // Equals function for Value, for recursivity
@@ -1930,8 +1933,9 @@ bool Sampler::operator==(const Sampler &other) const {
   return this->extensions == other.extensions && this->extras == other.extras &&
          this->magFilter == other.magFilter &&
          this->minFilter == other.minFilter && this->name == other.name &&
-         this->wrapR == other.wrapR && this->wrapS == other.wrapS &&
          this->wrapT == other.wrapT;
+
+         //this->wrapR == other.wrapR && this->wrapS == other.wrapS &&
 }
 bool Scene::operator==(const Scene &other) const {
   return this->extensions == other.extensions && this->extras == other.extras &&
@@ -2035,9 +2039,12 @@ static std::string GetBaseDir(const std::string &filepath) {
   return "";
 }
 
-// https://stackoverflow.com/questions/8520560/get-a-file-name-from-a-path
 static std::string GetBaseFilename(const std::string &filepath) {
-  return filepath.substr(filepath.find_last_of("/\\") + 1);
+  constexpr char path_separators[2] = { '/', '\\' };
+  auto idx = filepath.find_last_of(path_separators);
+  if (idx != std::string::npos)
+    return filepath.substr(idx + 1);
+  return filepath;
 }
 
 std::string base64_encode(unsigned char const *, unsigned int len);
@@ -2183,46 +2190,34 @@ std::string base64_decode(std::string const &encoded_string) {
 // TODO(syoyo): Use uriparser https://uriparser.github.io/ for stricter Uri
 // decoding?
 //
-// https://stackoverflow.com/questions/18307429/encode-decode-url-in-c
+// Uri Decoding from DLIB
 // http://dlib.net/dlib/server/server_http.cpp.html
-
-// --- dlib beign ------------------------------------------------------------
+// --- dlib begin ------------------------------------------------------------
 // Copyright (C) 2003  Davis E. King (davis@dlib.net)
-// License: Boost Software License   See LICENSE.txt for the full license.
+// License: Boost Software License
+// Boost Software License - Version 1.0 - August 17th, 2003
 
+// Permission is hereby granted, free of charge, to any person or organization
+// obtaining a copy of the software and accompanying documentation covered by
+// this license (the "Software") to use, reproduce, display, distribute,
+// execute, and transmit the Software, and to prepare derivative works of the
+// Software, and to permit third-parties to whom the Software is furnished to
+// do so, all subject to the following:
+// The copyright notices in the Software and this entire statement, including
+// the above license grant, this restriction and the following disclaimer,
+// must be included in all copies of the Software, in whole or in part, and
+// all derivative works of the Software, unless such copies or derivative
+// works are solely in the form of machine-executable object code generated by
+// a source language processor.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
+// SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
+// FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
+// ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+// DEALINGS IN THE SOFTWARE.
+// 
 namespace dlib {
-
-#if 0
-        inline unsigned char to_hex( unsigned char x )
-        {
-            return x + (x > 9 ? ('A'-10) : '0');
-        }
-
-        const std::string urlencode( const std::string& s )
-        {
-            std::ostringstream os;
-
-            for ( std::string::const_iterator ci = s.begin(); ci != s.end(); ++ci )
-            {
-                if ( (*ci >= 'a' && *ci <= 'z') ||
-                     (*ci >= 'A' && *ci <= 'Z') ||
-                     (*ci >= '0' && *ci <= '9') )
-                { // allowed
-                    os << *ci;
-                }
-                else if ( *ci == ' ')
-                {
-                    os << '+';
-                }
-                else
-                {
-                    os << '%' << to_hex(static_cast<unsigned char>(*ci >> 4)) << to_hex(static_cast<unsigned char>(*ci % 16));
-                }
-            }
-
-            return os.str();
-        }
-#endif
 
 inline unsigned char from_hex(unsigned char ch) {
   if (ch <= '9' && ch >= '0')
@@ -2363,8 +2358,8 @@ bool LoadImageData(Image *image, const int image_idx, std::string *err,
   unsigned char *data = nullptr;
 
   // preserve_channels true: Use channels stored in the image file.
-  // false: force 32-bit textures for common Vulkan compatibility. It appears that
-  // some GPU drivers do not support 24-bit images for Vulkan
+  // false: force 32-bit textures for common Vulkan compatibility. It appears
+  // that some GPU drivers do not support 24-bit images for Vulkan
   req_comp = option.preserve_channels ? 0 : 4;
   int bits = 8;
   int pixel_type = TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE;
@@ -2624,7 +2619,7 @@ std::string ExpandFilePath(const std::string &filepath, void *) {
 #else
 
 #if defined(TARGET_OS_IPHONE) || defined(TARGET_IPHONE_SIMULATOR) || \
-    defined(__ANDROID__) || defined(__EMSCRIPTEN__)
+    defined(__ANDROID__) || defined(__EMSCRIPTEN__) || defined(__OpenBSD__)
   // no expansion
   std::string s = filepath;
 #else
@@ -4467,6 +4462,7 @@ static bool GetAttributeForAllPoints(uint32_t componentType, draco::Mesh *mesh,
 static bool ParseDracoExtension(Primitive *primitive, Model *model,
                                 std::string *err,
                                 const Value &dracoExtensionValue) {
+  (void)err;
   auto bufferViewValue = dracoExtensionValue.Get("bufferView");
   if (!bufferViewValue.IsInt()) return false;
   auto attributesValue = dracoExtensionValue.Get("attributes");
@@ -4527,7 +4523,6 @@ static bool ParseDracoExtension(Primitive *primitive, Model *model,
 
     int dracoAttributeIndex = attribute.second.Get<int>();
     const auto pAttribute = mesh->GetAttributeByUniqueId(dracoAttributeIndex);
-    const auto pBuffer = pAttribute->buffer();
     const auto componentType =
         model->accessors[primitiveAttribute->second].componentType;
 
@@ -5086,12 +5081,12 @@ static bool ParseSampler(Sampler *sampler, std::string *err, const json &o,
   int magFilter = -1;
   int wrapS = TINYGLTF_TEXTURE_WRAP_REPEAT;
   int wrapT = TINYGLTF_TEXTURE_WRAP_REPEAT;
-  int wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;
+  //int wrapR = TINYGLTF_TEXTURE_WRAP_REPEAT;
   ParseIntegerProperty(&minFilter, err, o, "minFilter", false);
   ParseIntegerProperty(&magFilter, err, o, "magFilter", false);
   ParseIntegerProperty(&wrapS, err, o, "wrapS", false);
   ParseIntegerProperty(&wrapT, err, o, "wrapT", false);
-  ParseIntegerProperty(&wrapR, err, o, "wrapR", false);  // tinygltf extension
+  //ParseIntegerProperty(&wrapR, err, o, "wrapR", false);  // tinygltf extension
 
   // TODO(syoyo): Check the value is alloed one.
   // (e.g. we allow 9728(NEAREST), but don't allow 9727)
@@ -5100,7 +5095,7 @@ static bool ParseSampler(Sampler *sampler, std::string *err, const json &o,
   sampler->magFilter = magFilter;
   sampler->wrapS = wrapS;
   sampler->wrapT = wrapT;
-  sampler->wrapR = wrapR;
+  //sampler->wrapR = wrapR;
 
   ParseExtensionsProperty(&(sampler->extensions), err, o);
   ParseExtrasProperty(&(sampler->extras), o);
@@ -5827,13 +5822,13 @@ bool TinyGLTF::LoadFromString(Model *model, std::string *err, std::string *warn,
         {
           json_const_iterator it;
           if (FindMember(o, "extensions", it)) {
-            model->extensions_json_string = JsonToString(GetValue(it));
+            scene.extensions_json_string = JsonToString(GetValue(it));
           }
         }
         {
           json_const_iterator it;
           if (FindMember(o, "extras", it)) {
-            model->extras_json_string = JsonToString(GetValue(it));
+            scene.extras_json_string = JsonToString(GetValue(it));
           }
         }
       }
@@ -6621,8 +6616,33 @@ static void SerializeGltfAccessor(Accessor &accessor, json &o) {
 
   SerializeNumberProperty<int>("componentType", accessor.componentType, o);
   SerializeNumberProperty<size_t>("count", accessor.count, o);
-  SerializeNumberArrayProperty<double>("min", accessor.minValues, o);
-  SerializeNumberArrayProperty<double>("max", accessor.maxValues, o);
+
+  if ((accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) ||
+      (accessor.componentType == TINYGLTF_COMPONENT_TYPE_DOUBLE)) {
+    SerializeNumberArrayProperty<double>("min", accessor.minValues, o);
+    SerializeNumberArrayProperty<double>("max", accessor.maxValues, o);
+  } else {
+    // Issue #301. Serialize as integer.
+    // Assume int value is within [-2**31-1, 2**31-1]
+    {
+      std::vector<int> values;
+      std::transform(accessor.minValues.begin(), accessor.minValues.end(),
+                     std::back_inserter(values),
+                     [](double v) { return static_cast<int>(v); });
+
+      SerializeNumberArrayProperty<int>("min", values, o);
+    }
+
+    {
+      std::vector<int> values;
+      std::transform(accessor.maxValues.begin(), accessor.maxValues.end(),
+                     std::back_inserter(values),
+                     [](double v) { return static_cast<int>(v); });
+
+      SerializeNumberArrayProperty<int>("max", values, o);
+    }
+  }
+
   if (accessor.normalized)
     SerializeValue("normalized", Value(accessor.normalized), o);
   std::string type;
@@ -6732,9 +6752,14 @@ static void SerializeGltfAsset(Asset &asset, json &o) {
     SerializeStringProperty("copyright", asset.copyright, o);
   }
 
-  if (!asset.version.empty()) {
-    SerializeStringProperty("version", asset.version, o);
+  if (asset.version.empty()) {
+    // Just in case
+    // `version` must be defined
+    asset.version = "2.0";
   }
+
+  // TODO(syoyo): Do we need to check if `version` is greater or equal to 2.0?
+  SerializeStringProperty("version", asset.version, o);
 
   if (asset.extras.Keys().size()) {
     SerializeValue("extras", asset.extras, o);
@@ -7133,7 +7158,7 @@ static void SerializeGltfSampler(Sampler &sampler, json &o) {
   if (sampler.minFilter != -1) {
     SerializeNumberProperty("minFilter", sampler.minFilter, o);
   }
-  SerializeNumberProperty("wrapR", sampler.wrapR, o);
+  //SerializeNumberProperty("wrapR", sampler.wrapR, o);
   SerializeNumberProperty("wrapS", sampler.wrapS, o);
   SerializeNumberProperty("wrapT", sampler.wrapT, o);
 
@@ -7208,11 +7233,17 @@ static void SerializeGltfScene(Scene &scene, json &o) {
 }
 
 static void SerializeGltfSkin(Skin &skin, json &o) {
-  if (skin.inverseBindMatrices != -1)
-    SerializeNumberProperty("inverseBindMatrices", skin.inverseBindMatrices, o);
-
+  // required
   SerializeNumberArrayProperty<int>("joints", skin.joints, o);
-  SerializeNumberProperty("skeleton", skin.skeleton, o);
+
+  if (skin.inverseBindMatrices >= 0) {
+    SerializeNumberProperty("inverseBindMatrices", skin.inverseBindMatrices, o);
+  }
+
+  if (skin.skeleton >= 0) {
+    SerializeNumberProperty("skeleton", skin.skeleton, o);
+  }
+
   if (skin.name.size()) {
     SerializeStringProperty("name", skin.name, o);
   }
@@ -7299,7 +7330,8 @@ static void SerializeGltfModel(Model *model, json &o) {
       if (JsonIsNull(material)) {
         // Issue 294.
         // `material` does not have any required parameters
-        // so the result may be null(unmodified) when all material parameters have default value.
+        // so the result may be null(unmodified) when all material parameters
+        // have default value.
         //
         // null is not allowed thus we create an empty JSON object.
         JsonSetObject(material);
@@ -7442,7 +7474,7 @@ static void SerializeGltfModel(Model *model, json &o) {
   }
 
   // Extensions used
-  if (model->extensionsUsed.size()) {
+  if (extensionsUsed.size()) {
     SerializeStringArrayProperty("extensionsUsed", extensionsUsed, o);
   }
 
@@ -7486,31 +7518,24 @@ static void WriteBinaryGltfStream(std::ostream &stream,
   const std::string header = "glTF";
   const int version = 2;
 
-  // https://stackoverflow.com/questions/3407012/c-rounding-up-to-the-nearest-multiple-of-a-number
-  auto roundUp = [](uint32_t numToRound, uint32_t multiple) {
-    if (multiple == 0) return numToRound;
-
-    uint32_t remainder = numToRound % multiple;
-    if (remainder == 0) return numToRound;
-
-    return numToRound + multiple - remainder;
-  };
-
-  const uint32_t padding_size =
-      roundUp(uint32_t(content.size()), 4) - uint32_t(content.size());
+  const uint32_t content_size = uint32_t(content.size());
+  const uint32_t binBuffer_size = uint32_t(binBuffer.size());
+  // determine number of padding bytes required to ensure 4 byte alignment
+  const uint32_t content_padding_size = content_size % 4 == 0 ? 0 : 4 - content_size % 4;
+  const uint32_t bin_padding_size = binBuffer_size % 4 == 0 ? 0 : 4 - binBuffer_size % 4;
 
   // 12 bytes for header, JSON content length, 8 bytes for JSON chunk info.
-  // Chunk data must be located at 4-byte boundary.
+  // Chunk data must be located at 4-byte boundary, which may require padding
   const uint32_t length =
-      12 + 8 + roundUp(uint32_t(content.size()), 4) +
-      (binBuffer.size() ? (8 + roundUp(uint32_t(binBuffer.size()), 4)) : 0);
+      12 + 8 + content_size + content_padding_size +
+      (binBuffer_size ? (8 + binBuffer_size + bin_padding_size) : 0);
 
   stream.write(header.c_str(), std::streamsize(header.size()));
   stream.write(reinterpret_cast<const char *>(&version), sizeof(version));
   stream.write(reinterpret_cast<const char *>(&length), sizeof(length));
 
   // JSON chunk info, then JSON data
-  const uint32_t model_length = uint32_t(content.size()) + padding_size;
+  const uint32_t model_length = uint32_t(content.size()) + content_padding_size;
   const uint32_t model_format = 0x4E4F534A;
   stream.write(reinterpret_cast<const char *>(&model_length),
                sizeof(model_length));
@@ -7519,13 +7544,11 @@ static void WriteBinaryGltfStream(std::ostream &stream,
   stream.write(content.c_str(), std::streamsize(content.size()));
 
   // Chunk must be multiplies of 4, so pad with spaces
-  if (padding_size > 0) {
-    const std::string padding = std::string(size_t(padding_size), ' ');
+  if (content_padding_size > 0) {
+    const std::string padding = std::string(size_t(content_padding_size), ' ');
     stream.write(padding.c_str(), std::streamsize(padding.size()));
   }
   if (binBuffer.size() > 0) {
-    const uint32_t bin_padding_size =
-        roundUp(uint32_t(binBuffer.size()), 4) - uint32_t(binBuffer.size());
     // BIN chunk info, then BIN data
     const uint32_t bin_length = uint32_t(binBuffer.size()) + bin_padding_size;
     const uint32_t bin_format = 0x004e4942;

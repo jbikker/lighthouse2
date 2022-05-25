@@ -10,7 +10,7 @@ A software rasterizer is also included, mostly as an example of a minimal API im
 
 Quick pointers / Important advice:
 
-* Building Lighthouse 2: Since February 2020, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 11.6. <b>NOTE: 11.7 does [u]not[/u] seem to work at the moment!</b>
+* Building Lighthouse 2: Since February 2020, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 11.6. <b>NOTE: 11.7 does <u>not</u> seem to work at the moment!</b>
 * Lighthouse 2 wiki: https://github.com/jbikker/lighthouse2/wiki (early stages)
 * Trouble shooting page on the wiki: https://github.com/jbikker/lighthouse2/wiki/TroubleShooting
 * Lighthouse 2 forum: https://ompf2.com/viewforum.php?f=18

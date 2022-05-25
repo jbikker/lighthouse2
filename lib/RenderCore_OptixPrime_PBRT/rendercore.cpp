@@ -360,7 +360,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	delete materialDescBuffer;
 	delete pbrtMaterialBuffer;
 
-	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	hostMaterialBuffer = new CUDAMaterial[materialCount + 512];
 
 	std::vector<CoreMaterialDesc> matDesc;
 	matDesc.reserve( materialCount );
@@ -461,7 +461,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	pbrtMaterialBuffer = new CoreBuffer<CoreMaterial>( pbrtMaterials.size(), ON_DEVICE, pbrtMaterials.data() );
 	stagePbrtMaterialList( pbrtMaterialBuffer->DevPtr() );
 
-	materialDescBuffer = new CoreBuffer<CoreMaterialDesc>( materialCount, ON_DEVICE, matDesc.data() );
+	materialDescBuffer = new CoreBuffer<CoreMaterialDesc>( materialCount + 512, ON_DEVICE, matDesc.data() );
 	stageMaterialDescList( materialDescBuffer->DevPtr() );
 }
 

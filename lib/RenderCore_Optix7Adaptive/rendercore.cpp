@@ -532,7 +532,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	if (materialBuffer == 0 || materialCount > materialBuffer->GetSize())
 	{
 		delete hostMaterialBuffer;
-	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	hostMaterialBuffer = new CUDAMaterial[materialCount + 512];
 	}
 	for (int i = 0; i < materialCount; i++)
 	{
@@ -566,7 +566,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	}
 	if (!materialBuffer)
 	{
-		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount + 512, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
 	else if (materialCount <= materialBuffer->GetSize())
 	{

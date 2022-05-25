@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <cstdio>
 
+#pragma warning(disable:4996) // deprecated CUDA functions that we'll use anyway
+
 // custom types
 typedef unsigned int uint;
 typedef unsigned char uchar;

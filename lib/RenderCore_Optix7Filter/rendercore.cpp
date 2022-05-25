@@ -565,7 +565,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// in the continuous arrays; this data is valid only when textures are in sync.
 	delete materialBuffer;
 	delete hostMaterialBuffer;
-	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	hostMaterialBuffer = new CUDAMaterial[materialCount + 512];
 	for (int i = 0; i < materialCount; i++)
 	{
 		// perform conversion to internal material format
@@ -597,7 +597,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 			(m.detailColor.textureID != -1 ? HAS2NDDIFFUSEMAP : 0) +
 			((m.flags & 1) ? HASSMOOTHNORMALS : 0) + ((m.flags & 2) ? HASALPHA : 0);
 	}
-	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+	materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount + 512, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
 }

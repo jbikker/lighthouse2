@@ -515,7 +515,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	// Notes:
 	// Call this after the textures have been set; CoreMaterials store the offset of each texture
 	// in the continuous arrays; this data is valid only when textures are in sync.
-	hostMaterialBuffer = new CUDAMaterial[materialCount];
+	hostMaterialBuffer = new CUDAMaterial[materialCount + 512];
 	for (int i = 0; i < materialCount; i++)
 	{
 		// perform conversion to internal material format
@@ -548,7 +548,7 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 	}
 	if (!materialBuffer)
 	{
-		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount + 512, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
 	else if (materialCount > materialBuffer->GetSize())
 	{

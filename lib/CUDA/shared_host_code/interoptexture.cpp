@@ -15,6 +15,8 @@
 
 #include <core_settings.h>
 
+#pragma warning( disable : 4996 ) // deprecated functions
+
 //  +-----------------------------------------------------------------------------+
 //  |  InteropTexture implementation.                                       LH2'19|
 //  +-----------------------------------------------------------------------------+

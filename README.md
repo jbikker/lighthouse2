@@ -10,7 +10,7 @@ A software rasterizer is also included, mostly as an example of a minimal API im
 
 Quick pointers / Important advice:
 
-* Building Lighthouse 2: Since February 2020, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 11.7.
+* Building Lighthouse 2: Since February 2020, Lighthouse requires Visual Studio 2019. The CUDA-based cores require CUDA 11.6. <b>NOTE: 11.7 does [u]not[/u] seem to work at the moment!</b>
 * Lighthouse 2 wiki: https://github.com/jbikker/lighthouse2/wiki (early stages)
 * Trouble shooting page on the wiki: https://github.com/jbikker/lighthouse2/wiki/TroubleShooting
 * Lighthouse 2 forum: https://ompf2.com/viewforum.php?f=18
@@ -55,9 +55,11 @@ The implemented estimators however (unidirectional path tracers without filterin
 model (Lambert + speculars). This may or may not change depending on the use cases encountered. This video shows what can be
 achieved with the platform: https://youtu.be/uEDTtu2ky3o .
 
-Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2019. For the CUDA/Optix based cores CUDA 11.7 is required:
+Lighthouse 2 should compile out-of-the-box on Windows using Visual Studio 2019. For the CUDA/Optix based cores CUDA 11.6 is required:
 
 https://developer.nvidia.com/cuda-downloads
+
+Make sure to chose the correct version; 11.7 (the latest version as of May 2022) does not work.
 
 Optix 5.x, 6.0 and 7.2 libraries are included in the Lighthouse 2 download and do not have to be downloaded separately.
 

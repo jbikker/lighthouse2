@@ -85,7 +85,7 @@ bool HandleInput( float frameTime )
 	else
 	{
 		// arcball
-		if (mbstates[GLFW_MOUSE_BUTTON_1])
+		if (mbstates[GLFW_MOUSE_BUTTON_1] && !ImGui::GetIO().WantCaptureMouse)
 		{
 			if (!dragging)
 			{

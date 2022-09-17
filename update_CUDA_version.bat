@@ -1,6 +1,6 @@
 @echo off 
 
-set "currentver=11.7"
+set "currentver=11.5"
 set "newversion=11.6"
 
 setlocal EnableExtensions DisableDelayedExpansion

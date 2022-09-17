@@ -1,12 +1,12 @@
 <camera>
-    <transform m00="-0.99208337" m01="0.0086348727" m02="0.12528369" m03="-2.1864052" m10="0" m11="0.99763322" m12="-0.068759441" m13="0.89444506" m20="0.12558091" m21="0.068215102" m22="0.98973536" m23="-17.900812" m30="0" m31="0" m32="0" m33="1"/>
+    <transform m00="-0.72270405" m01="-0.11153492" m02="-0.68209887" m03="7.2824664" m10="0" m11="0.9868933" m12="-0.16137406" m13="3.0335417" m20="-0.69115764" m21="0.11662569" m22="0.7132318" m23="-18.557377" m30="0" m31="0" m32="0" m33="1"/>
     <FOV>40</FOV>
     <brightness>0</brightness>
     <contrast>0</contrast>
     <gamma>2.2</gamma>
-    <aperture>0.0090000005</aperture>
+    <aperture>0.0089999996</aperture>
     <distortion>0.050000001</distortion>
-    <focalDistance>13.388642</focalDistance>
+    <focalDistance>18.412794</focalDistance>
     <clampValue>2.5</clampValue>
     <tonemapper>3</tonemapper>
 </camera>

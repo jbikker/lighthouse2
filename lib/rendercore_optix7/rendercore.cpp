@@ -556,9 +556,11 @@ void RenderCore::SetMaterials( CoreMaterial* mat, const int materialCount )
 		// just set the new material data
 		materialBuffer->SetHostData( hostMaterialBuffer );
 	}
-	else /* if (materialCount > materialBuffer->GetSize()) */
+	else if (materialCount > materialBuffer->GetSize())
 	{
 		// TODO: realloc, remove +512 during allocation
+		delete materialBuffer;
+		materialBuffer = new CoreBuffer<CUDAMaterial>( materialCount + 512, ON_HOST | ON_DEVICE | STAGED, hostMaterialBuffer );
 	}
 	materialBuffer->StageCopyToDevice();
 	stageMaterialList( materialBuffer->DevPtr() );
